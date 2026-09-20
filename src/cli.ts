@@ -11,12 +11,13 @@
  */
 
 import { readFileSync, realpathSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { isRenderError, type RenderError } from './errors.js';
 import { catalog, describe } from './registry/registry.js';
 import { compile } from './render/render.js';
 import { validate } from './spec/validate.js';
-import { themePresetNames } from './theme/load-theme.js';
+import { buildThemeCatalog, type ThemeCatalog } from './theme/theme-catalog.js';
 import { PACKAGE_NAME, VERSION } from './version.js';
 
 export interface CliIo {
@@ -33,6 +34,8 @@ interface Flags {
   json: boolean;
   out?: string;
   theme?: string;
+  themeFile?: string;
+  themeDiscovery: boolean;
 }
 
 interface ParsedArgs {
@@ -79,6 +82,7 @@ function compileCommand(args: string[], io: CliIo, flags: Flags): number {
   try {
     const result = compile(text, {
       source: file,
+      themeCatalog: themeCatalogFor(flags, io),
       ...(flags.theme === undefined ? {} : { theme: flags.theme }),
     });
 
@@ -104,6 +108,8 @@ function compileCommand(args: string[], io: CliIo, flags: Flags): number {
             hash: result.hash,
             title: result.ir.meta.title,
             theme: result.theme.name,
+            themeBase: result.theme.base,
+            themeChain: result.theme.chain,
             features: result.features,
             nodes: result.ir.nodes.length,
             warnings: result.warnings,
@@ -230,15 +236,27 @@ const COMMANDS: Record<string, Command> = {
     },
   },
   themes: {
-    summary: 'List built-in theme presets.',
-    usage: 'ak-render themes [--json]',
+    summary: 'List available theme presets, including discovered project or user presets.',
+    usage: 'ak-render themes [--theme-file <file>] [--no-theme-discovery] [--json]',
     run: (_args, io, flags) => {
-      const names = themePresetNames();
+      const catalog = themeCatalogFor(flags, io);
+      const names = Object.keys(catalog.entries).sort();
       if (flags.json) {
-        io.stdout(`${JSON.stringify(names, null, 2)}\n`);
+        io.stdout(
+          `${JSON.stringify(
+            catalog.sources.sort((a, b) => (a.name < b.name ? -1 : 1)),
+            null,
+            2,
+          )}\n`,
+        );
         return 0;
       }
-      io.stdout(`${names.join('\n')}\n`);
+      for (const name of names) {
+        const source = catalog.sources.find((entry) => entry.name === name);
+        const origin = source?.origin ?? 'built-in';
+        const file = source?.file;
+        io.stdout(`${name.padEnd(16)} ${origin}${file === undefined ? '' : ` (${file})`}\n`);
+      }
       return 0;
     },
   },
@@ -270,10 +288,24 @@ implied. All commands accept --json and never prompt.
 `;
 }
 
-const VALUE_FLAGS = ['--out', '--theme'] as const;
+const VALUE_FLAGS = ['--out', '--theme', '--theme-file'] as const;
+
+/** Build the preset catalog for this invocation from flags and discovery. */
+function themeCatalogFor(flags: Flags, io: CliIo): ThemeCatalog {
+  const catalog = buildThemeCatalog({
+    cwd: process.cwd(),
+    home: homedir(),
+    ...(flags.themeFile === undefined ? {} : { files: [flags.themeFile] }),
+    discovery: flags.themeDiscovery,
+  });
+  for (const problem of catalog.problems) {
+    io.stderr(`warning: ${problem.path}: ${problem.message}\n`);
+  }
+  return catalog;
+}
 
 function parseArgs(args: string[]): ParsedArgs | { error: string } {
-  const flags: Flags = { json: false };
+  const flags: Flags = { json: false, themeDiscovery: true };
   const positional: string[] = [];
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
@@ -282,12 +314,17 @@ function parseArgs(args: string[]): ParsedArgs | { error: string } {
       flags.json = true;
       continue;
     }
+    if (arg === '--no-theme-discovery') {
+      flags.themeDiscovery = false;
+      continue;
+    }
     const valueFlag = VALUE_FLAGS.find((candidate) => candidate === arg);
     if (valueFlag !== undefined) {
       const value = args[index + 1];
       if (value === undefined) return { error: `${valueFlag} requires a value` };
       if (valueFlag === '--out') flags.out = value;
-      else flags.theme = value;
+      else if (valueFlag === '--theme') flags.theme = value;
+      else flags.themeFile = value;
       index += 1;
       continue;
     }

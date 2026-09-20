@@ -314,3 +314,39 @@ export const DEFAULT_PRESET = 'editorial';
 export function presetNames(): string[] {
   return Object.keys(PRESETS).sort();
 }
+
+/**
+ * A preset in its declarative, catalog-friendly form.
+ *
+ * Built-in presets are complete token sets; a file-authored preset typically
+ * declares `extends` plus overrides. Both are the same shape, so resolution has
+ * one code path.
+ */
+export interface PresetEntry {
+  name: string;
+  version: number;
+  description: string;
+  extends?: string;
+  /** Light-scheme token values. */
+  tokens: Record<string, string>;
+  /** Dark-scheme token values. */
+  dark: Record<string, string>;
+  origin: 'built-in' | 'user' | 'project' | 'file';
+  file?: string;
+}
+
+/** Built-in presets expressed as catalog entries. */
+export function builtinPresetEntries(): Record<string, PresetEntry> {
+  const entries: Record<string, PresetEntry> = {};
+  for (const definition of Object.values(PRESETS)) {
+    entries[definition.name] = {
+      name: definition.name,
+      version: 1,
+      description: definition.description,
+      tokens: { ...definition.light },
+      dark: { ...definition.dark },
+      origin: 'built-in',
+    };
+  }
+  return entries;
+}

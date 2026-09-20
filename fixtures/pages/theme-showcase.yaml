@@ -1,0 +1,104 @@
+version: 1
+
+meta:
+  title: Theme Showcase
+  description: One content spec rendered under every built-in preset
+  locale: en
+
+theme:
+  preset: editorial
+
+policy:
+  network: deny
+
+blocks:
+  - type: hero
+    eyebrow: Theme showcase
+    title: One spec, six presets
+    description: The same content renders consistently under every built-in theme.
+
+  - type: stats
+    items:
+      - label: Presets
+        value: '6'
+      - label: Tokens
+        value: '24'
+      - label: Schemes
+        value: light + dark
+
+  - type: callout
+    tone: info
+    title: Themes are typed data
+    text: A preset sets declared tokens only; it cannot introduce a declaration.
+
+  - type: steps
+    title: How a preset resolves
+    items:
+      - title: Load
+        text: Built-in presets, then user, project, and explicit files.
+      - title: Extend
+        text: Each preset merges over the chain it extends.
+      - title: Complete
+        text: A token left unset falls back to the default preset and warns.
+
+  - type: table
+    title: Token groups
+    columns: [Group, Tokens, Example]
+    rows:
+      - [color, '12', '#1a5fa8']
+      - [typography, '6', 'ui-serif, Georgia, serif']
+      - [spacing, '2', 'comfortable']
+      - [radius and border, '4', '8px']
+
+  - type: chart
+    kind: bar
+    title: Presentation tokens per task
+    labels: [Legacy, AK Render]
+    series:
+      - label: Context tokens
+        values: [22000, 6500]
+
+  - type: carousel
+    ariaLabel: Preset notes
+    items:
+      - title: Built-ins are versioned
+        text: A preset carries a version so a stored theme is traceable.
+      - title: No CSS escape hatch
+        text: A preset cannot inject a stylesheet or a font URL.
+      - title: Two schemes
+        text: Every preset declares a light and a dark token set.
+
+  - type: code
+    id: theme-snippet
+    language: yaml
+    title: Custom preset
+    text: |
+      name: team-theme
+      extends: editorial
+      tokens:
+        color-accent: "#b8860b"
+
+  - type: comparison
+    title: Preset versus stylesheet
+    left:
+      label: Preset
+      items:
+        - Declared tokens only
+        - Validated values
+        - Deterministic output
+    right:
+      label: Stylesheet
+      items:
+        - Arbitrary declarations
+        - Unvalidated input
+        - Unpredictable output
+
+  - type: list
+    title: Built-in presets
+    items:
+      - text: blueprint
+      - text: editorial
+      - text: paper-ink
+      - text: terminal-mono
+      - text: swiss-clean
+      - text: warm-signal

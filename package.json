@@ -52,6 +52,8 @@
     "bench:baseline": "node benchmarks/legacy-context-cost.mjs",
     "schema:generate": "node scripts/generate-json-schema.mjs",
     "schema:check": "node scripts/generate-json-schema.mjs --check",
+    "snapshots:generate": "node scripts/generate-theme-snapshots.mjs",
+    "snapshots:check": "node scripts/generate-theme-snapshots.mjs --check",
     "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {

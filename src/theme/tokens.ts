@@ -121,7 +121,8 @@ export function tokenNames(): string[] {
 }
 
 const COLOR_PATTERN = /^#[0-9a-f]{3}(?:[0-9a-f]{3}(?:[0-9a-f]{2})?)?$/i;
-const LENGTH_PATTERN = /^-?\d+(?:\.\d+)?(?:px|rem|em|%)$/;
+/** CSS length or duration values, in units a preset may safely use. */
+const LENGTH_PATTERN = /^-?\d+(?:\.\d+)?(?:px|rem|em|ch|ex|%|vw|vh|ms|s)$/;
 const FONT_STACK_PATTERN = /^[A-Za-z0-9 ,'"\-._+]+$/;
 
 /** True when a font stack cannot escape a CSS declaration. */
@@ -157,7 +158,10 @@ export function validateTokenValue(token: string, value: unknown): TokenProblem 
     }
     case 'length': {
       if (typeof value !== 'string' || !LENGTH_PATTERN.test(value)) {
-        return { token, message: 'expected a length such as 16px, 1rem, or 100%' };
+        return {
+          token,
+          message: 'expected a length or duration such as 16px, 1rem, 72ch, or 160ms',
+        };
       }
       return undefined;
     }

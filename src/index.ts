@@ -36,8 +36,18 @@ export type { ParseOptions } from './spec/parse.js';
 export { parseSpec } from './spec/parse.js';
 export type { ValidateResult, ValidateSummary } from './spec/validate.js';
 export { validate, validateOrThrow } from './spec/validate.js';
-export type { ResolvedTheme, ThemeInput } from './theme/load-theme.js';
-export { loadTheme, resolveTheme, themePresetNames } from './theme/load-theme.js';
+export type { LoadThemeOptions, ResolvedTheme, ThemeInput } from './theme/load-theme.js';
+export { loadTheme, resolveTheme, themeDiagnostics, themePresetNames } from './theme/load-theme.js';
+export type { PresetEntry } from './theme/presets.js';
+export type { PresetSource, ThemeCatalog, ThemeCatalogOptions } from './theme/theme-catalog.js';
+export {
+  buildThemeCatalog,
+  builtinThemeCatalog,
+  catalogPresetNames,
+  loadPresetFile,
+  parsePresetDocument,
+  themeSearchDirectories,
+} from './theme/theme-catalog.js';
 export type { TokenSpec } from './theme/tokens.js';
 export { TOKEN_SPECS, tokenNames } from './theme/tokens.js';
 export { PACKAGE_NAME, VERSION } from './version.js';

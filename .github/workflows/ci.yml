@@ -65,6 +65,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm test
+      - run: pnpm schema:check
+      - run: pnpm snapshots:check
 
   browser:
     name: Browser tests

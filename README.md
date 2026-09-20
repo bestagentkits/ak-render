@@ -95,34 +95,38 @@ import {
 | --- | --- | --- |
 | `VERSION` | Package version, matching `package.json` | Available |
 | `RenderError`, `isRenderError` | Stable error codes with JSON path and node ID | Available |
-| `render(spec, options)` | Compile a spec to a standalone HTML artifact | Planned (compiler milestone) |
-| `validate(spec)` | Report spec diagnostics without rendering | Planned (schema milestone) |
-| `normalize(spec)` | Produce the flat internal IR | Planned (schema milestone) |
-| `catalog()` | Compact list of available blocks and actions | Planned (catalog milestone) |
-| `describe(type)` | Full machine-readable contract for one entry | Planned (catalog milestone) |
-| `loadTheme(input)` | Validate and resolve a theme preset | Planned (theme milestone) |
+| `render(spec, options)` | Compile a spec to a standalone HTML artifact | Available |
+| `validate(spec)` | Report spec diagnostics without rendering | Available |
+| `normalize(spec)` | Produce the flat internal IR | Available |
+| `catalog()` | Compact list of available blocks and actions | Available |
+| `describe(type)` | Full machine-readable contract for one entry | Available |
+| `loadTheme(input)` | Validate and resolve a theme preset | Available |
+| `buildThemeCatalog(options)` | Discover built-in, user, project, and explicit presets | Available |
 
 ## CLI
 
 ```bash
-ak-render page.yaml --out page.html   # planned
-ak-render validate page.json          # planned
-ak-render catalog                     # planned
-ak-render describe carousel           # planned
+ak-render page.yaml --out page.html
+ak-render validate page.json
+ak-render catalog
+ak-render describe carousel
+ak-render themes
 
-ak-render --help                      # available
-ak-render --version                   # available
+ak-render --help
+ak-render --version
 ```
 
 The CLI only advertises commands it can actually run; the compiler subcommands
 are registered by the milestones that implement them.
 
-## Fixtures
+## Fixtures and snapshots
 
 `fixtures/pages/` holds the representative corpus the compiler is built
-against: plan, explain, recap, diff, dashboard, media, and interactive pages.
-See [fixtures/README.md](./fixtures/README.md). Fixtures are the specification:
-a new capability is not done until a fixture exercises it.
+against: plan, explain, recap, diff, dashboard, media, interactive, and theme
+showcase pages. `fixtures/snapshots/` holds one committed artifact per built-in
+preset. See [fixtures/README.md](./fixtures/README.md) and
+[docs/themes.md](./docs/themes.md). Fixtures are the specification: a new
+capability is not done until a fixture exercises it.
 
 ## Repository layout
 
@@ -131,7 +135,7 @@ a new capability is not done until a fixture exercises it.
 | `src/` | Library and CLI source |
 | `tests/unit/` | Vitest unit and contract tests |
 | `tests/browser/` | Playwright browser tests, including the zero-network audit |
-| `fixtures/` | Representative Page Spec corpus |
+| `fixtures/` | Representative Page Spec corpus and committed cross-preset snapshots |
 | `benchmarks/` | Reproducible measurement harnesses |
 | `docs/adr/` | Architecture decision records |
 | `docs/artifacts/` | Captured measurements and evidence |

@@ -17,6 +17,7 @@ import { isPlainObject } from '../json.js';
 import type { RuntimeFeature } from '../registry/roster.js';
 import { type NormalizeResult, normalizeSpec } from '../spec/normalize.js';
 import { loadTheme, type ResolvedTheme, resolveTheme } from '../theme/load-theme.js';
+import { builtinThemeCatalog, type ThemeCatalog } from '../theme/theme-catalog.js';
 import { type RenderContext, renderNode } from './blocks.js';
 import { assembleDocument } from './document.js';
 import { buildRuntime, needsLiveRegion } from './runtime.js';
@@ -30,6 +31,9 @@ export interface RenderOptions {
   source?: string;
   /** Emit the light/dark toggle. On by default: AgentKit HTML pages require it. */
   themeToggle?: boolean;
+  /** Preset catalog. Defaults to built-ins only; pass a discovered catalog to
+   * resolve project or user presets. */
+  themeCatalog?: ThemeCatalog;
 }
 
 export interface CompileResult {
@@ -153,7 +157,11 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
 
   const ir = normalized.ir;
   const themeBag = new DiagnosticBag();
-  const resolved = resolveTheme(options.theme ?? ir.theme, themeBag);
+  const resolved = resolveTheme(
+    options.theme ?? ir.theme,
+    themeBag,
+    options.themeCatalog ?? builtinThemeCatalog(),
+  );
   const themeErrors = themeBag.errors();
   const firstThemeError = themeErrors[0];
   if (resolved === undefined || firstThemeError !== undefined) {
@@ -220,7 +228,10 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
     ir,
     theme: resolved,
     features: FEATURE_ORDER.filter((feature) => features.has(feature)),
-    warnings: normalized.diagnostics.filter((diagnostic) => diagnostic.severity === 'warning'),
+    warnings: [
+      ...normalized.diagnostics.filter((diagnostic) => diagnostic.severity === 'warning'),
+      ...themeBag.warnings(),
+    ],
   };
 }
 
