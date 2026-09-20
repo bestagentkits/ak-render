@@ -1,0 +1,93 @@
+version: 1
+
+meta:
+  title: Compiler Metrics
+  description: Dashboard covering every chart type
+  locale: en
+
+theme:
+  preset: swiss-clean
+
+policy:
+  network: deny
+
+blocks:
+  - type: hero
+    eyebrow: Dashboard
+    title: Compiler health
+    description: Coverage of every supported chart kind in one page.
+
+  - type: stats
+    items:
+      - label: Unit tests
+        value: '184'
+      - label: Browser tests
+        value: '26'
+      - label: Compile time
+        value: 41ms
+      - label: Output size
+        value: 62kB
+
+  - type: chart
+    kind: bar
+    title: Presentation tokens per task
+    labels: [Legacy, AK Render]
+    series:
+      - label: Context tokens
+        values: [22000, 6500]
+      - label: Output tokens
+        values: [14000, 3100]
+
+  - type: chart
+    kind: line
+    title: Compile time by fixture
+    labels: [plan, explain, recap, diff, dashboard, media, interactive]
+    series:
+      - label: Milliseconds
+        values: [38, 41, 35, 44, 52, 33, 57]
+
+  - type: chart
+    kind: area
+    title: Cumulative test count
+    labels: [W1, W2, W3, W4]
+    series:
+      - label: Tests
+        values: [12, 64, 148, 210]
+
+  - type: chart
+    kind: donut
+    title: Artifact bytes by feature
+    labels: [Base CSS, Runtime, Charts, Icons, Content]
+    series:
+      - label: Bytes
+        values: [18200, 6400, 9800, 2100, 25500]
+
+  - type: chart
+    kind: progress
+    title: Milestone completion
+    labels: [Schema, Compiler, Themes, Runtime, AgentKit, Cloud]
+    series:
+      - label: Percent
+        values: [100, 100, 100, 70, 20, 0]
+
+  - type: chart
+    kind: sparkline
+    title: Determinism hash stability
+    labels: [r1, r2, r3, r4, r5, r6, r7, r8]
+    series:
+      - label: Identical runs
+        values: [100, 100, 100, 100, 100, 100, 100, 100]
+
+  - type: table
+    title: Fixture coverage
+    columns: [Fixture, Blocks, Interactions, Snapshot]
+    rows:
+      - [plan, '8', '0', passed]
+      - [explain, '8', '1', passed]
+      - [interactive, '9', '9', passed]
+      - [media, '4', '2', passed]
+
+  - type: progress
+    label: Cloud renderer
+    value: 15
+    max: 100

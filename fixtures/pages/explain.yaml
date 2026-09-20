@@ -1,0 +1,100 @@
+version: 1
+
+meta:
+  title: How the Page Spec Compiler Works
+  description: Explanation of the declarative compile pipeline
+  locale: en
+
+theme:
+  preset: editorial
+
+policy:
+  network: deny
+
+blocks:
+  - type: hero
+    eyebrow: Explanation
+    title: From Page Spec to standalone artifact
+    description: One constrained input, one deterministic output, no runtime framework.
+
+  - type: text
+    variant: lead
+    text: A Page Spec describes meaning. The compiler decides structure, styling, and behavior.
+
+  - type: code
+    id: spec-example
+    language: yaml
+    title: Minimal spec
+    text: |
+      version: 1
+      meta:
+        title: Example
+      theme:
+        preset: editorial
+      policy:
+        network: deny
+      blocks:
+        - type: text
+          text: Hello
+
+  - type: tabs
+    title: Pipeline stages
+    items:
+      - title: Parse
+        text: JSON or YAML becomes a plain object at the input boundary.
+      - title: Validate
+        text: Schema, bounds, and policy checks report stable diagnostics.
+      - title: Normalize
+        text: Nested authoring input becomes a flat node graph with stable IDs.
+      - title: Render
+        text: Registry resolution, theme resolution, and block rendering.
+      - title: Assemble
+        text: Only used assets and runtime features are emitted.
+
+  - type: alert
+    tone: info
+    title: Determinism is observable
+    text: Identical normalized input and options produce byte-identical output.
+
+  - type: diagram-panel
+    title: Trust boundary
+    spec:
+      schema_version: 1
+      diagram_type: architecture
+      meta:
+        title: Trust boundary
+      components:
+        - id: spec
+          label: Untrusted Page Spec
+          role: frontend
+        - id: compiler
+          label: Compiler
+          role: worker
+        - id: artifact
+          label: Trusted Artifact
+          role: database
+      connections:
+        - from: spec
+          to: compiler
+          label: validated input
+        - from: compiler
+          to: artifact
+          label: escaped output
+
+  - type: rich-text
+    text: |
+      Escaping happens at emission, not at parse time, so a value that is safe in
+      one context is not assumed safe in another. URLs are allowlisted per action
+      and per widget, and embedded JSON is serialized for a script context.
+
+  - type: key-value
+    title: Guarantees
+    items:
+      - key: Network
+        value: Denied unless the spec opts in
+      - key: Scripts
+        value: Compiler-owned only
+      - key: Fonts
+        value: No remote fetches
+      - key: Focus
+        value: Visible and keyboard-reachable

@@ -1,0 +1,73 @@
+version: 1
+
+meta:
+  title: Media Gallery
+  description: Local media with network-denied fallbacks
+  locale: en
+
+theme:
+  preset: warm-signal
+
+policy:
+  network: deny
+
+blocks:
+  - type: hero
+    eyebrow: Media
+    title: Local assets first
+    description: Network media degrades to a safe poster and link unless the spec opts in.
+
+  - type: callout
+    tone: info
+    title: Default policy is network deny
+    text: A video or audio block emits a poster, its metadata, and a link instead of a remote embed.
+
+  - type: gallery
+    title: Screenshots
+    columns: 3
+    items:
+      - src: assets/compiler-pipeline.svg
+        alt: Compiler pipeline diagram
+        caption: Compile pipeline
+      - src: assets/theme-presets.svg
+        alt: Six theme presets side by side
+        caption: Built-in presets
+      - src: assets/interaction-trace.svg
+        alt: Interaction test trace
+        caption: Interaction coverage
+
+  - type: carousel
+    ariaLabel: Feature previews
+    items:
+      - title: Declarative input
+        text: A spec describes meaning; the compiler owns the rest.
+      - title: Deterministic output
+        text: Same input, same bytes, every time.
+      - title: Offline artifact
+        text: Opens from disk with no network requests.
+
+  - type: video
+    id: demo-video
+    title: Compiler walkthrough
+    poster: assets/demo-poster.svg
+    caption: 4 minutes
+    src: https://media.example.com/walkthrough.mp4
+    fallback:
+      description: A walkthrough of the compiler pipeline and the emitted artifact.
+      linkText: Open the recording
+      url: https://media.example.com/walkthrough
+
+  - type: audio
+    id: intro-audio
+    title: Introduction
+    caption: 90 seconds
+    src: https://media.example.com/intro.mp3
+    fallback:
+      description: A short spoken introduction to the declarative page model.
+      linkText: Open the recording
+      url: https://media.example.com/intro
+
+  - type: image
+    src: assets/cover.svg
+    alt: Cover illustration for the media fixture
+    caption: Local images render directly; no remote fetch is attempted.

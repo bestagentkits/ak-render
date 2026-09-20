@@ -1,0 +1,78 @@
+version: 1
+
+meta:
+  title: Sprint Recap
+  description: Recent delivery recap
+  locale: en
+
+theme:
+  preset: paper-ink
+
+policy:
+  network: deny
+
+blocks:
+  - type: hero
+    eyebrow: Recap
+    title: Two weeks of compiler work
+    description: What shipped, what slipped, and what comes next.
+
+  - type: stats
+    items:
+      - label: Merged commits
+        value: '42'
+      - label: Fixtures added
+        value: '7'
+      - label: Open questions
+        value: '3'
+      - label: Regressions
+        value: '0'
+
+  - type: chart
+    kind: line
+    title: Review latency (hours)
+    labels: [W1 Mon, W1 Wed, W1 Fri, W2 Mon, W2 Wed, W2 Fri]
+    series:
+      - label: Median
+        values: [9, 7, 6, 5, 4, 3]
+
+  - type: chart
+    kind: sparkline
+    title: Compiler test count
+    labels: [d1, d2, d3, d4, d5, d6, d7]
+    series:
+      - label: Tests
+        values: [3, 9, 14, 22, 31, 38, 47]
+
+  - type: timeline
+    title: Highlights
+    items:
+      - when: Day 1
+        title: Repository baseline
+        text: License, CI, and the architecture decision record.
+      - when: Day 4
+        title: Schema draft
+        text: Page Spec v1 envelope accepted.
+      - when: Day 8
+        title: Interaction runtime
+        text: Declarative actions with native controls first.
+
+  - type: card-grid
+    title: Decisions
+    items:
+      - title: No CSS escape hatch
+        text: Themes are typed tokens; a page cannot inject stylesheets.
+      - title: Native controls first
+        text: JavaScript exists only where the platform cannot do the job.
+      - title: Cloud is opt-in
+        text: Local compilation stays canonical and offline.
+
+  - type: list
+    title: Follow-ups
+    items:
+      - text: Confirm the retention default for share artifacts
+        badge: open
+      - text: Record after-migration benchmark numbers
+        badge: pending
+      - text: Migrate remaining HTML producers
+        badge: blocked

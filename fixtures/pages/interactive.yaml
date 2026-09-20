@@ -1,0 +1,159 @@
+version: 1
+
+meta:
+  title: Interaction Coverage
+  description: Every supported interaction in one page
+  locale: en
+
+theme:
+  preset: editorial
+
+policy:
+  network: deny
+
+state:
+  mode: basic
+  query: ''
+  view: overview
+
+blocks:
+  - type: hero
+    eyebrow: Interactive
+    title: Every interaction, declared not scripted
+    description: Buttons, sliders, carousels, tabs, accordion, copy, filter, theme, and dialog.
+
+  - type: toolbar
+    title: Actions
+    items:
+      - type: badge
+        text: Theme
+      - type: button
+        id: theme-toggle
+        label: Toggle theme
+        on:
+          click:
+            action: theme
+            value: toggle
+      - type: button
+        id: open-dialog
+        label: Open details
+        on:
+          click:
+            action: toggle
+            target: details-dialog
+      - type: button
+        id: copy-spec
+        label: Copy spec
+        on:
+          click:
+            action: copy
+            target: interactive-snippet
+      - type: button
+        id: download-spec
+        label: Download spec
+        on:
+          click:
+            action: download
+            target: interactive-snippet
+            filename: interactive.yaml
+
+  - type: code
+    id: interactive-snippet
+    language: yaml
+    title: Declarative action
+    text: |
+      on:
+        click:
+          action: set-value
+          path: state.mode
+          value: advanced
+
+  - type: slider
+    id: confidence
+    label: Confidence
+    min: 0
+    max: 100
+    step: 5
+    value: 80
+    on:
+      change:
+        action: set-value
+        path: state.confidence
+
+  - type: tabs
+    id: mode-tabs
+    title: Mode
+    on:
+      select:
+        action: set-value
+        path: state.mode
+    items:
+      - id: tab-basic
+        title: Basic
+        text: The default presentation with concise content.
+      - id: tab-advanced
+        title: Advanced
+        text: Adds diagnostics, thresholds, and raw values.
+      - id: tab-raw
+        title: Raw
+        text: Shows the normalized node graph.
+
+  - type: carousel
+    id: steps-carousel
+    ariaLabel: Guided steps
+    on:
+      change:
+        action: set-value
+        path: state.step
+    items:
+      - title: Step one
+        text: Slides respond to buttons, keyboard, and swipe.
+      - title: Step two
+        text: Focus follows the active slide without trapping the user.
+      - title: Step three
+        text: Reduced motion is respected when the user asks for it.
+
+  - type: accordion
+    id: faq
+    title: Details
+    items:
+      - title: Why no page-authored script?
+        text: Script in a spec is an unbounded executable surface and breaks determinism.
+      - title: Why native controls first?
+        text: The platform already implements keyboard and assistive behavior correctly.
+      - title: Why a closed action list?
+        text: A closed vocabulary can be validated, tested, and reviewed.
+
+  - type: search
+    id: fixture-search
+    label: Filter fixtures
+    placeholder: Filter by name
+    on:
+      filter:
+        action: filter
+        target: fixture-list
+        match: text
+
+  - type: list
+    id: fixture-list
+    title: Fixtures
+    items:
+      - text: plan.yaml
+      - text: explain.yaml
+      - text: recap.yaml
+      - text: diff.yaml
+      - text: dashboard.yaml
+      - text: media.yaml
+      - text: interactive.yaml
+
+  - type: dialog
+    id: details-dialog
+    title: Runtime details
+    ariaLabel: Runtime details
+    text: Event delegation reads action data attributes; state changes update ARIA without a framework.
+    actions:
+      - label: Close
+        on:
+          click:
+            action: toggle
+            target: details-dialog

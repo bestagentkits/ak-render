@@ -1,0 +1,99 @@
+version: 1
+
+meta:
+  title: Change Review
+  description: Diff review for a compiler change
+  locale: en
+
+theme:
+  preset: terminal-mono
+
+policy:
+  network: deny
+
+blocks:
+  - type: hero
+    eyebrow: Review
+    title: Deterministic escaping pass
+    description: Adds emission-time escaping and the injection fixture suite.
+
+  - type: stats
+    items:
+      - label: Files changed
+        value: '12'
+      - label: Additions
+        value: '418'
+      - label: Deletions
+        value: '96'
+      - label: Review cards
+        value: '4'
+
+  - type: diff-summary
+    title: Changed files
+    items:
+      - path: src/escape.ts
+        status: added
+        additions: 88
+        deletions: 0
+      - path: src/emit.ts
+        status: modified
+        additions: 140
+        deletions: 61
+      - path: tests/security/injection.test.ts
+        status: added
+        additions: 190
+        deletions: 0
+      - path: docs/adr/0001-page-spec-compiler-boundary.md
+        status: modified
+        additions: 0
+        deletions: 35
+
+  - type: comparison
+    title: Escaping strategy
+    left:
+      label: Before
+      items:
+        - Escape applied while parsing
+        - Context assumed safe after validation
+        - Attribute values escaped once
+    right:
+      label: After
+      items:
+        - Escape applied at emission per context
+        - URL schemes allowlisted per action
+        - Embedded JSON serialized for script context
+
+  - type: risk-matrix
+    title: Risk assessment
+    severity: [low, medium, high]
+    items:
+      - area: Escaping regression
+        impact: high
+        likelihood: low
+        note: Covered by the injection fixture suite.
+      - area: Output byte drift
+        impact: medium
+        likelihood: medium
+        note: Expected once; snapshots update in the same commit.
+      - area: Performance
+        impact: low
+        likelihood: low
+        note: Escaping is linear in output size.
+
+  - type: code-review
+    title: Review cards
+    items:
+      - kind: good
+        title: Emission-time escaping
+        text: Context is explicit at the call site, which removes a whole class of ordering bugs.
+      - kind: concern
+        title: Snapshot churn
+        text: Every escaping change rewrites snapshots; keep the diff reviewable per block type.
+      - kind: question
+        title: URL policy source
+        text: Confirm the allowlist lives in one module and is reused by actions and widgets.
+
+  - type: callout
+    tone: danger
+    title: Do not merge without the injection suite
+    text: The escaping pass is only as good as the fixtures that try to break it.

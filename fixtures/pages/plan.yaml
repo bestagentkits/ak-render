@@ -1,0 +1,109 @@
+version: 1
+
+meta:
+  title: AK Render Migration Plan
+  description: Staged delivery plan for the declarative page compiler
+  locale: en
+
+theme:
+  preset: blueprint
+
+policy:
+  network: deny
+
+blocks:
+  - type: hero
+    eyebrow: Plan
+    title: Ship the declarative page compiler
+    description: Replace skill-owned presentation code with a deterministic Page Spec compiler.
+
+  - type: stats
+    items:
+      - label: Milestones
+        value: '10'
+      - label: Fixtures
+        value: '7'
+      - label: Target token cut
+        value: 60%
+
+  - type: callout
+    tone: warning
+    title: Package publication requires registry credentials
+    text: Prepare and verify the release workflow even when publishing is blocked.
+
+  - type: steps
+    title: Delivery order
+    items:
+      - title: Page Spec and normalizer
+        text: Schema, YAML boundary, migrations, and stable node IDs.
+      - title: Compiler core
+        text: Escaping, determinism, CSP, and tree-shaken assets.
+      - title: Interaction runtime
+        text: Declarative actions with native controls first.
+      - title: AgentKit adoption
+        text: Emit specs from skills; keep facts in the invoking skill.
+
+  - type: timeline
+    title: Schedule
+    items:
+      - when: Week 1
+        title: Schema freeze
+        text: Page Spec v1 accepted with migration policy.
+      - when: Week 2
+        title: Compiler and themes
+        text: Deterministic output with six built-in presets.
+      - when: Week 3
+        title: Runtime
+        text: Browser-tested interactions across input methods.
+
+  - type: table
+    title: Milestone risk
+    columns: [Milestone, Risk, Mitigation]
+    rows:
+      - [Compiler core, Escaping gaps, Injection fixture suite]
+      - [Runtime, Keyboard drift, Browser tests per interaction]
+      - [Cloud, Scope confusion, Render and share permissions split]
+
+  - type: diagram-panel
+    title: Compiler pipeline
+    spec:
+      schema_version: 1
+      diagram_type: dataflow
+      meta:
+        title: Compile pipeline
+      stages:
+        - id: input
+          label: Input
+          order: 0
+        - id: core
+          label: Compile
+          order: 1
+        - id: output
+          label: Artifact
+          order: 2
+      nodes:
+        - id: spec
+          label: Page Spec
+          role: source
+          stage: input
+        - id: normalize
+          label: Normalizer
+          role: transform
+          stage: core
+        - id: html
+          label: Standalone HTML
+          role: store
+          stage: output
+      flows:
+        - from: spec
+          to: normalize
+        - from: normalize
+          to: html
+
+  - type: accordion
+    title: Open questions
+    items:
+      - title: Retention default for share artifacts
+        text: Adopt the existing AgentKit retention policy when one is authoritative.
+      - title: Editor integration
+        text: Out of scope until the compiler and runtime are stable.

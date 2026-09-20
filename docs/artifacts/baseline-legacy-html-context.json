@@ -1,0 +1,481 @@
+{
+  "artifact": "baseline-legacy-html-context",
+  "producer": "benchmarks/legacy-context-cost.mjs",
+  "method": {
+    "tokenEstimate": "Estimated from character count at 4 chars/token (point), bounded by 4.5 and 3.5 chars/token. Exact tokenizer counts are not claimed.",
+    "scope": "Presentation guidance the legacy shared HTML contract instructs a run to load. Does not include skill bodies, fixture content, model output, or retries.",
+    "agentkitRoot": "/home/orca/orca/workspaces/agentkit/feat-render-ak-render-declarative-interactive-pa",
+    "agentkitRevision": "1035b17c"
+  },
+  "totals": {
+    "referenceFiles": 16,
+    "chars": 181558,
+    "estimatedTokens": {
+      "low": 40347,
+      "point": 45390,
+      "high": 51874
+    },
+    "largestTaskTokens": 40631,
+    "smallestTaskTokens": 3203,
+    "meanTaskTokens": 33669
+  },
+  "references": [
+    {
+      "group": "shared-contract",
+      "path": "kits/core/skills/ak-preview/references/html-skill-composition.md",
+      "bytes": 4709,
+      "chars": 4697,
+      "words": 590,
+      "lines": 72,
+      "estimatedTokens": {
+        "low": 1044,
+        "point": 1175,
+        "high": 1342
+      }
+    },
+    {
+      "group": "shared-contract",
+      "path": "kits/core/skills/ak-preview/references/html-mode-workflow.md",
+      "bytes": 5655,
+      "chars": 5642,
+      "words": 707,
+      "lines": 71,
+      "estimatedTokens": {
+        "low": 1254,
+        "point": 1411,
+        "high": 1612
+      }
+    },
+    {
+      "group": "always-loaded",
+      "path": "kits/core/skills/ak-preview/references/html-design-guidelines.md",
+      "bytes": 15750,
+      "chars": 15655,
+      "words": 2170,
+      "lines": 394,
+      "estimatedTokens": {
+        "low": 3479,
+        "point": 3914,
+        "high": 4473
+      }
+    },
+    {
+      "group": "mode-specific",
+      "path": "kits/core/skills/ak-preview/references/html-css-patterns.md",
+      "bytes": 41636,
+      "chars": 41498,
+      "words": 5014,
+      "lines": 1718,
+      "estimatedTokens": {
+        "low": 9222,
+        "point": 10375,
+        "high": 11857
+      }
+    },
+    {
+      "group": "mode-specific",
+      "path": "kits/core/skills/ak-preview/references/html-libraries.md",
+      "bytes": 21597,
+      "chars": 21493,
+      "words": 2851,
+      "lines": 605,
+      "estimatedTokens": {
+        "low": 4777,
+        "point": 5374,
+        "high": 6141
+      }
+    },
+    {
+      "group": "mode-specific",
+      "path": "kits/core/skills/ak-preview/references/html-responsive-nav.md",
+      "bytes": 5817,
+      "chars": 5805,
+      "words": 724,
+      "lines": 213,
+      "estimatedTokens": {
+        "low": 1290,
+        "point": 1452,
+        "high": 1659
+      }
+    },
+    {
+      "group": "mode-specific",
+      "path": "kits/core/skills/ak-preview/references/html-slide-patterns.md",
+      "bytes": 40110,
+      "chars": 39991,
+      "words": 4803,
+      "lines": 1402,
+      "estimatedTokens": {
+        "low": 8887,
+        "point": 9998,
+        "high": 11426
+      }
+    },
+    {
+      "group": "editorial-alternates",
+      "path": "kits/core/skills/ak-preview/references/html-diagram-design.md",
+      "bytes": 8742,
+      "chars": 8710,
+      "words": 1099,
+      "lines": 157,
+      "estimatedTokens": {
+        "low": 1936,
+        "point": 2178,
+        "high": 2489
+      }
+    },
+    {
+      "group": "editorial-alternates",
+      "path": "kits/core/skills/ak-preview/references/html-antv-infographic.md",
+      "bytes": 7647,
+      "chars": 7609,
+      "words": 1004,
+      "lines": 141,
+      "estimatedTokens": {
+        "low": 1691,
+        "point": 1903,
+        "high": 2174
+      }
+    },
+    {
+      "group": "preview-routing",
+      "path": "kits/core/skills/ak-preview/references/generation-modes.md",
+      "bytes": 8376,
+      "chars": 8350,
+      "words": 1156,
+      "lines": 211,
+      "estimatedTokens": {
+        "low": 1856,
+        "point": 2088,
+        "high": 2386
+      }
+    },
+    {
+      "group": "preview-routing",
+      "path": "kits/core/skills/ak-preview/references/view-mode.md",
+      "bytes": 1378,
+      "chars": 1378,
+      "words": 179,
+      "lines": 44,
+      "estimatedTokens": {
+        "low": 307,
+        "point": 345,
+        "high": 394
+      }
+    },
+    {
+      "group": "preview-routing",
+      "path": "kits/core/skills/ak-preview/references/visual-explanation-routing.md",
+      "bytes": 1693,
+      "chars": 1693,
+      "words": 244,
+      "lines": 40,
+      "estimatedTokens": {
+        "low": 377,
+        "point": 424,
+        "high": 484
+      }
+    },
+    {
+      "group": "diagram-engine",
+      "path": "kits/engineer/skills/ak-diagram/references/typed-ir.md",
+      "bytes": 6228,
+      "chars": 6228,
+      "words": 841,
+      "lines": 160,
+      "estimatedTokens": {
+        "low": 1384,
+        "point": 1557,
+        "high": 1780
+      }
+    },
+    {
+      "group": "project-blocks",
+      "path": "kits/engineer/skills/ak-page-builder/references/block-contract.md",
+      "bytes": 3683,
+      "chars": 3683,
+      "words": 513,
+      "lines": 69,
+      "estimatedTokens": {
+        "low": 819,
+        "point": 921,
+        "high": 1053
+      }
+    },
+    {
+      "group": "project-blocks",
+      "path": "kits/engineer/skills/ak-page-builder/references/widget-sizing.md",
+      "bytes": 5130,
+      "chars": 5130,
+      "words": 723,
+      "lines": 89,
+      "estimatedTokens": {
+        "low": 1140,
+        "point": 1283,
+        "high": 1466
+      }
+    },
+    {
+      "group": "project-blocks",
+      "path": "kits/engineer/skills/ak-page-builder/references/agent-interfaces.md",
+      "bytes": 3996,
+      "chars": 3996,
+      "words": 509,
+      "lines": 70,
+      "estimatedTokens": {
+        "low": 888,
+        "point": 999,
+        "high": 1142
+      }
+    }
+  ],
+  "tasks": [
+    {
+      "id": "explain-html",
+      "skill": "ak:explain",
+      "mode": "--html",
+      "referenceCount": 7,
+      "chars": 134781,
+      "estimatedTokens": {
+        "low": 29952,
+        "point": 33696,
+        "high": 38509
+      }
+    },
+    {
+      "id": "explain-diagram",
+      "skill": "ak:explain",
+      "mode": "--diagram",
+      "referenceCount": 8,
+      "chars": 141009,
+      "estimatedTokens": {
+        "low": 31336,
+        "point": 35253,
+        "high": 40289
+      }
+    },
+    {
+      "id": "explain-slides",
+      "skill": "ak:explain",
+      "mode": "--slides",
+      "referenceCount": 7,
+      "chars": 134781,
+      "estimatedTokens": {
+        "low": 29952,
+        "point": 33696,
+        "high": 38509
+      }
+    },
+    {
+      "id": "brainstorm-html",
+      "skill": "ak:brainstorm",
+      "mode": "--html",
+      "referenceCount": 7,
+      "chars": 134781,
+      "estimatedTokens": {
+        "low": 29952,
+        "point": 33696,
+        "high": 38509
+      }
+    },
+    {
+      "id": "plan-review-engineer",
+      "skill": "ak:plan (Engineer)",
+      "mode": "--html",
+      "referenceCount": 7,
+      "chars": 134781,
+      "estimatedTokens": {
+        "low": 29952,
+        "point": 33696,
+        "high": 38509
+      }
+    },
+    {
+      "id": "plan-review-marketing",
+      "skill": "ak:plan (Marketing)",
+      "mode": "--html",
+      "referenceCount": 7,
+      "chars": 134781,
+      "estimatedTokens": {
+        "low": 29952,
+        "point": 33696,
+        "high": 38509
+      }
+    },
+    {
+      "id": "plan-html-diagram-panel",
+      "skill": "ak:plan (Engineer)",
+      "mode": "--html + diagram",
+      "referenceCount": 8,
+      "chars": 141009,
+      "estimatedTokens": {
+        "low": 31336,
+        "point": 35253,
+        "high": 40289
+      }
+    },
+    {
+      "id": "plan-html-kpi-panel",
+      "skill": "ak:plan (Engineer)",
+      "mode": "--html + KPI panel",
+      "referenceCount": 9,
+      "chars": 151100,
+      "estimatedTokens": {
+        "low": 33578,
+        "point": 37775,
+        "high": 43172
+      }
+    },
+    {
+      "id": "preview-diff",
+      "skill": "ak:preview",
+      "mode": "--diff",
+      "referenceCount": 10,
+      "chars": 146202,
+      "estimatedTokens": {
+        "low": 32490,
+        "point": 36551,
+        "high": 41772
+      }
+    },
+    {
+      "id": "preview-plan-review",
+      "skill": "ak:preview",
+      "mode": "--plan-review",
+      "referenceCount": 10,
+      "chars": 146202,
+      "estimatedTokens": {
+        "low": 32490,
+        "point": 36551,
+        "high": 41772
+      }
+    },
+    {
+      "id": "preview-recap",
+      "skill": "ak:preview",
+      "mode": "--recap",
+      "referenceCount": 10,
+      "chars": 146202,
+      "estimatedTokens": {
+        "low": 32490,
+        "point": 36551,
+        "high": 41772
+      }
+    },
+    {
+      "id": "preview-diagram",
+      "skill": "ak:preview",
+      "mode": "--diagram",
+      "referenceCount": 11,
+      "chars": 152430,
+      "estimatedTokens": {
+        "low": 33874,
+        "point": 38108,
+        "high": 43552
+      }
+    },
+    {
+      "id": "preview-slides",
+      "skill": "ak:preview",
+      "mode": "--slides",
+      "referenceCount": 10,
+      "chars": 146202,
+      "estimatedTokens": {
+        "low": 32490,
+        "point": 36551,
+        "high": 41772
+      }
+    },
+    {
+      "id": "preview-editorial-architecture",
+      "skill": "ak:preview",
+      "mode": "--diagram + editorial",
+      "referenceCount": 12,
+      "chars": 162521,
+      "estimatedTokens": {
+        "low": 36116,
+        "point": 40631,
+        "high": 46435
+      }
+    },
+    {
+      "id": "show-off",
+      "skill": "ak:show-off",
+      "mode": "always HTML",
+      "referenceCount": 7,
+      "chars": 134781,
+      "estimatedTokens": {
+        "low": 29952,
+        "point": 33696,
+        "high": 38509
+      }
+    },
+    {
+      "id": "retro-html",
+      "skill": "ak:retro",
+      "mode": "--format html",
+      "referenceCount": 7,
+      "chars": 134781,
+      "estimatedTokens": {
+        "low": 29952,
+        "point": 33696,
+        "high": 38509
+      }
+    },
+    {
+      "id": "advise-html",
+      "skill": "ak:advise",
+      "mode": "--html",
+      "referenceCount": 7,
+      "chars": 134781,
+      "estimatedTokens": {
+        "low": 29952,
+        "point": 33696,
+        "high": 38509
+      }
+    },
+    {
+      "id": "cti-html",
+      "skill": "ak:cti-expert",
+      "mode": "--format html",
+      "referenceCount": 7,
+      "chars": 134781,
+      "estimatedTokens": {
+        "low": 29952,
+        "point": 33696,
+        "high": 38509
+      }
+    },
+    {
+      "id": "issue-to-plan-html",
+      "skill": "ak:issue-to-plan",
+      "mode": "delegates ak:plan --html",
+      "referenceCount": 7,
+      "chars": 134781,
+      "estimatedTokens": {
+        "low": 29952,
+        "point": 33696,
+        "high": 38509
+      }
+    },
+    {
+      "id": "page-builder-blocks",
+      "skill": "ak:page-builder",
+      "mode": "project block integration",
+      "referenceCount": 3,
+      "chars": 12809,
+      "estimatedTokens": {
+        "low": 2847,
+        "point": 3203,
+        "high": 3660
+      }
+    }
+  ],
+  "notMeasured": [
+    "model output tokens for HTML-producing tasks (requires live model runs)",
+    "wall-clock generation time (requires live model runs)",
+    "retries and repair count (requires live model runs)",
+    "emitted HTML bytes for legacy tasks (no committed legacy artifact corpus in AgentKit; capture during A/B fixtures)",
+    "browser console errors, network requests, a11y failures, and viewport overflow for legacy output (requires the A/B fixture harness)"
+  ]
+}
