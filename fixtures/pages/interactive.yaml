@@ -134,6 +134,42 @@ blocks:
         target: fixture-list
         match: text
 
+  - type: button
+    id: expand-faq
+    label: Expand first section
+    on:
+      click:
+        action: expand
+        target: faq-item-0
+
+  - type: button
+    id: collapse-faq
+    label: Collapse first section
+    on:
+      click:
+        action: collapse
+        target: faq-item-0
+
+  - type: button
+    id: open-docs
+    label: Open docs
+    on:
+      click:
+        action: open-url
+        url: https://agentkit.best/docs
+
+  - type: slider
+    id: scale
+    label: Scale
+    min: 0
+    max: 10
+    step: 1
+    value: 5
+    on:
+      change:
+        action: set-value
+        path: state.scale
+
   - type: list
     id: fixture-list
     title: Fixtures

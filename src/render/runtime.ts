@@ -243,9 +243,9 @@ function selectTab(container, action, fireFn) {
     var active = tabs.findIndex(function (tab) { return tab.getAttribute('aria-selected') === 'true'; });
     if (active >= 0 && typeof action.index !== 'number' && !action.tabId) index = active;
   }
-  activateTab(container, index, true, fireFn);
+  activateTab(container, index, true, fireFn, true);
 }
-function activateTab(container, index, moveFocus, fireFn) {
+function activateTab(container, index, moveFocus, fireFn, announceChange) {
   var tabs = qa('[role="tab"]', container);
   qa('[role="tabpanel"]', container).forEach(function (panel, panelIndex) {
     var selected = panelIndex === index;
@@ -258,12 +258,14 @@ function activateTab(container, index, moveFocus, fireFn) {
     tab.tabIndex = selected ? 0 : -1;
   });
   if (moveFocus && tabs[index]) tabs[index].focus();
-  announce('Tab ' + (index + 1) + ' of ' + tabs.length);
+  // Only a user-driven change is worth announcing. Announcing the initial
+  // selection would make every page with tabs talk on load.
+  if (announceChange) announce('Tab ' + (index + 1) + ' of ' + tabs.length);
   if (fireFn) fireFn(container, 'select', { index: index });
 }
 function wireTabs() {
   qa('[data-ak-tabs]').forEach(function (container) {
-    activateTab(container, 0, false, fire);
+    activateTab(container, 0, false, fire, false);
     qa('[role="tab"]', container).forEach(function (tab, index) {
       tab.addEventListener('click', function () { selectTab(container, { index: index }, fire); }, false);
       tab.addEventListener('keydown', function (event) {
@@ -276,7 +278,7 @@ function wireTabs() {
         else if (event.key === 'ArrowLeft') current = (index - 1 + total) % total;
         else if (event.key === 'Home') current = 0;
         else current = total - 1;
-        activateTab(container, current, true, fire);
+        activateTab(container, current, true, fire, true);
       }, false);
     });
   });

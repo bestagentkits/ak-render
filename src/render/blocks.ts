@@ -640,9 +640,14 @@ const RENDERERS: Record<string, Renderer> = {
         items
           .map(
             (item, index) =>
-              `<details${index === 0 ? ' open' : ''}><summary>${escapeText(
-                str(item.title),
-              )}</summary><p>${escapeText(str(item.text))}</p></details>`,
+              // Each disclosure carries its own id so a declarative expand or
+              // collapse action can address one section. Native <details> remains
+              // the behavior; the action only drives it.
+              `<details${index === 0 ? ' open' : ''}${renderAttributes({
+                'data-ak-id': `${node.id}-item-${index}`,
+              })}><summary>${escapeText(str(item.title))}</summary><p>${escapeText(
+                str(item.text),
+              )}</p></details>`,
           )
           .join(''),
       ].join(''),

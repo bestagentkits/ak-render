@@ -1,4 +1,12 @@
-import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,8 +21,15 @@ const fixtures = readdirSync(pagesDir).filter((name) => name.endsWith('.yaml'));
 const workspace = mkdtempSync(join(tmpdir(), 'ak-render-artifacts-'));
 
 // Local assets are referenced relatively, so they must exist beside the emitted
-// artifact for an offline load to be complete.
-cpSync(assetsDir, join(workspace, 'assets'), { recursive: true });
+// artifact for an offline load to be complete. Rebuilt on demand because a
+// retry or a parallel worker may have cleaned up an earlier copy.
+function ensureWorkspace(): string {
+  mkdirSync(workspace, { recursive: true });
+  cpSync(assetsDir, join(workspace, 'assets'), { recursive: true, force: true });
+  return workspace;
+}
+
+ensureWorkspace();
 
 test.afterAll(() => {
   rmSync(workspace, { recursive: true, force: true });
@@ -30,7 +45,7 @@ test.describe('compiled artifacts open from disk with zero network access', () =
     test(fixture, async ({ page }) => {
       const source = readFileSync(`${pagesDir}/${fixture}`, 'utf8');
       const result = compile(source, { source: fixture });
-      const target = join(workspace, fixture.replace(/\.yaml$/u, '.html'));
+      const target = join(ensureWorkspace(), fixture.replace(/\.yaml$/u, '.html'));
       writeFileSync(target, result.html, 'utf8');
 
       const consoleErrors: string[] = [];
@@ -54,7 +69,7 @@ test.describe('compiled artifacts open from disk with zero network access', () =
 test.describe('emitted interactions work from disk', () => {
   test('theme toggle switches the document theme and persists it', async ({ page }) => {
     const source = readFileSync(`${pagesDir}/interactive.yaml`, 'utf8');
-    const target = join(workspace, 'interactive-actions.html');
+    const target = join(ensureWorkspace(), 'interactive-actions.html');
     writeFileSync(target, compile(source).html, 'utf8');
     await page.goto(`file://${target}`, { waitUntil: 'load' });
 
@@ -70,7 +85,7 @@ test.describe('emitted interactions work from disk', () => {
     page,
   }) => {
     const source = readFileSync(`${pagesDir}/interactive.yaml`, 'utf8');
-    const target = join(workspace, 'interactive-copy.html');
+    const target = join(ensureWorkspace(), 'interactive-copy.html');
     writeFileSync(target, compile(source).html, 'utf8');
     await page.goto(`file://${target}`, { waitUntil: 'load' });
 

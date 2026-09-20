@@ -89,7 +89,7 @@ export function assembleDocument(input: DocumentInput): AssembledDocument {
     ? `<div class="ak-sr" data-ak-live role="status" aria-live="polite"></div>`
     : '';
   const themeToggle = input.themeToggle
-    ? `<div class="ak-page-bar"><button type="button" class="ak-btn ak-theme-toggle" data-ak-theme-toggle aria-pressed="false">Dark</button></div>`
+    ? `<div class="ak-page-bar"><button type="button" class="ak-btn ak-theme-toggle" data-ak-theme-toggle aria-pressed="false" aria-label="Toggle dark theme">Dark</button></div>`
     : '';
   const description =
     meta.description === undefined
