@@ -50,13 +50,19 @@
     "test:browser": "playwright test",
     "test:package": "node scripts/package-smoke.mjs",
     "bench:baseline": "node benchmarks/legacy-context-cost.mjs",
+    "schema:generate": "node scripts/generate-json-schema.mjs",
+    "schema:check": "node scripts/generate-json-schema.mjs --check",
     "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.12",
     "@playwright/test": "^1.56.0",
     "@types/node": "^22.15.0",
+    "ajv": "^8.17.1",
     "typescript": "^6.0.3",
     "vitest": "^4.1.5"
+  },
+  "dependencies": {
+    "yaml": "^2.8.3"
   }
 }

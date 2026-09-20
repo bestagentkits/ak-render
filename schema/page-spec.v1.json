@@ -1,0 +1,2498 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentkit.best/schema/page-spec.v1.json",
+  "title": "AgentKit Page Spec",
+  "description": "Declarative page description compiled by @agentkit/render into deterministic, offline, interactive HTML.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "meta",
+    "blocks"
+  ],
+  "properties": {
+    "version": {
+      "const": 1,
+      "description": "Page Spec schema version."
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 400
+        },
+        "locale": {
+          "type": "string",
+          "maxLength": 35
+        },
+        "slug": {
+          "type": "string",
+          "maxLength": 120
+        }
+      }
+    },
+    "theme": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "preset": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "extends": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "tokens": {
+          "type": "object"
+        }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "network": {
+          "oneOf": [
+            {
+              "const": "deny"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "allow"
+              ],
+              "properties": {
+                "allow": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 8,
+                  "items": {
+                    "enum": [
+                      "media",
+                      "fonts",
+                      "images"
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "state": {
+      "type": "object",
+      "maxProperties": 200,
+      "additionalProperties": {
+        "type": [
+          "string",
+          "number",
+          "boolean",
+          "null"
+        ]
+      }
+    },
+    "blocks": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "items": {
+        "$ref": "#/$defs/block"
+      }
+    }
+  },
+  "$defs": {
+    "block": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/block-page"
+        },
+        {
+          "$ref": "#/$defs/block-section"
+        },
+        {
+          "$ref": "#/$defs/block-stack"
+        },
+        {
+          "$ref": "#/$defs/block-grid"
+        },
+        {
+          "$ref": "#/$defs/block-split"
+        },
+        {
+          "$ref": "#/$defs/block-spacer"
+        },
+        {
+          "$ref": "#/$defs/block-divider"
+        },
+        {
+          "$ref": "#/$defs/block-heading"
+        },
+        {
+          "$ref": "#/$defs/block-text"
+        },
+        {
+          "$ref": "#/$defs/block-rich-text"
+        },
+        {
+          "$ref": "#/$defs/block-quote"
+        },
+        {
+          "$ref": "#/$defs/block-code"
+        },
+        {
+          "$ref": "#/$defs/block-badge"
+        },
+        {
+          "$ref": "#/$defs/block-kbd"
+        },
+        {
+          "$ref": "#/$defs/block-key-value"
+        },
+        {
+          "$ref": "#/$defs/block-card"
+        },
+        {
+          "$ref": "#/$defs/block-alert"
+        },
+        {
+          "$ref": "#/$defs/block-callout"
+        },
+        {
+          "$ref": "#/$defs/block-hero"
+        },
+        {
+          "$ref": "#/$defs/block-stats"
+        },
+        {
+          "$ref": "#/$defs/block-progress"
+        },
+        {
+          "$ref": "#/$defs/block-steps"
+        },
+        {
+          "$ref": "#/$defs/block-timeline"
+        },
+        {
+          "$ref": "#/$defs/block-list"
+        },
+        {
+          "$ref": "#/$defs/block-card-grid"
+        },
+        {
+          "$ref": "#/$defs/block-table"
+        },
+        {
+          "$ref": "#/$defs/block-comparison"
+        },
+        {
+          "$ref": "#/$defs/block-risk-matrix"
+        },
+        {
+          "$ref": "#/$defs/block-tabs"
+        },
+        {
+          "$ref": "#/$defs/block-accordion"
+        },
+        {
+          "$ref": "#/$defs/block-carousel"
+        },
+        {
+          "$ref": "#/$defs/block-toolbar"
+        },
+        {
+          "$ref": "#/$defs/block-chart"
+        },
+        {
+          "$ref": "#/$defs/block-diagram-panel"
+        },
+        {
+          "$ref": "#/$defs/block-image"
+        },
+        {
+          "$ref": "#/$defs/block-gallery"
+        },
+        {
+          "$ref": "#/$defs/block-video"
+        },
+        {
+          "$ref": "#/$defs/block-audio"
+        },
+        {
+          "$ref": "#/$defs/block-button"
+        },
+        {
+          "$ref": "#/$defs/block-link"
+        },
+        {
+          "$ref": "#/$defs/block-slider"
+        },
+        {
+          "$ref": "#/$defs/block-search"
+        },
+        {
+          "$ref": "#/$defs/block-dialog"
+        },
+        {
+          "$ref": "#/$defs/block-diff-summary"
+        },
+        {
+          "$ref": "#/$defs/block-code-review"
+        }
+      ]
+    },
+    "blockList": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "items": {
+        "$ref": "#/$defs/block"
+      }
+    },
+    "actionMap": {
+      "type": "object",
+      "minProperties": 1,
+      "maxProperties": 7,
+      "propertyNames": {
+        "enum": [
+          "click",
+          "change",
+          "input",
+          "select",
+          "filter",
+          "open",
+          "close"
+        ]
+      },
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/action"
+          },
+          {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 8,
+            "items": {
+              "$ref": "#/$defs/action"
+            }
+          }
+        ]
+      },
+      "description": "Declarative action bindings, keyed by event name."
+    },
+    "action": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "action",
+            "target"
+          ],
+          "properties": {
+            "action": {
+              "const": "copy"
+            },
+            "target": {
+              "type": "string",
+              "maxLength": 2000,
+              "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+            }
+          },
+          "description": "Copy the text content of the target node to the clipboard."
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "action",
+            "url"
+          ],
+          "properties": {
+            "action": {
+              "const": "open-url"
+            },
+            "url": {
+              "type": "string",
+              "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+            },
+            "label": {
+              "type": "string",
+              "maxLength": 120
+            }
+          },
+          "description": "Open an allowlisted URL in a new tab."
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "action",
+            "target"
+          ],
+          "properties": {
+            "action": {
+              "const": "toggle"
+            },
+            "target": {
+              "type": "string",
+              "maxLength": 2000,
+              "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+            }
+          },
+          "description": "Toggle the expanded, open, or active state of the target node."
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "action",
+            "path"
+          ],
+          "properties": {
+            "action": {
+              "const": "set-value"
+            },
+            "path": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "value": {
+              "description": "Literal value assigned to the state path."
+            }
+          },
+          "description": "Set a page state value without an expression."
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "action"
+          ],
+          "properties": {
+            "action": {
+              "const": "next"
+            },
+            "target": {
+              "type": "string",
+              "maxLength": 2000,
+              "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+            }
+          },
+          "description": "Advance a carousel, slideshow, or step sequence to the next item."
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "action"
+          ],
+          "properties": {
+            "action": {
+              "const": "previous"
+            },
+            "target": {
+              "type": "string",
+              "maxLength": 2000,
+              "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+            }
+          },
+          "description": "Move a carousel, slideshow, or step sequence to the previous item."
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "action",
+            "target"
+          ],
+          "properties": {
+            "action": {
+              "const": "select-tab"
+            },
+            "target": {
+              "type": "string",
+              "maxLength": 2000,
+              "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+            },
+            "index": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 200
+            },
+            "tabId": {
+              "type": "string",
+              "maxLength": 2000,
+              "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+            }
+          },
+          "description": "Select a tab by index or id inside a tabs block."
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "action",
+            "target"
+          ],
+          "properties": {
+            "action": {
+              "const": "expand"
+            },
+            "target": {
+              "type": "string",
+              "maxLength": 2000,
+              "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+            }
+          },
+          "description": "Expand a disclosure or accordion section."
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "action",
+            "target"
+          ],
+          "properties": {
+            "action": {
+              "const": "collapse"
+            },
+            "target": {
+              "type": "string",
+              "maxLength": 2000,
+              "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+            }
+          },
+          "description": "Collapse a disclosure or accordion section."
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "action",
+            "target"
+          ],
+          "properties": {
+            "action": {
+              "const": "filter"
+            },
+            "target": {
+              "type": "string",
+              "maxLength": 2000,
+              "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+            },
+            "match": {
+              "type": "string",
+              "maxLength": 2000,
+              "enum": [
+                "text",
+                "label",
+                "value"
+              ]
+            },
+            "query": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          "description": "Filter a collection by the current search input value."
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "action"
+          ],
+          "properties": {
+            "action": {
+              "const": "theme"
+            },
+            "value": {
+              "type": "string",
+              "maxLength": 2000,
+              "enum": [
+                "toggle",
+                "light",
+                "dark",
+                "system"
+              ]
+            }
+          },
+          "description": "Switch the page theme."
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "action",
+            "target"
+          ],
+          "properties": {
+            "action": {
+              "const": "download"
+            },
+            "target": {
+              "type": "string",
+              "maxLength": 2000,
+              "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+            },
+            "filename": {
+              "type": "string",
+              "maxLength": 120
+            }
+          },
+          "description": "Download the target node content as a file."
+        }
+      ]
+    },
+    "block-page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "title"
+      ],
+      "properties": {
+        "type": {
+          "const": "page"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 400
+        },
+        "locale": {
+          "type": "string",
+          "maxLength": 35
+        },
+        "blocks": {
+          "$ref": "#/$defs/blockList"
+        }
+      },
+      "description": "Page root: title, description, locale, and top-level blocks."
+    },
+    "block-section": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "section"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "blocks": {
+          "$ref": "#/$defs/blockList"
+        }
+      },
+      "description": "Section with an optional heading wrapping child blocks."
+    },
+    "block-stack": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "stack"
+        },
+        "gap": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "tight",
+            "normal",
+            "loose"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "blocks": {
+          "$ref": "#/$defs/blockList"
+        }
+      },
+      "description": "Stack: children flow vertically with a controlled gap."
+    },
+    "block-grid": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "grid"
+        },
+        "columns": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 6
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "blocks": {
+          "$ref": "#/$defs/blockList"
+        }
+      },
+      "description": "Grid: children in N columns that collapse on narrow viewports."
+    },
+    "block-split": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "split"
+        },
+        "ratio": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "even",
+            "wide-left",
+            "wide-right"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "blocks": {
+          "$ref": "#/$defs/blockList"
+        }
+      },
+      "description": "Split: two child groups side by side, stacking when narrow."
+    },
+    "block-spacer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "spacer"
+        },
+        "size": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "small",
+            "medium",
+            "large"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Spacer: vertical space without content."
+    },
+    "block-divider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "divider"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Divider: semantic separator with an optional label."
+    },
+    "block-heading": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "text"
+      ],
+      "properties": {
+        "type": {
+          "const": "heading"
+        },
+        "level": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 6
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Heading: h1–h6 with the author-chosen level."
+    },
+    "block-text": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "text"
+      ],
+      "properties": {
+        "type": {
+          "const": "text"
+        },
+        "variant": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "body",
+            "lead",
+            "caption"
+          ]
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 50000
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Text: single paragraph with body, lead, or caption treatment."
+    },
+    "block-rich-text": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "text"
+      ],
+      "properties": {
+        "type": {
+          "const": "rich-text"
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 50000
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "RichText: multiple paragraphs from line breaks."
+    },
+    "block-quote": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "text"
+      ],
+      "properties": {
+        "type": {
+          "const": "quote"
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 50000
+        },
+        "cite": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Quote: blockquote with an optional attribution."
+    },
+    "block-code": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "text"
+      ],
+      "properties": {
+        "type": {
+          "const": "code"
+        },
+        "language": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 100000
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Code: preformatted block with optional language and copy target."
+    },
+    "block-badge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "text"
+      ],
+      "properties": {
+        "type": {
+          "const": "badge"
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "tone": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "neutral",
+            "info",
+            "success",
+            "warning",
+            "danger"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Badge: inline status chip."
+    },
+    "block-kbd": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "keys"
+      ],
+      "properties": {
+        "type": {
+          "const": "kbd"
+        },
+        "keys": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 24
+          },
+          "minItems": 1,
+          "maxItems": 8
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Kbd: one or more keys rendered as <kbd> elements."
+    },
+    "block-key-value": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "items"
+      ],
+      "properties": {
+        "type": {
+          "const": "key-value"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "value": {
+                "type": "string",
+                "maxLength": 400
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "value"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 200
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "KeyValue: label/value pairs rendered as a description list."
+    },
+    "block-card": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "card"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 50000
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "blocks": {
+          "$ref": "#/$defs/blockList"
+        }
+      },
+      "description": "Card: titled container that holds child blocks."
+    },
+    "block-alert": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "title",
+        "text"
+      ],
+      "properties": {
+        "type": {
+          "const": "alert"
+        },
+        "tone": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "info",
+            "success",
+            "warning",
+            "danger"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 50000
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Alert: notice with tone and title."
+    },
+    "block-callout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "title",
+        "text"
+      ],
+      "properties": {
+        "type": {
+          "const": "callout"
+        },
+        "tone": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "info",
+            "success",
+            "warning",
+            "danger"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 50000
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Callout: highlighted aside with tone, title, and body."
+    },
+    "block-hero": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "title"
+      ],
+      "properties": {
+        "type": {
+          "const": "hero"
+        },
+        "eyebrow": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 50000
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Hero: eyebrow, title, and one-line description."
+    },
+    "block-stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "items"
+      ],
+      "properties": {
+        "type": {
+          "const": "stats"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "value": {
+                "type": "string",
+                "maxLength": 60
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "label",
+              "value"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 200
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Stats: labeled values as a figure list."
+    },
+    "block-progress": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "label",
+        "value"
+      ],
+      "properties": {
+        "type": {
+          "const": "progress"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "value": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "max": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Progress: single bar with an accessible value range."
+    },
+    "block-steps": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "items"
+      ],
+      "properties": {
+        "type": {
+          "const": "steps"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "text": {
+                "type": "string",
+                "maxLength": 50000
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "title"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 200
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Steps: numbered sequence of titled steps."
+    },
+    "block-timeline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "items"
+      ],
+      "properties": {
+        "type": {
+          "const": "timeline"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "when": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "text": {
+                "type": "string",
+                "maxLength": 50000
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "when",
+              "title"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 200
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Timeline: ordered entries with a when/title/body shape."
+    },
+    "block-list": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "items"
+      ],
+      "properties": {
+        "type": {
+          "const": "list"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string",
+                "maxLength": 50000
+              },
+              "badge": {
+                "type": "string",
+                "maxLength": 40
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "text"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 200
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "List: bulleted items with optional status badges."
+    },
+    "block-card-grid": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "items"
+      ],
+      "properties": {
+        "type": {
+          "const": "card-grid"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "text": {
+                "type": "string",
+                "maxLength": 50000
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "title"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 200
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "CardGrid: titled cards in a responsive grid."
+    },
+    "block-table": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "columns",
+        "rows"
+      ],
+      "properties": {
+        "type": {
+          "const": "table"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "minItems": 1,
+          "maxItems": 12
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 400
+            }
+          },
+          "maxItems": 500
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Table: columns and rows with a real header row."
+    },
+    "block-comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "left",
+        "right"
+      ],
+      "properties": {
+        "type": {
+          "const": "comparison"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "left": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 300
+              },
+              "maxItems": 40
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "label",
+            "items"
+          ]
+        },
+        "right": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 300
+              },
+              "maxItems": 40
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "label",
+            "items"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Comparison: two labeled columns of points."
+    },
+    "block-risk-matrix": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "items"
+      ],
+      "properties": {
+        "type": {
+          "const": "risk-matrix"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "severity": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 2000,
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "maxItems": 5
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "area": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "impact": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "likelihood": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "note": {
+                "type": "string",
+                "maxLength": 50000
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "area",
+              "impact",
+              "likelihood"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 200
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "RiskMatrix: risks rated by impact and likelihood."
+    },
+    "block-tabs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "items"
+      ],
+      "properties": {
+        "type": {
+          "const": "tabs"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 2000,
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "text": {
+                "type": "string",
+                "maxLength": 50000
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "title",
+              "text"
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 200
+        },
+        "on": {
+          "description": "Optional state binding fired when a tab is selected.",
+          "$ref": "#/$defs/actionMap"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Tabs: roving-tabindex tablist with tabpanels."
+    },
+    "block-accordion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "items"
+      ],
+      "properties": {
+        "type": {
+          "const": "accordion"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "text": {
+                "type": "string",
+                "maxLength": 50000
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "title",
+              "text"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 200
+        },
+        "on": {
+          "description": "Optional state binding fired when a section toggles.",
+          "$ref": "#/$defs/actionMap"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Accordion: disclosure sections that expand and collapse."
+    },
+    "block-carousel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "ariaLabel",
+        "items"
+      ],
+      "properties": {
+        "type": {
+          "const": "carousel"
+        },
+        "ariaLabel": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "text": {
+                "type": "string",
+                "maxLength": 50000
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "title",
+              "text"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 200
+        },
+        "on": {
+          "description": "Optional state binding fired when the active slide changes.",
+          "$ref": "#/$defs/actionMap"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Carousel: prev/next, keyboard, and swipe across slides."
+    },
+    "block-toolbar": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "items"
+      ],
+      "properties": {
+        "type": {
+          "const": "toolbar"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "enum": [
+                      "button"
+                    ]
+                  },
+                  "label": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "variant": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "enum": [
+                      "primary",
+                      "secondary",
+                      "ghost"
+                    ]
+                  },
+                  "on": {
+                    "description": "Declarative action bindings for this block.",
+                    "$ref": "#/$defs/actionMap"
+                  },
+                  "id": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "type",
+                  "label"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "enum": [
+                      "badge"
+                    ]
+                  },
+                  "text": {
+                    "type": "string",
+                    "maxLength": 60
+                  },
+                  "tone": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "enum": [
+                      "neutral",
+                      "info",
+                      "success",
+                      "warning",
+                      "danger"
+                    ]
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "type",
+                  "text"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "enum": [
+                      "link"
+                    ]
+                  },
+                  "label": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "href": {
+                    "type": "string",
+                    "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+                  },
+                  "on": {
+                    "description": "Declarative action bindings for this block.",
+                    "$ref": "#/$defs/actionMap"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "type",
+                  "label",
+                  "href"
+                ]
+              }
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 20
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Toolbar: buttons, badges, and links in one accessible row."
+    },
+    "block-chart": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "kind",
+        "labels",
+        "series"
+      ],
+      "properties": {
+        "type": {
+          "const": "chart"
+        },
+        "kind": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "bar",
+            "line",
+            "area",
+            "pie",
+            "donut",
+            "sparkline",
+            "progress"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 50000
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "minItems": 1,
+          "maxItems": 200
+        },
+        "series": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "values": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 1,
+                "maxItems": 200
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "label",
+              "values"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 200
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Chart: bar, line, area, pie, donut, sparkline, or progress from labeled series."
+    },
+    "block-diagram-panel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "spec"
+      ],
+      "properties": {
+        "type": {
+          "const": "diagram-panel"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "spec": {
+          "description": "Typed diagram IR (ak:diagram schema)."
+        },
+        "caption": {
+          "type": "string",
+          "maxLength": 50000
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "DiagramPanel: embeds trusted output from a diagram adapter (ak:diagram when installed)."
+    },
+    "block-image": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "src",
+        "alt"
+      ],
+      "properties": {
+        "type": {
+          "const": "image"
+        },
+        "src": {
+          "type": "string",
+          "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+        },
+        "alt": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "caption": {
+          "type": "string",
+          "maxLength": 50000
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Image: local asset or allowlisted URL with required alt text."
+    },
+    "block-gallery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "items"
+      ],
+      "properties": {
+        "type": {
+          "const": "gallery"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "columns": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 6
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "src": {
+                "type": "string",
+                "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+              },
+              "alt": {
+                "type": "string",
+                "maxLength": 300
+              },
+              "caption": {
+                "type": "string",
+                "maxLength": 50000
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "src",
+              "alt"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 200
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Gallery: responsive image grid with captions."
+    },
+    "block-video": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "title",
+        "src"
+      ],
+      "properties": {
+        "type": {
+          "const": "video"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "src": {
+          "type": "string",
+          "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+        },
+        "poster": {
+          "type": "string",
+          "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+        },
+        "caption": {
+          "type": "string",
+          "maxLength": 50000
+        },
+        "fallback": {
+          "type": "object",
+          "properties": {
+            "description": {
+              "type": "string",
+              "maxLength": 50000
+            },
+            "linkText": {
+              "type": "string",
+              "maxLength": 120
+            },
+            "url": {
+              "type": "string",
+              "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "description"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Video: plays local sources; network sources degrade to poster plus link."
+    },
+    "block-audio": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "title",
+        "src"
+      ],
+      "properties": {
+        "type": {
+          "const": "audio"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "src": {
+          "type": "string",
+          "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+        },
+        "caption": {
+          "type": "string",
+          "maxLength": 50000
+        },
+        "fallback": {
+          "type": "object",
+          "properties": {
+            "description": {
+              "type": "string",
+              "maxLength": 50000
+            },
+            "linkText": {
+              "type": "string",
+              "maxLength": 120
+            },
+            "url": {
+              "type": "string",
+              "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "description"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Audio: plays local sources; network sources degrade to metadata plus link."
+    },
+    "block-button": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "label"
+      ],
+      "properties": {
+        "type": {
+          "const": "button"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "variant": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "primary",
+            "secondary",
+            "ghost"
+          ]
+        },
+        "on": {
+          "description": "Action bindings; a button without bindings is a diagnostic.",
+          "$ref": "#/$defs/actionMap"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Button: clickable control with declarative action bindings."
+    },
+    "block-link": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "label",
+        "href"
+      ],
+      "properties": {
+        "type": {
+          "const": "link"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "href": {
+          "type": "string",
+          "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Link: allowlisted URL with descriptive text."
+    },
+    "block-slider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "label"
+      ],
+      "properties": {
+        "type": {
+          "const": "slider"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "min": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "max": {
+          "type": "number",
+          "minimum": -1000000,
+          "maximum": 1000000
+        },
+        "step": {
+          "type": "number",
+          "minimum": 0.0001,
+          "maximum": 1000000
+        },
+        "value": {
+          "type": "number"
+        },
+        "on": {
+          "description": "Binding fired when the value changes.",
+          "$ref": "#/$defs/actionMap"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Slider: range input with pointer drag and full keyboard support."
+    },
+    "block-search": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "label"
+      ],
+      "properties": {
+        "type": {
+          "const": "search"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "placeholder": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "on": {
+          "description": "Filter binding; requires a target collection.",
+          "$ref": "#/$defs/actionMap"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Search: labeled filter input bound to a collection."
+    },
+    "block-dialog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "title"
+      ],
+      "properties": {
+        "type": {
+          "const": "dialog"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "ariaLabel": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 50000
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "on": {
+                "description": "Declarative action bindings for this block.",
+                "$ref": "#/$defs/actionMap"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "label"
+            ]
+          },
+          "maxItems": 6
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Dialog: native <dialog> with labeled title and close controls."
+    },
+    "block-diff-summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "items"
+      ],
+      "properties": {
+        "type": {
+          "const": "diff-summary"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "maxLength": 400
+              },
+              "status": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "added",
+                  "modified",
+                  "deleted",
+                  "renamed"
+                ]
+              },
+              "additions": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000000
+              },
+              "deletions": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000000
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "status"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 200
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "DiffSummary: file paths with change status and line counts."
+    },
+    "block-code-review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "items"
+      ],
+      "properties": {
+        "type": {
+          "const": "code-review"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "good",
+                  "bad",
+                  "ugly",
+                  "concern",
+                  "question"
+                ]
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "text": {
+                "type": "string",
+                "maxLength": 50000
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "title",
+              "text"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 200
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "CodeReview: good/bad/ugly/concern/question findings."
+    }
+  }
+}
