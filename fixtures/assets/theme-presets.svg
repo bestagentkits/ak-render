@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" role="img" aria-label="Six theme presets">
+  <title>Six theme presets</title>
+  <rect width="320" height="180" fill="#faf8f2" />
+  <g>
+    <rect x="20" y="20" width="84" height="60" rx="4" fill="#0d1421" />
+    <rect x="118" y="20" width="84" height="60" rx="4" fill="#faf8f2" stroke="#e0d9c8" />
+    <rect x="216" y="20" width="84" height="60" rx="4" fill="#faf6f0" stroke="#e5dccd" />
+    <rect x="20" y="100" width="84" height="60" rx="4" fill="#05070c" />
+    <rect x="118" y="100" width="84" height="60" rx="4" fill="#ffffff" stroke="#d4d4d4" />
+    <rect x="216" y="100" width="84" height="60" rx="4" fill="#fbf7f1" stroke="#e6dbc8" />
+  </g>
+</svg>

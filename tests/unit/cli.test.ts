@@ -64,22 +64,22 @@ describe('ak-render CLI', () => {
     expect(c.out().trim()).toMatch(/^\d+\.\d+\.\d+/);
   });
 
-  it('uses exit code 2 for a bare invocation and for unknown commands', () => {
+  it('treats an unknown first argument as a spec path it cannot read', () => {
     const bare = capture();
     expect(run([], bare.io)).toBe(2);
 
     const unknown = capture();
     expect(run(['frobnicate'], unknown.io)).toBe(2);
-    expect(unknown.err()).toContain('unknown command "frobnicate"');
+    expect(unknown.err()).toContain('cannot read frobnicate');
   });
 
-  it('only advertises commands it implements', () => {
+  it('advertises the compile surface it implements', () => {
     const c = capture();
     run(['--help'], c.io);
     expect(c.out()).toContain('catalog');
     expect(c.out()).toContain('describe');
-    // Compile arrives with the compiler milestone; help must not promise it yet.
-    expect(c.out()).not.toContain('--out');
+    expect(c.out()).toContain('--out');
+    expect(c.out()).toContain('themes');
   });
 
   it('validates a good spec with exit code 0', () => {

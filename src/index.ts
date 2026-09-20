@@ -23,6 +23,10 @@ export {
   SPEC_SCHEMA_VERSION,
 } from './registry/registry.js';
 export type { BlockDefinition, SizingContract, SlotSpec } from './registry/roster.js';
+export { buildContentSecurityPolicy } from './render/document.js';
+export { escapeAttribute, escapeText, escapeUrl, serializeJsonForScript } from './render/escape.js';
+export type { CompileResult, RenderOptions } from './render/render.js';
+export { compile, render } from './render/render.js';
 export type { BoundsReport } from './spec/bounds.js';
 export { LIMITS } from './spec/bounds.js';
 export { CURRENT_SPEC_VERSION, supportedVersions } from './spec/migrate.js';
@@ -32,4 +36,8 @@ export type { ParseOptions } from './spec/parse.js';
 export { parseSpec } from './spec/parse.js';
 export type { ValidateResult, ValidateSummary } from './spec/validate.js';
 export { validate, validateOrThrow } from './spec/validate.js';
+export type { ResolvedTheme, ThemeInput } from './theme/load-theme.js';
+export { loadTheme, resolveTheme, themePresetNames } from './theme/load-theme.js';
+export type { TokenSpec } from './theme/tokens.js';
+export { TOKEN_SPECS, tokenNames } from './theme/tokens.js';
 export { PACKAGE_NAME, VERSION } from './version.js';

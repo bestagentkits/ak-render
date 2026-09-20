@@ -5,14 +5,18 @@
  * Help output is generated from the command table, so a command that is not
  * implemented cannot be advertised. Every command supports `--json` for
  * scripted and CI use, and never prompts.
+ *
+ * `ak-render <spec> [--out <file>]` is the documented primary surface; naming a
+ * known command is optional.
  */
 
-import { readFileSync, realpathSync } from 'node:fs';
+import { readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { isRenderError } from './errors.js';
+import { isRenderError, type RenderError } from './errors.js';
 import { catalog, describe } from './registry/registry.js';
-import { parseSpec } from './spec/parse.js';
+import { compile } from './render/render.js';
 import { validate } from './spec/validate.js';
+import { themePresetNames } from './theme/load-theme.js';
 import { PACKAGE_NAME, VERSION } from './version.js';
 
 export interface CliIo {
@@ -25,14 +29,21 @@ const defaultIo: CliIo = {
   stderr: (text) => process.stderr.write(text),
 };
 
+interface Flags {
+  json: boolean;
+  out?: string;
+  theme?: string;
+}
+
+interface ParsedArgs {
+  flags: Flags;
+  positional: string[];
+}
+
 interface Command {
   summary: string;
   usage: string;
   run: (args: string[], io: CliIo, flags: Flags) => number;
-}
-
-interface Flags {
-  json: boolean;
 }
 
 function readSpecFile(path: string, io: CliIo): string | undefined {
@@ -46,7 +57,93 @@ function readSpecFile(path: string, io: CliIo): string | undefined {
   }
 }
 
+function reportDiagnostics(
+  io: CliIo,
+  diagnostics: readonly { severity: string; path: string; nodeId?: string; message: string }[],
+): void {
+  for (const diagnostic of diagnostics) {
+    const location = diagnostic.nodeId === undefined ? '' : ` [${diagnostic.nodeId}]`;
+    io.stderr(`${diagnostic.severity}: ${diagnostic.path}${location}: ${diagnostic.message}\n`);
+  }
+}
+
+function compileCommand(args: string[], io: CliIo, flags: Flags): number {
+  const file = args[0];
+  if (file === undefined) {
+    io.stderr('ak-render: a spec path is required\n');
+    return 2;
+  }
+  const text = readSpecFile(file, io);
+  if (text === undefined) return 2;
+
+  try {
+    const result = compile(text, {
+      source: file,
+      ...(flags.theme === undefined ? {} : { theme: flags.theme }),
+    });
+
+    if (flags.out !== undefined) {
+      writeFileSync(flags.out, result.html, 'utf8');
+    } else {
+      io.stdout(result.html);
+      // Human-readable summary goes to stderr so stdout stays a clean artifact.
+      if (!flags.json) {
+        io.stderr(
+          `ak-render: ${result.bytes} bytes, ${result.features.length} runtime features, hash ${result.hash}\n`,
+        );
+      }
+    }
+
+    if (flags.json) {
+      io.stdout(
+        `${JSON.stringify(
+          {
+            source: file,
+            out: flags.out ?? null,
+            bytes: result.bytes,
+            hash: result.hash,
+            title: result.ir.meta.title,
+            theme: result.theme.name,
+            features: result.features,
+            nodes: result.ir.nodes.length,
+            warnings: result.warnings,
+          },
+          null,
+          2,
+        )}\n`,
+      );
+    } else if (flags.out !== undefined) {
+      io.stdout(
+        `wrote ${result.bytes} bytes to ${flags.out} (${result.features.length} runtime features, hash ${result.hash})\n`,
+      );
+    }
+    for (const warning of result.warnings) {
+      io.stderr(`warning: ${warning.path}: ${warning.message}\n`);
+    }
+    return 0;
+  } catch (error) {
+    if (isRenderError(error)) {
+      const renderError = error as RenderError;
+      io.stderr(`ak-render: ${renderError.message} (${renderError.path ?? '$'})\n`);
+      const diagnostics = renderError.details?.diagnostics;
+      if (Array.isArray(diagnostics)) {
+        reportDiagnostics(
+          io,
+          diagnostics as { severity: string; path: string; nodeId?: string; message: string }[],
+        );
+      }
+      return 1;
+    }
+    throw error;
+  }
+}
+
 const COMMANDS: Record<string, Command> = {
+  compile: {
+    summary: 'Compile a Page Spec to a standalone HTML artifact.',
+    usage: 'ak-render <spec.yaml|spec.json> [--out <file.html>] [--theme <preset>] [--json]',
+    run: compileCommand,
+  },
   validate: {
     summary: 'Validate a Page Spec without rendering it.',
     usage: 'ak-render validate <spec.yaml|spec.json> [--json]',
@@ -68,16 +165,12 @@ const COMMANDS: Record<string, Command> = {
           `ok: ${file}\n  title: ${summary.title}\n  theme: ${summary.themePreset}\n  blocks: ${summary.blocks} (nodes: ${summary.nodes})\n  depth: ${summary.depth}, bytes: ${summary.bytes}\n`,
         );
       } else {
-        for (const diagnostic of result.diagnostics) {
-          const location = diagnostic.nodeId === undefined ? '' : ` [${diagnostic.nodeId}]`;
-          io.stderr(
-            `${diagnostic.severity}: ${diagnostic.path}${location}: ${diagnostic.message}\n`,
-          );
-        }
+        reportDiagnostics(io, result.diagnostics);
       }
-      for (const warning of result.diagnostics.filter((item) => item.severity === 'warning')) {
-        if (!result.ok || flags.json) continue;
-        io.stderr(`warning: ${warning.path}: ${warning.message}\n`);
+      if (!flags.json) {
+        for (const warning of result.diagnostics.filter((item) => item.severity === 'warning')) {
+          io.stderr(`warning: ${warning.path}: ${warning.message}\n`);
+        }
       }
       return result.ok ? 0 : 1;
     },
@@ -136,14 +229,24 @@ const COMMANDS: Record<string, Command> = {
       return 0;
     },
   },
+  themes: {
+    summary: 'List built-in theme presets.',
+    usage: 'ak-render themes [--json]',
+    run: (_args, io, flags) => {
+      const names = themePresetNames();
+      if (flags.json) {
+        io.stdout(`${JSON.stringify(names, null, 2)}\n`);
+        return 0;
+      }
+      io.stdout(`${names.join('\n')}\n`);
+      return 0;
+    },
+  },
 };
 
 function helpText(): string {
-  const commands = Object.entries(COMMANDS)
-    .map(
-      ([, command]) =>
-        `  ${command.usage.split(' ')[0] === 'ak-render' ? command.usage : `ak-render ${command.usage}`}`,
-    )
+  const usage = Object.values(COMMANDS)
+    .map((command) => `  ${command.usage}`)
     .join('\n');
   const summaries = Object.entries(COMMANDS)
     .map(([name, command]) => `  ${name.padEnd(10)} ${command.summary}`)
@@ -155,26 +258,42 @@ self-contained interactive HTML artifact. The local compiler is canonical: no
 account, no network, no server.
 
 Usage:
-${commands}
+${usage}
   ak-render --help
   ak-render --version
 
 Commands:
 ${summaries}
 
-All commands accept --json for scripted use and never prompt.
+The first positional argument may be a spec path with the compile command
+implied. All commands accept --json and never prompt.
 `;
 }
 
-/** Parse `--json` and positional arguments. */
-function splitFlags(args: string[]): { flags: Flags; positional: string[] } {
+const VALUE_FLAGS = ['--out', '--theme'] as const;
+
+function parseArgs(args: string[]): ParsedArgs | { error: string } {
+  const flags: Flags = { json: false };
   const positional: string[] = [];
-  let json = false;
-  for (const arg of args) {
-    if (arg === '--json') json = true;
-    else positional.push(arg);
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === undefined) continue;
+    if (arg === '--json') {
+      flags.json = true;
+      continue;
+    }
+    const valueFlag = VALUE_FLAGS.find((candidate) => candidate === arg);
+    if (valueFlag !== undefined) {
+      const value = args[index + 1];
+      if (value === undefined) return { error: `${valueFlag} requires a value` };
+      if (valueFlag === '--out') flags.out = value;
+      else flags.theme = value;
+      index += 1;
+      continue;
+    }
+    positional.push(arg);
   }
-  return { flags: { json }, positional };
+  return { flags, positional };
 }
 
 /** Run the CLI. Returns the process exit code. */
@@ -195,15 +314,22 @@ export function run(argv: readonly string[], io: CliIo = defaultIo): number {
     return 0;
   }
 
-  const command = first === undefined ? undefined : COMMANDS[first];
-  if (command === undefined) {
-    io.stderr(`ak-render: unknown command "${first ?? ''}"\n\n${helpText()}`);
+  const parsed = parseArgs(args.slice(1));
+  if ('error' in parsed) {
+    io.stderr(`ak-render: ${parsed.error}\n`);
     return 2;
   }
 
-  const { flags, positional } = splitFlags(args.slice(1));
+  // `ak-render page.yaml --out page.html` is the documented primary surface.
+  const command = first === undefined ? undefined : COMMANDS[first];
+  const resolved = command ?? COMMANDS.compile;
+  const positional =
+    command === undefined && first !== undefined
+      ? [first, ...parsed.positional]
+      : parsed.positional;
+
   try {
-    return command.run(positional, io, flags);
+    return resolved === undefined ? 2 : resolved.run(positional, io, parsed.flags);
   } catch (error) {
     if (isRenderError(error)) {
       io.stderr(`ak-render: ${error.message}\n`);
@@ -227,6 +353,3 @@ function isMainModule(): boolean {
 if (isMainModule()) {
   process.exitCode = run(process.argv.slice(2));
 }
-
-/** Exported for tests: the parse helper used by the compile command milestone. */
-export { parseSpec };
