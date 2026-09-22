@@ -12,7 +12,7 @@ import { dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
-const target = new URL('../schema/page-spec.v1.json', import.meta.url).pathname;
+const target = fileURLToPath(new URL('../schema/page-spec.v1.json', import.meta.url));
 const checkMode = process.argv.includes('--check');
 
 let buildPageSpecJsonSchema;

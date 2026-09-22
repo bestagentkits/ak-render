@@ -26,8 +26,8 @@ try {
   process.exit(1);
 }
 
-const specPath = new URL('../fixtures/pages/theme-showcase.yaml', import.meta.url).pathname;
-const snapshotDir = new URL('../fixtures/snapshots', import.meta.url).pathname;
+const specPath = fileURLToPath(new URL('../fixtures/pages/theme-showcase.yaml', import.meta.url));
+const snapshotDir = fileURLToPath(new URL('../fixtures/snapshots', import.meta.url));
 const spec = readFileSync(specPath, 'utf8');
 
 mkdirSync(snapshotDir, { recursive: true });
