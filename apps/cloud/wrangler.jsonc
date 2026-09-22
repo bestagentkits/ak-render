@@ -1,0 +1,50 @@
+/**
+ * Opt-in Cloudflare deployment for the AK Render cloud renderer.
+ *
+ * Nothing here is required to use @agentkit/render: local compilation never
+ * contacts this worker, and the compiler has no knowledge of it. Deploy only
+ * when a hosted render, share, screenshot, or PDF route is actually wanted.
+ *
+ * Bindings:
+ *   RENDER_SHARES  R2 bucket, private. Shared artifacts only.
+ *   RATE_LIMIT     KV namespace, fixed-window counters.
+ *   BROWSER        Browser Run binding, optional. Screenshot and PDF only.
+ *
+ * Vars are configuration, never secrets. The bearer a caller presents is
+ * validated against ENTITLEMENTS_URL and is never stored here.
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ak-render-cloud",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "workers_dev": false,
+  "observability": {
+    // No content logging: a page body must never reach the log stream.
+    "enabled": false
+  },
+  "vars": {
+    "ENTITLEMENTS_URL": "https://api.agentkit.best",
+    "SHARE_RETENTION_DAYS": "30"
+  },
+  "r2_buckets": [
+    {
+      "binding": "RENDER_SHARES",
+      "bucket_name": "ak-render-shares"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "RATE_LIMIT",
+      "title": "ak-render-rate-limit"
+    }
+  ],
+  "triggers": {
+    // Hourly sweep so an expired share stops resolving even before its read
+    // path is exercised.
+    "crons": ["0 * * * *"]
+  }
+  // The Browser Run binding is added by the deployment that needs screenshot or
+  // PDF export, because it is a separate product binding. Without it those
+  // routes answer 501 rather than degrading silently.
+}

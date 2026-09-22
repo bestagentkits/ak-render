@@ -168,6 +168,16 @@ test.describe('theme toggle', () => {
 test.describe('external actions', () => {
   test('opens an allowed URL in a new context with no opener access', async ({ page, context }) => {
     await open(page);
+    // The assertion is about the action, not about the destination being
+    // reachable, so the popup's request is answered locally: the test then
+    // behaves the same on a machine with no connectivity.
+    await context.route('https://agentkit.best/**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'text/html; charset=utf-8',
+        body: '<!doctype html><html lang="en"><title>Docs</title><p>docs</p></html>',
+      }),
+    );
     const popupPromise = context.waitForEvent('page');
     await page.locator('[data-ak-id="open-docs"]').click();
     const popup = await popupPromise;
