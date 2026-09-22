@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" role="img" aria-label="Compiler pipeline">
+  <title>Compiler pipeline</title>
+  <rect width="320" height="180" fill="#f0f4f8" />
+  <g fill="none" stroke="#1a5fa8" stroke-width="2">
+    <rect x="24" y="70" width="72" height="40" rx="4" />
+    <rect x="124" y="70" width="72" height="40" rx="4" />
+    <rect x="224" y="70" width="72" height="40" rx="4" />
+    <path d="M96 90h28M196 90h28" />
+  </g>
+  <g fill="#122334" font-family="monospace" font-size="11">
+    <text x="34" y="95">spec</text>
+    <text x="130" y="95">compile</text>
+    <text x="232" y="95">html</text>
+  </g>
+</svg>

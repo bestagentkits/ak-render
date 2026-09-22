@@ -14,7 +14,15 @@
  *   node scripts/generate-gallery.mjs [--check]
  */
 
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -22,6 +30,10 @@ const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const checkMode = process.argv.includes('--check');
 const pagesDir = join(repoRoot, 'fixtures/pages');
 const galleryDir = join(repoRoot, 'docs/gallery');
+// The fixtures reference assets relatively, so the gallery has to carry them
+// beside the pages it links, or every image in every page is a broken link.
+const assetsDir = join(repoRoot, 'fixtures/assets');
+const galleryAssetsDir = join(galleryDir, 'assets');
 
 let compile;
 let VERSION;
@@ -138,6 +150,17 @@ if (checkMode) {
   for (const name of onDisk) {
     if (!expected.has(name)) problems.push(`unexpected docs/gallery/${name}`);
   }
+  for (const name of readdirSync(assetsDir)) {
+    const source = join(assetsDir, name);
+    const target = join(galleryAssetsDir, name);
+    if (!existsSync(target)) {
+      problems.push(`missing ${relative(repoRoot, target)}`);
+      continue;
+    }
+    if (readFileSync(source).compare(readFileSync(target)) !== 0) {
+      problems.push(`stale ${relative(repoRoot, target)}`);
+    }
+  }
   if (problems.length > 0) {
     console.error('generate-gallery: the committed gallery is out of date:');
     for (const problem of problems) console.error(`  ${problem}`);
@@ -151,6 +174,7 @@ if (checkMode) {
   for (const [file, html] of expected) {
     writeFileSync(join(galleryDir, file), html, 'utf8');
   }
+  cpSync(assetsDir, galleryAssetsDir, { recursive: true });
   console.log(`generate-gallery: wrote ${expected.size} pages to docs/gallery/`);
   for (const entry of entries) {
     console.log(`  ${entry.file}: ${entry.bytes} bytes, ${entry.nodes} nodes`);

@@ -232,6 +232,31 @@ describe('normalizer', () => {
     expect(result.diagnostics[0]?.message).toContain('no action bindings');
   });
 
+  it('measures a heading after a hero against the h1 the hero emits', () => {
+    const result = normalizeSpec({
+      version: 1,
+      meta: { title: 'X' },
+      blocks: [
+        { type: 'hero', title: 'Subject' },
+        { type: 'heading', level: 2, text: 'Section' },
+      ],
+    });
+    expect(result.diagnostics.map((d) => d.message)).not.toContain(
+      'the first heading is not a level-1 heading',
+    );
+  });
+
+  it('still warns when a page with no hero starts below level 1', () => {
+    const result = normalizeSpec({
+      version: 1,
+      meta: { title: 'X' },
+      blocks: [{ type: 'heading', level: 3, text: 'Deep start' }],
+    });
+    expect(result.diagnostics.map((d) => d.message)).toContain(
+      'the first heading is not a level-1 heading',
+    );
+  });
+
   it('rejects a slider whose range is empty', () => {
     const error = errorFrom({
       version: 1,

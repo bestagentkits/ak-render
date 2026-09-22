@@ -488,6 +488,13 @@ function postChecks(nodes: IrNode[], bag: DiagnosticBag): void {
   let previousHeadingLevel: number | undefined;
 
   for (const node of nodes) {
+    // A hero emits the document's <h1>, so a section heading that follows one is
+    // measured against level 1 rather than treated as the first heading. Without
+    // this, any hero-led page that also uses a heading block warns falsely.
+    if (node.type === 'hero' && previousHeadingLevel === undefined) {
+      previousHeadingLevel = 1;
+    }
+
     if (node.type === 'heading') {
       const level = numberProp(node, 'level') ?? 2;
       if (previousHeadingLevel === undefined && level > 1) {

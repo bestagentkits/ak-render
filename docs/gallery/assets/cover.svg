@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" role="img" aria-label="Cover illustration">
+  <title>Cover illustration</title>
+  <rect width="320" height="180" fill="#faf6f0" />
+  <g fill="none" stroke="#a83a10" stroke-width="2">
+    <rect x="36" y="40" width="248" height="100" rx="8" />
+    <path d="M36 70h248" />
+  </g>
+  <g fill="#2c2a25" font-family="monospace" font-size="12">
+    <text x="52" y="60">page-spec.yaml</text>
+    <text x="52" y="96">network: deny</text>
+    <text x="52" y="118">deterministic: true</text>
+  </g>
+</svg>

@@ -1,0 +1,459 @@
+version: 1
+
+meta:
+  title: All Components
+  description: Every block type in the Page Spec v1 roster, compiled into one standalone artifact.
+  locale: en
+
+theme:
+  preset: swiss-clean
+
+policy:
+  network: deny
+
+blocks:
+  - type: hero
+    eyebrow: Component coverage
+    title: All components
+    description: Every block in the v1 roster appears on this page, and the artifact opens from disk with no network requests.
+
+  - type: callout
+    tone: info
+    title: One page, every block
+    text: Each block below is emitted from declarative data. Nothing on this page authors HTML, CSS, or script.
+
+  - type: section
+    title: Layout
+    blocks:
+      - type: stack
+        gap: normal
+        blocks:
+          - type: heading
+            level: 2
+            text: Stack holds children with a controlled gap
+          - type: text
+            variant: lead
+            text: Text at lead size introduces a section.
+          - type: text
+            text: Text at body size carries the detail underneath.
+          - type: text
+            variant: caption
+            text: Text at caption size carries a note.
+      - type: grid
+        columns: 3
+        blocks:
+          - type: card
+            title: Grid child one
+            text: Grid children collapse to one column on narrow viewports.
+          - type: card
+            title: Grid child two
+            text: The column count is an author choice, not authored CSS.
+          - type: card
+            title: Grid child three
+            text: Each child is an ordinary block.
+      - type: split
+        ratio: wide-left
+        blocks:
+          - type: card
+            title: Wide side
+            text: Split places child groups side by side and stacks them when narrow.
+          - type: card
+            title: Narrow side
+            text: The ratio is a named value, never a number.
+      - type: spacer
+        size: small
+      - type: divider
+        label: End of layout
+
+  - type: section
+    title: Content
+    blocks:
+      - type: rich-text
+        text: |
+          Rich text renders several paragraphs from line breaks.
+
+          The compiler splits on blank lines and escapes every paragraph.
+      - type: quote
+        text: A closed action vocabulary can be validated, tested, and reviewed.
+        cite: Design note
+      - type: code
+        id: all-snippet
+        language: yaml
+        title: A Page Spec block
+        text: |
+          - type: text
+            text: Declarative input only
+      - type: key-value
+        title: Block facts
+        items:
+          - key: Input
+            value: JSON or YAML
+          - key: Output
+            value: One standalone document
+          - key: Network
+            value: Denied unless the spec opts in
+      - type: stack
+        gap: tight
+        blocks:
+          - type: badge
+            text: primitive
+            tone: neutral
+          - type: badge
+            text: verified
+            tone: success
+          - type: kbd
+            keys: [Enter, Space]
+      - type: list
+        title: Inline primitives
+        items:
+          - text: Badge renders a status chip
+            badge: inline
+          - text: Kbd renders key caps
+            badge: inline
+          - text: Divider separates groups
+      - type: alert
+        tone: warning
+        title: Network is denied on this page
+        text: Remote media degrades to a poster and a link, which is why the video and audio blocks below are not players.
+
+  - type: section
+    title: Information
+    blocks:
+      - type: stats
+        title: Roster
+        items:
+          - label: Blocks
+            value: "45"
+          - label: Actions
+            value: "12"
+          - label: Presets
+            value: "6"
+      - type: progress
+        label: Roster coverage
+        value: 45
+        max: 45
+      - type: steps
+        title: Compile pipeline
+        items:
+          - title: Parse
+            text: JSON or YAML becomes a nested spec.
+          - title: Normalize
+            text: The spec becomes a flat IR with stable node ids.
+          - title: Render
+            text: Blocks emit semantic HTML.
+          - title: Verify
+            text: The build fails rather than shipping an unsafe document.
+      - type: timeline
+        title: How the compiler got here
+        items:
+          - when: Fixtures
+            title: Page classes first
+            text: The corpus fixed what each page class needs.
+          - when: Themes
+            title: Presets as typed data
+            text: A preset is data with kinds, not a stylesheet.
+          - when: Cloud
+            title: Hosted path stayed opt-in
+            text: The local compiler never needs an account.
+
+  - type: section
+    title: Collections
+    blocks:
+      - type: table
+        title: Action vocabulary
+        columns: [Action, Purpose]
+        rows:
+          - [copy, Copy text to the clipboard]
+          - [open-url, Open an allowlisted URL]
+          - [toggle, Toggle a dialog or the theme]
+          - [filter, Filter a bound collection]
+      - type: comparison
+        title: Local and cloud
+        left:
+          label: Local compiler
+          items:
+            - No account and no network
+            - Byte-identical output
+            - The canonical path
+        right:
+          label: Cloud renderer
+          items:
+            - Opt-in and non-authoritative
+            - Render and share are separate scopes
+            - Never persists the bearer
+      - type: card-grid
+        title: Guarantees
+        items:
+          - title: Offline
+            text: The artifact opens from disk with zero requests.
+          - title: Deterministic
+            text: Identical input yields identical bytes.
+          - title: Escaped
+            text: Every value is escaped for its context at emission.
+          - title: Typed
+            text: Unknown blocks and props are rejected, not ignored.
+      - type: risk-matrix
+        title: Risks this page exercises
+        items:
+          - area: Arbitrary markup
+            impact: high
+            likelihood: low
+            note: Rejected during validation.
+          - area: Remote fetch
+            impact: medium
+            likelihood: low
+            note: Denied unless the spec opts in.
+          - area: Author script
+            impact: high
+            likelihood: low
+            note: No expression language exists.
+
+  - type: section
+    title: Interactive
+    blocks:
+      - type: tabs
+        title: Modes
+        items:
+          - id: all-tab-basic
+            title: Basic
+            text: Tabs use a roving tabindex and wire each panel to its tab.
+          - id: all-tab-advanced
+            title: Advanced
+            text: Arrow keys, Home, and End move between tabs.
+      - type: accordion
+        title: Details
+        items:
+          - title: Why native controls first?
+            text: The platform already implements keyboard and assistive behavior correctly.
+          - title: Why is the action list closed?
+            text: A closed vocabulary can be validated, tested, and reviewed.
+      - type: carousel
+        ariaLabel: Interaction previews
+        items:
+          - title: Slide one
+            text: Previous and next buttons, keyboard, and swipe all move the carousel.
+          - title: Slide two
+            text: One slide is visible at a time and there is no autoplay.
+      - type: toolbar
+        title: Actions
+        items:
+          - type: badge
+            text: ready
+            tone: success
+          - type: button
+            id: all-copy
+            label: Copy the snippet
+            variant: secondary
+            on:
+              click:
+                action: copy
+                target: all-snippet
+          - type: button
+            id: all-dialog-open
+            label: Open the dialog
+            on:
+              click:
+                action: toggle
+                target: all-dialog
+          - type: link
+            label: AgentKit docs
+            href: https://agentkit.best/docs
+      - type: button
+        id: all-open
+        label: Open the docs in a new window
+        variant: ghost
+        on:
+          click:
+            action: open-url
+            url: https://agentkit.best/docs
+      - type: slider
+        id: all-scale
+        label: Scale
+        min: 0
+        max: 10
+        step: 1
+        value: 5
+        on:
+          change:
+            action: set-value
+            path: state.scale
+      - type: search
+        id: all-search
+        label: Filter blocks
+        placeholder: Filter by name
+        on:
+          filter:
+            action: filter
+            target: all-list
+            match: text
+      - type: list
+        id: all-list
+        title: Filterable blocks
+        items:
+          - text: badge
+          - text: kbd
+          - text: divider
+          - text: spacer
+      - type: dialog
+        id: all-dialog
+        title: Native dialog
+        text: The dialog element handles focus, Escape, and the backdrop.
+        actions:
+          - label: Close
+            on:
+              click:
+                action: toggle
+                target: all-dialog
+
+  - type: section
+    title: Data
+    blocks:
+      - type: chart
+        kind: bar
+        title: Blocks per group
+        labels: [Layout, Content, Information, Collections, Interactive, Data, Media]
+        series:
+          - label: Blocks
+            values: [7, 8, 5, 5, 10, 3, 5]
+      - type: chart
+        kind: line
+        title: Compile time by fixture
+        labels: [One, Two, Three, Four]
+        series:
+          - label: Milliseconds
+            values: [4.43, 3.86, 3.6, 2.77]
+      - type: chart
+        kind: area
+        title: Output size by fixture
+        labels: [A, B, C, D]
+        series:
+          - label: Bytes
+            values: [24839, 26481, 27217, 27687]
+      - type: chart
+        kind: pie
+        title: Primitives and semantic blocks
+        labels: [Primitives, Semantic]
+        series:
+          - label: Blocks
+            values: [26, 19]
+      - type: chart
+        kind: donut
+        title: Roster by kind
+        labels: [Primitive, Semantic]
+        series:
+          - label: Blocks
+            values: [26, 19]
+      - type: chart
+        kind: sparkline
+        title: Size trend
+        labels: [A, B, C, D, E]
+        series:
+          - label: Bytes
+            values: [22709, 24839, 26481, 27217, 27687]
+      - type: chart
+        kind: progress
+        title: Roster coverage as a chart
+        labels: [Covered]
+        series:
+          - label: Blocks
+            values: [45]
+
+  - type: section
+    title: Media
+    blocks:
+      - type: image
+        src: assets/cover.svg
+        alt: Cover illustration for the all-components page
+        caption: Local images render directly and are never fetched.
+      - type: gallery
+        title: Local assets
+        columns: 3
+        items:
+          - src: assets/compiler-pipeline.svg
+            alt: Compiler pipeline diagram
+            caption: Pipeline
+          - src: assets/theme-presets.svg
+            alt: Six theme presets side by side
+            caption: Presets
+          - src: assets/interaction-trace.svg
+            alt: Interaction test trace
+            caption: Interactions
+      - type: video
+        title: Compiler walkthrough
+        poster: assets/demo-poster.svg
+        caption: Network is denied, so this is a poster and a link.
+        src: https://media.example.com/walkthrough.mp4
+        fallback:
+          description: A walkthrough of the compiler pipeline and the emitted artifact.
+          linkText: Open the recording
+          url: https://media.example.com/walkthrough
+      - type: audio
+        title: Introduction
+        caption: Audio degrades to metadata and a link.
+        src: https://media.example.com/intro.mp3
+        fallback:
+          description: A short spoken introduction to the declarative page model.
+          linkText: Open the recording
+          url: https://media.example.com/intro
+      - type: diagram-panel
+        title: Compiler pipeline
+        spec:
+          schema_version: 1
+          diagram_type: architecture
+          meta:
+            title: Compiler pipeline
+          components:
+            - id: spec
+              label: Page Spec
+              role: frontend
+            - id: ir
+              label: Normalized IR
+              role: worker
+            - id: html
+              label: Standalone HTML
+              role: database
+          connections:
+            - from: spec
+              to: ir
+              label: validate
+            - from: ir
+              to: html
+              label: render
+
+  - type: section
+    title: Review
+    blocks:
+      - type: diff-summary
+        title: Changed files
+        items:
+          - path: src/render/document.ts
+            status: modified
+            additions: 12
+            deletions: 3
+          - path: src/theme/tokens.ts
+            status: added
+            additions: 48
+            deletions: 0
+          - path: src/spec/legacy.ts
+            status: deleted
+            additions: 0
+            deletions: 96
+      - type: code-review
+        title: Findings
+        items:
+          - kind: good
+            title: Native controls first
+            text: The platform implements keyboard behavior correctly, so no widget code is needed.
+          - kind: concern
+            title: Provider references stay inert
+            text: A provider reference must remain a poster and a link rather than becoming a frame.
+          - kind: question
+            title: Who reviews a preset change?
+            text: A preset is typed data, so a review is a diff of values.
+
+  - type: divider
+    label: Component coverage ends here
+
+  - type: link
+    label: Back to the fixture gallery
+    href: index.html
