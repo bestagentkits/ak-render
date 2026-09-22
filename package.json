@@ -1,6 +1,6 @@
 {
   "name": "@bestagentkits/render",
-  "version": "0.1.0",
+  "version": "0.1.1-next.1",
   "private": false,
   "description": "Declarative Page Spec compiler: deterministic, offline, interactive standalone HTML from JSON/YAML.",
   "keywords": [

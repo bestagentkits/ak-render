@@ -186,7 +186,11 @@ describe('cloud renderer: parity with local compilation', () => {
     const { env } = harness();
     const response = await handleRequest(post('/v1/render', { spec: SPEC }), env);
     expect(response.status).toBe(200);
-    expect(VERSION).toBe('0.1.0');
+    // /v1/render returns the artifact itself, so the compiler version is the one
+    // stamped into the document. Comparing it with the local VERSION asserts the
+    // real contract, where a pinned literal breaks on every version bump.
+    const html = await response.text();
+    expect(html).toContain(`@bestagentkits/render ${VERSION}`);
   });
 });
 

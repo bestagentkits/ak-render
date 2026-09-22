@@ -9,6 +9,12 @@ Release mechanics and the compatibility contract live in
 
 ## [Unreleased]
 
+## [0.1.1-next.1] - 2026-09-22
+
+Prerelease published to exercise the trusted-publishing release path end to end:
+the tag run publishes over GitHub OIDC with provenance and no stored token. No
+functional changes; the compiler behaves as `0.1.0`.
+
 ## [0.1.0] - 2026-09-22
 
 First public release, published to npm as `@bestagentkits/render`.

@@ -1,10 +1,10 @@
 {
   "artifact": "benchmark-render",
   "producer": "benchmarks/render-benchmark.mjs",
-  "measuredAt": "2026-09-22T06:02:48.155Z",
+  "measuredAt": "2026-09-22T06:28:16.490Z",
   "compiler": {
     "name": "@bestagentkits/render",
-    "version": "0.1.0"
+    "version": "0.1.1-next.1"
   },
   "method": {
     "compilerTime": "Median of 5 compiles after one warm-up compile, per fixture.",
@@ -16,13 +16,13 @@
     "files": [
       {
         "path": "/home/orca/orca/workspaces/agentkit/feat-render-ak-render-declarative-interactive-pa/kits/core/skills/ak-render/SKILL.md",
-        "bytes": 4644,
-        "chars": 4640,
+        "bytes": 4684,
+        "chars": 4680,
         "lines": 106,
         "estimatedTokens": {
-          "low": 1031,
-          "point": 1160,
-          "high": 1326
+          "low": 1040,
+          "point": 1170,
+          "high": 1337
         }
       },
       {
@@ -38,45 +38,45 @@
       },
       {
         "path": "/home/orca/orca/workspaces/agentkit/feat-render-ak-render-declarative-interactive-pa/kits/core/skills/ak-render/references/integration.md",
-        "bytes": 2815,
-        "chars": 2803,
+        "bytes": 2825,
+        "chars": 2813,
         "lines": 82,
         "estimatedTokens": {
-          "low": 623,
-          "point": 701,
-          "high": 801
+          "low": 625,
+          "point": 703,
+          "high": 804
         }
       },
       {
         "path": "/home/orca/orca/workspaces/agentkit/feat-render-ak-render-declarative-interactive-pa/kits/core/skills/ak-preview/references/html-skill-composition.md",
-        "bytes": 6598,
-        "chars": 6582,
+        "bytes": 6603,
+        "chars": 6587,
         "lines": 97,
         "estimatedTokens": {
-          "low": 1463,
-          "point": 1646,
-          "high": 1881
+          "low": 1464,
+          "point": 1647,
+          "high": 1882
         }
       }
     ],
     "totals": {
       "files": 4,
-      "chars": 17493,
+      "chars": 17548,
       "estimatedTokens": {
-        "low": 3887,
-        "point": 4373,
-        "high": 4998
+        "low": 3900,
+        "point": 4387,
+        "high": 5014
       }
     }
   },
   "compile": [
     {
       "fixture": "brainstorm.yaml",
-      "compilerMsMedian": 4.433,
-      "compilerMsMin": 2.863,
-      "compilerMsMax": 5.196,
+      "compilerMsMedian": 4.631,
+      "compilerMsMin": 3.232,
+      "compilerMsMax": 5.608,
       "samples": 5,
-      "bytes": 27687,
+      "bytes": 27694,
       "nodes": 7,
       "features": [
         "filter",
@@ -89,11 +89,11 @@
     },
     {
       "fixture": "dashboard.yaml",
-      "compilerMsMedian": 5.133,
-      "compilerMsMin": 4.808,
-      "compilerMsMax": 6.375,
+      "compilerMsMedian": 5.573,
+      "compilerMsMin": 4.649,
+      "compilerMsMax": 6.941,
       "samples": 5,
-      "bytes": 36629,
+      "bytes": 36636,
       "nodes": 11,
       "features": [
         "theme",
@@ -105,11 +105,11 @@
     },
     {
       "fixture": "diff.yaml",
-      "compilerMsMedian": 3.864,
-      "compilerMsMin": 3.205,
-      "compilerMsMax": 3.948,
+      "compilerMsMedian": 3.46,
+      "compilerMsMin": 2.857,
+      "compilerMsMax": 4.246,
       "samples": 5,
-      "bytes": 26481,
+      "bytes": 26488,
       "nodes": 8,
       "features": [
         "theme"
@@ -120,11 +120,11 @@
     },
     {
       "fixture": "explain.yaml",
-      "compilerMsMedian": 3.595,
-      "compilerMsMin": 2.964,
-      "compilerMsMax": 3.921,
+      "compilerMsMedian": 2.83,
+      "compilerMsMin": 2.499,
+      "compilerMsMax": 3.299,
       "samples": 5,
-      "bytes": 30295,
+      "bytes": 30302,
       "nodes": 9,
       "features": [
         "tabs",
@@ -137,11 +137,11 @@
     },
     {
       "fixture": "interactive.yaml",
-      "compilerMsMedian": 6.069,
-      "compilerMsMin": 5.5,
-      "compilerMsMax": 9.054,
+      "compilerMsMedian": 5.261,
+      "compilerMsMin": 4.427,
+      "compilerMsMax": 7.152,
       "samples": 5,
-      "bytes": 41564,
+      "bytes": 41571,
       "nodes": 15,
       "features": [
         "tabs",
@@ -159,11 +159,11 @@
     },
     {
       "fixture": "media.yaml",
-      "compilerMsMedian": 2.515,
-      "compilerMsMin": 2.053,
-      "compilerMsMax": 3.593,
+      "compilerMsMedian": 2.165,
+      "compilerMsMin": 1.793,
+      "compilerMsMax": 2.782,
       "samples": 5,
-      "bytes": 29867,
+      "bytes": 29874,
       "nodes": 8,
       "features": [
         "carousel",
@@ -176,11 +176,11 @@
     },
     {
       "fixture": "plan.yaml",
-      "compilerMsMedian": 2.678,
-      "compilerMsMin": 2.605,
-      "compilerMsMax": 4.124,
+      "compilerMsMedian": 2.725,
+      "compilerMsMin": 2.203,
+      "compilerMsMax": 3.804,
       "samples": 5,
-      "bytes": 27217,
+      "bytes": 27224,
       "nodes": 9,
       "features": [
         "accordion",
@@ -193,11 +193,11 @@
     },
     {
       "fixture": "recap.yaml",
-      "compilerMsMedian": 1.913,
-      "compilerMsMin": 1.597,
-      "compilerMsMax": 2.235,
+      "compilerMsMedian": 1.856,
+      "compilerMsMin": 1.799,
+      "compilerMsMax": 2.52,
       "samples": 5,
-      "bytes": 30827,
+      "bytes": 30834,
       "nodes": 8,
       "features": [
         "filter",
@@ -210,11 +210,11 @@
     },
     {
       "fixture": "theme-showcase.yaml",
-      "compilerMsMedian": 2.765,
-      "compilerMsMin": 2.177,
-      "compilerMsMax": 3.159,
+      "compilerMsMedian": 2.353,
+      "compilerMsMin": 2.062,
+      "compilerMsMax": 2.667,
       "samples": 5,
-      "bytes": 33835,
+      "bytes": 33842,
       "nodes": 11,
       "features": [
         "carousel",
@@ -233,8 +233,8 @@
       "skill": "ak:explain",
       "mode": "--html",
       "beforeTokens": 33696,
-      "afterTokens": 4373,
-      "deltaTokens": -29323,
+      "afterTokens": 4387,
+      "deltaTokens": -29309,
       "reductionPercent": 87
     },
     {
@@ -242,8 +242,8 @@
       "skill": "ak:brainstorm",
       "mode": "--html",
       "beforeTokens": 33696,
-      "afterTokens": 4373,
-      "deltaTokens": -29323,
+      "afterTokens": 4387,
+      "deltaTokens": -29309,
       "reductionPercent": 87
     },
     {
@@ -251,8 +251,8 @@
       "skill": "ak:plan (Engineer)",
       "mode": "--html",
       "beforeTokens": 33696,
-      "afterTokens": 4373,
-      "deltaTokens": -29323,
+      "afterTokens": 4387,
+      "deltaTokens": -29309,
       "reductionPercent": 87
     },
     {
@@ -260,8 +260,8 @@
       "skill": "ak:plan (Marketing)",
       "mode": "--html",
       "beforeTokens": 33696,
-      "afterTokens": 4373,
-      "deltaTokens": -29323,
+      "afterTokens": 4387,
+      "deltaTokens": -29309,
       "reductionPercent": 87
     },
     {
@@ -269,8 +269,8 @@
       "skill": "ak:preview",
       "mode": "--diff",
       "beforeTokens": 36551,
-      "afterTokens": 4373,
-      "deltaTokens": -32178,
+      "afterTokens": 4387,
+      "deltaTokens": -32164,
       "reductionPercent": 88
     }
   ],
