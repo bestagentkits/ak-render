@@ -74,17 +74,18 @@ gap for 0.1.0 rather than implying provenance it does not have.
 ## What the publish would ship
 
 ```console
-$ npm publish --provenance --access public --tag next --dry-run
-npm notice Tarball Details
-npm notice name: @agentkit/render
-npm notice version: 0.1.0
-npm notice filename: agentkit-render-0.1.0.tgz
-npm notice package size: 132.6 kB
-npm notice unpacked size: 589.7 kB
-npm notice shasum: 535ffd166ff395f2a3881cb1052b35aca979672c
-npm notice integrity: sha512-ZdcTH/wflfXQl[...]mxuzAwEOc5p0g==
-npm notice total files: 140
+$ npm pack --json --pack-destination /tmp/akpack
+shasum:    25d5b7593e2b02c783c6b768baf54fb8459bed90
+integrity: sha512-80tZHTpV5BUP4Omb9BRUK4sG29jFS/jKDGlkKg4MesbTC378OTSvqcbUutOlsHfDTgxJt9fNWrVv0l27X9QulQ==
+size:      132589
+unpacked:  589767
+files:     140
 ```
+
+The shasum in the attempt transcript above (`535ffd16…`) belongs to that
+attempt. The manifest gained a `repository` field afterwards, because npm
+resolves a trusted-publishing attestation against it, so the tarball that ships
+is this one.
 
 ## Consumer-side verification
 

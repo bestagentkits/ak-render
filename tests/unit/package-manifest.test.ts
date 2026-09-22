@@ -14,6 +14,7 @@ const manifest = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as {
   exports: Record<string, Record<string, string>>;
   files: string[];
   publishConfig: Record<string, unknown>;
+  repository: { type: string; url: string };
 };
 
 describe('package manifest contract', () => {
@@ -34,6 +35,15 @@ describe('package manifest contract', () => {
       import: './dist/index.js',
     });
     expect(manifest.bin['ak-render']).toBe('./dist/cli.js');
+  });
+
+  it('names the source repository so npm can tie the published provenance to it', () => {
+    // Trusted publishing attests the workflow that produced the tarball, and npm
+    // resolves that attestation against this field.
+    expect(manifest.repository).toEqual({
+      type: 'git',
+      url: 'git+https://github.com/bestagentkits/ak-render.git',
+    });
   });
 
   it('publishes under MIT with the license and docs included in the tarball', () => {

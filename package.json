@@ -12,6 +12,10 @@
     "compiler",
     "deterministic"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bestagentkits/ak-render.git"
+  },
   "license": "MIT",
   "type": "module",
   "engines": {
