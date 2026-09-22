@@ -35,7 +35,11 @@ export interface IrNode {
   network: 'none' | 'optional';
 }
 
-export type NetworkPolicy = 'deny' | { allow: string[] };
+/**
+ * `deny` is the default. An allow list opts into named capabilities, and an
+ * optional provider list narrows remote media to that provider's own hosts.
+ */
+export type NetworkPolicy = 'deny' | { allow: string[]; providers?: string[] };
 
 export interface IrMeta {
   title: string;

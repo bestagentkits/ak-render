@@ -22,6 +22,7 @@ import { type BoundsReport, checkBounds } from './bounds.js';
 import { scanForbiddenKeys } from './forbidden.js';
 import { migrateSpec } from './migrate.js';
 import { type ParseOptions, parseSpec } from './parse.js';
+import { EMBED_PROVIDER_NAMES, isEmbedProvider } from './providers.js';
 
 export interface NormalizeResult {
   ir: IrDocument;
@@ -211,7 +212,48 @@ function normalizeEnvelope(
               }
               capabilities.push(capability);
             }
-            policy = { network: { allow: capabilities } };
+            // A provider list is the second, narrower gate for remote media:
+            // declaring providers means only those hosts may be referenced.
+            const providerValue = network.providers;
+            const providers: string[] = [];
+            if (providerValue !== undefined) {
+              if (!Array.isArray(providerValue) || providerValue.length === 0) {
+                bag.add({
+                  code: 'SPEC_VALIDATION_ERROR',
+                  path: '$.policy.network.providers',
+                  message: 'expected a non-empty list of provider names',
+                  details: { allowed: [...EMBED_PROVIDER_NAMES] },
+                });
+              } else {
+                for (let index = 0; index < providerValue.length; index += 1) {
+                  const provider = providerValue[index];
+                  if (typeof provider !== 'string' || !isEmbedProvider(provider)) {
+                    bag.add({
+                      code: 'POLICY_VIOLATION',
+                      path: pathIndex('$.policy.network.providers', index),
+                      message: `unknown media provider "${String(provider)}"`,
+                      details: { allowed: [...EMBED_PROVIDER_NAMES] },
+                    });
+                    continue;
+                  }
+                  providers.push(provider);
+                }
+              }
+            }
+            for (const key of Object.keys(network)) {
+              if (key !== 'allow' && key !== 'providers') {
+                bag.add({
+                  code: 'SPEC_VALIDATION_ERROR',
+                  path: pathKey('$.policy.network', key),
+                  message: `unknown network policy field "${key}"`,
+                  details: { allowed: ['allow', 'providers'] },
+                });
+              }
+            }
+            policy =
+              providers.length === 0
+                ? { network: { allow: capabilities } }
+                : { network: { allow: capabilities, providers } };
           }
         }
       }

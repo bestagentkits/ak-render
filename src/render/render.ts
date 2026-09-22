@@ -10,6 +10,7 @@
  */
 
 import { type Diagnostic, DiagnosticBag } from '../diagnostics.js';
+import type { DiagramAdapter } from '../diagram/adapter.js';
 import { RenderError } from '../errors.js';
 import { stableHash } from '../hash.js';
 import type { IrDocument, IrNode } from '../ir.js';
@@ -34,6 +35,12 @@ export interface RenderOptions {
   /** Preset catalog. Defaults to built-ins only; pass a discovered catalog to
    * resolve project or user presets. */
   themeCatalog?: ThemeCatalog;
+  /**
+   * Diagram adapter. AgentKit's Engineer install supplies one backed by the
+   * `ak:diagram` typed compiler; without it every diagram-panel emits the
+   * structured semantic fallback.
+   */
+  diagramAdapter?: DiagramAdapter;
 }
 
 export interface CompileResult {
@@ -118,12 +125,21 @@ function nodeIndex(ir: IrDocument): Map<string, IrNode> {
   return new Map(ir.nodes.map((node) => [node.id, node]));
 }
 
-function renderBody(ir: IrDocument, theme: ResolvedTheme, features: Set<RuntimeFeature>): string {
+function renderBody(
+  ir: IrDocument,
+  theme: ResolvedTheme,
+  features: Set<RuntimeFeature>,
+  renderOptions: { diagramAdapter?: DiagramAdapter; warnings: Diagnostic[] },
+): string {
   const byId = nodeIndex(ir);
   const context: RenderContext = {
     ir,
     theme,
     features,
+    warnings: renderOptions.warnings,
+    ...(renderOptions.diagramAdapter === undefined
+      ? {}
+      : { diagramAdapter: renderOptions.diagramAdapter }),
     renderChildren: (node) =>
       node.children
         .map((childId) => byId.get(childId))
@@ -186,7 +202,11 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
     });
   }
 
-  const body = renderBody(ir, resolved, features);
+  const renderWarnings: Diagnostic[] = [];
+  const body = renderBody(ir, resolved, features, {
+    warnings: renderWarnings,
+    ...(options.diagramAdapter === undefined ? {} : { diagramAdapter: options.diagramAdapter }),
+  });
   const runtimeNeeded = features.size > 0 || bodyNeedsRuntime(body);
   const js = runtimeNeeded
     ? buildRuntime({ features, state: ir.state, hasBindings: bodyNeedsRuntime(body) })
@@ -231,6 +251,7 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
     warnings: [
       ...normalized.diagnostics.filter((diagnostic) => diagnostic.severity === 'warning'),
       ...themeBag.warnings(),
+      ...renderWarnings,
     ],
   };
 }

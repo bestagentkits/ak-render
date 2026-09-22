@@ -12,9 +12,12 @@
  *      they do. No renderer emits a handler, a style attribute, or a script.
  */
 
+import type { Diagnostic } from '../diagnostics.js';
+import { type DiagramAdapter, runDiagramAdapter } from '../diagram/adapter.js';
 import type { IrDocument, IrNode, NetworkPolicy } from '../ir.js';
 import { isPlainObject, type JsonValue } from '../json.js';
 import type { RuntimeFeature } from '../registry/roster.js';
+import { EMBED_PROVIDERS, hostMatchesAnyProvider, hostMatchesProvider } from '../spec/providers.js';
 import type { ResolvedTheme } from '../theme/load-theme.js';
 import { type ChartSeries, renderChart } from './charts.js';
 import {
@@ -29,6 +32,13 @@ export interface RenderContext {
   ir: IrDocument;
   theme: ResolvedTheme;
   features: Set<RuntimeFeature>;
+  /**
+   * Optional diagram adapter. Without one, every diagram-panel emits the
+   * structured semantic fallback, which is the Core and Marketing behavior.
+   */
+  diagramAdapter?: DiagramAdapter;
+  /** Diagnostics raised while rendering, such as a rejected adapter output. */
+  warnings?: Diagnostic[];
   renderChildren(node: IrNode): string;
 }
 
@@ -113,19 +123,49 @@ function capabilityAllowed(policy: NetworkPolicy, capability: string): boolean {
 }
 
 /**
+ * Decide whether a remote reference may be loaded.
+ *
+ * Two gates apply. The capability must be opted into, and when the page declares
+ * a provider allowlist the reference's host must belong to one of those
+ * providers. A block that names a provider itself requires that provider to be
+ * allowlisted, so a spec cannot promote an arbitrary host to trusted by
+ * labelling it "youtube".
+ */
+function networkAllows(
+  policy: NetworkPolicy,
+  capability: 'images' | 'media',
+  reference: string,
+  provider: string,
+): boolean {
+  if (!capabilityAllowed(policy, capability)) return false;
+  if (policy === 'deny') return false;
+  const declared = policy.providers ?? [];
+  if (provider !== '') {
+    return declared.includes(provider) && hostMatchesProvider(provider, reference);
+  }
+  if (declared.length === 0) return true;
+  return hostMatchesAnyProvider(declared, reference);
+}
+
+/**
  * Resolve a media reference against the network policy.
  *
  * A relative path is local and always allowed; a remote reference needs the
- * matching capability. Nothing here can produce an embed the spec did not ask
- * for in a way the policy did not allow.
+ * matching capability and, when a provider allowlist exists, an allowlisted
+ * host. Nothing here can produce an embed the spec did not ask for in a way the
+ * policy did not allow.
  */
 function resolveMedia(
   reference: string,
   policy: NetworkPolicy,
   capability: 'images' | 'media',
+  provider = '',
 ): { allowed: boolean; src: string } {
   if (!isRemote(reference)) return { allowed: true, src: escapeUrl(reference) };
-  return { allowed: capabilityAllowed(policy, capability), src: escapeUrl(reference) };
+  return {
+    allowed: networkAllows(policy, capability, reference, provider),
+    src: escapeUrl(reference),
+  };
 }
 
 function mediaFallbackBody(
@@ -134,6 +174,7 @@ function mediaFallbackBody(
   url: string,
   poster: string,
   linkText: string,
+  note = 'Remote media is not embedded because the page denies network access.',
 ): string {
   const posterMarkup =
     poster === '' ? '' : `<img src="${escapeAttribute(escapeUrl(poster))}" alt="" />`;
@@ -147,7 +188,7 @@ function mediaFallbackBody(
     posterMarkup,
     title === '' ? '' : `<p><strong>${escapeText(title)}</strong></p>`,
     `<p class="ak-muted">${escapeText(description)}</p>`,
-    `<p class="ak-caption">Remote media is not embedded because the page denies network access.</p>`,
+    `<p class="ak-caption">${escapeText(note)}</p>`,
     link,
   ]
     .filter((part) => part !== '')
@@ -740,7 +781,7 @@ const RENDERERS: Record<string, Renderer> = {
     })}</div>`;
   },
 
-  'diagram-panel': (node) => {
+  'diagram-panel': (node, context) => {
     const spec = isPlainObject(node.props.spec) ? node.props.spec : {};
     const asObjects = (value: unknown): Record<string, JsonValue>[] =>
       (Array.isArray(value) ? value.filter(isPlainObject) : []) as Record<string, JsonValue>[];
@@ -749,11 +790,11 @@ const RENDERERS: Record<string, Renderer> = {
     const meta = isPlainObject(spec.meta) ? (spec.meta as Record<string, JsonValue>) : {};
     const diagramTitle = str(meta.title, stringProp(node, 'title', 'Diagram'));
     const caption = stringProp(node, 'caption');
-    return [
-      `<figure${renderAttributes(nodeAttributes(node, { class: 'ak-block ak-diagram' }))}>`,
-      titleHeader(node, 2),
-      `<div class="ak-diagram-fallback" data-ak-diagram-fallback>`,
-      `<p><strong>${escapeText(diagramTitle)}</strong></p>`,
+
+    // The semantic fallback is always available: it is the only rendering when
+    // no adapter is installed, and it stays in the document as the accessible
+    // description when one is.
+    const fallbackBody = [
       described.length === 0
         ? ''
         : `<ul class="ak-list">${described
@@ -774,7 +815,42 @@ const RENDERERS: Record<string, Renderer> = {
                 )}</code><span>${escapeText(str(edge.label))}</span></li>`,
             )
             .join('')}</ul>`,
-      `<p class="ak-caption">Rendered as a structured fallback because no diagram adapter is configured.</p>`,
+    ]
+      .filter((part) => part !== '')
+      .join('');
+
+    const adapterResult = runDiagramAdapter(context.diagramAdapter, {
+      spec: (node.props.spec ?? null) as JsonValue,
+      title: diagramTitle,
+      nodeId: node.id,
+    });
+    if (adapterResult?.rejected !== undefined) {
+      context.warnings?.push({
+        code: 'POLICY_VIOLATION',
+        severity: 'warning',
+        path: `$.blocks.${node.id}`,
+        message: `diagram adapter "${adapterResult.adapter}" output was rejected (${adapterResult.rejected}); the structured fallback is used`,
+      });
+    }
+    const accepted =
+      adapterResult !== undefined &&
+      adapterResult.rejected === undefined &&
+      adapterResult.markup !== '';
+
+    return [
+      `<figure${renderAttributes(nodeAttributes(node, { class: 'ak-block ak-diagram' }))}>`,
+      titleHeader(node, 2),
+      accepted
+        ? `<div class="ak-diagram-rendered" data-ak-diagram-adapter="${escapeAttribute(
+            adapterResult.adapter,
+          )}">${adapterResult.markup}</div>`
+        : '',
+      `<div class="ak-diagram-fallback" data-ak-diagram-fallback>`,
+      `<p><strong>${escapeText(diagramTitle)}</strong></p>`,
+      fallbackBody,
+      accepted
+        ? '<p class="ak-caption">Rendered by a diagram adapter. The structured description below is the accessible equivalent.</p>'
+        : '<p class="ak-caption">Rendered as a structured fallback because no diagram adapter is configured.</p>',
       '</div>',
       figureCaption(caption),
       '</figure>',
@@ -835,9 +911,31 @@ const RENDERERS: Record<string, Renderer> = {
 
   video: (node, context) => {
     const source = stringProp(node, 'src');
-    const resolved = resolveMedia(source, context.ir.policy.network, 'media');
+    const provider = stringProp(node, 'provider');
+    const resolved = resolveMedia(source, context.ir.policy.network, 'media', provider);
     const fallback = isPlainObject(node.props.fallback) ? node.props.fallback : {};
     const captionText = stringProp(node, 'caption');
+    // A provider reference never becomes a frame, whether or not it is allowed:
+    // the page links to the provider and keeps the poster, so the artifact stays
+    // frame-free. Only the explanation differs between allowed and denied.
+    if (provider !== '') {
+      const label = EMBED_PROVIDERS[provider]?.label ?? provider;
+      return [
+        `<figure${renderAttributes(nodeAttributes(node, { class: 'ak-block ak-media' }))}>`,
+        `<div class="ak-media-fallback">${mediaFallbackBody(
+          stringProp(node, 'title'),
+          str(fallback.description, `${label} content`),
+          source,
+          stringProp(node, 'poster'),
+          str(fallback.linkText, `Open on ${label}`),
+          resolved.allowed
+            ? `Embedded players are not emitted; this page links to ${label} instead.`
+            : `Embedded players are not emitted and the page denies network access; this page links to ${label} instead.`,
+        )}</div>`,
+        figureCaption(captionText),
+        '</figure>',
+      ].join('');
+    }
     if (!resolved.allowed) {
       return [
         `<figure${renderAttributes(nodeAttributes(node, { class: 'ak-block ak-media' }))}>`,
@@ -865,9 +963,30 @@ const RENDERERS: Record<string, Renderer> = {
 
   audio: (node, context) => {
     const source = stringProp(node, 'src');
-    const resolved = resolveMedia(source, context.ir.policy.network, 'media');
+    const provider = stringProp(node, 'provider');
+    const resolved = resolveMedia(source, context.ir.policy.network, 'media', provider);
     const fallback = isPlainObject(node.props.fallback) ? node.props.fallback : {};
     const captionText = stringProp(node, 'caption');
+    // A provider reference never becomes a frame, whether or not it is allowed:
+    // the page links to the provider. Only the explanation differs.
+    if (provider !== '') {
+      const label = EMBED_PROVIDERS[provider]?.label ?? provider;
+      return [
+        `<figure${renderAttributes(nodeAttributes(node, { class: 'ak-block ak-media' }))}>`,
+        `<div class="ak-media-fallback">${mediaFallbackBody(
+          stringProp(node, 'title'),
+          str(fallback.description, `${label} audio`),
+          source,
+          '',
+          str(fallback.linkText, `Open on ${label}`),
+          resolved.allowed
+            ? `Embedded players are not emitted; this page links to ${label} instead.`
+            : `Embedded players are not emitted and the page denies network access; this page links to ${label} instead.`,
+        )}</div>`,
+        figureCaption(captionText),
+        '</figure>',
+      ].join('');
+    }
     if (!resolved.allowed) {
       return [
         `<figure${renderAttributes(nodeAttributes(node, { class: 'ak-block ak-media' }))}>`,

@@ -1,0 +1,11 @@
+version: 1
+meta:
+  title: Arbitrary iframe attempt
+  description: A spec that tries to smuggle a remote frame into the page.
+blocks:
+  - type: text
+    text: The block below attempts to inject an arbitrary iframe.
+  - type: card
+    title: Frame
+    iframe: |
+      <iframe src="https://evil.example/embed" srcdoc="<script>alert(1)</script>"></iframe>

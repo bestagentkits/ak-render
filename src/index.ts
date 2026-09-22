@@ -7,6 +7,18 @@
  */
 
 export type { Diagnostic, DiagnosticSeverity } from './diagnostics.js';
+export type {
+  AdapterMarkupCheck,
+  DiagramAdapter,
+  DiagramAdapterResult,
+  DiagramRenderRequest,
+} from './diagram/adapter.js';
+export {
+  checkAdapterMarkup,
+  DIAGRAM_ADAPTER_CONTRACT_VERSION,
+  MAX_DIAGRAM_MARKUP_BYTES,
+  runDiagramAdapter,
+} from './diagram/adapter.js';
 export type { RenderErrorCode, RenderErrorOptions } from './errors.js';
 export { isRenderError, RenderError } from './errors.js';
 export type { IrDocument, IrNode, IrTheme, NetworkPolicy } from './ir.js';
@@ -34,6 +46,14 @@ export type { NormalizeResult } from './spec/normalize.js';
 export { normalize, normalizeSpec } from './spec/normalize.js';
 export type { ParseOptions } from './spec/parse.js';
 export { parseSpec } from './spec/parse.js';
+export type { EmbedProvider } from './spec/providers.js';
+export {
+  EMBED_PROVIDER_NAMES,
+  EMBED_PROVIDERS,
+  hostMatchesAnyProvider,
+  hostMatchesProvider,
+  isEmbedProvider,
+} from './spec/providers.js';
 export type { ValidateResult, ValidateSummary } from './spec/validate.js';
 export { validate, validateOrThrow } from './spec/validate.js';
 export type { LoadThemeOptions, ResolvedTheme, ThemeInput } from './theme/load-theme.js';

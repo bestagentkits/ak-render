@@ -2096,6 +2096,16 @@
           "type": "string",
           "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
         },
+        "provider": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "soundcloud",
+            "spotify",
+            "vimeo",
+            "youtube"
+          ]
+        },
         "caption": {
           "type": "string",
           "maxLength": 50000
@@ -2127,7 +2137,7 @@
           "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
         }
       },
-      "description": "Video: plays local sources; network sources degrade to poster plus link."
+      "description": "Video: plays local sources; a provider reference becomes a poster plus link; network sources degrade to poster plus link."
     },
     "block-audio": {
       "type": "object",
@@ -2149,6 +2159,16 @@
           "type": "string",
           "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
         },
+        "provider": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "soundcloud",
+            "spotify",
+            "vimeo",
+            "youtube"
+          ]
+        },
         "caption": {
           "type": "string",
           "maxLength": 50000
@@ -2180,7 +2200,7 @@
           "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
         }
       },
-      "description": "Audio: plays local sources; network sources degrade to metadata plus link."
+      "description": "Audio: plays local sources; a provider reference becomes metadata plus link; network sources degrade to metadata plus link."
     },
     "block-button": {
       "type": "object",

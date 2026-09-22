@@ -1,0 +1,18 @@
+version: 1
+meta:
+  title: Raw markup attempt
+  description: A spec that tries to supply its own HTML and an inline handler.
+blocks:
+  - type: text
+    text: The block below attempts to supply raw markup and a handler.
+  - type: card
+    title: Raw
+    rawHTML: '<img src=x onerror="alert(1)" />'
+  - type: button
+    id: go
+    label: Go
+    onclick: alert(1)
+    on:
+      click:
+        action: toggle
+        target: go

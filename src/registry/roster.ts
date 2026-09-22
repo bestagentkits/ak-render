@@ -12,6 +12,7 @@
  * cannot drift apart.
  */
 
+import { EMBED_PROVIDER_NAMES } from '../spec/providers.js';
 import type { ActionType } from './actions.js';
 import type { PropSchema } from './prop-schema.js';
 
@@ -113,7 +114,7 @@ const oneOf = (
 ): PropSchema => ({ kind: 'oneOf', options, ...o });
 const enumStr = (
   values: readonly string[],
-  o: { required?: boolean; default?: string } = {},
+  o: { required?: boolean; default?: string; description?: string } = {},
 ): PropSchema => ({
   kind: 'string',
   enum: values,
@@ -641,6 +642,7 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
       caption: txt(),
       ...anchorProps,
     },
+    network: 'optional',
     assets: ['media'],
     a11y: 'Alt text is required; decorative images must use an empty alt explicitly.',
   }),
@@ -658,17 +660,23 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
       }),
       ...anchorProps,
     },
+    network: 'optional',
     assets: ['media'],
     a11y: 'Every image keeps its alt text; captions are visible text, not tooltips.',
   }),
   define({
     type: 'video',
     purpose: 'Local video or a network-denied fallback.',
-    summary: 'Video: plays local sources; network sources degrade to poster plus link.',
+    summary:
+      'Video: plays local sources; a provider reference becomes a poster plus link; network sources degrade to poster plus link.',
     props: {
       title: LABEL,
       src: urlProp({ required: true }),
       poster: urlProp(),
+      provider: enumStr(EMBED_PROVIDER_NAMES, {
+        description:
+          'Network media provider. Requires the media capability and this provider in the page provider allowlist; the page still links out instead of embedding.',
+      }),
       caption: txt(),
       fallback: obj({
         description: txt({ required: true }),
@@ -685,10 +693,15 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   define({
     type: 'audio',
     purpose: 'Local audio or a network-denied fallback.',
-    summary: 'Audio: plays local sources; network sources degrade to metadata plus link.',
+    summary:
+      'Audio: plays local sources; a provider reference becomes metadata plus link; network sources degrade to metadata plus link.',
     props: {
       title: LABEL,
       src: urlProp({ required: true }),
+      provider: enumStr(EMBED_PROVIDER_NAMES, {
+        description:
+          'Network media provider. Requires the media capability and this provider in the page provider allowlist; the page still links out instead of embedding.',
+      }),
       caption: txt(),
       fallback: obj({
         description: txt({ required: true }),
