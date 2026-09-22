@@ -125,5 +125,17 @@ OIDC one.
 | The published tarball matches the committed tree | **Done**, shasum match |
 | A consumer can install, compile, and open the artifact offline | **Done**, verified from the registry |
 | `0.1.0` carries a provenance attestation | **Not done**, and not achievable for a first manual publish |
-| Future releases publish through OIDC with provenance | Prepared in `release.yml`; **awaits the trusted-publisher configuration** |
-| A version tag and GitHub release exist | Pending the tag push |
+| Future releases publish through OIDC with provenance | Prepared in `release.yml`; **awaits the trusted-publisher configuration, and is not yet exercised** |
+| A version tag and GitHub release exist | **Done**: tag `v0.1.0`, release at `https://github.com/bestagentkits/ak-render/releases/tag/v0.1.0` |
+
+## Tag run
+
+The `v0.1.0` tag ran the release workflow to completion: CI run `35694103971`.
+Every gate passed, and the publish step was **skipped** because the registry
+already held `0.1.0`, which is the intended behavior of the idempotency check
+rather than a failure. The job then extracted the changelog notes and created the
+GitHub release.
+
+Because that step was skipped, **the OIDC publish path has not been exercised
+even once.** It stays a prepared configuration until a release publishes a
+version the registry does not yet hold.
