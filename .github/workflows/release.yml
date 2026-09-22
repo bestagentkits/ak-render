@@ -68,12 +68,30 @@ jobs:
       - run: pnpm test:package
       - run: pnpm test:clean-install
 
+      # A version that is already on the registry cannot be published again, and
+      # npm rejects the attempt outright. Re-running this workflow, or tagging a
+      # version that a maintainer published by hand, must still produce the
+      # GitHub release rather than fail here.
+      - name: Check whether the version is already published
+        id: registry
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          NAME="$(node -p "require('./package.json').name")"
+          if npm view "${NAME}@${VERSION}" version >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::${NAME}@${VERSION} is already on the registry; the publish step is skipped"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+
       # Authentication is the GitHub OIDC token, not a stored secret: the job
       # holds `id-token: write` and the package is configured with this
       # repository and workflow as its trusted publisher. Do not add
       # NODE_AUTH_TOKEN here — a token would take precedence over OIDC and the
       # publish would lose provenance.
       - name: Publish to npm with provenance
+        if: steps.registry.outputs.published == 'false'
         run: |
           set -euo pipefail
           VERSION="${GITHUB_REF_NAME#v}"
