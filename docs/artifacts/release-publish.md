@@ -95,10 +95,10 @@ if it were, and because the resolution changed the package name.
 4. **`EOTP`** — the manual publish needed a one-time password, which the
    maintainer supplied.
 
-## What remains
+## Trusted publisher
 
-The trusted publisher still has to be configured on npmjs.com, on the package's
-own settings page. Until then, publishing from CI is not yet authorized:
+Configured by the maintainer on npmjs.com and **verified by a real publish**
+(`0.1.1-next.1`, above). The settings that matter:
 
 | Field | Value |
 | --- | --- |
@@ -107,11 +107,11 @@ own settings page. Until then, publishing from CI is not yet authorized:
 | Repository | `ak-render` |
 | Workflow filename | `release.yml` |
 | Environment name | *(blank)* |
-| Allowed actions | **`npm publish` must be selected** |
+| Allowed actions | `npm publish` |
 
 The allowed-actions choice is the one that fails silently: configurations created
 after 2026-09-03 default to `npm stage publish` only, and `release.yml` publishes
-directly, so an unselected checkbox turns every release job red.
+directly.
 
 Recommended afterwards: **Settings → Publishing access → Require two-factor
 authentication and disallow tokens**, so the only path that can publish is the
@@ -125,17 +125,55 @@ OIDC one.
 | The published tarball matches the committed tree | **Done**, shasum match |
 | A consumer can install, compile, and open the artifact offline | **Done**, verified from the registry |
 | `0.1.0` carries a provenance attestation | **Not done**, and not achievable for a first manual publish |
-| Future releases publish through OIDC with provenance | Prepared in `release.yml`; **awaits the trusted-publisher configuration, and is not yet exercised** |
-| A version tag and GitHub release exist | **Done**: tag `v0.1.0`, release at `https://github.com/bestagentkits/ak-render/releases/tag/v0.1.0` |
+| Future releases publish through OIDC with provenance | **Done and verified**: `0.1.1-next.1` published over OIDC with a SLSA provenance attestation |
+| A version tag and GitHub release exist | **Done**: tags `v0.1.0` and `v0.1.1-next.1`, with releases at `https://github.com/bestagentkits/ak-render/releases` |
 
-## Tag run
+## Tag runs
 
-The `v0.1.0` tag ran the release workflow to completion: CI run `35694103971`.
-Every gate passed, and the publish step was **skipped** because the registry
-already held `0.1.0`, which is the intended behavior of the idempotency check
-rather than a failure. The job then extracted the changelog notes and created the
-GitHub release.
+### `v0.1.0` — publish skipped
 
-Because that step was skipped, **the OIDC publish path has not been exercised
-even once.** It stays a prepared configuration until a release publishes a
-version the registry does not yet hold.
+CI run `35694103971`. Every gate passed, and the publish step was **skipped**
+because the registry already held `0.1.0`, which is the intended behavior of the
+idempotency check rather than a failure. The job then extracted the changelog
+notes and created the GitHub release.
+
+### `v0.1.1-next.1` — published over OIDC with provenance
+
+CI run `35695071427` published the prerelease under the `next` dist-tag, leaving
+`latest` on `0.1.0`. This is the run that exercises the trusted publisher.
+
+| Fact | Value |
+| --- | --- |
+| Version | `0.1.1-next.1`, dist-tag `next` |
+| shasum | `4daddc1e2441f05562d65742f867ded204826918` |
+| Attestations | 2, both with bundles |
+| Provenance predicate | `https://slsa.dev/provenance/v1` |
+| Transparency log | `https://search.sigstore.dev/?logIndex=2908156216` |
+| Signatures | 2 |
+
+No stored token was used. The job holds `id-token: write` and the package is
+configured with this repository and workflow as its trusted publisher, so the
+registry accepted a short-lived OIDC credential:
+
+```console
+npm notice Publishing to https://registry.npmjs.org/ with tag next and public access
+npm notice publish Signed provenance statement with source and build information from GitHub Actions
+npm notice publish Provenance statement published to transparency log: https://search.sigstore.dev/?logIndex=2908156216
++ @bestagentkits/render@0.1.1-next.1
+```
+
+The signed statement names the build it attests, which is the claim worth
+checking rather than the job's exit code:
+
+```console
+builder id:    https://github.com/actions/runner/github-hosted
+source repo:   https://github.com/bestagentkits/ak-render
+source ref:    refs/tags/v0.1.1-next.1
+workflow path: .github/workflows/release.yml
+subject:       pkg:npm/%40bestagentkits/render@0.1.1-next.1
+```
+
+The registry answers `npm view` a moment before the version becomes resolvable,
+because npm reports that the package "is being processed and may take a few
+minutes to become available". Read the registry document, not the job status, when
+confirming that a publish landed.
