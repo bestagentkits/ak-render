@@ -1,0 +1,20 @@
+# Generated artifacts are compared byte-for-byte by the test suite
+# (fixtures/snapshots/, schema/page-spec.v1.json, docs/gallery/), and the
+# compiler always emits LF. Without this, a Windows checkout converts those
+# files to CRLF and the comparison fails for a reason that has nothing to do
+# with the code.
+* text=auto eol=lf
+
+# Binary assets must never be normalised.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.pdf binary
+*.tgz binary
