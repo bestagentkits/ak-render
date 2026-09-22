@@ -15,6 +15,7 @@ const fixtureFiles = readdirSync(pagesDir).filter((name) => name.endsWith('.yaml
 describe('fixture corpus', () => {
   it('covers the page classes the epic requires', () => {
     expect(fixtureFiles.sort()).toEqual([
+      'brainstorm.yaml',
       'dashboard.yaml',
       'diff.yaml',
       'explain.yaml',

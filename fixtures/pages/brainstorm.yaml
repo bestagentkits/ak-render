@@ -1,0 +1,76 @@
+version: 1
+meta:
+  title: "Brainstorm: artifact delivery"
+  description: Accepted direction for compiled artifacts, with the alternatives that were weighed.
+theme:
+  preset: editorial
+blocks:
+  - type: hero
+    eyebrow: Brainstorm
+    title: Compile presentation instead of authoring it
+    description: Accepted direction for artifact delivery, with the alternatives that were weighed.
+
+  - type: callout
+    tone: info
+    title: Outcome contract
+    text: A skill emits a declarative Page Spec and the compiler owns HTML, CSS, JavaScript, accessibility, and the security policy.
+
+  - type: comparison
+    title: Compared approaches
+    left:
+      label: Hand-authored HTML per skill
+      items:
+        - Full control over every artifact.
+        - Each skill carries its own CSS, JavaScript, and accessibility debt.
+        - Presentation drifts between skills over time.
+    right:
+      label: Typed compiler with a Page Spec
+      items:
+        - One implementation of presentation for every skill.
+        - Deterministic output, so the same spec yields identical bytes.
+        - Offline by default, with no CDN or font fetch.
+
+  - type: diagram-panel
+    id: delivery-flow
+    title: Delivery flow
+    spec:
+      meta:
+        title: Delivery flow
+      components:
+        - id: skill
+          label: Invoking skill
+        - id: spec
+          label: Page Spec
+        - id: compiler
+          label: AK Render compiler
+        - id: artifact
+          label: Offline artifact
+      connections:
+        - from: skill
+          to: spec
+          label: emits
+        - from: spec
+          to: compiler
+          label: compiles
+        - from: compiler
+          to: artifact
+          label: writes
+
+  - type: risk-matrix
+    title: Open risks
+    severity: [low, medium, high]
+    items:
+      - area: Legacy renderer left alive
+        impact: high
+        likelihood: medium
+        note: Migrate once and record a removal date for any retained flag.
+      - area: Facts drift from the narrative
+        impact: medium
+        likelihood: low
+        note: The invoking skill keeps factual responsibility; the compiler never invents content.
+
+  - type: list
+    title: Unresolved questions
+    items:
+      - text: Which artifact types migrate after the first wave?
+      - text: Does a hosted share link need its own consent flow?

@@ -1,0 +1,46 @@
+feat(diagram,media): public diagram adapter and a real network media policy
+
+Two of the three Milestone F contracts were still missing. Both now exist, and
+the catalog and chart breadth they build on are asserted rather than assumed.
+
+Diagram adapter, in the public package:
+
+- A DiagramAdapter interface with a versioned request contract (bounded spec,
+  title, node id) and a render option. AgentKit's Engineer install supplies one
+  backed by the ak:diagram typed compiler; nothing from a paid compiler is
+  copied into this package.
+- Adapter output passes a trust boundary before it is embedded. Script, iframe,
+  object, embed, foreignObject, base, and form elements, inline handlers,
+  javascript: and data:text/html URLs, srcdoc, empty output, and output over
+  256 KB are all refused, with the semantic fallback emitted and a warning that
+  names the adapter and the reason. checkAdapterMarkup is exported so adapter
+  authors can assert the same contract.
+- The structured description is always emitted, so the diagram's content reaches
+  assistive technology and a reader whose adapter is absent.
+
+Media network policy:
+
+- policy.network gains a provider allowlist alongside the capability list. The
+  vocabulary is closed (youtube, vimeo, spotify, soundcloud) and matching is on
+  the parsed hostname, so https://youtube.com.evil.example/ does not inherit an
+  allowlist entry. A declared provider list narrows remote media to those hosts
+  rather than widening it, and an unknown provider, empty list, or unknown key
+  is an error.
+- video and audio gain a provider prop, and the compiler still never emits a
+  frame: a provider reference becomes a poster plus a link, whether or not it is
+  allowed. The note explains which case applies.
+- image and gallery now declare network: optional, which is what their own
+  summaries already claimed.
+
+Also:
+
+- A catalog breadth test asserts every layout, typography, information,
+  collections, and media block the issue names, all seven chart kinds, and the
+  honest network capability of each media block.
+- fixtures/rejected/ holds injection fixtures (an arbitrary iframe, raw markup
+  with an inline handler) and the suite asserts each is rejected as a
+  POLICY_VIOLATION naming the offending key.
+- docs/media-policy.md and docs/diagram-adapter.md document the contracts.
+
+380 unit tests and 54 browser tests pass; lint, typecheck, schema:check,
+snapshots:check, and package smoke are green.
