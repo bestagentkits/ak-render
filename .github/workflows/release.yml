@@ -28,8 +28,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22.x
-          cache: pnpm
           registry-url: https://registry.npmjs.org
+          # No package-manager cache in the release job: npm's trusted-publishing
+          # guidance is to keep caches out of release builds so the artifact is
+          # built only from what the lockfile pins.
 
       # Trusted publishing needs npm >= 11.5.1; the runner image ships an older
       # npm, which cannot exchange the OIDC token.

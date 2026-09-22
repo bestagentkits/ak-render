@@ -1,6 +1,6 @@
 # Release policy
 
-`@agentkit/render` is published to the public npm registry. This document owns
+`@bestagentkits/render` is published to the public npm registry. This document owns
 how a version is chosen, how it is built, and what a version change promises.
 
 ## Compatibility contract

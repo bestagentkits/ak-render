@@ -1,7 +1,7 @@
 # Cloud renderer (opt-in)
 
 A Cloudflare Worker that compiles Page Specs with **the same
-`@agentkit/render` code** the local CLI uses. It is opt-in: local mode never
+`@bestagentkits/render` code** the local CLI uses. It is opt-in: local mode never
 contacts it, and the compiler has no knowledge of it. Nothing here is required
 to produce an artifact.
 

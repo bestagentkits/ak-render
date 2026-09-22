@@ -64,13 +64,13 @@ const indexSpec = {
   version: 1,
   meta: {
     title: 'AK Render fixture gallery',
-    description: `Every fixture compiled by @agentkit/render@${VERSION}. Each page is a standalone artifact that opens from disk with no network.`,
+    description: `Every fixture compiled by @bestagentkits/render@${VERSION}. Each page is a standalone artifact that opens from disk with no network.`,
   },
   theme: { preset: 'blueprint' },
   blocks: [
     {
       type: 'hero',
-      eyebrow: `@agentkit/render@${VERSION}`,
+      eyebrow: `@bestagentkits/render@${VERSION}`,
       title: 'Fixture gallery',
       description:
         'Each artifact below was compiled from a Page Spec in fixtures/pages and opens directly from disk with zero external requests.',

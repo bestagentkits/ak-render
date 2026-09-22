@@ -164,7 +164,7 @@ export function buildPageSpecJsonSchema(): Record<string, unknown> {
     $id: 'https://agentkit.best/schema/page-spec.v1.json',
     title: 'AgentKit Page Spec',
     description:
-      'Declarative page description compiled by @agentkit/render into deterministic, offline, interactive HTML.',
+      'Declarative page description compiled by @bestagentkits/render into deterministic, offline, interactive HTML.',
     type: 'object',
     additionalProperties: false,
     required: ['version', 'meta', 'blocks'],

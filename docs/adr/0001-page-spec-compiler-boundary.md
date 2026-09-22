@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-09-20
-- **Scope:** `@agentkit/render` (this repository) and the AgentKit integration
+- **Scope:** `@bestagentkits/render` (this repository) and the AgentKit integration
   that consumes it.
 
 ## Context
@@ -126,7 +126,7 @@ and ship only the glyphs actually used.
 The compiler runs locally with no account and no network. Emitted output is
 self-contained and opens over `file://`.
 
-The hosted path in `apps/cloud` reuses the same `@agentkit/render` code and the
+The hosted path in `apps/cloud` reuses the same `@bestagentkits/render` code and the
 same options. It exists for convenience (preview, share, screenshot, PDF), never
 as the semantic source of truth. Concretely:
 

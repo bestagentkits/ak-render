@@ -1,4 +1,4 @@
-# @agentkit/render
+# @bestagentkits/render
 
 Declarative page compiler for AgentKit: a constrained JSON/YAML **Page Spec**
 in, a deterministic, self-contained, interactive **standalone HTML** out.
@@ -8,7 +8,7 @@ interaction, accessibility, responsive layout, theming, asset bundling, security
 policy, and byte-for-byte determinism.
 
 ```bash
-npx @agentkit/render page.yaml --out page.html
+npx @bestagentkits/render page.yaml --out page.html
 ```
 
 The emitted file opens directly from disk (`file://`) and makes zero network
@@ -71,9 +71,9 @@ Six decisions define the boundary, argued in
 ## Install
 
 ```bash
-pnpm add @agentkit/render
+pnpm add @bestagentkits/render
 # or run without installing
-npx @agentkit/render --help
+npx @bestagentkits/render --help
 ```
 
 Requires Node.js >= 20.11.
@@ -88,7 +88,7 @@ import {
   catalog,
   describe,
   loadTheme,
-} from '@agentkit/render';
+} from '@bestagentkits/render';
 ```
 
 | Export | Purpose | Status |

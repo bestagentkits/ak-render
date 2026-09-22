@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://agentkit.best/schema/page-spec.v1.json",
   "title": "AgentKit Page Spec",
-  "description": "Declarative page description compiled by @agentkit/render into deterministic, offline, interactive HTML.",
+  "description": "Declarative page description compiled by @bestagentkits/render into deterministic, offline, interactive HTML.",
   "type": "object",
   "additionalProperties": false,
   "required": [

@@ -23,7 +23,7 @@ describe('package manifest contract', () => {
   });
 
   it('ships the AgentKit-scoped name as an ESM package on Node >= 20.11', () => {
-    expect(PACKAGE_NAME).toBe('@agentkit/render');
+    expect(PACKAGE_NAME).toBe('@bestagentkits/render');
     expect(manifest.name).toBe(PACKAGE_NAME);
     expect(manifest.type).toBe('module');
     expect(manifest.engines.node).toBe('>=20.11');
@@ -34,7 +34,10 @@ describe('package manifest contract', () => {
       types: './dist/index.d.ts',
       import: './dist/index.js',
     });
-    expect(manifest.bin['ak-render']).toBe('./dist/cli.js');
+    // npm strips a leading "./" from bin targets while publishing, so the
+    // manifest records the normalized form and the published tarball matches
+    // the committed manifest instead of being silently corrected.
+    expect(manifest.bin['ak-render']).toBe('dist/cli.js');
   });
 
   it('names the source repository so npm can tie the published provenance to it', () => {

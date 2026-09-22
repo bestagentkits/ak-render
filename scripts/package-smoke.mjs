@@ -75,12 +75,12 @@ try {
     [
       '--input-type=module',
       '--eval',
-      "const m = await import('@agentkit/render'); process.stdout.write(JSON.stringify({ name: m.PACKAGE_NAME, version: m.VERSION, hasError: typeof m.RenderError === 'function' }));",
+      "const m = await import('@bestagentkits/render'); process.stdout.write(JSON.stringify({ name: m.PACKAGE_NAME, version: m.VERSION, hasError: typeof m.RenderError === 'function' }));",
     ],
     { cwd: consumer },
   );
   const api = JSON.parse(imported);
-  if (api.name !== '@agentkit/render') fail(`library import resolved to "${api.name}"`);
+  if (api.name !== '@bestagentkits/render') fail(`library import resolved to "${api.name}"`);
   if (!/^\d+\.\d+\.\d+/.test(api.version)) fail(`library version "${api.version}" is not semver`);
   if (!api.hasError) fail('library import did not expose RenderError');
 
@@ -93,7 +93,7 @@ try {
   if (!helpOutput.includes('Usage:')) fail('CLI help output is missing a Usage section');
 
   const manifest = JSON.parse(
-    readFileSync(join(consumer, 'node_modules/@agentkit/render/package.json'), 'utf8'),
+    readFileSync(join(consumer, 'node_modules/@bestagentkits/render/package.json'), 'utf8'),
   );
   if (manifest.license !== 'MIT') fail(`installed license is "${manifest.license}"`);
 

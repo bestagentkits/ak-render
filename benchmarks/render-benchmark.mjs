@@ -190,7 +190,7 @@ const artifact = {
   artifact: 'benchmark-render',
   producer: 'benchmarks/render-benchmark.mjs',
   measuredAt: new Date().toISOString(),
-  compiler: { name: '@agentkit/render', version: VERSION },
+  compiler: { name: '@bestagentkits/render', version: VERSION },
   method: {
     compilerTime: `Median of ${REPEAT} compiles after one warm-up compile, per fixture.`,
     tokenEstimate:

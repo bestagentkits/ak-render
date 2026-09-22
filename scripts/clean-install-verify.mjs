@@ -160,7 +160,7 @@ try {
   }
 
   console.log(
-    `clean-install-verify OK: @agentkit/render@${VERSION} installed from ${packed.filename}; JSON and YAML compiled, byte-identical to local, opened over file:// with 0 external requests`,
+    `clean-install-verify OK: @bestagentkits/render@${VERSION} installed from ${packed.filename}; JSON and YAML compiled, byte-identical to local, opened over file:// with 0 external requests`,
   );
 } catch (error) {
   fail(error instanceof Error ? error.message : String(error));

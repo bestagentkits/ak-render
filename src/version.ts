@@ -9,4 +9,4 @@
 export const VERSION = '0.1.0';
 
 /** Published package name, used by CLI output and release tooling. */
-export const PACKAGE_NAME = '@agentkit/render';
+export const PACKAGE_NAME = '@bestagentkits/render';

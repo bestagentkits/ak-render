@@ -1,5 +1,5 @@
 /**
- * `@agentkit/render` public library surface.
+ * `@bestagentkits/render` public library surface.
  *
  * Additions here are additive and versioned; see `docs/release-policy.md` for
  * what a minor and a major release promise. Functions that are not implemented

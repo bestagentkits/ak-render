@@ -103,7 +103,7 @@ export function assembleDocument(input: DocumentInput): AssembledDocument {
     '<meta charset="utf-8" />',
     '<meta name="viewport" content="width=device-width, initial-scale=1" />',
     '<meta name="color-scheme" content="light dark" />',
-    `<meta name="generator" content="@agentkit/render ${escapeAttribute(input.compilerVersion)}" />`,
+    `<meta name="generator" content="@bestagentkits/render ${escapeAttribute(input.compilerVersion)}" />`,
     `<meta http-equiv="Content-Security-Policy" content="${escapeAttribute(csp)}" />`,
     `<title>${escapeText(meta.title)}</title>`,
     description,

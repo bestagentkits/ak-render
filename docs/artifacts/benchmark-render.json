@@ -1,9 +1,9 @@
 {
   "artifact": "benchmark-render",
   "producer": "benchmarks/render-benchmark.mjs",
-  "measuredAt": "2026-09-22T05:15:23.179Z",
+  "measuredAt": "2026-09-22T06:02:48.155Z",
   "compiler": {
-    "name": "@agentkit/render",
+    "name": "@bestagentkits/render",
     "version": "0.1.0"
   },
   "method": {
@@ -72,11 +72,11 @@
   "compile": [
     {
       "fixture": "brainstorm.yaml",
-      "compilerMsMedian": 3.826,
-      "compilerMsMin": 2.973,
-      "compilerMsMax": 4.773,
+      "compilerMsMedian": 4.433,
+      "compilerMsMin": 2.863,
+      "compilerMsMax": 5.196,
       "samples": 5,
-      "bytes": 27682,
+      "bytes": 27687,
       "nodes": 7,
       "features": [
         "filter",
@@ -89,11 +89,11 @@
     },
     {
       "fixture": "dashboard.yaml",
-      "compilerMsMedian": 4.879,
-      "compilerMsMin": 4.065,
-      "compilerMsMax": 5.749,
+      "compilerMsMedian": 5.133,
+      "compilerMsMin": 4.808,
+      "compilerMsMax": 6.375,
       "samples": 5,
-      "bytes": 36624,
+      "bytes": 36629,
       "nodes": 11,
       "features": [
         "theme",
@@ -105,11 +105,11 @@
     },
     {
       "fixture": "diff.yaml",
-      "compilerMsMedian": 2.654,
-      "compilerMsMin": 2.28,
-      "compilerMsMax": 3.4,
+      "compilerMsMedian": 3.864,
+      "compilerMsMin": 3.205,
+      "compilerMsMax": 3.948,
       "samples": 5,
-      "bytes": 26476,
+      "bytes": 26481,
       "nodes": 8,
       "features": [
         "theme"
@@ -120,11 +120,11 @@
     },
     {
       "fixture": "explain.yaml",
-      "compilerMsMedian": 2.963,
-      "compilerMsMin": 2.402,
-      "compilerMsMax": 3.707,
+      "compilerMsMedian": 3.595,
+      "compilerMsMin": 2.964,
+      "compilerMsMax": 3.921,
       "samples": 5,
-      "bytes": 30290,
+      "bytes": 30295,
       "nodes": 9,
       "features": [
         "tabs",
@@ -137,11 +137,11 @@
     },
     {
       "fixture": "interactive.yaml",
-      "compilerMsMedian": 4.792,
-      "compilerMsMin": 4.211,
-      "compilerMsMax": 4.89,
+      "compilerMsMedian": 6.069,
+      "compilerMsMin": 5.5,
+      "compilerMsMax": 9.054,
       "samples": 5,
-      "bytes": 41559,
+      "bytes": 41564,
       "nodes": 15,
       "features": [
         "tabs",
@@ -159,11 +159,11 @@
     },
     {
       "fixture": "media.yaml",
-      "compilerMsMedian": 2.123,
-      "compilerMsMin": 1.93,
-      "compilerMsMax": 3.109,
+      "compilerMsMedian": 2.515,
+      "compilerMsMin": 2.053,
+      "compilerMsMax": 3.593,
       "samples": 5,
-      "bytes": 29862,
+      "bytes": 29867,
       "nodes": 8,
       "features": [
         "carousel",
@@ -176,11 +176,11 @@
     },
     {
       "fixture": "plan.yaml",
-      "compilerMsMedian": 2.324,
-      "compilerMsMin": 1.806,
-      "compilerMsMax": 2.745,
+      "compilerMsMedian": 2.678,
+      "compilerMsMin": 2.605,
+      "compilerMsMax": 4.124,
       "samples": 5,
-      "bytes": 27212,
+      "bytes": 27217,
       "nodes": 9,
       "features": [
         "accordion",
@@ -193,11 +193,11 @@
     },
     {
       "fixture": "recap.yaml",
-      "compilerMsMedian": 2.212,
-      "compilerMsMin": 1.733,
-      "compilerMsMax": 2.8,
+      "compilerMsMedian": 1.913,
+      "compilerMsMin": 1.597,
+      "compilerMsMax": 2.235,
       "samples": 5,
-      "bytes": 30822,
+      "bytes": 30827,
       "nodes": 8,
       "features": [
         "filter",
@@ -210,11 +210,11 @@
     },
     {
       "fixture": "theme-showcase.yaml",
-      "compilerMsMedian": 2.981,
-      "compilerMsMin": 2.665,
-      "compilerMsMax": 3.647,
+      "compilerMsMedian": 2.765,
+      "compilerMsMin": 2.177,
+      "compilerMsMax": 3.159,
       "samples": 5,
-      "bytes": 33830,
+      "bytes": 33835,
       "nodes": 11,
       "features": [
         "carousel",

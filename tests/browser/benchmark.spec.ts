@@ -54,7 +54,7 @@ function writeArtifact(measurements: FixtureMeasurement[]): void {
     artifact: 'benchmark-browser',
     producer: 'tests/browser/benchmark.spec.ts',
     measuredAt: new Date().toISOString(),
-    compiler: { name: '@agentkit/render', version: VERSION },
+    compiler: { name: '@bestagentkits/render', version: VERSION },
     method: {
       environment: 'Playwright chromium, artifacts opened over file://',
       overflow:

@@ -6,7 +6,7 @@ every `diagram-panel` block renders through it. Everything else keeps the
 structured semantic fallback.
 
 ```ts
-import { compile, type DiagramAdapter } from '@agentkit/render';
+import { compile, type DiagramAdapter } from '@bestagentkits/render';
 
 const akDiagram: DiagramAdapter = {
   name: 'ak-diagram',

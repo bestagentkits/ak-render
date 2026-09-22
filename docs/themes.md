@@ -104,7 +104,7 @@ A malformed preset file is reported as a warning and skipped; it does not make
 unrelated pages uncompilable.
 
 ```ts
-import { buildThemeCatalog, loadTheme, render } from '@agentkit/render';
+import { buildThemeCatalog, loadTheme, render } from '@bestagentkits/render';
 
 const catalog = buildThemeCatalog({ cwd: process.cwd(), files: ['./themes/team.yaml'] });
 const theme = loadTheme('team-theme', { catalog });

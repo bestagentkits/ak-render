@@ -1,9 +1,9 @@
 {
   "artifact": "benchmark-browser",
   "producer": "tests/browser/benchmark.spec.ts",
-  "measuredAt": "2026-09-22T05:15:15.065Z",
+  "measuredAt": "2026-09-22T06:03:19.935Z",
   "compiler": {
-    "name": "@agentkit/render",
+    "name": "@bestagentkits/render",
     "version": "0.1.0"
   },
   "method": {
@@ -20,10 +20,10 @@
   "fixtures": [
     {
       "fixture": "brainstorm.yaml",
-      "bytes": 27682,
+      "bytes": 27687,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-QX2syk/brainstorm.html"
+        "file:///tmp/ak-render-benchmark-33G37J/brainstorm.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -57,10 +57,10 @@
     },
     {
       "fixture": "dashboard.yaml",
-      "bytes": 36624,
+      "bytes": 36629,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-QX2syk/dashboard.html"
+        "file:///tmp/ak-render-benchmark-33G37J/dashboard.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -94,10 +94,10 @@
     },
     {
       "fixture": "diff.yaml",
-      "bytes": 26476,
+      "bytes": 26481,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-QX2syk/diff.html"
+        "file:///tmp/ak-render-benchmark-33G37J/diff.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -131,10 +131,10 @@
     },
     {
       "fixture": "explain.yaml",
-      "bytes": 30290,
+      "bytes": 30295,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-QX2syk/explain.html"
+        "file:///tmp/ak-render-benchmark-33G37J/explain.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -173,10 +173,10 @@
     },
     {
       "fixture": "interactive.yaml",
-      "bytes": 41559,
+      "bytes": 41564,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-QX2syk/interactive.html"
+        "file:///tmp/ak-render-benchmark-33G37J/interactive.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -225,15 +225,15 @@
     },
     {
       "fixture": "media.yaml",
-      "bytes": 29862,
+      "bytes": 29867,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-QX2syk/media.html",
-        "file:///tmp/ak-render-benchmark-QX2syk/assets/demo-poster.svg",
-        "file:///tmp/ak-render-benchmark-QX2syk/assets/compiler-pipeline.svg",
-        "file:///tmp/ak-render-benchmark-QX2syk/assets/theme-presets.svg",
-        "file:///tmp/ak-render-benchmark-QX2syk/assets/interaction-trace.svg",
-        "file:///tmp/ak-render-benchmark-QX2syk/assets/cover.svg"
+        "file:///tmp/ak-render-benchmark-33G37J/media.html",
+        "file:///tmp/ak-render-benchmark-33G37J/assets/demo-poster.svg",
+        "file:///tmp/ak-render-benchmark-33G37J/assets/compiler-pipeline.svg",
+        "file:///tmp/ak-render-benchmark-33G37J/assets/theme-presets.svg",
+        "file:///tmp/ak-render-benchmark-33G37J/assets/interaction-trace.svg",
+        "file:///tmp/ak-render-benchmark-33G37J/assets/cover.svg"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -272,10 +272,10 @@
     },
     {
       "fixture": "plan.yaml",
-      "bytes": 27212,
+      "bytes": 27217,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-QX2syk/plan.html"
+        "file:///tmp/ak-render-benchmark-33G37J/plan.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -309,10 +309,10 @@
     },
     {
       "fixture": "recap.yaml",
-      "bytes": 30822,
+      "bytes": 30827,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-QX2syk/recap.html"
+        "file:///tmp/ak-render-benchmark-33G37J/recap.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -346,10 +346,10 @@
     },
     {
       "fixture": "theme-showcase.yaml",
-      "bytes": 33830,
+      "bytes": 33835,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-QX2syk/theme-showcase.html"
+        "file:///tmp/ak-render-benchmark-33G37J/theme-showcase.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],

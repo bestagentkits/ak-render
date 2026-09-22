@@ -1,7 +1,7 @@
 /**
  * Opt-in Cloudflare deployment for the AK Render cloud renderer.
  *
- * Nothing here is required to use @agentkit/render: local compilation never
+ * Nothing here is required to use @bestagentkits/render: local compilation never
  * contacts this worker, and the compiler has no knowledge of it. Deploy only
  * when a hosted render, share, screenshot, or PDF route is actually wanted.
  *
