@@ -1,0 +1,310 @@
+{
+  "artifact": "benchmark-render",
+  "producer": "benchmarks/render-benchmark.mjs",
+  "measuredAt": "2026-09-22T04:48:56.757Z",
+  "compiler": {
+    "name": "@agentkit/render",
+    "version": "0.1.0"
+  },
+  "method": {
+    "compilerTime": "Median of 5 compiles after one warm-up compile, per fixture.",
+    "tokenEstimate": "Estimated from character count at 4 chars/token (point), bounded by 4.5 and 3.5 chars/token. Exact tokenizer counts are not claimed.",
+    "guidanceScope": "Presentation guidance a skill must load now that presentation is compiled. Excludes the invoking skill body, fixture content, model output, and retries.",
+    "agentkitRoot": "/home/orca/orca/workspaces/agentkit/feat-render-ak-render-declarative-interactive-pa"
+  },
+  "guidance": {
+    "files": [
+      {
+        "path": "/home/orca/orca/workspaces/agentkit/feat-render-ak-render-declarative-interactive-pa/kits/core/skills/ak-render/SKILL.md",
+        "bytes": 4644,
+        "chars": 4640,
+        "lines": 106,
+        "estimatedTokens": {
+          "low": 1031,
+          "point": 1160,
+          "high": 1326
+        }
+      },
+      {
+        "path": "/home/orca/orca/workspaces/agentkit/feat-render-ak-render-declarative-interactive-pa/kits/core/skills/ak-render/references/page-spec-authoring.md",
+        "bytes": 3468,
+        "chars": 3468,
+        "lines": 114,
+        "estimatedTokens": {
+          "low": 771,
+          "point": 867,
+          "high": 991
+        }
+      },
+      {
+        "path": "/home/orca/orca/workspaces/agentkit/feat-render-ak-render-declarative-interactive-pa/kits/core/skills/ak-render/references/integration.md",
+        "bytes": 2815,
+        "chars": 2803,
+        "lines": 82,
+        "estimatedTokens": {
+          "low": 623,
+          "point": 701,
+          "high": 801
+        }
+      },
+      {
+        "path": "/home/orca/orca/workspaces/agentkit/feat-render-ak-render-declarative-interactive-pa/kits/core/skills/ak-preview/references/html-skill-composition.md",
+        "bytes": 6598,
+        "chars": 6582,
+        "lines": 97,
+        "estimatedTokens": {
+          "low": 1463,
+          "point": 1646,
+          "high": 1881
+        }
+      }
+    ],
+    "totals": {
+      "files": 4,
+      "chars": 17493,
+      "estimatedTokens": {
+        "low": 3887,
+        "point": 4373,
+        "high": 4998
+      }
+    }
+  },
+  "compile": [
+    {
+      "fixture": "brainstorm.yaml",
+      "compilerMsMedian": 5.24,
+      "compilerMsMin": 4.834,
+      "compilerMsMax": 6.643,
+      "samples": 5,
+      "bytes": 27682,
+      "nodes": 7,
+      "features": [
+        "filter",
+        "theme",
+        "diagram"
+      ],
+      "distinctHashes": 1,
+      "distinctByteCounts": 1,
+      "deterministic": true
+    },
+    {
+      "fixture": "dashboard.yaml",
+      "compilerMsMedian": 19.558,
+      "compilerMsMin": 9.51,
+      "compilerMsMax": 24.108,
+      "samples": 5,
+      "bytes": 36624,
+      "nodes": 11,
+      "features": [
+        "theme",
+        "chart"
+      ],
+      "distinctHashes": 1,
+      "distinctByteCounts": 1,
+      "deterministic": true
+    },
+    {
+      "fixture": "diff.yaml",
+      "compilerMsMedian": 7.681,
+      "compilerMsMin": 5.931,
+      "compilerMsMax": 12.972,
+      "samples": 5,
+      "bytes": 26476,
+      "nodes": 8,
+      "features": [
+        "theme"
+      ],
+      "distinctHashes": 1,
+      "distinctByteCounts": 1,
+      "deterministic": true
+    },
+    {
+      "fixture": "explain.yaml",
+      "compilerMsMedian": 4.747,
+      "compilerMsMin": 3.811,
+      "compilerMsMax": 12.331,
+      "samples": 5,
+      "bytes": 30290,
+      "nodes": 9,
+      "features": [
+        "tabs",
+        "theme",
+        "diagram"
+      ],
+      "distinctHashes": 1,
+      "distinctByteCounts": 1,
+      "deterministic": true
+    },
+    {
+      "fixture": "interactive.yaml",
+      "compilerMsMedian": 8.996,
+      "compilerMsMin": 6.919,
+      "compilerMsMax": 11.494,
+      "samples": 5,
+      "bytes": 41559,
+      "nodes": 15,
+      "features": [
+        "tabs",
+        "accordion",
+        "carousel",
+        "slider",
+        "dialog",
+        "filter",
+        "copy",
+        "theme"
+      ],
+      "distinctHashes": 1,
+      "distinctByteCounts": 1,
+      "deterministic": true
+    },
+    {
+      "fixture": "media.yaml",
+      "compilerMsMedian": 3.137,
+      "compilerMsMin": 2.742,
+      "compilerMsMax": 4.457,
+      "samples": 5,
+      "bytes": 29862,
+      "nodes": 8,
+      "features": [
+        "carousel",
+        "theme",
+        "media"
+      ],
+      "distinctHashes": 1,
+      "distinctByteCounts": 1,
+      "deterministic": true
+    },
+    {
+      "fixture": "plan.yaml",
+      "compilerMsMedian": 5.626,
+      "compilerMsMin": 3.412,
+      "compilerMsMax": 7.976,
+      "samples": 5,
+      "bytes": 27212,
+      "nodes": 9,
+      "features": [
+        "accordion",
+        "theme",
+        "diagram"
+      ],
+      "distinctHashes": 1,
+      "distinctByteCounts": 1,
+      "deterministic": true
+    },
+    {
+      "fixture": "recap.yaml",
+      "compilerMsMedian": 2.909,
+      "compilerMsMin": 1.816,
+      "compilerMsMax": 17.541,
+      "samples": 5,
+      "bytes": 30822,
+      "nodes": 8,
+      "features": [
+        "filter",
+        "theme",
+        "chart"
+      ],
+      "distinctHashes": 1,
+      "distinctByteCounts": 1,
+      "deterministic": true
+    },
+    {
+      "fixture": "theme-showcase.yaml",
+      "compilerMsMedian": 6.346,
+      "compilerMsMin": 2.794,
+      "compilerMsMax": 11.459,
+      "samples": 5,
+      "bytes": 33830,
+      "nodes": 11,
+      "features": [
+        "carousel",
+        "filter",
+        "theme",
+        "chart"
+      ],
+      "distinctHashes": 1,
+      "distinctByteCounts": 1,
+      "deterministic": true
+    }
+  ],
+  "baselineComparison": [
+    {
+      "task": "explain-html",
+      "skill": "ak:explain",
+      "mode": "--html",
+      "beforeTokens": 33696,
+      "afterTokens": 4373,
+      "deltaTokens": -29323,
+      "reductionPercent": 87
+    },
+    {
+      "task": "brainstorm-html",
+      "skill": "ak:brainstorm",
+      "mode": "--html",
+      "beforeTokens": 33696,
+      "afterTokens": 4373,
+      "deltaTokens": -29323,
+      "reductionPercent": 87
+    },
+    {
+      "task": "plan-review-engineer",
+      "skill": "ak:plan (Engineer)",
+      "mode": "--html",
+      "beforeTokens": 33696,
+      "afterTokens": 4373,
+      "deltaTokens": -29323,
+      "reductionPercent": 87
+    },
+    {
+      "task": "plan-review-marketing",
+      "skill": "ak:plan (Marketing)",
+      "mode": "--html",
+      "beforeTokens": 33696,
+      "afterTokens": 4373,
+      "deltaTokens": -29323,
+      "reductionPercent": 87
+    },
+    {
+      "task": "preview-diff",
+      "skill": "ak:preview",
+      "mode": "--diff",
+      "beforeTokens": 36551,
+      "afterTokens": 4373,
+      "deltaTokens": -32178,
+      "reductionPercent": 88
+    }
+  ],
+  "regressionAnalysis": {
+    "comparedTasks": 5,
+    "regressions": [],
+    "verdict": "No task needs more presentation context than its legacy baseline."
+  },
+  "notMeasured": [
+    {
+      "metric": "model output tokens",
+      "reason": "Requires a live model run; this harness has no model.",
+      "howToMeasure": "Run each representative task through the target model and count output tokens for the emitted Page Spec."
+    },
+    {
+      "metric": "wall-clock generation time",
+      "reason": "Requires a live model run; only compiler time is observable offline.",
+      "howToMeasure": "Time the same runs end to end and record wall-clock seconds per task."
+    },
+    {
+      "metric": "retries / repair count",
+      "reason": "Requires a live model run; a retry is a model behaviour, not a compiler behaviour.",
+      "howToMeasure": "Count repair loops per task in the same runs, including compiler rejections."
+    }
+  ],
+  "measuredElsewhere": {
+    "artifact": "docs/artifacts/benchmark-browser.json",
+    "producer": "tests/browser/benchmark.spec.ts",
+    "metrics": [
+      "browser console errors",
+      "network requests",
+      "a11y critical failures",
+      "overflow at 375/768/1440 px",
+      "interaction results"
+    ]
+  }
+}
