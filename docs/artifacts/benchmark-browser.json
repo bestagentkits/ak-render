@@ -1,7 +1,7 @@
 {
   "artifact": "benchmark-browser",
   "producer": "tests/browser/benchmark.spec.ts",
-  "measuredAt": "2026-09-22T04:57:06.209Z",
+  "measuredAt": "2026-09-22T05:15:15.065Z",
   "compiler": {
     "name": "@agentkit/render",
     "version": "0.1.0"
@@ -23,7 +23,7 @@
       "bytes": 27682,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-Kl7pnT/brainstorm.html"
+        "file:///tmp/ak-render-benchmark-QX2syk/brainstorm.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -60,7 +60,7 @@
       "bytes": 36624,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-Kl7pnT/dashboard.html"
+        "file:///tmp/ak-render-benchmark-QX2syk/dashboard.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -97,7 +97,7 @@
       "bytes": 26476,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-Kl7pnT/diff.html"
+        "file:///tmp/ak-render-benchmark-QX2syk/diff.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -134,7 +134,7 @@
       "bytes": 30290,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-Kl7pnT/explain.html"
+        "file:///tmp/ak-render-benchmark-QX2syk/explain.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -176,7 +176,7 @@
       "bytes": 41559,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-Kl7pnT/interactive.html"
+        "file:///tmp/ak-render-benchmark-QX2syk/interactive.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -228,12 +228,12 @@
       "bytes": 29862,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-Kl7pnT/media.html",
-        "file:///tmp/ak-render-benchmark-Kl7pnT/assets/demo-poster.svg",
-        "file:///tmp/ak-render-benchmark-Kl7pnT/assets/compiler-pipeline.svg",
-        "file:///tmp/ak-render-benchmark-Kl7pnT/assets/theme-presets.svg",
-        "file:///tmp/ak-render-benchmark-Kl7pnT/assets/interaction-trace.svg",
-        "file:///tmp/ak-render-benchmark-Kl7pnT/assets/cover.svg"
+        "file:///tmp/ak-render-benchmark-QX2syk/media.html",
+        "file:///tmp/ak-render-benchmark-QX2syk/assets/demo-poster.svg",
+        "file:///tmp/ak-render-benchmark-QX2syk/assets/compiler-pipeline.svg",
+        "file:///tmp/ak-render-benchmark-QX2syk/assets/theme-presets.svg",
+        "file:///tmp/ak-render-benchmark-QX2syk/assets/interaction-trace.svg",
+        "file:///tmp/ak-render-benchmark-QX2syk/assets/cover.svg"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -275,7 +275,7 @@
       "bytes": 27212,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-Kl7pnT/plan.html"
+        "file:///tmp/ak-render-benchmark-QX2syk/plan.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -312,7 +312,7 @@
       "bytes": 30822,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-Kl7pnT/recap.html"
+        "file:///tmp/ak-render-benchmark-QX2syk/recap.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -349,7 +349,7 @@
       "bytes": 33830,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-Kl7pnT/theme-showcase.html"
+        "file:///tmp/ak-render-benchmark-QX2syk/theme-showcase.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
