@@ -31,6 +31,11 @@ jobs:
           cache: pnpm
           registry-url: https://registry.npmjs.org
 
+      # Trusted publishing needs npm >= 11.5.1; the runner image ships an older
+      # npm, which cannot exchange the OIDC token.
+      - name: Use an npm that supports trusted publishing
+        run: npm install -g npm@^11.5.1 && npm --version
+
       - run: pnpm install --frozen-lockfile
 
       # The tag and both version locations must agree, or the release is a lie.
@@ -61,6 +66,11 @@ jobs:
       - run: pnpm test:package
       - run: pnpm test:clean-install
 
+      # Authentication is the GitHub OIDC token, not a stored secret: the job
+      # holds `id-token: write` and the package is configured with this
+      # repository and workflow as its trusted publisher. Do not add
+      # NODE_AUTH_TOKEN here — a token would take precedence over OIDC and the
+      # publish would lose provenance.
       - name: Publish to npm with provenance
         run: |
           set -euo pipefail
@@ -72,8 +82,6 @@ jobs:
           fi
           echo "publishing $VERSION under the $DIST_TAG dist-tag"
           npm publish --provenance --access public --tag "$DIST_TAG"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       # Release notes come from the changelog section for this version, so the
       # notes and the published artifact cannot describe different changes.

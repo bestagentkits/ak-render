@@ -1,0 +1,81 @@
+name: Cloud renderer deploy
+
+# Manual only. The cloud renderer is an opt-in surface, so a deployment is a
+# deliberate act rather than a side effect of merging a change to apps/cloud.
+#
+# Required repository secrets:
+#   CLOUDFLARE_API_TOKEN   scoped to Workers Scripts + R2 + KV for the account
+#   CLOUDFLARE_ACCOUNT_ID  the account that owns the bucket and namespace
+#
+# Nothing here compiles or publishes the package; the npm release lives in
+# release.yml.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Validate and build the Worker without deploying
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+env:
+  PNPM_VERSION: 9.15.0
+
+jobs:
+  deploy:
+    name: Deploy the cloud renderer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # The Worker bundles the compiler from this repository, so the type and
+      # unit gates have to pass before anything ships.
+      - run: pnpm typecheck
+      - run: pnpm build
+      - run: pnpm test
+
+      - name: Validate the Worker bundle
+        working-directory: apps/cloud
+        run: npx --yes wrangler@latest deploy --dry-run --outdir /tmp/worker-dry-run
+
+      - name: Deploy
+        if: ${{ inputs.dry-run == false }}
+        working-directory: apps/cloud
+        run: npx --yes wrangler@latest deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Verify the deployed routes
+        if: ${{ inputs.dry-run == false }}
+        working-directory: apps/cloud
+        run: |
+          set -euo pipefail
+          URL="$(npx --yes wrangler@latest deployments list --json | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d[0]["url"] if isinstance(d, list) else "")')"
+          if [ -z "$URL" ]; then
+            echo "no deployment URL reported; skipping live checks"
+            exit 0
+          fi
+          echo "checking $URL"
+          status_share="$(curl -sS -o /dev/null -w '%{http_code}' "$URL/v1/share/11111111-2222-3333-4444-555555555555")"
+          status_render="$(curl -sS -o /dev/null -w '%{http_code}' -X POST "$URL/v1/render" -H 'content-type: application/json' -d '{"spec":{"version":1,"meta":{"title":"deploy check"},"blocks":[{"type":"hero","title":"deploy check"}]}}')"
+          echo "share=$status_share render_without_bearer=$status_render"
+          [ "$status_share" = "404" ] || { echo "unexpected share status"; exit 1; }
+          [ "$status_render" = "401" ] || { echo "unexpected render status"; exit 1; }
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

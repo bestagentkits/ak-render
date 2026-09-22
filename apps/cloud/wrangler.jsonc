@@ -18,7 +18,7 @@
   "name": "ak-render-cloud",
   "main": "src/index.ts",
   "compatibility_date": "2026-09-01",
-  "workers_dev": false,
+  "workers_dev": true,
   "observability": {
     // No content logging: a page body must never reach the log stream.
     "enabled": false
@@ -36,7 +36,8 @@
   "kv_namespaces": [
     {
       "binding": "RATE_LIMIT",
-      "title": "ak-render-rate-limit"
+      "title": "ak-render-rate-limit",
+      "id": "1e8e95424a9c4ac7bc774cb689842438"
     }
   ],
   "triggers": {

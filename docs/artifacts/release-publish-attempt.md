@@ -3,26 +3,75 @@
 This records the exact commands and outputs of the publish step, because a
 release that could not be performed must not be described as if it were.
 
-**Observed 2026-09-22 on this machine. `@agentkit/render` remains unpublished.**
+**Observed 2026-09-22. `@agentkit/render` is still not published.**
 
-## Registry authentication
+## Attempt 2 — authenticated, blocked on scope permission
+
+The maintainer session is now authenticated, so the earlier `E401` no longer
+applies. The publish still cannot complete, for a different and more specific
+reason.
 
 ```console
-$ npm whoami
-npm error code E401
-npm error 401 Unauthorized - GET https://registry.npmjs.org/-/whoami
-npm error A complete log of this run can be found in: /home/orca/.npm/_logs/2026-09-22T04_59_41_936Z-debug-0.log
+$ npm publish --access public --tag latest --provenance=false
+npm notice name: @agentkit/render
+npm notice version: 0.1.0
+npm notice filename: agentkit-render-0.1.0.tgz
+npm notice package size: 132.6 kB
+npm notice unpacked size: 589.7 kB
+npm notice shasum: 535ffd166ff395f2a3881cb1052b35aca979672c
+npm notice total files: 140
+npm notice Publishing to https://registry.npmjs.org/ with tag latest and public access
+npm error code E404
+npm error 404 Not Found - PUT https://registry.npmjs.org/@agentkit%2frender - Not found
+npm error 404  '@agentkit/render@0.1.0' is not in this registry.
 ```
 
-There is no authenticated npm session here, so `npm publish` cannot succeed. This
-is the pre-declared boundary, not a surprise: the epic recorded it before the
-work started.
+npm answers `404` on a `PUT` to a scope the caller cannot publish into, rather
+than `403`, so the registry does not disclose whether the scope exists.
+
+The account's own permissions make the cause clear:
+
+```console
+$ npm org ls agentkit --json
+{}
+$ npm access list packages
+@bestagentkits/ak: read-write
+@bestagentkits/build-with-ak: read-write
+... (other scopes) ...
+```
+
+The account holds `read-write` on `@bestagentkits/*` and several other scopes,
+and holds nothing on `@agentkit`. So the block is **scope ownership**, not
+authentication and not the package contents.
+
+### What resolves it
+
+Either:
+
+1. **Join the org that owns `@agentkit`.** If the scope is already owned by
+   another npm account or org, add this account as a member with publish rights.
+2. **Claim the scope.** If `agentkit` is an unclaimed npm org name, create it at
+   `https://www.npmjs.com/org/create` with the publishing account; the scope then
+   belongs to that account.
+
+If neither is possible because the scope is held by an unrelated party, the
+package name has to change, which is a real change: it appears in the README,
+the CLI docs, the AgentKit `ak:render` skill, and the composition contract.
+
+## Provenance note for the first publish
+
+`package.json` sets `publishConfig.provenance: true`, which requires an
+OIDC-capable CI environment. This first publish was attempted with
+`--provenance=false` deliberately: trusted publishing cannot be configured on a
+package that does not exist yet, so the first version has to be published before
+OIDC can take over.
+
+**0.1.0 therefore ships without provenance if published this way.** Every later
+release publishes from `.github/workflows/release.yml` with
+`--provenance` over GitHub OIDC, which is the durable arrangement. Record the
+gap for 0.1.0 rather than implying provenance it does not have.
 
 ## What the publish would ship
-
-The dry run packs the real tarball and reports exactly what a real publish would
-upload. It does not require credentials, which is why it is the useful half of
-this record.
 
 ```console
 $ npm publish --provenance --access public --tag next --dry-run
@@ -35,54 +84,26 @@ npm notice unpacked size: 589.7 kB
 npm notice shasum: 535ffd166ff395f2a3881cb1052b35aca979672c
 npm notice integrity: sha512-ZdcTH/wflfXQl[...]mxuzAwEOc5p0g==
 npm notice total files: 140
-npm notice Publishing to https://registry.npmjs.org/ with tag next and public access (dry-run)
-+ @agentkit/render@0.1.0
 ```
 
-`0.1.0` carries no prerelease identifier, so a real publish would take the
-`latest` dist-tag rather than `next`. The tag shown here is the prerelease path
-exercised deliberately to confirm the workflow's tag selection.
+## Consumer-side verification
 
-## How the release is performed
-
-`.github/workflows/release.yml` owns it. Pushing a `v*` tag:
-
-1. verifies the tag, `package.json` `version`, and `src/version.ts` `VERSION`
-   all agree, so a mistyped tag cannot publish the wrong version;
-2. runs lint, typecheck, build, unit tests, `schema:check`, `snapshots:check`,
-   `gallery:check`, the browser suite, the package smoke test, and the
-   clean-install verification against the packed tarball;
-3. publishes with `npm publish --provenance --access public --tag <latest|next>`,
-   where the tag is `next` for a version with a prerelease identifier;
-4. extracts the changelog section for that version and creates the GitHub
-   release from it with `--verify-tag`.
-
-Provenance is produced through OIDC (`id-token: write`), so the published
-artifact is bound to the workflow run that built it. The job needs an
-`NPM_TOKEN` secret with publish rights; without it the publish step fails with
-the same 401 recorded above.
-
-## What is verified before publishing
-
-The clean-install check is the consumer-side proof, and it already passes
-against the packed tarball from this checkout:
+The packed tarball is verified as a consumer before any publish is attempted:
 
 ```console
 $ pnpm test:clean-install
 clean-install-verify OK: @agentkit/render@0.1.0 installed from agentkit-render-0.1.0.tgz; JSON and YAML compiled, byte-identical to local, opened over file:// with 0 external requests
 ```
 
-So the only missing step is registry credentials. Nothing about the artifact is
-unverified; the publish itself is what is blocked.
-
 ## Claim status
 
 | Claim | Status |
 | --- | --- |
-| The release workflow is prepared and complete | Delivered, in `.github/workflows/release.yml` |
-| The blocked command and its output are recorded | Delivered, in this file |
+| The release workflow is prepared and complete | Delivered, `.github/workflows/release.yml` |
+| The workflow authenticates through trusted publishing | Delivered: OIDC only, no stored token |
+| The blocked command and its output are recorded | Delivered, this file |
 | The tarball is consumer-verified | Delivered, `pnpm test:clean-install` |
-| `@agentkit/render` is published | **Not done.** No npm auth on this machine. |
-| A version is tagged with provenance | **Not done.** Requires a successful publish. |
+| `@agentkit/render` is published | **Not done.** Blocked on `@agentkit` scope permission. |
+| A version is tagged with provenance | **Not done.** Follows a successful publish. |
 
 Do not read this file as a release announcement.
