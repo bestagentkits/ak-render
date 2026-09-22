@@ -1,0 +1,105 @@
+name: Release
+
+# A release is a tag, not a branch state. Pushing `vX.Y.Z` (or `vX.Y.Z-next.N`)
+# builds, verifies, and publishes exactly that commit, with provenance.
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  id-token: write # npm provenance through OIDC
+
+env:
+  PNPM_VERSION: 9.15.0
+
+jobs:
+  publish:
+    name: Publish ${{ github.ref_name }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - run: pnpm install --frozen-lockfile
+
+      # The tag and both version locations must agree, or the release is a lie.
+      - name: Verify the tag matches the package version
+        run: |
+          node - <<'NODE'
+          const { readFileSync } = require('node:fs');
+          const tag = process.env.GITHUB_REF_NAME.replace(/^v/, '');
+          const pkg = JSON.parse(readFileSync('package.json', 'utf8')).version;
+          const source = readFileSync('src/version.ts', 'utf8');
+          const version = /VERSION = '([^']+)'/.exec(source)?.[1];
+          if (tag !== pkg || tag !== version) {
+            console.error(`tag ${tag} != package.json ${pkg} != src/version.ts ${String(version)}`);
+            process.exit(1);
+          }
+          console.log(`version ${tag} agrees across the tag, package.json, and src/version.ts`);
+          NODE
+
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm build
+      - run: pnpm test
+      - run: pnpm schema:check
+      - run: pnpm snapshots:check
+      - run: pnpm gallery:check
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:browser
+      - run: pnpm test:package
+      - run: pnpm test:clean-install
+
+      - name: Publish to npm with provenance
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          if [[ "$VERSION" == *-* ]]; then
+            DIST_TAG=next
+          else
+            DIST_TAG=latest
+          fi
+          echo "publishing $VERSION under the $DIST_TAG dist-tag"
+          npm publish --provenance --access public --tag "$DIST_TAG"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # Release notes come from the changelog section for this version, so the
+      # notes and the published artifact cannot describe different changes.
+      - name: Extract release notes
+        run: |
+          node - <<'NODE'
+          const { readFileSync, writeFileSync } = require('node:fs');
+          const version = process.env.GITHUB_REF_NAME.replace(/^v/, '');
+          const changelog = readFileSync('CHANGELOG.md', 'utf8');
+          const heading = new RegExp(`^## \\[?${version.replace(/\./g, '\\.')}\\]?.*$`, 'm');
+          const start = changelog.search(heading);
+          if (start === -1) {
+            console.error(`CHANGELOG.md has no section for ${version}`);
+            process.exit(1);
+          }
+          const rest = changelog.slice(start);
+          const next = rest.slice(1).search(/^## /m);
+          writeFileSync('/tmp/release-notes.md', next === -1 ? rest : rest.slice(0, next + 1));
+          console.log(`release notes extracted for ${version}`);
+          NODE
+
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file /tmp/release-notes.md \
+            --verify-tag
