@@ -9,6 +9,10 @@ Release mechanics and the compatibility contract live in
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-09-22
+
+First public release, published to npm as `@bestagentkits/render`.
+
 ### Added
 
 - Repository baseline for the public AK Render package: MIT license,
