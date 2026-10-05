@@ -549,7 +549,9 @@ const RENDERERS: Record<string, Renderer> = {
       nodeAttributes(node, { class: 'ak-block' }),
       [
         title === '' ? '' : heading(2, title),
-        `<div class="ak-table-wrap"><table>${title === '' ? '' : `<caption>${escapeText(title)}</caption>`}<thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`,
+        // The visible heading already names the table, so the caption stays for
+        // assistive technology only instead of printing the title twice.
+        `<div class="ak-table-wrap"><table>${title === '' ? '' : `<caption class="ak-sr">${escapeText(title)}</caption>`}<thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`,
       ].join(''),
     );
   },
@@ -1017,7 +1019,7 @@ const RENDERERS: Record<string, Renderer> = {
       class: 'ak-btn',
       'data-variant': variant,
       ...nodeAttributes(node, {}),
-      ...clickAttribute(node.bindings as unknown as Record<string, unknown>),
+      ...clickAttribute(node.bindings),
     })}>${escapeText(stringProp(node, 'label'))}</button>`;
   },
 

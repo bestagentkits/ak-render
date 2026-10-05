@@ -9,6 +9,19 @@ Release mechanics and the compatibility contract live in
 
 ## [Unreleased]
 
+### Changed
+
+- Polished the emitted artifacts:
+  - Heading sizes now follow the `font-scale` token.
+  - Spacing is driven by density, with larger gaps at section breaks.
+  - The hero carries an accent eyebrow rule, and the theme toggle is a right-aligned pill.
+  - Callouts, badges and tables are tinted, buttons and tabs have hover and press states, and all transitions use the motion tokens.
+  - Mobile touch targets are 44px.
+- Charts now have clean axis ticks with gridlines, rounded bars centered under their labels, a series palette derived from the theme accent, legends, a donut total, and SVG heights sized to their content (sparkline and progress).
+- Elevation shadows are layered. A table title no longer prints twice; its caption is kept for screen readers only.
+- Artifacts now emit `og:title`, `og:type`, `og:description` and `twitter:card` from the spec meta.
+- The gallery index is now one card per artifact.
+
 ## [0.1.1-next.1] - 2026-09-22
 
 Prerelease published to exercise the trusted-publishing release path end to end:

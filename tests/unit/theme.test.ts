@@ -139,7 +139,9 @@ blocks:
     const theme = loadTheme({ preset: 'swiss-clean' });
     expect(theme.css).toContain('--ak-elevation-card:none');
     const strong = loadTheme({ preset: 'warm-signal', tokens: { 'elevation-card': 'strong' } });
-    expect(strong.css).toContain('--ak-elevation-card:0 8px 24px rgba(0, 0, 0, 0.16)');
+    expect(strong.css).toContain(
+      '--ak-elevation-card:0 4px 8px rgba(0, 0, 0, 0.06), 0 16px 40px rgba(0, 0, 0, 0.14)',
+    );
   });
 
   it('zeroes motion when the preset disables it', () => {
