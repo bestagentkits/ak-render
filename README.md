@@ -188,6 +188,32 @@ summary, so the page never enters the agent's context.
 }
 ```
 
+## Token cost
+
+The compiled page goes to disk, never through the model. What the agent pays
+is guidance it reads, the spec it writes, and a one-line summary it reads back.
+
+| Part of a page task | Hand-written HTML | AK Render |
+| --- | ---: | ---: |
+| Presentation guidance read | 33.7k (baseline mean) | 5.7k (skill, catalog, describe) |
+| Written by the agent | 13.9k (median legacy page) | 6.9k (projected spec) |
+| Returned into context | the written page is already there | 0.1k (render summary) |
+| **Total, estimated** | **47.5k** | **12.7k (−73%)** |
+
+- **Benchmarked:** presentation context drops 87–88%, from 33.7k–36.6k tokens
+  of legacy guidance to 4.4k
+  ([render benchmark](./docs/artifacts/benchmark-render.md)).
+- **Measured on 12 HTML pages agents wrote in real projects:** a median of 26%
+  of each page is visible text; the rest is markup, CSS and script. The
+  projected median output saving is 54%. A page that is mostly prose saves
+  little or nothing: one of the twelve grew by 29%.
+- **Not measured yet:** live model token counts, repair loops, wall time and
+  output quality.
+
+Characters are measured; tokens are estimated at 4 characters per token. Method
+and per-page data: [agent token cost](./docs/artifacts/agent-token-cost.md),
+produced by `benchmarks/agent-token-cost.mjs`.
+
 ## Design in one screen
 
 ```text

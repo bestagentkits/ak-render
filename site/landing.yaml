@@ -120,6 +120,68 @@ blocks:
             text: identical
 
   - type: section
+    id: tokens
+    title: What it saves your agent
+    blocks:
+      - type: text
+        variant: lead
+        text: A hand-written page costs an agent three times. It reads presentation guidance, writes markup, CSS and script, and then carries the finished file in its context. With AK Render it reads a small catalog, writes a short spec, and gets back a one-line summary.
+      - type: kpi
+        items:
+          - label: Presentation context
+            value: −87%
+            caption: 'Benchmarked: 87–88%. 33.7k–36.6k tokens of legacy guidance against 4.4k for catalog and contracts'
+          - label: Typical task, estimated
+            value: −73%
+            caption: 47.5k → 12.7k tokens, summed from measured parts at 4 characters per token
+          - label: Output on real pages
+            value: −54%
+            caption: Median projected saving over 12 HTML pages agents wrote in real projects
+          - label: Compiled page in context
+            value: 0 bytes
+            caption: The HTML goes to disk; the agent reads a summary of about 450 characters
+      - type: split
+        ratio: wide-left
+        blocks:
+          - type: chart
+            kind: bar
+            title: Estimated tokens per page task, in thousands
+            labels: [Guidance read, Written, Returned]
+            series:
+              - label: Hand-written HTML
+                values: [33.7, 13.9, 0]
+              - label: AK Render
+                values: [5.7, 6.9, 0.1]
+          - type: steps
+            title: Where the HTML goes
+            items:
+              - title: Agent
+                text: Reads the catalog once and the contracts of the blocks it uses.
+              - title: Page Spec
+                text: Writes only what the page says, as YAML or JSON.
+              - title: Compiler
+                text: Writes the HTML to disk. The page never passes through the model's context.
+      - type: card-grid
+        title: Where the savings come from
+        items:
+          - title: Context
+            text: The 5.2 kB catalog and per-block contracts replace pages of HTML style guidance.
+          - title: Generation
+            text: The agent stops writing CSS, script and markup. The median legacy page was 26% visible text.
+          - title: Validation
+            text: A failed check returns a stable code and the JSON path to fix, not a broken page to inspect.
+          - title: Context shielding
+            text: A compiled page is 107–227 kB. The summary the agent reads back is under 800 characters.
+          - title: Determinism
+            text: The same spec compiles to the same bytes, so a rerun gives the agent nothing new to review.
+          - title: Edits
+            text: A change is a line in the spec. The agent does not regenerate or re-read the page to fix a label.
+      - type: callout
+        tone: info
+        title: Measured, estimated, and not yet measured
+        text: 'Character counts are measured; tokens are estimated at 4 characters per token, with no tokenizer or live model run. The 87–88% figure comes from benchmarks/render-benchmark.mjs. The 73% task figure adds measured parts, and the spec size is projected from the legacy pages'' visible text. A page that is mostly prose saves little or nothing on output: one of the 12 grew by 29%. Live A/B runs, repair loops and wall time are not measured yet. Method and data: docs/artifacts/agent-token-cost.md.'
+
+  - type: section
     id: blocks
     title: Everything a page needs, as data
     blocks:
@@ -168,6 +230,167 @@ blocks:
             text: Copy, toggle, tabs, filter, theme and download are bound in the spec. No page-authored script, no inline handler.
             eyebrow: Interaction
             size: wide
+
+  - type: section
+    id: spec
+    title: The YAML behind each visual
+    blocks:
+      - type: text
+        variant: lead
+        text: Each picture below is an element crop of a compiled gallery page. Next to it is the Page Spec block that produced it, copied from the fixture in this repository. The agent writes the right-hand side; the compiler draws the left.
+      - type: split
+        ratio: even
+        blocks:
+          - type: image
+            src: assets/crop-kpi.webp
+            alt: 'The kpi block from the showcase gallery page: four metric cards with deltas and sparklines'
+            caption: KPI cards with a verdict and a sparkline
+          - type: code
+            language: yaml
+            title: fixtures/pages/showcase.yaml, first two of four items
+            text: |
+              - type: kpi
+                items:
+                  - label: Test cases
+                    value: '363'
+                    delta: '+21 this round'
+                    trend: up
+                    good: up
+                    series: [15, 198, 278, 305, 308, 313, 342, 363]
+                    caption: Declared it() and test() cases across the git history
+                  - label: Fixture pages
+                    value: '11'
+                    delta: '+1'
+                    trend: up
+                    good: up
+                    series: [7, 8, 9, 9, 10, 10, 11]
+                    caption: Pages in fixtures/pages at each milestone
+      - type: split
+        ratio: even
+        blocks:
+          - type: image
+            src: assets/crop-terminal.webp
+            alt: The terminal block from the showcase gallery page in dark mode, a typed validate and compile session
+            caption: A typed terminal session with a copy control
+          - type: code
+            language: yaml
+            title: fixtures/pages/showcase.yaml
+            text: |
+              - type: terminal
+                title: ~/project
+                lines:
+                  - kind: comment
+                    text: '# validate the spec, then compile it'
+                  - kind: command
+                    text: ak-render validate explain.yaml
+                  - kind: success
+                    text: 'ok: explain.yaml'
+                  - kind: output
+                    text: '  blocks: 8 (nodes: 9)'
+                  - kind: command
+                    text: ak-render explain.yaml --out explain.html
+                  - kind: output
+                    text: wrote 124500 bytes to explain.html (4 runtime features, hash 0w5t9z60ka9un7)
+                  - kind: command
+                    text: ak-render themes
+                  - kind: output
+                    text: blueprint  editorial  paper-ink  swiss-clean  terminal-mono  warm-signal
+      - type: split
+        ratio: even
+        blocks:
+          - type: image
+            src: assets/crop-checklist.webp
+            alt: 'The checklist block from the showcase gallery page: four of five release gates done, with a progress meter'
+            caption: A checklist that counts itself
+          - type: code
+            language: yaml
+            title: fixtures/pages/showcase.yaml
+            text: |
+              - type: checklist
+                title: Release gates for this page
+                items:
+                  - text: Unit tests, lint, typecheck, and build pass
+                    done: true
+                  - text: Theme snapshots and the gallery regenerate byte-identical
+                    done: true
+                  - text: Browser tests pass, including the before/after slider
+                    done: true
+                  - text: No horizontal overflow at 375 and 1440 pixels
+                    done: true
+                  - text: Visual regression baselines for the showcase blocks
+                    done: false
+      - type: split
+        ratio: even
+        blocks:
+          - type: image
+            src: assets/crop-file-tree.webp
+            alt: The file-tree block from the showcase gallery page in dark mode, with added and modified files
+            caption: A file tree built from flat paths
+          - type: code
+            language: yaml
+            title: fixtures/pages/showcase.yaml, first four of eight items
+            text: |
+              - type: file-tree
+                title: What this round touched
+                items:
+                  - path: src/render/font-faces.ts
+                    status: added
+                    note: inlines the bundled faces
+                  - path: src/render/embedded-fonts.generated.ts
+                    status: added
+                  - path: src/render/surface-styles.ts
+                    status: added
+                    note: the night band
+                  - path: assets/fonts/geist/OFL.txt
+                    status: added
+      - type: split
+        ratio: even
+        blocks:
+          - type: image
+            src: assets/crop-timeline.webp
+            alt: The timeline block from the plan gallery page with three weekly milestones
+            caption: A timeline from three list items
+          - type: code
+            language: yaml
+            title: fixtures/pages/plan.yaml
+            text: |
+              - type: timeline
+                title: Schedule
+                items:
+                  - when: Week 1
+                    title: Schema freeze
+                    text: Page Spec v1 accepted with migration policy.
+                  - when: Week 2
+                    title: Compiler and themes
+                    text: Deterministic output with six built-in presets.
+                  - when: Week 3
+                    title: Runtime
+                    text: Browser-tested interactions across input methods.
+      - type: split
+        ratio: even
+        blocks:
+          - type: image
+            src: assets/crop-compare.webp
+            alt: The comparison block from the diff gallery page in dark mode, before and after side by side
+            caption: A before and after comparison
+          - type: code
+            language: yaml
+            title: fixtures/pages/diff.yaml
+            text: |
+              - type: comparison
+                title: Escaping strategy
+                left:
+                  label: Before
+                  items:
+                    - Escape applied while parsing
+                    - Context assumed safe after validation
+                    - Attribute values escaped once
+                right:
+                  label: After
+                  items:
+                    - Escape applied at emission per context
+                    - URL schemes allowlisted per action
+                    - Embedded JSON serialized for script context
 
   - type: section
     id: themes
@@ -287,6 +510,85 @@ blocks:
               }
             }
           }
+
+  - type: section
+    id: demos
+    title: Demo pages, compiled from fixtures
+    blocks:
+      - type: text
+        text: Every page in the gallery is a fixture spec in fixtures/pages compiled by the current build. Open one, then view its source to see a single HTML file with no requests.
+      - type: gallery
+        columns: 3
+        items:
+          - src: assets/shot-components.webp
+            alt: Screenshot of the all-components.html gallery page compiled by AK Render
+            caption: Every block type on one page
+          - src: assets/shot-explain-light.webp
+            alt: Screenshot of the explain.html gallery page compiled by AK Render
+            caption: 'Explain: a concept walk-through'
+          - src: assets/shot-dashboard.webp
+            alt: Screenshot of the dashboard.html gallery page compiled by AK Render
+            caption: 'Dashboard: charts and metrics'
+          - src: assets/shot-plan.webp
+            alt: Screenshot of the plan.html gallery page compiled by AK Render
+            caption: 'Plan: timeline, diagram, risks'
+          - src: assets/shot-diff.webp
+            alt: Screenshot of the diff.html gallery page compiled by AK Render
+            caption: 'Diff: changes with intent'
+          - src: assets/shot-showcase.webp
+            alt: Screenshot of the showcase.html gallery page compiled by AK Render
+            caption: 'Showcase: the presentation blocks'
+          - src: assets/shot-brainstorm.webp
+            alt: Screenshot of the brainstorm.html gallery page compiled by AK Render
+            caption: 'Brainstorm: options and trade-offs'
+          - src: assets/shot-recap.webp
+            alt: Screenshot of the recap.html gallery page compiled by AK Render
+            caption: Recap, in dark mode
+          - src: assets/shot-interactive.webp
+            alt: Screenshot of the interactive.html gallery page compiled by AK Render
+            caption: 'Interactive: tabs, filters, state'
+          - src: assets/shot-media.webp
+            alt: Screenshot of the media.html gallery page compiled by AK Render
+            caption: 'Media: video, images, before and after'
+          - src: assets/shot-theme-showcase.webp
+            alt: Screenshot of the theme-showcase.html gallery page compiled by AK Render
+            caption: 'Theme showcase: one spec, six presets'
+      - type: toolbar
+        title: Open a demo
+        items:
+          - type: link
+            label: all-components
+            href: gallery/all-components.html
+          - type: link
+            label: explain
+            href: gallery/explain.html
+          - type: link
+            label: dashboard
+            href: gallery/dashboard.html
+          - type: link
+            label: plan
+            href: gallery/plan.html
+          - type: link
+            label: diff
+            href: gallery/diff.html
+          - type: link
+            label: showcase
+            href: gallery/showcase.html
+          - type: link
+            label: brainstorm
+            href: gallery/brainstorm.html
+          - type: link
+            label: recap
+            href: gallery/recap.html
+          - type: link
+            label: interactive
+            href: gallery/interactive.html
+          - type: link
+            label: media
+            href: gallery/media.html
+          - type: link
+            label: theme-showcase
+            href: gallery/theme-showcase.html
 
   - type: section
     id: measured
