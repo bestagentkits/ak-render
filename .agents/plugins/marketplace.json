@@ -1,0 +1,20 @@
+{
+  "name": "ak-render",
+  "interface": {
+    "displayName": "AK Render"
+  },
+  "plugins": [
+    {
+      "name": "ak-render",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

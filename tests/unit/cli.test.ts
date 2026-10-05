@@ -58,6 +58,15 @@ describe('ak-render CLI', () => {
     expect(c.out()).toContain('validate');
   });
 
+  it('prints one command usage on <command> --help instead of reading a file', () => {
+    for (const command of ['compile', 'validate', 'describe', 'themes']) {
+      const c = capture();
+      expect(run([command, '--help'], c.io), command).toBe(0);
+      expect(c.out()).toContain(`Usage:\n  ak-render`);
+      expect(c.err()).toBe('');
+    }
+  });
+
   it('prints the version on --version and exits 0', () => {
     const c = capture();
     expect(run(['--version'], c.io)).toBe(0);
