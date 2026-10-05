@@ -195,6 +195,14 @@ function toggleTheme(source) {
   doc.startViewTransition(function () { applyTheme('toggle'); });
 }
 function restoreTheme() {
+  // While the system owns the scheme, a change in system settings must relabel
+  // the toggle too, not only the first paint.
+  var system = window.matchMedia('(prefers-color-scheme: dark)');
+  if (typeof system.addEventListener === 'function') {
+    system.addEventListener('change', function () {
+      if (!root.getAttribute('data-theme')) syncThemeToggles(system.matches ? 'dark' : 'light');
+    });
+  }
   var stored = null;
   try { stored = window.localStorage.getItem('ak-render-theme'); } catch (error) {}
   if (!stored) {

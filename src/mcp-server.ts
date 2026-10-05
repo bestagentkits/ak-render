@@ -76,6 +76,8 @@ const text = (value: unknown): ToolResult => ({
 
 const failure = (value: unknown): ToolResult => ({ ...text(value), isError: true });
 
+const HTML_FILE = /\.html?$/iu;
+
 function themeCatalogFor(context: McpContext): ThemeCatalog {
   return buildThemeCatalog({ cwd: context.cwd, home: context.home, discovery: true });
 }
@@ -135,7 +137,8 @@ const TOOLS: readonly Tool[] = [
         spec: SPEC_INPUT,
         out: {
           type: 'string',
-          description: 'File to write, relative to the server working directory.',
+          description:
+            'HTML file to write (.html or .htm), relative to the server working directory.',
         },
         theme: { type: 'string', description: 'Optional preset name overriding the spec theme.' },
       },
@@ -144,6 +147,9 @@ const TOOLS: readonly Tool[] = [
     },
     run: (args, context) => {
       const out = resolve(context.cwd, requireString(args, 'out'));
+      // The tool only ever writes pages; refusing other extensions keeps a
+      // misdirected call from replacing a config or source file with HTML.
+      if (!HTML_FILE.test(out)) throw new TypeError('"out" must end in .html or .htm');
       const theme = args.theme;
       const result = compile(args.spec, {
         source: '<spec>',
@@ -170,18 +176,16 @@ const TOOLS: readonly Tool[] = [
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     run: (_args, context) => {
       const themes = themeCatalogFor(context);
-      return text(
-        themes.sources
-          .map(({ name, origin }) => ({ name, origin }))
-          .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0)),
-      );
+      const presets = themes.sources
+        .map(({ name, origin }) => ({ name, origin }))
+        .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+      // A preset file that failed to load is reported, not silently dropped.
+      return text(themes.problems.length === 0 ? presets : { presets, problems: themes.problems });
     },
   },
 ];
 
-function callTool(params: Record<string, unknown>, context: McpContext): ToolResult {
-  const tool = TOOLS.find((candidate) => candidate.name === params.name);
-  if (tool === undefined) return failure(`unknown tool: ${String(params.name)}`);
+function callTool(tool: Tool, params: Record<string, unknown>, context: McpContext): ToolResult {
   const args = (params.arguments ?? {}) as Record<string, unknown>;
   try {
     return tool.run(args, context);
@@ -231,6 +235,10 @@ export function handleMcpMessage(
     };
   }
   if (message.id === undefined) return undefined;
+  // MCP requires a string or number id; null is reserved for error replies.
+  if (message.id === null) {
+    return { jsonrpc: '2.0', id: null, error: { code: -32600, message: 'invalid request' } };
+  }
   const id = message.id;
   const params = message.params ?? {};
   const reply = (result: unknown): JsonRpcResponse => ({ jsonrpc: '2.0', id, result });
@@ -256,8 +264,17 @@ export function handleMcpMessage(
           inputSchema,
         })),
       });
-    case 'tools/call':
-      return reply(callTool(params, context));
+    case 'tools/call': {
+      const tool = TOOLS.find((candidate) => candidate.name === params.name);
+      if (tool === undefined) {
+        return {
+          jsonrpc: '2.0',
+          id,
+          error: { code: -32602, message: `unknown tool: ${String(params.name)}` },
+        };
+      }
+      return reply(callTool(tool, params, context));
+    }
     default:
       return {
         jsonrpc: '2.0',
@@ -279,6 +296,20 @@ export function handleMcpLine(line: string, context: McpContext): string | undef
       id: null,
       error: { code: -32700, message: 'parse error' },
     });
+  }
+  // Revision 2025-03-26 allows batches: answer each member, omit the silent ones.
+  if (Array.isArray(message)) {
+    if (message.length === 0) {
+      return JSON.stringify({
+        jsonrpc: '2.0',
+        id: null,
+        error: { code: -32600, message: 'invalid request' },
+      });
+    }
+    const responses = message
+      .map((member) => handleMcpMessage(member, context))
+      .filter((response) => response !== undefined);
+    return responses.length === 0 ? undefined : JSON.stringify(responses);
   }
   const response = handleMcpMessage(message, context);
   return response === undefined ? undefined : JSON.stringify(response);

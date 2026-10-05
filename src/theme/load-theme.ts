@@ -53,6 +53,8 @@ function declarations(tokens: Tokens): string {
     .join(';');
 }
 
+const STILL_ROOTS = ':root,:root[data-theme],:root:not([data-theme="light"])';
+
 function buildThemeCss(light: Tokens, dark: Tokens, motionDisabled: boolean): string {
   const parts = [`:root{${declarations(light)}}`];
   parts.push(
@@ -60,8 +62,12 @@ function buildThemeCss(light: Tokens, dark: Tokens, motionDisabled: boolean): st
   );
   parts.push(`:root[data-theme="dark"]{${declarations(dark)}}`);
   parts.push(`:root[data-theme="light"]{${declarations(light)}}`);
-  if (motionDisabled) parts.push(':root{--ak-motion-duration:0ms}');
-  parts.push('@media (prefers-reduced-motion: reduce){:root{--ak-motion-duration:0ms}}');
+  // The scheme rules above reach specificity (0,2,0), so the zeroed duration
+  // repeats their selectors and comes later; a bare `:root` would lose to the
+  // dark scheme and leave transitions running.
+  const still = `${STILL_ROOTS}{--ak-motion-duration:0ms}`;
+  if (motionDisabled) parts.push(still);
+  parts.push(`@media (prefers-reduced-motion: reduce){${still}}`);
   return parts.join('\n');
 }
 

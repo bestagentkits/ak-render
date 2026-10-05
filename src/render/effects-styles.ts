@@ -37,8 +37,8 @@ body::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none
 .ak-card::after,.ak-tile::after{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;pointer-events:none;background:radial-gradient(380px circle at var(--ak-mx,50%) var(--ak-my,-60%),color-mix(in srgb,var(--ak-color-accent) 13%,transparent),transparent 70%);opacity:0;transition:opacity calc(var(--ak-motion-duration) * 2) var(--ak-motion-easing)}
 .ak-card:hover::after,.ak-tile:hover::after{opacity:1}
 .ak-btn[data-variant="primary"]{position:relative;isolation:isolate;overflow:hidden}
-.ak-btn[data-variant="primary"]::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(105deg,transparent 30%,color-mix(in srgb,var(--ak-color-accent-contrast) 34%,transparent) 50%,transparent 70%);translate:-110% 0;transition:translate .9s ${EASE_OUT}}
-.ak-btn[data-variant="primary"]:hover::after{translate:110% 0}
+.ak-btn[data-variant="primary"]::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(105deg,transparent 30%,color-mix(in srgb,var(--ak-color-accent-contrast) 34%,transparent) 50%,transparent 70%);translate:-110% 0}
+@media (prefers-reduced-motion:no-preference){.ak-btn[data-variant="primary"]::after{transition:translate .9s ${EASE_OUT}}.ak-btn[data-variant="primary"]:hover::after{translate:110% 0}}
 .ak-hero[data-align="center"]{align-items:center;text-align:center}
 .ak-hero[data-align="center"]::before{right:auto;left:50%;translate:-50% 0}
 .ak-window-dots{display:inline-flex;flex:none;gap:6px}

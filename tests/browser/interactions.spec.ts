@@ -347,6 +347,16 @@ test.describe('reduced motion', () => {
     expect(await duration(page)).toMatch(/^0(m?s)?$/u);
   });
 
+  // The dark-scheme token rules are more specific than a bare :root, so this
+  // pins that the zeroed duration still wins under each way dark is chosen.
+  test('zeroes the duration under a dark scheme too', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: 'dark' });
+    await open(page);
+    expect(await duration(page)).toMatch(/^0(m?s)?$/u);
+    await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
+    expect(await duration(page)).toMatch(/^0(m?s)?$/u);
+  });
+
   test('carries the reduced-motion rule in the artifact itself', async ({ page }) => {
     await open(page);
     const css = await page.locator('style').first().textContent();
@@ -374,7 +384,7 @@ blocks:
     const target = join(workspace, 'still.html');
     mkdirSync(workspace, { recursive: true });
     writeFileSync(target, compile(source).html, 'utf8');
-    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.emulateMedia({ reducedMotion: 'no-preference', colorScheme: 'dark' });
     await page.goto(`file://${target}`, { waitUntil: 'load' });
     expect(await duration(page)).toMatch(/^0(m?s)?$/u);
     // Fixed-duration effects stop too, not only the token-driven ones.

@@ -15,8 +15,10 @@ describe('agent plugin manifests', () => {
     expect(json('plugin.json').version).toBe(VERSION);
   });
 
-  it('start the MCP server from the published package', () => {
-    const args = ['-y', '@bestagentkits/render', 'mcp'];
+  // Pinned so a plugin version always runs the package its skill text describes,
+  // and an unpublished version fails loudly instead of running an older one.
+  it('start the MCP server from the matching published package', () => {
+    const args = ['-y', `@bestagentkits/render@${VERSION}`, 'mcp'];
     const claude = json('.claude-plugin/plugin.json').mcpServers as Record<
       string,
       { args: string[] }

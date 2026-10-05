@@ -47,7 +47,8 @@ CSP that allows `font-src data:` on pages that carry a face.
 
 ### Added
 
-- `ak-render mcp` serves the compiler as an MCP server over stdio, with `catalog`, `describe`, `validate`, `render` and `themes` tools. `render` writes the HTML to the `out` path and returns only a summary. No new runtime dependency.
+- `ak-render mcp` serves the compiler as an MCP server over stdio, with `catalog`, `describe`, `validate`, `render` and `themes` tools. `render` writes the HTML to the `out` path, which must end in `.html` or `.htm`, and returns only a summary. It accepts JSON-RPC batches and answers an unknown tool or a null id with a protocol error. No new runtime dependency.
+- An `ak-render` agent skill (`skills/ak-render/SKILL.md`), installable with `npx skills add bestagentkits/ak-render`, plus Claude Code and Codex plugin marketplaces that bundle the skill and register the MCP server, pinned to the matching package version.
 - Pass `-` as the spec path to compile or validate a spec from standard input. Diagnostics name the source `<stdin>`.
 - `llms.txt` (shipped in the package) and `docs/agent-guide.md`: the agent loop, a minimal spec, and the MCP client config.
 - `section` gains `surface: plain | inverse`. An inverse section sits on a night band: a dark panel where every colour token takes the theme's dark value, so nested blocks recolour without variants.
@@ -102,7 +103,7 @@ CSP that allows `font-src data:` on pages that carry a face.
 ### Fixed
 
 - A non-colour token set under a theme's `tokens` (a font stack, spacing, or motion value) now applies to the dark scheme too. Before, dark mode fell back to the parent preset's value.
-- `motion-policy: none` now stops every animation, not only the token-driven durations: the aurora, marquee, caret, word reveal, scroll-linked effects, count-up and the theme-toggle transition. The page renders as it does under reduced motion, and the root carries `data-motion="none"`.
+- `motion-policy: none` now stops every animation, not only the token-driven durations: the aurora, marquee, caret, word reveal, scroll-linked reveals, count-up, the primary-button sweep and the theme-toggle transition. The zeroed duration now also wins over the dark scheme, which used to restore it under reduced motion. The reading-progress rail still follows the scroll position, since it moves only when the reader scrolls. The page renders as it does under reduced motion, and the root carries `data-motion="none"`.
 - `loadTheme` reports a non-object `tokens` or `dark` value as a `POLICY_VIOLATION` render error instead of throwing a `TypeError`.
 - File trees order names by code point, so the order no longer depends on the runtime's collation.
 - A blocked remote image keeps its alt text, and every blocked image, video, audio or embed names the real reason: the network is denied, the capability is not allowed, or the host is not on the provider allowlist. Before, the note always said the network was denied.
@@ -111,9 +112,10 @@ CSP that allows `font-src data:` on pages that carry a face.
 - Checklist, browser-frame (hero shot and showcase) and bento image styles moved out of the base stylesheet into feature sheets, so pages without those blocks no longer carry them. `checklist` and `frame` are new runtime features.
 - The night band now uses the same tint, focus ring and sheen as dark mode; it had drifted to stronger values.
 - Font verification checks every source of every `@font-face`, and rejects `local()`, instead of only the first `url()`.
-- The theme toggle names the scheme it switches to from the first paint. Before, it read "Dark" on a page the system had already put in dark mode.
+- The theme toggle names the scheme it switches to from the first paint, and follows a system scheme change while the page is open. Before, it read "Dark" on a page the system had already put in dark mode.
 - A `split`, `grid` or `comparison` column no longer grows past a phone screen when a child holds a long code line; the line scrolls inside its frame.
-- `ak-render <command> --help` prints that command's usage instead of trying to read a file named `--help`.
+- `ak-render <command> --help` prints that command's usage instead of trying to read a file named `--help`; `ak-render page.yaml --help` prints the compile usage instead of compiling.
+- `--out` creates missing folders, and a file that cannot be written exits `2` with a one-line reason instead of a stack trace and exit `1`, which agents read as "fix the spec".
 - `img-src` and `media-src` include `'self'`, so a page's relative assets load when it is served over HTTP(S) instead of opened from disk. Remote URLs are still gated by the network policy.
 
 ## [0.1.1-next.1] - 2026-09-22

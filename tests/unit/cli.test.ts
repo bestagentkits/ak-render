@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
@@ -65,6 +65,23 @@ describe('ak-render CLI', () => {
       expect(c.out()).toContain(`Usage:\n  ak-render`);
       expect(c.err()).toBe('');
     }
+  });
+
+  it('treats --help after a spec path as compile help', () => {
+    const c = capture();
+    expect(run([join(workspace, 'page.yaml'), '--help'], c.io)).toBe(0);
+    expect(c.out()).toContain('Usage:\n  ak-render');
+    expect(c.out()).not.toContain('<html');
+  });
+
+  it('creates the output folder and exits 2 when the file cannot be written', () => {
+    const nested = join(workspace, 'made', 'page.html');
+    expect(run([join(workspace, 'page.yaml'), '--out', nested], capture().io)).toBe(0);
+    expect(existsSync(nested)).toBe(true);
+
+    const c = capture();
+    expect(run([join(workspace, 'page.yaml'), '--out', workspace], c.io)).toBe(2);
+    expect(c.err()).toContain(`cannot write ${workspace}`);
   });
 
   it('prints the version on --version and exits 0', () => {

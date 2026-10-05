@@ -14,7 +14,7 @@
   "mcpServers": {
     "ak-render": {
       "command": "npx",
-      "args": ["-y", "@bestagentkits/render", "mcp"]
+      "args": ["-y", "@bestagentkits/render@0.2.0", "mcp"]
     }
   }
 }
