@@ -102,7 +102,11 @@ test.describe('theme toggle', () => {
     const toggle = page.locator('[data-ak-theme-toggle]');
     const before = await page.locator('html').getAttribute('data-theme');
     await toggle.click();
-    const after = await page.locator('html').getAttribute('data-theme');
+    // With motion allowed the theme is applied inside a view transition, a
+    // frame or more after the click, so wait for the attribute to change.
+    const theme = () => page.locator('html').getAttribute('data-theme');
+    await expect.poll(theme).toMatch(/^(dark|light)$/u);
+    const after = await theme();
     expect(after).not.toBe(before);
     await expect(toggle).toHaveAttribute('aria-pressed', String(after === 'dark'));
   });
@@ -110,6 +114,7 @@ test.describe('theme toggle', () => {
   test('remembers the choice across a reload', async ({ page }) => {
     await open(page);
     await page.locator('[data-ak-theme-toggle]').click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', /^(dark|light)$/u);
     const chosen = await page.locator('html').getAttribute('data-theme');
     await page.reload({ waitUntil: 'load' });
     expect(await page.locator('html').getAttribute('data-theme')).toBe(chosen);
