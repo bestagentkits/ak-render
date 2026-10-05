@@ -10,8 +10,9 @@
  * known command is optional.
  */
 
-import { readFileSync, realpathSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isRenderError, type RenderError } from './errors.js';
 import { serveMcp } from './mcp-server.js';
@@ -103,7 +104,16 @@ function compileCommand(args: string[], io: CliIo, flags: Flags): number {
     });
 
     if (flags.out !== undefined) {
-      writeFileSync(flags.out, result.html, 'utf8');
+      // A write failure is an environment problem, not a spec problem, so it
+      // exits 2 like an unreadable input instead of 1 ("fix the spec").
+      try {
+        mkdirSync(dirname(resolve(flags.out)), { recursive: true });
+        writeFileSync(flags.out, result.html, 'utf8');
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error);
+        io.stderr(`ak-render: cannot write ${flags.out}: ${reason}\n`);
+        return 2;
+      }
     } else {
       io.stdout(result.html);
       // Human-readable summary goes to stderr so stdout stays a clean artifact.
@@ -309,8 +319,8 @@ Commands:
 ${summaries}
 
 The first positional argument may be a spec path with the compile command
-implied. Pass - as the spec path to read the spec from standard input. All
-commands accept --json and never prompt.
+implied. Pass - as the spec path to read the spec from standard input. No
+command prompts, and every command except mcp accepts --json.
 `;
 }
 
@@ -378,8 +388,8 @@ export function run(argv: readonly string[], io: CliIo = defaultIo): number {
   }
 
   // `ak-render <command> --help` prints that command's usage instead of
-  // treating the flag as a spec path.
-  const named = first === undefined ? undefined : COMMANDS[first];
+  // treating the flag as a spec path; `ak-render page.yaml --help` means compile.
+  const named = (first === undefined ? undefined : COMMANDS[first]) ?? COMMANDS.compile;
   if (named !== undefined && args.slice(1).some((arg) => arg === '--help' || arg === '-h')) {
     io.stdout(`${named.summary}\n\nUsage:\n  ${named.usage}\n`);
     return 0;

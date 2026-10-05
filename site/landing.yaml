@@ -58,7 +58,7 @@ blocks:
         right:
           label: The agent writes a Page Spec
           items:
-            - The explain gallery page is a 2.6 kB spec; the compiler emits the other 118.4 kB
+            - The explain gallery page is a 2.6 kB spec; the compiler emits the other 119.0 kB
             - The same spec and compiler version produce identical bytes and hash
             - One file that opens from disk, with fonts embedded and the network denied
             - Keyboard, reduced motion, print and the dark scheme come from the compiler
@@ -107,13 +107,13 @@ blocks:
           - kind: command
             text: ak-render plan.yaml --out plan.html
           - kind: output
-            text: wrote 107343 bytes to plan.html (1 runtime features, hash 01wg16i1w9b1i6)
+            text: wrote 108051 bytes to plan.html (1 runtime features, hash 03km1ph142z3zh)
           - kind: comment
             text: '# same spec from stdin, same bytes'
           - kind: command
             text: cat plan.yaml | ak-render - --out again.html
           - kind: output
-            text: wrote 107343 bytes to again.html (1 runtime features, hash 01wg16i1w9b1i6)
+            text: wrote 108051 bytes to again.html (1 runtime features, hash 03km1ph142z3zh)
           - kind: command
             text: cmp plan.html again.html && echo identical
           - kind: success
@@ -300,7 +300,7 @@ blocks:
             caption: ak-render catalog prints 5,164 bytes
           - label: Spec the agent writes
             value: 2.6 kB
-            caption: explain.yaml; the compiled page is 121.1 kB
+            caption: explain.yaml; the compiled page is 121.6 kB
           - label: Network requests on open
             value: '0'
             caption: explain.html from file:// in Chromium

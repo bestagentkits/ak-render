@@ -89,7 +89,8 @@ ak-render validate plan.yaml --json
 
 The result is `{ ok, diagnostics[] }`. Each diagnostic has a stable `code` and
 the JSON `path` to fix, such as `$.blocks[1].blocks[0].items[2].title`. Exit
-code `1` means "fix and retry"; `2` means the input could not be read.
+code `1` means "fix and retry"; `2` means the input could not be read or the
+output could not be written.
 
 ### Compile
 

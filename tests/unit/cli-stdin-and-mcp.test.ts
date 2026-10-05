@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
@@ -149,6 +149,34 @@ describe('MCP server', () => {
     const result = call('render', { spec: BAD_SPEC, out: 'bad.html' });
     expect(result.isError).toBe(true);
     expect(JSON.parse(result.content[0]?.text ?? '').code).toBe('SPEC_VALIDATION_ERROR');
+  });
+
+  it('only writes HTML files', () => {
+    const result = call('render', { spec: SPEC, out: 'notes.txt' });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]?.text).toContain('.html');
+    expect(existsSync(join(workspace, 'notes.txt'))).toBe(false);
+  });
+
+  it('rejects an unknown tool and a null id as protocol errors', () => {
+    const unknown = handleMcpMessage(
+      { jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: 'nope' } },
+      context,
+    );
+    expect(unknown?.error?.code).toBe(-32602);
+    const nullId = handleMcpMessage({ jsonrpc: '2.0', id: null, method: 'ping' }, context);
+    expect(nullId?.error?.code).toBe(-32600);
+  });
+
+  it('answers each member of a batch', () => {
+    const line = JSON.stringify([
+      { jsonrpc: '2.0', id: 1, method: 'ping' },
+      { jsonrpc: '2.0', method: 'notifications/initialized' },
+      { jsonrpc: '2.0', id: 2, method: 'tools/list' },
+    ]);
+    const responses = JSON.parse(handleMcpLine(line, context) ?? '') as { id: number }[];
+    expect(responses.map((response) => response.id)).toEqual([1, 2]);
+    expect(JSON.parse(handleMcpLine('[]', context) ?? '').error.code).toBe(-32600);
   });
 
   it('stays silent for notifications and replies to unknown methods', () => {

@@ -63,7 +63,8 @@ Check every block's real props with `describe` before relying on this shape.
 `ak-render mcp` serves the same loop as MCP tools over stdio: `catalog`,
 `describe`, `validate`, `render` and `themes`. `render` writes the HTML to the
 `out` path and returns only the summary, so the page never enters your context.
-`spec` may be YAML/JSON text or the parsed object.
+`out` must end in `.html` or `.htm` and resolves against the directory the
+server was started in. `spec` may be YAML/JSON text or the parsed object.
 
 ```json
 {
@@ -84,8 +85,9 @@ Check every block's real props with `describe` before relying on this shape.
   before primitives; they carry the design for you.
 - Themes are presets, not CSS. Custom presets extend a built-in; see
   [themes.md](./themes.md).
-- The same spec always produces the same bytes, so a changed hash means the
-  spec or the compiler version changed.
+- The same spec, theme presets and compiler version always produce the same
+  bytes, so a changed hash means one of those three changed. Project or user
+  presets found on disk and `--theme` count as theme input.
 
 ## Install the skill
 
