@@ -14,7 +14,7 @@
  * `cwebp` and `ffmpeg` on PATH.
  *
  * Usage:
- *   node scripts/capture-demo-media.mjs
+ *   node scripts/capture-demo-media.mjs [--only shot-recap,crop-kpi]
  */
 
 import { execFileSync } from 'node:child_process';
@@ -43,6 +43,11 @@ const STILLS = [
   { page: 'all-components.html', scheme: 'light', name: 'shot-components' },
   { page: 'showcase.html', scheme: 'light', name: 'shot-showcase' },
   { page: 'showcase.html', scheme: 'dark', name: 'shot-showcase-dark' },
+  { page: 'brainstorm.html', scheme: 'light', name: 'shot-brainstorm' },
+  { page: 'recap.html', scheme: 'dark', name: 'shot-recap' },
+  { page: 'interactive.html', scheme: 'light', name: 'shot-interactive' },
+  { page: 'media.html', scheme: 'light', name: 'shot-media' },
+  { page: 'theme-showcase.html', scheme: 'light', name: 'shot-theme-showcase' },
 ];
 
 /**
@@ -60,7 +65,19 @@ const CROPS = [
   { page: 'diff.html', scheme: 'dark', selector: '.ak-compare', name: 'crop-compare' },
   { page: 'plan.html', scheme: 'light', selector: '.ak-timeline', name: 'crop-timeline' },
   { page: 'plan.html', scheme: 'light', selector: '.ak-diagram', name: 'crop-diagram' },
+  { page: 'showcase.html', scheme: 'light', selector: '.ak-kpis', name: 'crop-kpi' },
+  { page: 'showcase.html', scheme: 'dark', selector: '.ak-terminal', name: 'crop-terminal' },
+  { page: 'showcase.html', scheme: 'light', selector: '.ak-checklist', name: 'crop-checklist' },
+  { page: 'showcase.html', scheme: 'dark', selector: '.ak-tree-block', name: 'crop-file-tree' },
 ];
+
+/**
+ * `--only a,b` captures just the named stills and crops and skips the
+ * walkthrough, so adding one asset does not re-encode every committed binary.
+ */
+const onlyIndex = process.argv.indexOf('--only');
+const only = onlyIndex === -1 ? undefined : new Set((process.argv[onlyIndex + 1] ?? '').split(','));
+const wanted = (entry) => only === undefined || only.has(entry.name);
 
 function pageUrl(name) {
   return pathToFileURL(join(galleryDir, name)).href;
@@ -85,7 +102,7 @@ function toWebp(png, name, width = 1200) {
 }
 
 async function captureCrops(browser) {
-  for (const crop of CROPS) {
+  for (const crop of CROPS.filter(wanted)) {
     const context = await browser.newContext({
       viewport: VIEWPORT,
       colorScheme: crop.scheme,
@@ -105,7 +122,7 @@ async function captureCrops(browser) {
 }
 
 async function captureStills(browser) {
-  for (const still of STILLS) {
+  for (const still of STILLS.filter(wanted)) {
     const context = await browser.newContext({ viewport: VIEWPORT, colorScheme: still.scheme });
     const page = await context.newPage();
     await page.goto(pageUrl(still.page));
@@ -253,8 +270,10 @@ try {
   await captureStills(browser);
   console.log('capture-demo-media: crops');
   await captureCrops(browser);
-  console.log('capture-demo-media: walkthrough');
-  await captureWalkthrough(browser);
+  if (only === undefined) {
+    console.log('capture-demo-media: walkthrough');
+    await captureWalkthrough(browser);
+  }
 } finally {
   await browser.close();
   rmSync(scratch, { recursive: true, force: true });
