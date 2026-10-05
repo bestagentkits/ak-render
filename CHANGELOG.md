@@ -47,7 +47,7 @@ CSP that allows `font-src data:` on pages that carry a face.
 
 ### Added
 
-- `ak-render mcp` serves the compiler as an MCP server over stdio, with `catalog`, `describe`, `validate`, `render` and `themes` tools. `render` writes the HTML to the `out` path, which must end in `.html` or `.htm`, and returns only a summary. It accepts JSON-RPC batches and answers an unknown tool or a null id with a protocol error. No new runtime dependency.
+- `ak-render mcp` serves the compiler as an MCP server over stdio, with `catalog`, `describe`, `validate`, `render` and `themes` tools. `render` writes the HTML to the `out` path, which must end in `.html` or `.htm`, and returns only a summary. `themes` returns the presets plus any preset file that failed to load. The server accepts JSON-RPC batches and answers an unknown tool or a null id with a protocol error. No new runtime dependency.
 - An `ak-render` agent skill (`skills/ak-render/SKILL.md`), installable with `npx skills add bestagentkits/ak-render`, plus Claude Code and Codex plugin marketplaces that bundle the skill and register the MCP server, pinned to the matching package version.
 - Pass `-` as the spec path to compile or validate a spec from standard input. Diagnostics name the source `<stdin>`.
 - `llms.txt` (shipped in the package) and `docs/agent-guide.md`: the agent loop, a minimal spec, and the MCP client config.
