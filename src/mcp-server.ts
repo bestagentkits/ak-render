@@ -138,7 +138,7 @@ const TOOLS: readonly Tool[] = [
         out: {
           type: 'string',
           description:
-            'HTML file to write (.html or .htm), relative to the server working directory.',
+            'HTML file to write (.html or .htm). A relative path resolves against the server working directory; an absolute path is used as given.',
         },
         theme: { type: 'string', description: 'Optional preset name overriding the spec theme.' },
       },
@@ -172,7 +172,8 @@ const TOOLS: readonly Tool[] = [
   },
   {
     name: 'themes',
-    description: 'List theme presets: built-ins plus project or user presets discovered on disk.',
+    description:
+      'List theme presets (built-ins plus project or user presets discovered on disk) and any preset file that failed to load.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     run: (_args, context) => {
       const themes = themeCatalogFor(context);
@@ -180,7 +181,7 @@ const TOOLS: readonly Tool[] = [
         .map(({ name, origin }) => ({ name, origin }))
         .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
       // A preset file that failed to load is reported, not silently dropped.
-      return text(themes.problems.length === 0 ? presets : { presets, problems: themes.problems });
+      return text({ presets, problems: themes.problems });
     },
   },
 ];

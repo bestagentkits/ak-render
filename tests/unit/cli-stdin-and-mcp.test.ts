@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
@@ -149,6 +149,34 @@ describe('MCP server', () => {
     const result = call('render', { spec: BAD_SPEC, out: 'bad.html' });
     expect(result.isError).toBe(true);
     expect(JSON.parse(result.content[0]?.text ?? '').code).toBe('SPEC_VALIDATION_ERROR');
+  });
+
+  it('lists presets and reports a preset file that failed to load', () => {
+    const listed = JSON.parse(call('themes').content[0]?.text ?? '') as {
+      presets: { name: string }[];
+      problems: unknown[];
+    };
+    expect(listed.presets.map((preset) => preset.name)).toContain('editorial');
+    expect(listed.problems).toEqual([]);
+
+    const broken = mkdtempSync(join(tmpdir(), 'ak-render-mcp-themes-'));
+    mkdirSync(join(broken, '.ak-render/themes'), { recursive: true });
+    writeFileSync(
+      join(broken, '.ak-render/themes/bad.yaml'),
+      'name: bad\nextends: editorial\ncss: "body{}"\n',
+      'utf8',
+    );
+    const result = handleMcpMessage(
+      { jsonrpc: '2.0', id: 9, method: 'tools/call', params: { name: 'themes' } },
+      { cwd: broken, home: join(broken, 'home') },
+    )?.result as { content: { text: string }[] };
+    const withProblem = JSON.parse(result.content[0]?.text ?? '') as {
+      problems: { path: string; message: string }[];
+    };
+    expect(withProblem.problems).toHaveLength(1);
+    expect(withProblem.problems[0]?.path).toContain('bad.yaml');
+    expect(withProblem.problems[0]?.message).toContain('css');
+    rmSync(broken, { recursive: true, force: true });
   });
 
   it('only writes HTML files', () => {

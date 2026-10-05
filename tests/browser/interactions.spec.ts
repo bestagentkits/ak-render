@@ -42,6 +42,16 @@ test.describe('theme toggle label', () => {
     await expect(toggle).toHaveAttribute('aria-pressed', 'true');
   });
 
+  test('relabels itself when the system scheme changes while open', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'light' });
+    await open(page);
+    const toggle = page.locator('[data-ak-theme-toggle]');
+    await expect(toggle).toHaveText('Dark');
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await expect(toggle).toHaveText('Light');
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  });
+
   test('names the dark scheme under a light system', async ({ page }) => {
     await page.emulateMedia({ colorScheme: 'light' });
     await open(page);
@@ -354,6 +364,8 @@ test.describe('reduced motion', () => {
     await open(page);
     expect(await duration(page)).toMatch(/^0(m?s)?$/u);
     await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
+    expect(await duration(page)).toMatch(/^0(m?s)?$/u);
+    await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'));
     expect(await duration(page)).toMatch(/^0(m?s)?$/u);
   });
 

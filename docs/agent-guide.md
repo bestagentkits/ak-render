@@ -63,8 +63,9 @@ Check every block's real props with `describe` before relying on this shape.
 `ak-render mcp` serves the same loop as MCP tools over stdio: `catalog`,
 `describe`, `validate`, `render` and `themes`. `render` writes the HTML to the
 `out` path and returns only the summary, so the page never enters your context.
-`out` must end in `.html` or `.htm` and resolves against the directory the
-server was started in. `spec` may be YAML/JSON text or the parsed object.
+`out` must end in `.html` or `.htm`. A relative path resolves against the
+directory the server was started in; an absolute or `..` path is written where
+it points, so review it like any file write. `spec` may be YAML/JSON text or the parsed object.
 
 ```json
 {
