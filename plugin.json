@@ -7,7 +7,7 @@
     "name": "bestagentkits",
     "url": "https://github.com/bestagentkits"
   },
-  "homepage": "https://github.com/bestagentkits/ak-render",
+  "homepage": "https://render.agentkit.best",
   "repository": "https://github.com/bestagentkits/ak-render",
   "license": "MIT",
   "keywords": ["html", "report", "page-spec", "yaml", "offline", "mcp"],
@@ -20,7 +20,10 @@
         "developerName": "bestagentkits",
         "category": "Developer Tools",
         "capabilities": ["Compile Page Specs to HTML", "Validate Page Specs"],
-        "websiteURL": "https://github.com/bestagentkits/ak-render",
+        "websiteURL": "https://render.agentkit.best",
+        "composerIcon": "./assets/composer-icon.png",
+        "logo": "./assets/logo.png",
+        "brandColor": "#1D4FD7",
         "defaultPrompt": [
           "Render this plan as an HTML page with AK Render.",
           "Turn the diff review into a polished offline report page.",

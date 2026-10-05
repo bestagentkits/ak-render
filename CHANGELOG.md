@@ -9,6 +9,10 @@ Release mechanics and the compatibility contract live in
 
 ## [Unreleased]
 
+### Changed
+
+- The Claude Code and Codex plugin manifests link to https://render.agentkit.best, and the Codex plugin shows an icon, a logo and the brand colour in the plugin directory.
+
 ## [0.2.0] - 2026-10-05
 
 Every emitted page changes in this release: new styles, embedded fonts, and a
