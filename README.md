@@ -1,37 +1,191 @@
 # @bestagentkits/render
 
-Declarative page compiler for AgentKit: a constrained JSON/YAML **Page Spec**
-in, a deterministic, self-contained, interactive **standalone HTML** out.
+A declarative page compiler for coding agents. An agent writes a short YAML or
+JSON **Page Spec**; `ak-render` compiles it into one deterministic,
+self-contained, interactive **HTML file**.
+
+[![The AK Render landing page, itself compiled from a Page Spec](./docs/assets/landing.webp)](https://render.agentkit.best)
+
+**[render.agentkit.best](https://render.agentkit.best)** · [Gallery](https://render.agentkit.best/gallery/) · [Agent guide](./docs/agent-guide.md) · [npm](https://www.npmjs.com/package/@bestagentkits/render)
 
 Agents describe meaning and composition. The compiler owns HTML, CSS,
-interaction, accessibility, responsive layout, theming, asset bundling, security
-policy, and byte-for-byte determinism.
+interaction, accessibility, responsive layout, theming, fonts, security policy
+and byte-for-byte determinism. The agent spends tokens on the content instead
+of on markup, and the result looks designed every time.
+
+- **Offline by default.** The file opens from disk (`file://`) and makes zero
+  network requests. Fonts are embedded; nothing loads from a CDN.
+- **Deterministic.** The same spec and compiler version produce the same bytes.
+- **No escape hatch.** A spec cannot carry raw HTML, CSS or JavaScript, so a
+  page cannot drift off the design system or smuggle in a script.
+- **Local is canonical.** No account, no server, no API key.
+
+## Quick start
+
+Requires Node.js >= 20.11.
+
+1. Write a spec, `plan.yaml`:
+
+   ```yaml
+   version: 1
+   meta:
+     title: Migration plan
+     description: How we move the API to the new gateway.
+   theme:
+     preset: editorial
+   blocks:
+     - type: hero
+       eyebrow: Plan
+       title: Migration plan
+       description: Move the public API to the new gateway without downtime.
+     - type: section
+       title: Steps
+       blocks:
+         - type: steps
+           items:
+             - title: Mirror traffic
+               text: Send a copy of production requests to the new gateway.
+             - title: Switch reads
+               text: Route read endpoints once error rates match.
+     - type: callout
+       tone: info
+       title: Rollback
+       text: Point DNS back to the old gateway; no data migrates.
+   ```
+
+2. Validate it, then compile it:
+
+   ```bash
+   npx -y @bestagentkits/render validate plan.yaml
+   npx -y @bestagentkits/render plan.yaml --out plan.html
+   ```
+
+3. Open `plan.html` in any browser. It is one file you can attach, email or
+   commit.
+
+## Usage guide
+
+### Find the blocks you need
+
+There are 54 block types, from primitives (`section`, `grid`, `split`, `text`)
+to semantic blocks that carry the design for you (`hero`, `steps`, `timeline`,
+`comparison`, `kpi`, `chart`, `terminal`, `bento`, `cta`). List them, then read
+the full contract of the ones you use:
 
 ```bash
-npx @bestagentkits/render page.yaml --out page.html
+ak-render catalog                # every block and action, one line each
+ak-render describe timeline      # props, defaults, bounds, slots, a11y notes
+ak-render describe kpi --json    # the same, machine-readable
 ```
 
-The emitted file opens directly from disk (`file://`) and makes zero network
-requests by default. The local compiler is canonical: no account, no network, no
-server.
+Containers (`section`, `grid`, `split`, `stack`) take their children under
+`blocks:`.
 
-> **Status:** pre-1.0, in active construction. This repository is being built in
-> milestones. The package skeleton, ADR, CI, and fixture corpus exist; the
-> schema, compiler, themes, runtime, catalog, and cloud service land in the
-> milestones described in [docs/adr/0001-page-spec-compiler-boundary.md](./docs/adr/0001-page-spec-compiler-boundary.md)
-> and the [changelog](./CHANGELOG.md). Nothing below is advertised as available
-> before it exists.
+### Validate and fix
 
-## Why
+```bash
+ak-render validate plan.yaml --json
+```
 
-AgentKit's HTML-producing skills each carried the presentation layer in model
-context: layout, CSS, JavaScript, charts, responsive rules, theming, and
-verification. That costs tokens, adds latency, invites retries after
-HTML/CSS/JS mistakes, and lets skills drift against each other.
+The result is `{ ok, diagnostics[] }`. Each diagnostic has a stable `code` and
+the JSON `path` to fix, such as `$.blocks[1].blocks[0].items[2].title`. Exit
+code `1` means "fix and retry"; `2` means the input could not be read.
 
-`ak:diagram` already proved the alternative for diagrams: typed IR, deterministic
-compiler, trusted fragment boundary. AK Render applies the same pattern to whole
-pages.
+### Compile
+
+```bash
+ak-render plan.yaml --out plan.html            # compile is the default command
+ak-render plan.yaml --out plan.html --json     # print bytes, hash, features, warnings
+ak-render - --out plan.html < plan.yaml        # read the spec from stdin
+ak-render plan.yaml --theme blueprint          # override the spec's theme
+```
+
+### Themes
+
+Six built-in presets, each with a light and a dark scheme and an embedded
+display face: `blueprint`, `editorial`, `paper-ink`, `swiss-clean`,
+`terminal-mono` and `warm-signal`. Pick one under `theme.preset`, or extend one
+with validated tokens:
+
+```yaml
+theme:
+  preset: team-theme
+  extends: editorial
+  tokens:
+    color-accent: "#b8860b"
+    motion-policy: none     # a still page, as under reduced motion
+```
+
+`ak-render themes` lists the presets it can see, including project and user
+presets. See [docs/themes.md](./docs/themes.md).
+
+### Interaction
+
+Tabs, accordions, carousels, sliders, dialogs, filters, copy buttons and the
+theme toggle come from a small trusted runtime. A spec wires them with a closed
+set of declarative actions (`ak-render catalog` lists them); there is no
+JavaScript field. Every page reads completely with scripts off, with motion
+reduced, in print and in a screenshot.
+
+### Images, video and the network
+
+Local paths (`assets/shot.png`) always work. A remote URL renders as a labelled
+fallback with a link unless the spec opts in:
+
+```yaml
+policy:
+  network:
+    allow: [images, media]
+```
+
+The page's Content Security Policy is derived from that policy. See
+[docs/media-policy.md](./docs/media-policy.md).
+
+## Use it from an agent
+
+Agents follow one loop: `catalog` once, `describe` the blocks they use,
+`validate` and fix diagnostics by JSON path, then compile. The
+[agent guide](./docs/agent-guide.md) has the details and [llms.txt](./llms.txt)
+is the LLM-facing index.
+
+### Install the agent skill
+
+The `ak-render` skill ([skills/ak-render/SKILL.md](./skills/ak-render/SKILL.md))
+teaches an agent that loop.
+
+**Any agent**, with the [skills CLI](https://github.com/vercel-labs/skills):
+
+```bash
+npx skills add bestagentkits/ak-render
+```
+
+**Claude Code**, as a plugin that also registers the MCP server:
+
+```bash
+claude plugin marketplace add bestagentkits/ak-render
+claude plugin install ak-render@ak-render
+```
+
+**Codex and ChatGPT**, as a plugin:
+
+```bash
+codex plugin marketplace add bestagentkits/ak-render
+codex plugin add ak-render@ak-render
+```
+
+### MCP server
+
+`ak-render mcp` serves `catalog`, `describe`, `validate`, `render` and `themes`
+as MCP tools over stdio. `render` writes the HTML to disk and returns only a
+summary, so the page never enters the agent's context.
+
+```json
+{
+  "mcpServers": {
+    "ak-render": { "command": "npx", "args": ["-y", "@bestagentkits/render", "mcp"] }
+  }
+}
+```
 
 ## Design in one screen
 
@@ -64,19 +218,14 @@ Six decisions define the boundary, argued in
    `extends` them. No CSS escape hatch, no CDN fonts.
 5. **Local is canonical; cloud is opt-in.** The hosted renderer reuses the same
    compiler and is never the source of truth.
-6. **Optional capabilities arrive as adapters.** Diagrams delegate to the
-   existing `ak:diagram` compiler where installed; the public package never
-   copies paid or Engineer-only implementation.
+6. **Optional capabilities arrive as adapters.** Diagrams can delegate to an
+   installed diagram compiler; without one, a structured fallback renders.
 
-## Install
+## Install as a dependency
 
 ```bash
 pnpm add @bestagentkits/render
-# or run without installing
-npx @bestagentkits/render --help
 ```
-
-Requires Node.js >= 20.11.
 
 ## Library API
 
@@ -103,21 +252,22 @@ import {
 | `loadTheme(input)` | Validate and resolve a theme preset | Available |
 | `buildThemeCatalog(options)` | Discover built-in, user, project, and explicit presets | Available |
 
-## CLI
+## CLI reference
 
 ```bash
 ak-render page.yaml --out page.html
+ak-render - --out page.html < page.yaml   # read the spec from stdin
 ak-render validate page.json
 ak-render catalog
 ak-render describe carousel
 ak-render themes
+ak-render mcp                             # MCP server over stdio
 
-ak-render --help
+ak-render <command> --help
 ak-render --version
 ```
 
-The CLI only advertises commands it can actually run; the compiler subcommands
-are registered by the milestones that implement them.
+Every command accepts `--json` and never prompts.
 
 ## Fixtures and snapshots
 
@@ -139,6 +289,8 @@ capability is not done until a fixture exercises it.
 | `benchmarks/` | Reproducible measurement harnesses |
 | `docs/adr/` | Architecture decision records |
 | `docs/artifacts/` | Captured measurements and evidence |
+| `skills/`, `.claude-plugin/`, `.agents/plugins/` | Agent skill and plugin manifests |
+| `site/` | Landing page spec, build script output and Cloudflare config |
 | `apps/cloud/` | Opt-in Cloudflare renderer (cloud milestone) |
 
 ## Development
@@ -149,6 +301,8 @@ pnpm verify          # lint + typecheck + unit tests + build
 pnpm test:browser    # Playwright, after: pnpm exec playwright install chromium
 pnpm test:package    # pack, install into a temp project, exercise API and bin
 pnpm bench:baseline  # re-run the legacy presentation-context measurement
+pnpm site:build      # compile the landing page and gallery into site/dist
+pnpm site:deploy     # build, then deploy site/dist with wrangler
 ```
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for the determinism, trust, and testing

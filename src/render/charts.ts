@@ -45,7 +45,12 @@ interface Frame {
   left: number;
 }
 
-const WIDTH = 640;
+/**
+ * Shared viewBox width. Text inside the SVG scales with the rendered width, so
+ * this is sized for a full-width card: labels render near their nominal size
+ * there, and the canvas scrolls rather than shrinks on narrow screens.
+ */
+const WIDTH = 800;
 /** Number of distinct series colours the stylesheet defines. */
 const PALETTE_SIZE = 6;
 /** Bars wider than this read as slabs rather than marks. */
@@ -53,7 +58,7 @@ const MAX_BAR_WIDTH = 56;
 const PROGRESS_ROW = 32;
 const PROGRESS_LABEL_WIDTH = 132;
 
-const CARTESIAN: Frame = { width: WIDTH, height: 260, top: 16, right: 36, bottom: 34, left: 52 };
+const CARTESIAN: Frame = { width: WIDTH, height: 300, top: 20, right: 36, bottom: 36, left: 56 };
 const RADIAL: Frame = { width: WIDTH, height: 240, top: 0, right: 0, bottom: 0, left: 0 };
 const SPARK: Frame = { width: WIDTH, height: 72, top: 10, right: 10, bottom: 10, left: 10 };
 
@@ -162,6 +167,22 @@ function pointTitle(label: string, series: ChartSeries, index: number): string {
   return `${label}: ${series.label} ${series.values[index] ?? 0}`;
 }
 
+/**
+ * A value label drawn directly after its mark. The stylesheet reveals it while
+ * the mark is hovered or focused (`mark:hover + .ak-chart-value`), so the exact
+ * number is one pointer move away without a tooltip script.
+ */
+function valueLabel(x: number, y: number, value: number): string {
+  return `<text class="ak-chart-value" x="${round(x)}" y="${round(y)}" text-anchor="middle" aria-hidden="true">${escapeText(
+    formatNumber(value),
+  )}</text>`;
+}
+
+/** Fragment-safe id prefix for gradients, derived from the block id. */
+function gradientId(input: ChartInput, seriesIndex: number): string {
+  return `ak-grad-${input.id.replace(/[^A-Za-z0-9_-]/gu, '-')}-${seriesIndex}`;
+}
+
 function barChart(input: ChartInput): string {
   const frame = CARTESIAN;
   const bounds = niceBounds(input.series);
@@ -175,6 +196,12 @@ function barChart(input: ChartInput): string {
   const groupWidth = barWidth * seriesCount + gap * (seriesCount - 1);
   const zeroY = scaleY(Math.max(bounds.min, 0), bounds, frame);
   const parts: string[] = [];
+  // One gradient per series: full strength at the cap, easing off toward the
+  // baseline, so a bar reads as lit from above instead of a flat slab.
+  const defs = input.series.map(
+    (_, seriesIndex) =>
+      `<linearGradient id="${gradientId(input, seriesIndex)}" class="${seriesClass(seriesIndex)}" x1="0" y1="0" x2="0" y2="1"><stop class="ak-chart-stop ak-chart-stop--bar" offset="0"/><stop class="ak-chart-stop ak-chart-stop--bar ak-chart-stop--end" offset="1"/></linearGradient>`,
+  );
 
   input.series.forEach((series, seriesIndex) => {
     input.labels.forEach((label, index) => {
@@ -187,13 +214,14 @@ function barChart(input: ChartInput): string {
       const top = Math.min(y, zeroY);
       parts.push(
         `<rect class="ak-chart-bar ${seriesClass(seriesIndex)}" tabindex="0" x="${x}" y="${top}" width="${barWidth}" height="${height}" rx="${round(
-          Math.min(3, barWidth / 4),
-        )}"><title>${escapeText(pointTitle(label, series, index))}</title></rect>`,
+          Math.min(4, barWidth / 4),
+        )}" fill="url(#${gradientId(input, seriesIndex)})"><title>${escapeText(pointTitle(label, series, index))}</title></rect>`,
+        valueLabel(x + barWidth / 2, value < 0 ? top + height + 14 : top - 7, value),
       );
     });
   });
 
-  return `${gridAndTicks(bounds, frame)}${categoryLabels(
+  return `<defs>${defs.join('')}</defs>${gridAndTicks(bounds, frame)}${categoryLabels(
     input.labels,
     (index) => bandCentre(index, groups, frame),
     frame,
@@ -214,12 +242,19 @@ function lineChart(input: ChartInput, area: boolean): string {
   const bounds = niceBounds(input.series);
   const parts: string[] = [];
   const baseY = scaleY(Math.max(bounds.min, 0), bounds, frame);
+  const defs: string[] = [];
   input.series.forEach((series, seriesIndex) => {
     const colour = seriesClass(seriesIndex);
     const path = linePath(series.values, bounds, frame);
     if (area) {
+      // Stops inherit the series colour through the gradient's series class,
+      // so the fade stays theme-driven while the path references it by id.
+      const id = gradientId(input, seriesIndex);
+      defs.push(
+        `<linearGradient id="${id}" class="${colour}" x1="0" y1="0" x2="0" y2="1"><stop class="ak-chart-stop" offset="0"/><stop class="ak-chart-stop ak-chart-stop--end" offset="1"/></linearGradient>`,
+      );
       parts.push(
-        `<path class="ak-chart-area ${colour}" d="${path} L${pointX(series.values.length - 1, series.values.length, frame)},${baseY} L${pointX(
+        `<path class="ak-chart-area ${colour}" fill="url(#${id})" d="${path} L${pointX(series.values.length - 1, series.values.length, frame)},${baseY} L${pointX(
           0,
           series.values.length,
           frame,
@@ -229,12 +264,13 @@ function lineChart(input: ChartInput, area: boolean): string {
     parts.push(`<path class="ak-chart-line ${colour}" d="${path}"/>`);
     series.values.forEach((value, index) => {
       const label = input.labels[Math.min(index, input.labels.length - 1)] ?? '';
+      const cx = pointX(index, series.values.length, frame);
+      const cy = scaleY(value, bounds, frame);
       parts.push(
-        `<circle class="ak-chart-point ${colour}" tabindex="0" cx="${pointX(index, series.values.length, frame)}" cy="${scaleY(
-          value,
-          bounds,
-          frame,
-        )}" r="3.5"><title>${escapeText(pointTitle(label, series, index))}</title></circle>`,
+        `<circle class="ak-chart-point ${colour}" tabindex="0" cx="${cx}" cy="${cy}" r="4"><title>${escapeText(
+          pointTitle(label, series, index),
+        )}</title></circle>`,
+        valueLabel(cx, cy - 12, value),
       );
     });
   });
@@ -243,7 +279,8 @@ function lineChart(input: ChartInput, area: boolean): string {
     input.labels.length,
     1,
   );
-  return `${gridAndTicks(bounds, frame)}${categoryLabels(
+  const gradients = defs.length === 0 ? '' : `<defs>${defs.join('')}</defs>`;
+  return `${gradients}${gridAndTicks(bounds, frame)}${categoryLabels(
     input.labels,
     (index) => pointX(index, count, frame),
     frame,
@@ -444,10 +481,12 @@ export function renderChart(input: ChartInput): string {
   return [
     `<figure class="ak-chart"${renderAttributes({ 'data-ak-kind': input.kind })}>`,
     caption,
-    `<svg viewBox="0 0 ${frame.width} ${frame.height}" role="img"${renderAttributes({
-      'aria-label': ariaLabel,
-      'data-ak-chart': input.id,
-    })}><title>${escapeText(input.title ?? 'Chart')}</title>${body}</svg>`,
+    `<div class="ak-chart-canvas"><svg viewBox="0 0 ${frame.width} ${frame.height}" role="img"${renderAttributes(
+      {
+        'aria-label': ariaLabel,
+        'data-ak-chart': input.id,
+      },
+    )}><title>${escapeText(input.title ?? 'Chart')}</title>${body}</svg></div>`,
     legend(input),
     `<p class="ak-sr">${escapeText(summary)}</p>`,
     `<details class="ak-details"><summary>Chart data table</summary>${dataTable(input)}</details>`,

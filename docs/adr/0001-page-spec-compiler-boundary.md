@@ -119,7 +119,7 @@ selector-based side channel and break every determinism guarantee at once.
 Fonts are not fetched. If a preset specifies a font the compiler cannot render
 without a network request, the compiler falls back to a bundled or system stack
 rather than emitting a remote `@import`; bundled fonts must carry their license
-and ship only the glyphs actually used.
+and ship only the subsets the page's text needs.
 
 ### 5. Local is canonical; cloud is opt-in and non-authoritative
 

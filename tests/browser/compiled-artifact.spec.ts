@@ -76,9 +76,10 @@ test.describe('emitted interactions work from disk', () => {
     const toggle = page.locator('[data-ak-theme-toggle]');
     const before = await page.locator('html').getAttribute('data-theme');
     await toggle.click();
+    // The switch lands inside a view transition's update callback, a frame later.
+    await expect.poll(() => page.locator('html').getAttribute('data-theme')).not.toBe(before);
     const after = await page.locator('html').getAttribute('data-theme');
-    expect(after).not.toBe(before);
-    expect(await toggle.getAttribute('aria-pressed')).toBe(String(after === 'dark'));
+    await expect(toggle).toHaveAttribute('aria-pressed', String(after === 'dark'));
   });
 
   test('a copy and download binding reaches the runtime without page-authored script', async ({

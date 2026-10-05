@@ -28,6 +28,10 @@ const HELPERS = `
 function q(sel, ctx) { return (ctx || doc).querySelector(sel); }
 function qa(sel, ctx) { return Array.prototype.slice.call((ctx || doc).querySelectorAll(sel)); }
 function byId(id) { return qa('[data-ak-id="' + id + '"]'); }
+function motionAllowed() {
+  if (root.getAttribute('data-motion') === 'none') return false;
+  return !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
 function announce(message) {
   var region = q('[data-ak-live]');
   if (region) region.textContent = message;
@@ -94,7 +98,7 @@ function run(action, source, detail) {
     nodes.forEach(function (node) {
       if (node.tagName === 'DIALOG') openDialog(node);
       else if (node.tagName === 'DETAILS') node.open = !node.open;
-      else if (node.hasAttribute('data-ak-theme-toggle')) toggleTheme();
+      else if (node.hasAttribute('data-ak-theme-toggle')) toggleTheme(node);
       else {
         var collapsed = node.getAttribute('aria-expanded') === 'false' || node.hasAttribute('hidden');
         if (collapsed) { node.removeAttribute('hidden'); node.setAttribute('aria-expanded', 'true'); }
@@ -114,7 +118,7 @@ function run(action, source, detail) {
   if (type === 'copy') {
     var text = '';
     byId(targetId).forEach(function (node) { text += node.textContent || ''; });
-    copyText(text, action);
+    copyText(text, source);
     return;
   }
   if (type === 'download') {
@@ -165,24 +169,52 @@ function applyTheme(mode) {
     root.setAttribute('data-theme', next);
   }
   try { window.localStorage.setItem('ak-render-theme', mode === 'system' ? 'system' : next); } catch (error) {}
-  qa('[data-ak-theme-toggle]').forEach(function (button) {
-    button.setAttribute('aria-pressed', String(next === 'dark'));
-    button.textContent = next === 'dark' ? 'Light' : 'Dark';
-  });
+  syncThemeToggles(next);
   announce('Theme set to ' + next);
 }
-function toggleTheme() { applyTheme('toggle'); }
+// The toggle names the scheme it switches to, so it must follow the scheme in
+// effect, including one the system chose before anything was stored.
+function syncThemeToggles(scheme) {
+  qa('[data-ak-theme-toggle]').forEach(function (button) {
+    button.setAttribute('aria-pressed', String(scheme === 'dark'));
+    button.textContent = scheme === 'dark' ? 'Light' : 'Dark';
+  });
+}
+/*
+ * Where supported, the new scheme is revealed as a circle growing from the
+ * toggle. The origin is written to two custom properties; the stylesheet owns
+ * the animation, and reduced motion or an older engine switches instantly.
+ */
+function toggleTheme(source) {
+  if (!motionAllowed() || typeof doc.startViewTransition !== 'function') { applyTheme('toggle'); return; }
+  if (source && source.getBoundingClientRect) {
+    var box = source.getBoundingClientRect();
+    root.style.setProperty('--ak-vt-x', Math.round(box.left + box.width / 2) + 'px');
+    root.style.setProperty('--ak-vt-y', Math.round(box.top + box.height / 2) + 'px');
+  }
+  doc.startViewTransition(function () { applyTheme('toggle'); });
+}
 function restoreTheme() {
   var stored = null;
   try { stored = window.localStorage.getItem('ak-render-theme'); } catch (error) {}
-  if (!stored) return;
+  if (!stored) {
+    syncThemeToggles(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    return;
+  }
   if (stored === 'system') applyTheme('system');
   else applyTheme(stored);
 }`;
 
 const COPY = `
-function copyText(text, action) {
-  var done = function () { announce('Copied to clipboard'); };
+function copyText(text, source) {
+  var done = function () {
+    announce('Copied to clipboard');
+    // A visible confirmation on the control itself, cleared after a moment.
+    if (source && source.setAttribute) {
+      source.setAttribute('data-ak-copied', '');
+      window.setTimeout(function () { source.removeAttribute('data-ak-copied'); }, 1600);
+    }
+  };
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text, done); });
   } else {
@@ -212,6 +244,133 @@ function downloadText(text, filename, source) {
   doc.body.removeChild(link);
   window.setTimeout(function () { URL.revokeObjectURL(url); }, 0);
   announce('Downloaded ' + safeName);
+}`;
+
+const OUTLINE = `
+function wireOutline() {
+  var links = qa('[data-ak-outline-link]');
+  if (!links.length || typeof window.IntersectionObserver !== 'function') return;
+  var byAnchor = {};
+  links.forEach(function (link) { byAnchor[link.getAttribute('href').slice(1)] = link; });
+  var mark = function (id) {
+    links.forEach(function (link) {
+      if (link === byAnchor[id]) link.setAttribute('aria-current', 'location');
+      else link.removeAttribute('aria-current');
+    });
+  };
+  // The current section is the last one whose top has crossed the upper third
+  // of the viewport, which matches where a reader's eye rests.
+  var observer = new window.IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) { if (entry.isIntersecting) mark(entry.target.id); });
+  }, { rootMargin: '0px 0px -66% 0px' });
+  Object.keys(byAnchor).forEach(function (id) {
+    var section = doc.getElementById(id);
+    if (section) observer.observe(section);
+  });
+}`;
+
+const BEFORE_AFTER = `
+function wireBeforeAfter() {
+  qa('[data-ak-before-after]').forEach(function (figure) {
+    var stage = q('.ak-ba-stage', figure);
+    var input = q('.ak-ba-range', figure);
+    if (!stage || !input) return;
+    var apply = function () { stage.style.setProperty('--ak-split', input.value + '%'); };
+    // Dragging anywhere on the stage moves the divider, which a bare range input
+    // only does from its thumb on some touch browsers.
+    var dragging = false;
+    var follow = function (event) {
+      var box = stage.getBoundingClientRect();
+      if (!box.width) return;
+      var ratio = Math.min(Math.max((event.clientX - box.left) / box.width, 0), 1);
+      input.value = String(Math.round(ratio * 100));
+      apply();
+    };
+    input.addEventListener('input', apply, false);
+    input.addEventListener('pointerdown', function (event) {
+      dragging = true;
+      if (input.setPointerCapture) input.setPointerCapture(event.pointerId);
+      follow(event);
+    }, false);
+    input.addEventListener('pointermove', function (event) { if (dragging) follow(event); }, false);
+    input.addEventListener('pointerup', function () { dragging = false; }, false);
+    input.addEventListener('pointercancel', function () { dragging = false; }, false);
+    apply();
+    figure.setAttribute('data-ak-ready', '');
+  });
+}`;
+
+const EFFECTS = `
+function countUp(el) {
+  if (el.children.length) return;
+  var text = el.textContent;
+  var match = /^([^\\dA-Za-z]*)(\\d{1,3}(?:,\\d{3})+|\\d+)(\\.\\d+)?([^\\d]*)$/.exec(text.trim());
+  if (!match) return;
+  var grouped = match[2].indexOf(',') !== -1;
+  var places = match[3] ? match[3].length - 1 : 0;
+  var target = parseFloat(match[2].replace(/,/g, '') + (match[3] || ''));
+  if (!isFinite(target) || target === 0) return;
+  var format = function (value) {
+    var fixed = value.toFixed(places);
+    if (grouped) {
+      var parts = fixed.split('.');
+      parts[0] = parts[0].replace(/\\B(?=(\\d{3})+(?!\\d))/g, ',');
+      fixed = parts.join('.');
+    }
+    return match[1] + fixed + match[4];
+  };
+  // The authored value stays in the DOM for assistive technology, copy and
+  // print; the rolling figure is a hidden layer drawn over it while it runs.
+  var real = doc.createElement('span');
+  real.className = 'ak-sr';
+  real.textContent = text;
+  var shown = doc.createElement('span');
+  shown.setAttribute('aria-hidden', 'true');
+  shown.textContent = format(0);
+  el.textContent = '';
+  el.appendChild(real);
+  el.appendChild(shown);
+  var settled = false;
+  var settle = function () {
+    if (settled) return;
+    settled = true;
+    el.textContent = text;
+    window.removeEventListener('beforeprint', settle);
+  };
+  window.addEventListener('beforeprint', settle);
+  var began = null;
+  var step = function (now) {
+    if (settled) return;
+    if (began === null) began = now;
+    var progress = Math.min((now - began) / 1400, 1);
+    if (progress >= 1) { settle(); return; }
+    shown.textContent = format(target * (1 - Math.pow(1 - progress, 4)));
+    window.requestAnimationFrame(step);
+  };
+  window.requestAnimationFrame(step);
+}
+function wireEffects() {
+  if (!motionAllowed()) return;
+  // A soft light follows the pointer across cards and tiles.
+  doc.addEventListener('pointermove', function (event) {
+    var surface = event.target && event.target.closest ? event.target.closest('.ak-card, .ak-tile, .ak-kpi-card') : null;
+    if (!surface) return;
+    var box = surface.getBoundingClientRect();
+    surface.style.setProperty('--ak-mx', Math.round(event.clientX - box.left) + 'px');
+    surface.style.setProperty('--ak-my', Math.round(event.clientY - box.top) + 'px');
+  }, { passive: true });
+  if (typeof window.IntersectionObserver !== 'function') return;
+  // Blocks play their entrance as they arrive. Until then they show their final
+  // state, so a capture, a print or a disabled script never sees them blank.
+  var observer = new window.IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (!entry.isIntersecting) return;
+      observer.unobserve(entry.target);
+      if (entry.target.hasAttribute('data-ak-animate')) entry.target.setAttribute('data-ak-inview', '');
+      else countUp(entry.target);
+    });
+  }, { rootMargin: '0px 0px 12% 0px' });
+  qa('[data-ak-animate], [data-ak-count], .ak-stat dd').forEach(function (el) { observer.observe(el); });
 }`;
 
 const DIALOG = `
@@ -404,7 +563,7 @@ doc.addEventListener('click', function (event) {
       return;
     }
     if (target.hasAttribute && target.hasAttribute('data-ak-theme-toggle')) {
-      toggleTheme();
+      toggleTheme(target);
       return;
     }
     target = target.parentElement;
@@ -433,12 +592,18 @@ export function buildRuntime(options: RuntimeOptions): string {
   if (features.has('carousel')) parts.push(CAROUSEL);
   if (features.has('slider')) parts.push(SLIDER);
   if (features.has('tabs')) parts.push(TABS);
+  if (features.has('outline')) parts.push(OUTLINE);
+  if (features.has('before-after')) parts.push(BEFORE_AFTER);
+  parts.push(EFFECTS);
 
   const wiring: string[] = [];
   if (features.has('tabs')) wiring.push('wireTabs();');
   if (features.has('carousel')) wiring.push('wireCarousels();');
   if (features.has('slider')) wiring.push('wireSliders();');
   if (features.has('filter')) wiring.push('wireFilters();');
+  if (features.has('outline')) wiring.push('wireOutline();');
+  if (features.has('before-after')) wiring.push('wireBeforeAfter();');
+  wiring.push('wireEffects();');
 
   return [
     '(function () {',

@@ -65,6 +65,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm test
+      - run: pnpm fonts:check
       - run: pnpm schema:check
       - run: pnpm snapshots:check
       - run: pnpm gallery:check
@@ -89,6 +90,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: pnpm test
+      - run: pnpm fonts:check
       - run: pnpm schema:check
       - run: pnpm snapshots:check
       - run: pnpm gallery:check

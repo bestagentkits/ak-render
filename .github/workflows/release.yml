@@ -60,6 +60,7 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm build
       - run: pnpm test
+      - run: pnpm fonts:check
       - run: pnpm schema:check
       - run: pnpm snapshots:check
       - run: pnpm gallery:check

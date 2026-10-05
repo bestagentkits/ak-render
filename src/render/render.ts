@@ -21,8 +21,11 @@ import { loadTheme, type ResolvedTheme, resolveTheme } from '../theme/load-theme
 import { builtinThemeCatalog, type ThemeCatalog } from '../theme/theme-catalog.js';
 import { type RenderContext, renderNode } from './blocks.js';
 import { assembleDocument } from './document.js';
+import { embeddedFontCss } from './font-faces.js';
+import { hasOutline, renderOutline } from './outline.js';
 import { buildRuntime, needsLiveRegion } from './runtime.js';
 import { BASE_CSS, FEATURE_CSS } from './styles.js';
+import { inverseSurfaceCss, usesInverseSurface } from './surface-styles.js';
 import { verifyDocument, verifyIr } from './verify.js';
 
 export interface RenderOptions {
@@ -67,6 +70,17 @@ const FEATURE_ORDER: readonly RuntimeFeature[] = [
   'chart',
   'diagram',
   'media',
+  'outline',
+  'frame',
+  'bento',
+  'marquee',
+  'terminal',
+  'tree',
+  'before-after',
+  'kpi',
+  'checklist',
+  'showcase',
+  'cta',
 ];
 
 function collectFeatures(ir: IrDocument, includeTheme: boolean): Set<RuntimeFeature> {
@@ -75,6 +89,13 @@ function collectFeatures(ir: IrDocument, includeTheme: boolean): Set<RuntimeFeat
     for (const feature of node.runtimeFeatures) features.add(feature);
   }
   if (includeTheme) features.add('theme');
+  if (hasOutline(ir)) features.add('outline');
+  // The browser frame is a style feature with no block of its own: the
+  // showcase always draws one, and a hero draws one around its optional shot.
+  const heroShot = ir.nodes.some(
+    (node) => node.type === 'hero' && typeof node.props.src === 'string',
+  );
+  if (heroShot || features.has('showcase')) features.add('frame');
   return features;
 }
 
@@ -93,20 +114,28 @@ function collectOrigins(ir: IrDocument): string[] {
   };
 
   for (const node of ir.nodes) {
-    const capability = node.type === 'image' || node.type === 'gallery' ? 'images' : 'media';
+    // Only players load through the media capability; every other block that
+    // carries a source shows a still image.
+    const capability = node.type === 'video' || node.type === 'audio' ? 'media' : 'images';
     const src = node.props.src;
     if (typeof src === 'string') add(src, capability);
-    const items = node.props.items;
-    if (Array.isArray(items)) {
-      for (const item of items) {
-        if (isPlainObject(item) && typeof item.src === 'string') add(item.src, capability);
-      }
+    const nested = [
+      ...(Array.isArray(node.props.items) ? node.props.items : []),
+      node.props.before,
+      node.props.after,
+    ];
+    for (const item of nested) {
+      if (isPlainObject(item) && typeof item.src === 'string') add(item.src, capability);
     }
   }
   return origins;
 }
 
-function buildCss(features: ReadonlySet<RuntimeFeature>, theme: ResolvedTheme): string {
+function buildCss(
+  features: ReadonlySet<RuntimeFeature>,
+  theme: ResolvedTheme,
+  ir: IrDocument,
+): string {
   const sheets = [BASE_CSS];
   for (const feature of FEATURE_ORDER) {
     if (!features.has(feature)) continue;
@@ -114,7 +143,21 @@ function buildCss(features: ReadonlySet<RuntimeFeature>, theme: ResolvedTheme): 
     if (sheet !== undefined) sheets.push(sheet);
   }
   sheets.push(theme.css);
-  return sheets.join('\n');
+  // The night band redeclares colour tokens, so it must follow the theme sheet.
+  if (usesInverseSurface(ir.nodes)) sheets.push(inverseSurfaceCss(theme));
+  const css = sheets.join('\n');
+  return theme.motionPolicy === 'none' ? withoutMotion(css) : css;
+}
+
+/**
+ * Every animation in the emitted CSS sits behind
+ * `(prefers-reduced-motion:no-preference)`. A theme that disables motion turns
+ * that condition into one that never matches, so the page renders exactly as it
+ * does for a reader who asked the system to reduce motion.
+ */
+const MOTION_ALLOWED = '(prefers-reduced-motion:no-preference)';
+function withoutMotion(css: string): string {
+  return css.replaceAll(MOTION_ALLOWED, `${MOTION_ALLOWED} and (prefers-reduced-motion:reduce)`);
 }
 
 function bodyNeedsRuntime(body: string): boolean {
@@ -192,7 +235,6 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
 
   const includeThemeToggle = options.themeToggle !== false;
   const features = collectFeatures(ir, includeThemeToggle);
-  const css = buildCss(features, resolved);
 
   const irDiagnostics = verifyIr(ir, features);
   if (irDiagnostics.some((diagnostic) => diagnostic.severity === 'error')) {
@@ -207,6 +249,9 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
     warnings: renderWarnings,
     ...(options.diagramAdapter === undefined ? {} : { diagramAdapter: options.diagramAdapter }),
   });
+  // Faces come first and need the rendered text, which decides their subsets.
+  const fonts = embeddedFontCss(resolved, `${ir.meta.title}\n${body}`);
+  const css = [fonts, buildCss(features, resolved, ir)].filter((sheet) => sheet !== '').join('\n');
   const runtimeNeeded = features.size > 0 || bodyNeedsRuntime(body);
   const js = runtimeNeeded
     ? buildRuntime({ features, state: ir.state, hasBindings: bodyNeedsRuntime(body) })
@@ -221,6 +266,8 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
     allowedOrigins: collectOrigins(ir),
     themeToggle: includeThemeToggle,
     density: resolved.density,
+    motionDisabled: resolved.motionPolicy === 'none',
+    outline: renderOutline(ir),
   });
 
   const verification = verifyDocument({

@@ -199,6 +199,14 @@ test('measures every fixture for browser-side gates', async ({ page }) => {
     if ((await toggle.count()) > 0) {
       const before = await page.locator('html').getAttribute('data-theme');
       await toggle.first().click();
+      // The switch lands inside a view transition's update callback, a frame later.
+      await page
+        .waitForFunction(
+          (previous) => document.documentElement.getAttribute('data-theme') !== previous,
+          before,
+          { timeout: 2000 },
+        )
+        .catch(() => undefined);
       const after = await page.locator('html').getAttribute('data-theme');
       interactions.push({
         name: 'theme-toggle',

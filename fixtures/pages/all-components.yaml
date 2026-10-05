@@ -451,6 +451,138 @@ blocks:
             title: Who reviews a preset change?
             text: A preset is typed data, so a review is a diff of values.
 
+  - type: section
+    title: Showcase
+    blocks:
+      - type: marquee
+        label: Showcase block names
+        speed: slow
+        items:
+          - bento
+          - marquee
+          - terminal
+          - file-tree
+          - before-after
+          - kpi
+          - showcase
+          - checklist
+          - cta
+      - type: bento
+        title: Bento
+        items:
+          - title: A large tile leads the mosaic
+            text: Tiles take small, wide, tall, or large sizes and pack densely.
+            eyebrow: Large
+            size: large
+            src: assets/compiler-pipeline.svg
+            alt: Compiler pipeline diagram
+          - title: Themes
+            value: '6'
+            size: small
+          - title: Requests on open
+            value: '0'
+            size: small
+          - title: A wide tile spans two columns
+            text: Text-only tiles align to the bottom.
+            eyebrow: Wide
+            size: wide
+      - type: kpi
+        title: KPI
+        items:
+          - label: Fixture pages
+            value: '11'
+            delta: '+1'
+            trend: up
+            good: up
+            series: [7, 8, 9, 9, 10, 10, 11]
+          - label: Runtime dependencies
+            value: '1'
+            delta: unchanged
+            trend: flat
+      - type: split
+        ratio: even
+        blocks:
+          - type: terminal
+            title: Terminal
+            lines:
+              - kind: command
+                text: ak-render validate page.yaml
+              - kind: success
+                text: 'ok: page.yaml'
+              - kind: comment
+                text: '# commands, output, comments, success, and errors differ'
+              - kind: error
+                text: 'error: $.blocks[0].type: unknown block type'
+          - type: file-tree
+            title: File tree
+            items:
+              - path: src/render/blocks.ts
+                status: modified
+              - path: src/render/showcase-blocks.ts
+                status: added
+                note: new module
+              - path: src/spec/legacy.ts
+                status: deleted
+              - path: README.md
+      - type: before-after
+        title: Before and after
+        before:
+          src: assets/shot-plan.webp
+          alt: The plan fixture in light mode
+          label: Light
+        after:
+          src: assets/shot-dashboard-dark.webp
+          alt: The dashboard fixture in dark mode
+          label: Dark
+        start: 40
+        caption: A range input moves the divider; without script both images show side by side.
+      - type: showcase
+        eyebrow: Showcase
+        title: Copy beside a framed capture
+        text: The media can sit on either side, in a browser frame or plain.
+        bullets:
+          - Browser chrome is decorative
+          - Stacks on narrow screens
+        src: assets/interaction-trace.svg
+        alt: Interaction test trace
+        address: interactive.html
+      - type: checklist
+        title: Checklist
+        items:
+          - text: Done items read as done in text, not only by glyph
+            done: true
+          - text: Open items stay at full contrast
+            done: false
+
+  - type: section
+    title: Night band
+    surface: inverse
+    blocks:
+      - type: text
+        variant: lead
+        text: A section with an inverse surface takes the theme's dark palette in both color schemes, so every block inside recolors from tokens.
+      - type: grid
+        columns: 2
+        blocks:
+          - type: card
+            title: Tokens, not overrides
+            text: Colour tokens are redeclared with the theme's dark values inside the band.
+          - type: callout
+            tone: success
+            title: Same blocks
+            text: Cards and callouts need no inverse variants.
+
+  - type: cta
+    eyebrow: Closing call to action
+    title: Every block, one spec.
+    text: The CTA sits on the same night band and links out with real anchors.
+    actions:
+      - label: Back to the gallery
+        href: index.html
+        variant: primary
+      - label: AgentKit docs
+        href: https://agentkit.best/docs
+
   - type: divider
     label: Component coverage ends here
 

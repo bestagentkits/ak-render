@@ -9,6 +9,11 @@ Release mechanics and the compatibility contract live in
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-05
+
+Every emitted page changes in this release: new styles, embedded fonts, and a
+CSP that allows `font-src data:` on pages that carry a face.
+
 ### Changed
 
 - Polished the emitted artifacts:
@@ -21,6 +26,95 @@ Release mechanics and the compatibility contract live in
 - Elevation shadows are layered. A table title no longer prints twice; its caption is kept for screen readers only.
 - Artifacts now emit `og:title`, `og:type`, `og:description` and `twitter:card` from the spec meta.
 - The gallery index is now one card per artifact.
+- Redesigned the component system in the emitted stylesheet:
+  - Top-level sections open on a hairline with a short accent tab, and nested block titles step down a size, so the heading hierarchy reads at a glance.
+  - The hero title is larger, and the page carries a faint accent wash at the top.
+  - Stats share one framed panel with hairline dividers. Steps use numbered rings on a connector, and timeline dots carry a halo.
+  - Callouts and alerts carry a tone glyph instead of a side stripe. Quotes use a hanging quote mark.
+  - Tabs are a segmented control, accordion items are separate panels with a plus/minus indicator, and the carousel slide is a framed stage with arrow controls.
+  - Tables gain a caption bar, row headers, and a minimum width on small screens so cells scroll instead of breaking word by word. Comparisons, key-value lists, code blocks, badges, key caps, progress bars, sliders, search inputs and dialogs were refined to match.
+  - In dark schemes, surfaces get a top-lit sheen, because the fixed elevation shadows are invisible on a dark page.
+- Images on a page that allows `images` now add their origin to `img-src` for every image-bearing block. Before, only `image` and `gallery` did; only `video` and `audio` use the `media` capability.
+- Feature stylesheets moved to `src/render/feature-styles.ts`; `styles.ts` re-exports them.
+- **Embedded fonts (CSP change).** Every preset now leads its display stack with a bundled SIL OFL 1.1 variable face: Geist (blueprint), Fraunces (editorial), Bricolage Grotesque (paper-ink), Inter Tight (swiss-clean), JetBrains Mono (terminal-mono) and Plus Jakarta Sans (warm-signal).
+  - The face is inlined as a `data:` WOFF2, so nothing is fetched. The Latin subset is always emitted; the Vietnamese subset only when the page text needs it.
+  - Pages that carry a face emit `font-src data:` instead of `font-src 'none'`. Verification fails on any `@font-face` source that is not inlined, and on a CSP that does not match.
+  - Artifacts grow by roughly 30–60 kB per page. A custom font stack that names no bundled `AK ` family embeds nothing.
+  - The licences ship in `assets/fonts/<family>/OFL.txt` and in the npm package. Each `@font-face` carries a notice comment.
+- Blueprint's light scheme is warmer and higher-contrast: a drafting-paper background (`#f4f2ed`), near-black text, and a cobalt accent (`#1d4fd7`).
+- Bento tile images now sit as a panel bleeding off the tile edge over an accent-tinted backdrop. Showcase frame images drift with scroll (parallax) instead of settling.
+- The browser frame styles moved to the base sheet, so the hero can use them.
+
+### Added
+
+- `ak-render mcp` serves the compiler as an MCP server over stdio, with `catalog`, `describe`, `validate`, `render` and `themes` tools. `render` writes the HTML to the `out` path and returns only a summary. No new runtime dependency.
+- Pass `-` as the spec path to compile or validate a spec from standard input. Diagnostics name the source `<stdin>`.
+- `llms.txt` (shipped in the package) and `docs/agent-guide.md`: the agent loop, a minimal spec, and the MCP client config.
+- `section` gains `surface: plain | inverse`. An inverse section sits on a night band: a dark panel where every colour token takes the theme's dark value, so nested blocks recolour without variants.
+- A `cta` block: eyebrow, an oversized gradient title, text, and up to three link actions, on the night band. It is the new `cta` runtime feature.
+- `hero` gains optional `src`, `alt`, `address` and `align: start | center`. With `src`, a framed product shot sits below the copy and straightens from a tilt as the page scrolls. `alt` is required when `src` is set.
+- The theme toggle reveals the new scheme as a circle growing from the button, through the View Transitions API, when motion is allowed. Otherwise it switches instantly, as before.
+- `scripts/capture-demo-media.mjs` records element-level crops at 2x (`crop-chart`, `crop-donut`, `crop-compare`, `crop-timeline`, `crop-diagram`). The showcase bento uses them.
+- `pnpm fonts:generate` and `pnpm fonts:check` regenerate and check the embedded font module.
+- A page outline ("On this page") with scroll-spy appears when a page has three or more titled top-level sections. It is the new `outline` runtime feature, and sections now carry an `id` of the form `ak-sec-<node id>`.
+- A reading-progress rail.
+- A colophon footer with a back-to-top link.
+- Code blocks have line numbers, a language pill, and a Copy button with a copied state. The `code` block now declares the `copy` runtime feature.
+- Charts:
+  - Area fills are gradients.
+  - Bars and points reveal their values on hover or focus.
+  - The cartesian viewBox is 800×300, and on narrow screens the chart scrolls sideways instead of shrinking its text.
+- Tables:
+  - Numeric columns align right.
+  - Diff status, risk levels and review kinds render as toned badges.
+  - Diff line counts are signed and colored.
+- External links in prose carry a ↗ marker.
+- Diagram fallbacks render a simple chain as a flow of node cards joined by labelled arrows, vertical on phones. Other graphs show node cards plus an explicit connection list.
+- A signature style layer (`src/render/signature-styles.ts`):
+  - a fluid display-size hero title and a staggered hero entrance;
+  - balanced headings;
+  - drawn link underlines;
+  - cards that end in a link become a single lifted target with an arrow CTA;
+  - larger stat figures and a subtle top light on primary buttons.
+- Bar charts use per-series gradients.
+- Eight showcase blocks:
+  - `bento`, a mosaic of tiles with sizes, images and display figures;
+  - `marquee`, an accessible looping ticker;
+  - `terminal`, a typed session with a copy control;
+  - `file-tree`, built from flat paths with status;
+  - `before-after`, an image slider driven by a native range input, which adds the `before-after` runtime feature;
+  - `kpi`, metrics with a delta, a good/bad verdict and a sparkline;
+  - `showcase`, copy beside a capture in browser chrome;
+  - `checklist`, with a done count and a progress meter.
+  Each has its own tree-shaken feature sheet.
+- An effects layer (`src/render/effects-styles.ts`):
+  - a theme-tinted hero aurora;
+  - a word-by-word hero title reveal;
+  - a film-grain texture;
+  - a pointer spotlight on cards;
+  - count-up for numeric stats and KPIs;
+  - scroll-linked settling of framed images;
+  - a sweep on primary buttons.
+  All of it respects reduced motion and print. Count-up keeps the authored value in the DOM and draws the rolling figure on a hidden layer, so screen readers, copy and print always get the real number.
+- Real demo media in `fixtures/assets`: screenshots and a 41s screen recording of the compiled gallery, captured by `scripts/capture-demo-media.mjs`.
+- A `showcase` landing fixture. The media fixture plays the local recording, shows the real screenshots, and compares light and dark. The gallery index opens with a marquee and a showcase of the landing page.
+
+### Fixed
+
+- A non-colour token set under a theme's `tokens` (a font stack, spacing, or motion value) now applies to the dark scheme too. Before, dark mode fell back to the parent preset's value.
+- `motion-policy: none` now stops every animation, not only the token-driven durations: the aurora, marquee, caret, word reveal, scroll-linked effects, count-up and the theme-toggle transition. The page renders as it does under reduced motion, and the root carries `data-motion="none"`.
+- `loadTheme` reports a non-object `tokens` or `dark` value as a `POLICY_VIOLATION` render error instead of throwing a `TypeError`.
+- File trees order names by code point, so the order no longer depends on the runtime's collation.
+- A blocked remote image keeps its alt text, and every blocked image, video, audio or embed names the real reason: the network is denied, the capability is not allowed, or the host is not on the provider allowlist. Before, the note always said the network was denied.
+- A `bento` tile with `src` now requires `alt`; an explicit `alt: ""` marks a decorative image.
+- The terminal's caption is a direct child of its figure, and the figure is named by the title alone.
+- Checklist, browser-frame (hero shot and showcase) and bento image styles moved out of the base stylesheet into feature sheets, so pages without those blocks no longer carry them. `checklist` and `frame` are new runtime features.
+- The night band now uses the same tint, focus ring and sheen as dark mode; it had drifted to stronger values.
+- Font verification checks every source of every `@font-face`, and rejects `local()`, instead of only the first `url()`.
+- The theme toggle names the scheme it switches to from the first paint. Before, it read "Dark" on a page the system had already put in dark mode.
+- A `split`, `grid` or `comparison` column no longer grows past a phone screen when a child holds a long code line; the line scrolls inside its frame.
+- `ak-render <command> --help` prints that command's usage instead of trying to read a file named `--help`.
+- `img-src` and `media-src` include `'self'`, so a page's relative assets load when it is served over HTTP(S) instead of opened from disk. Remote URLs are still gated by the network policy.
 
 ## [0.1.1-next.1] - 2026-09-22
 

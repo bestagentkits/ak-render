@@ -51,7 +51,8 @@ export const TOKEN_SPECS: Readonly<Record<string, TokenSpec>> = {
   'font-heading': {
     kind: 'font-stack',
     group: 'typography',
-    description: 'Heading font stack. System stacks only; no remote fonts.',
+    description:
+      'Heading font stack. Names only; a bundled AK face is inlined, nothing is fetched.',
   },
   'font-body': { kind: 'font-stack', group: 'typography', description: 'Body font stack.' },
   'font-mono': { kind: 'font-stack', group: 'typography', description: 'Monospace font stack.' },

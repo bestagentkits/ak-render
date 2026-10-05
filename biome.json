@@ -11,7 +11,8 @@
       "!.git",
       "!dist",
       "!node_modules",
-      "!docs/artifacts"
+      "!docs/artifacts",
+      "!src/render/embedded-fonts.generated.ts"
     ]
   },
   "formatter": {

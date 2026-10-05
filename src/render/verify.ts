@@ -38,6 +38,17 @@ const FEATURE_MARKERS: Readonly<Partial<Record<RuntimeFeature, string>>> = {
   chart: '.ak-chart',
   diagram: '.ak-diagram',
   media: '.ak-media-fallback',
+  outline: '.ak-toc',
+  bento: '.ak-bento',
+  marquee: '.ak-marquee',
+  terminal: '.ak-terminal',
+  tree: '.ak-tree',
+  'before-after': '.ak-ba-stage',
+  kpi: '.ak-kpi',
+  showcase: '.ak-showcase',
+  cta: '.ak-cta',
+  frame: '.ak-frame-view',
+  checklist: '.ak-checklist',
 };
 
 /** Features whose behavior requires emitted JavaScript. */
@@ -48,6 +59,8 @@ const SCRIPTED_FEATURES: readonly RuntimeFeature[] = [
   'filter',
   'theme',
   'dialog',
+  'outline',
+  'before-after',
 ];
 
 function countMatches(text: string, pattern: RegExp): number {
@@ -111,6 +124,25 @@ export function verifyDocument(input: VerifyInput): Diagnostic[] {
   }
   if (STYLESHEET_LINK.test(markup)) report('emitted a remote stylesheet link', 'POLICY_VIOLATION');
   if (CSS_IMPORT.test(markup)) report('emitted an @import rule', 'POLICY_VIOLATION');
+  // Faces are only ever inlined: any other source would be a request on open.
+  // Every source of every face is checked, not just the first: a fallback list
+  // could otherwise hide a remote `url()` or a `local()` lookup behind an
+  // embedded one.
+  const fontSources = [...input.css.matchAll(/@font-face\{([^}]*)\}/gu)];
+  const embeddedOnly = (body: string): boolean => {
+    const urls = [...body.matchAll(/url\(\s*['"]?([^)'"]{0,40})/gu)];
+    return (
+      urls.length > 0 &&
+      !/local\(/iu.test(body) &&
+      urls.every((url) => (url[1] ?? '').startsWith('data:font/woff2;base64,'))
+    );
+  };
+  if (fontSources.some((match) => !embeddedOnly(match[1] ?? ''))) {
+    report('an @font-face rule loads a non-embedded source', 'POLICY_VIOLATION');
+  }
+  if (fontSources.length > 0 !== input.csp.includes('font-src data:')) {
+    report('CSP font-src does not match the embedded faces');
+  }
   if (/<script[^>]+src=/iu.test(markup)) report('emitted an external script', 'POLICY_VIOLATION');
   if (/<iframe/iu.test(markup)) report('emitted an iframe', 'POLICY_VIOLATION');
 

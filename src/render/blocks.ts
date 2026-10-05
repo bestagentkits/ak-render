@@ -14,12 +14,28 @@
 
 import type { Diagnostic } from '../diagnostics.js';
 import { type DiagramAdapter, runDiagramAdapter } from '../diagram/adapter.js';
-import type { IrDocument, IrNode, NetworkPolicy } from '../ir.js';
+import type { IrDocument, IrNode } from '../ir.js';
 import { isPlainObject, type JsonValue } from '../json.js';
 import type { RuntimeFeature } from '../registry/roster.js';
-import { EMBED_PROVIDERS, hostMatchesAnyProvider, hostMatchesProvider } from '../spec/providers.js';
+import { EMBED_PROVIDERS } from '../spec/providers.js';
 import type { ResolvedTheme } from '../theme/load-theme.js';
+import {
+  blockedReason,
+  element,
+  figureCaption,
+  heading,
+  listProp,
+  nodeAttributes,
+  numberProp,
+  numProp,
+  objectListProp,
+  resolveMedia,
+  str,
+  stringProp,
+  titleHeader,
+} from './block-helpers.js';
 import { type ChartSeries, renderChart } from './charts.js';
+import { renderDiagramFallback } from './diagram-fallback.js';
 import {
   type AttributeValue,
   escapeAttribute,
@@ -27,6 +43,7 @@ import {
   escapeUrl,
   renderAttributes,
 } from './escape.js';
+import { browserShot, SHOWCASE_RENDERERS } from './showcase-blocks.js';
 
 export interface RenderContext {
   ir: IrDocument;
@@ -46,41 +63,9 @@ type Renderer = (node: IrNode, context: RenderContext) => string;
 
 const NO_OP_RENDERER: Renderer = () => '';
 
-function stringProp(node: IrNode, key: string, fallback = ''): string {
-  const value = node.props[key];
-  return typeof value === 'string' ? value : fallback;
-}
-
-function numberProp(node: IrNode, key: string, fallback = 0): number {
-  const value = node.props[key];
-  return typeof value === 'number' ? value : fallback;
-}
-
-function listProp(node: IrNode, key: string): JsonValue[] {
-  const value = node.props[key];
-  return Array.isArray(value) ? value : [];
-}
-
-function objectListProp(node: IrNode, key: string): Record<string, JsonValue>[] {
-  return listProp(node, key).filter(isPlainObject) as Record<string, JsonValue>[];
-}
-
-function str(value: JsonValue | undefined, fallback = ''): string {
-  return typeof value === 'string' ? value : fallback;
-}
-
-function numProp(value: JsonValue | undefined, fallback = 0): number {
-  return typeof value === 'number' ? value : fallback;
-}
-
-/** `data-ak-id` plus every non-click binding on the node. */
-function nodeAttributes(node: IrNode, extra: AttributeValue = {}): AttributeValue {
-  const attributes: AttributeValue = { 'data-ak-id': node.id, ...extra };
-  for (const [event, actions] of Object.entries(node.bindings)) {
-    if (event === 'click') continue;
-    attributes[`data-ak-on-${event}`] = JSON.stringify(actions);
-  }
-  return attributes;
+/** Fragment id of a section, shared by the section renderer and the page outline. */
+export function sectionAnchor(nodeId: string): string {
+  return `ak-sec-${nodeId}`;
 }
 
 /** `data-ak-on-click` for a control, when the node binds a click action. */
@@ -90,82 +75,89 @@ function clickAttribute(bindings: Record<string, unknown>): AttributeValue {
   return { 'data-ak-on-click': JSON.stringify(actions) };
 }
 
-function element(tag: string, attributes: AttributeValue, inner: string): string {
-  const rendered = renderAttributes(attributes);
-  return inner === '' ? `<${tag}${rendered}></${tag}>` : `<${tag}${rendered}>${inner}</${tag}>`;
-}
-
-function heading(level: number, text: string, className = 'ak-section-head'): string {
-  return `<header class="${className}"><h${level}>${escapeText(text)}</h${level}></header>`;
-}
-
-/** A section heading for blocks whose `title` is optional. */
-function titleHeader(node: IrNode, level = 2): string {
-  const title = stringProp(node, 'title');
-  return title === '' ? '' : heading(level, title);
-}
-
-function figureCaption(value: string): string {
-  return value === '' ? '' : `<figcaption>${escapeText(value)}</figcaption>`;
-}
-
 function toneAttribute(node: IrNode, fallback = 'info'): AttributeValue {
   return { 'data-tone': stringProp(node, 'tone', fallback) };
 }
 
-function isRemote(reference: string): boolean {
-  return /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(reference);
-}
-
-function capabilityAllowed(policy: NetworkPolicy, capability: string): boolean {
-  if (policy === 'deny') return false;
-  return policy.allow.includes(capability);
-}
-
 /**
- * Decide whether a remote reference may be loaded.
- *
- * Two gates apply. The capability must be opted into, and when the page declares
- * a provider allowlist the reference's host must belong to one of those
- * providers. A block that names a provider itself requires that provider to be
- * allowlisted, so a spec cannot promote an arbitrary host to trusted by
- * labelling it "youtube".
+ * Tone for a value a reader scans for severity or outcome. Only exact, known
+ * words map to a tone; anything else stays neutral, so a label is never
+ * coloured by guesswork.
  */
-function networkAllows(
-  policy: NetworkPolicy,
-  capability: 'images' | 'media',
-  reference: string,
-  provider: string,
-): boolean {
-  if (!capabilityAllowed(policy, capability)) return false;
-  if (policy === 'deny') return false;
-  const declared = policy.providers ?? [];
-  if (provider !== '') {
-    return declared.includes(provider) && hostMatchesProvider(provider, reference);
+const VALUE_TONES: Readonly<Record<string, string>> = {
+  high: 'danger',
+  critical: 'danger',
+  blocker: 'danger',
+  bug: 'danger',
+  issue: 'danger',
+  deleted: 'danger',
+  removed: 'danger',
+  medium: 'warning',
+  concern: 'warning',
+  warning: 'warning',
+  renamed: 'warning',
+  modified: 'info',
+  changed: 'info',
+  question: 'info',
+  note: 'info',
+  low: 'success',
+  good: 'success',
+  praise: 'success',
+  added: 'success',
+  new: 'success',
+};
+
+function valueTone(value: string): string {
+  return VALUE_TONES[value.trim().toLowerCase()] ?? 'neutral';
+}
+
+/** A status word rendered as a toned badge. */
+function toneBadge(value: string): string {
+  return `<span class="ak-badge" data-tone="${valueTone(value)}">${escapeText(value)}</span>`;
+}
+
+/** A cell reads as a number when it is digits with optional sign, grouping, decimals, percent or a short unit. */
+const NUMERIC_CELL = /^[-+−]?[$€£]?\d[\d,]*(?:\.\d+)?\s?(?:%|[A-Za-z]{1,3})?$/u;
+
+/** Column indexes whose every non-empty cell is numeric, so they can align on the right. */
+function numericColumns(rows: JsonValue[], width: number): Set<number> {
+  const numeric = new Set<number>();
+  for (let column = 0; column < width; column += 1) {
+    const cells = rows
+      .map((row) => (Array.isArray(row) ? str(row[column]).trim() : ''))
+      .filter((cell) => cell !== '');
+    if (cells.length > 0 && cells.every((cell) => NUMERIC_CELL.test(cell))) numeric.add(column);
   }
-  if (declared.length === 0) return true;
-  return hostMatchesAnyProvider(declared, reference);
+  return numeric;
+}
+
+/** A diff line count; zero stays neutral so only real change is coloured. */
+function lineCountCell(value: number, kind: 'add' | 'del'): string {
+  const sign = kind === 'add' ? '+' : '\u2212';
+  const tone = value === 0 ? 'ak-zero' : `ak-${kind}`;
+  return `<td class="ak-num ${tone}">${sign}${escapeText(String(value))}</td>`;
+}
+
+/** Split code into one span per line so the stylesheet can number lines; newlines stay in the text. */
+function codeLines(text: string): string {
+  const lines = text.replace(/\n$/u, '').split('\n');
+  return lines.map((line) => `<span class="ak-line">${escapeText(line)}</span>`).join('\n');
 }
 
 /**
- * Resolve a media reference against the network policy.
- *
- * A relative path is local and always allowed; a remote reference needs the
- * matching capability and, when a provider allowlist exists, an allowlisted
- * host. Nothing here can produce an embed the spec did not ask for in a way the
- * policy did not allow.
+ * Wrap each word of the hero title so it can rise into view on its own beat.
+ * The spaces stay as text between the wrappers, so the heading's text content
+ * and its line wrapping are unchanged.
  */
-function resolveMedia(
-  reference: string,
-  policy: NetworkPolicy,
-  capability: 'images' | 'media',
-  provider = '',
-): { allowed: boolean; src: string } {
-  if (!isRemote(reference)) return { allowed: true, src: escapeUrl(reference) };
-  return {
-    allowed: networkAllows(policy, capability, reference, provider),
-    src: escapeUrl(reference),
-  };
+function heroWords(title: string): string {
+  return title
+    .split(/(\s+)/u)
+    .map((part) =>
+      part === '' || /^\s+$/u.test(part)
+        ? part
+        : `<span class="ak-word"><span>${escapeText(part)}</span></span>`,
+    )
+    .join('');
 }
 
 function mediaFallbackBody(
@@ -174,7 +166,7 @@ function mediaFallbackBody(
   url: string,
   poster: string,
   linkText: string,
-  note = 'Remote media is not embedded because the page denies network access.',
+  note: string,
 ): string {
   const posterMarkup =
     poster === '' ? '' : `<img src="${escapeAttribute(escapeUrl(poster))}" alt="" />`;
@@ -196,6 +188,7 @@ function mediaFallbackBody(
 }
 
 const RENDERERS: Record<string, Renderer> = {
+  ...SHOWCASE_RENDERERS,
   page: (node, context) => {
     // Every page needs exactly one h1. A hero (or an explicit level-1 heading)
     // provides it; otherwise the document title does, so a page without a hero
@@ -218,7 +211,12 @@ const RENDERERS: Record<string, Renderer> = {
   section: (node, context) =>
     element(
       'section',
-      nodeAttributes(node, { class: 'ak-block ak-section' }),
+      // The id is the outline's link target; node ids are unique, so it is too.
+      nodeAttributes(node, {
+        class: 'ak-block ak-section',
+        id: sectionAnchor(node.id),
+        'data-surface': stringProp(node, 'surface') === 'inverse' ? 'inverse' : undefined,
+      }),
       `${titleHeader(node)}${context.renderChildren(node)}`,
     ),
 
@@ -318,14 +316,22 @@ const RENDERERS: Record<string, Renderer> = {
   code: (node) => {
     const title = stringProp(node, 'title');
     const language = stringProp(node, 'language', 'text');
+    const copy = renderAttributes({
+      'data-ak-on-click': JSON.stringify([{ action: 'copy', target: node.id }]),
+      'aria-label': title === '' ? 'Copy code' : `Copy ${title}`,
+    });
     return [
       `<div class="ak-block ak-code">`,
-      title === '' && language === ''
+      '<div class="ak-code-head">',
+      `<span class="ak-label">${escapeText(title === '' ? language : title)}</span>`,
+      title === '' || language === ''
         ? ''
-        : `<div class="ak-code-head"><span class="ak-label">${escapeText(title === '' ? language : title)}</span></div>`,
+        : `<span class="ak-code-lang">${escapeText(language)}</span>`,
+      `<button type="button" class="ak-code-copy"${copy}>Copy</button>`,
+      '</div>',
       `<pre${renderAttributes({ 'data-ak-id': node.id })}><code${renderAttributes({
         class: `language-${language}`,
-      })}>${escapeText(stringProp(node, 'text'))}</code></pre>`,
+      })}>${codeLines(stringProp(node, 'text'))}</code></pre>`,
       '</div>',
     ]
       .filter((part) => part !== '')
@@ -402,14 +408,31 @@ const RENDERERS: Record<string, Renderer> = {
     ].join('');
   },
 
-  hero: (node) => {
+  hero: (node, context) => {
     const eyebrow = stringProp(node, 'eyebrow');
     const description = stringProp(node, 'description');
+    const source = stringProp(node, 'src');
     return [
-      `<div${renderAttributes(nodeAttributes(node, { class: 'ak-block ak-hero' }))}>`,
+      `<div${renderAttributes(
+        nodeAttributes(node, {
+          class: 'ak-block ak-hero',
+          'data-align': stringProp(node, 'align') === 'center' ? 'center' : undefined,
+          'data-media': source === '' ? undefined : 'true',
+        }),
+      )}>`,
       eyebrow === '' ? '' : `<p class="ak-eyebrow">${escapeText(eyebrow)}</p>`,
-      `<h1>${escapeText(stringProp(node, 'title'))}</h1>`,
+      `<h1>${heroWords(stringProp(node, 'title'))}</h1>`,
       description === '' ? '' : `<p>${escapeText(description)}</p>`,
+      // The shot is the first thing on screen, so it loads eagerly.
+      source === ''
+        ? ''
+        : `<figure class="ak-hero-media"><div class="ak-hero-stage">${browserShot(
+            source,
+            stringProp(node, 'alt'),
+            stringProp(node, 'address'),
+            context.ir.policy.network,
+            'eager',
+          )}</div></figure>`,
       '</div>',
     ].join('');
   },
@@ -533,13 +556,15 @@ const RENDERERS: Record<string, Renderer> = {
     const columns = listProp(node, 'columns');
     const rows = listProp(node, 'rows');
     const title = stringProp(node, 'title');
+    const numeric = numericColumns(rows, columns.length);
+    const align = (index: number): string => (numeric.has(index) ? ' class="ak-num"' : '');
     const head = columns
-      .map((column) => `<th scope="col">${escapeText(str(column))}</th>`)
+      .map((column, index) => `<th scope="col"${align(index)}>${escapeText(str(column))}</th>`)
       .join('');
     const body = rows
       .map((row) => {
         const cells = (Array.isArray(row) ? row : [])
-          .map((cell) => `<td>${escapeText(str(cell))}</td>`)
+          .map((cell, index) => `<td${align(index)}>${escapeText(str(cell))}</td>`)
           .join('');
         return `<tr>${cells}</tr>`;
       })
@@ -585,9 +610,9 @@ const RENDERERS: Record<string, Renderer> = {
         `<div class="ak-table-wrap"><table><caption>Risk by impact and likelihood</caption><thead><tr><th scope="col">Area</th><th scope="col">Impact</th><th scope="col">Likelihood</th><th scope="col">Note</th></tr></thead><tbody>${items
           .map(
             (item) =>
-              `<tr><th scope="row">${escapeText(str(item.area))}</th><td>${escapeText(
+              `<tr><th scope="row">${escapeText(str(item.area))}</th><td>${toneBadge(
                 str(item.impact),
-              )}</td><td>${escapeText(str(item.likelihood))}</td><td>${escapeText(
+              )}</td><td>${toneBadge(str(item.likelihood))}</td><td>${escapeText(
                 str(item.note),
               )}</td></tr>`,
           )
@@ -598,19 +623,23 @@ const RENDERERS: Record<string, Renderer> = {
 
   'diff-summary': (node) => {
     const items = objectListProp(node, 'items');
+    const header = titleHeader(node);
+    // A visible block title already names the table; the caption then stays for screen readers only.
+    const caption = header === '' ? '<caption>' : '<caption class="ak-sr">';
     return element(
       'section',
       nodeAttributes(node, { class: 'ak-block' }),
       [
-        titleHeader(node),
-        `<div class="ak-table-wrap"><table><caption>Changed files</caption><thead><tr><th scope="col">Path</th><th scope="col">Status</th><th scope="col">Additions</th><th scope="col">Deletions</th></tr></thead><tbody>${items
+        header,
+        `<div class="ak-table-wrap"><table>${caption}Changed files</caption><thead><tr><th scope="col">Path</th><th scope="col">Status</th><th scope="col" class="ak-num">Additions</th><th scope="col" class="ak-num">Deletions</th></tr></thead><tbody>${items
           .map(
             (item) =>
-              `<tr><th scope="row"><code>${escapeText(str(item.path))}</code></th><td>${escapeText(
+              `<tr><th scope="row"><code>${escapeText(str(item.path))}</code></th><td>${toneBadge(
                 str(item.status),
-              )}</td><td>${escapeText(String(numProp(item.additions, 0)))}</td><td>${escapeText(
-                String(numProp(item.deletions, 0)),
-              )}</td></tr>`,
+              )}</td>${lineCountCell(numProp(item.additions, 0), 'add')}${lineCountCell(
+                numProp(item.deletions, 0),
+                'del',
+              )}</tr>`,
           )
           .join('')}</tbody></table></div>`,
       ].join(''),
@@ -627,7 +656,7 @@ const RENDERERS: Record<string, Renderer> = {
         `<ul class="ak-grid" data-ak-columns="2">${items
           .map(
             (item) =>
-              `<li class="ak-card ak-surface"><p class="ak-label">${escapeText(
+              `<li class="ak-card ak-surface" data-tone="${valueTone(str(item.kind))}"><p class="ak-label">${escapeText(
                 str(item.kind),
               )}</p><p><strong>${escapeText(str(item.title))}</strong></p><p>${escapeText(
                 str(item.text),
@@ -796,30 +825,7 @@ const RENDERERS: Record<string, Renderer> = {
     // The semantic fallback is always available: it is the only rendering when
     // no adapter is installed, and it stays in the document as the accessible
     // description when one is.
-    const fallbackBody = [
-      described.length === 0
-        ? ''
-        : `<ul class="ak-list">${described
-            .map(
-              (component) =>
-                `<li><code>${escapeText(str(component.id))}</code><span>${escapeText(
-                  str(component.label),
-                )}</span></li>`,
-            )
-            .join('')}</ul>`,
-      edges.length === 0
-        ? ''
-        : `<ul class="ak-list">${edges
-            .map(
-              (edge) =>
-                `<li><code>${escapeText(str(edge.from))} → ${escapeText(
-                  str(edge.to),
-                )}</code><span>${escapeText(str(edge.label))}</span></li>`,
-            )
-            .join('')}</ul>`,
-    ]
-      .filter((part) => part !== '')
-      .join('');
+    const fallbackBody = renderDiagramFallback(described, edges);
 
     const adapterResult = runDiagramAdapter(context.diagramAdapter, {
       spec: (node.props.spec ?? null) as JsonValue,
@@ -848,7 +854,7 @@ const RENDERERS: Record<string, Renderer> = {
           )}">${adapterResult.markup}</div>`
         : '',
       `<div class="ak-diagram-fallback" data-ak-diagram-fallback>`,
-      `<p><strong>${escapeText(diagramTitle)}</strong></p>`,
+      `<p class="ak-diagram-title">${escapeText(diagramTitle)}</p>`,
       fallbackBody,
       accepted
         ? '<p class="ak-caption">Rendered by a diagram adapter. The structured description below is the accessible equivalent.</p>'
@@ -868,7 +874,7 @@ const RENDERERS: Record<string, Renderer> = {
     if (!resolved.allowed) {
       return [
         `<figure${renderAttributes(nodeAttributes(node, { class: 'ak-block ak-media' }))}>`,
-        `<div class="ak-media-fallback"><p><strong>${escapeText(alt)}</strong></p><p class="ak-caption">Remote image not loaded: the page denies network access.</p><a href="${escapeAttribute(
+        `<div class="ak-media-fallback"><p><strong>${escapeText(alt)}</strong></p><p class="ak-caption">Remote image not loaded: ${blockedReason(context.ir.policy.network, 'images')}.</p><a href="${escapeAttribute(
           resolved.src,
         )}" rel="noreferrer noopener">Open image</a></div>`,
         figureCaption(captionText),
@@ -932,7 +938,7 @@ const RENDERERS: Record<string, Renderer> = {
           str(fallback.linkText, `Open on ${label}`),
           resolved.allowed
             ? `Embedded players are not emitted; this page links to ${label} instead.`
-            : `Embedded players are not emitted and the page denies network access; this page links to ${label} instead.`,
+            : `Embedded players are not emitted and ${blockedReason(context.ir.policy.network, 'media')}; this page links to ${label} instead.`,
         )}</div>`,
         figureCaption(captionText),
         '</figure>',
@@ -943,10 +949,11 @@ const RENDERERS: Record<string, Renderer> = {
         `<figure${renderAttributes(nodeAttributes(node, { class: 'ak-block ak-media' }))}>`,
         `<div class="ak-media-fallback">${mediaFallbackBody(
           stringProp(node, 'title'),
-          str(fallback.description, 'Remote video is unavailable without network access.'),
+          str(fallback.description, 'Remote video is not available on this page.'),
           str(fallback.url, source),
           stringProp(node, 'poster'),
           str(fallback.linkText, 'Open video'),
+          `Remote media is not embedded because ${blockedReason(context.ir.policy.network, 'media')}.`,
         )}</div>`,
         figureCaption(captionText),
         '</figure>',
@@ -983,7 +990,7 @@ const RENDERERS: Record<string, Renderer> = {
           str(fallback.linkText, `Open on ${label}`),
           resolved.allowed
             ? `Embedded players are not emitted; this page links to ${label} instead.`
-            : `Embedded players are not emitted and the page denies network access; this page links to ${label} instead.`,
+            : `Embedded players are not emitted and ${blockedReason(context.ir.policy.network, 'media')}; this page links to ${label} instead.`,
         )}</div>`,
         figureCaption(captionText),
         '</figure>',
@@ -994,10 +1001,11 @@ const RENDERERS: Record<string, Renderer> = {
         `<figure${renderAttributes(nodeAttributes(node, { class: 'ak-block ak-media' }))}>`,
         `<div class="ak-media-fallback">${mediaFallbackBody(
           stringProp(node, 'title'),
-          str(fallback.description, 'Remote audio is unavailable without network access.'),
+          str(fallback.description, 'Remote audio is not available on this page.'),
           str(fallback.url, source),
           '',
           str(fallback.linkText, 'Open audio'),
+          `Remote media is not embedded because ${blockedReason(context.ir.policy.network, 'media')}.`,
         )}</div>`,
         figureCaption(captionText),
         '</figure>',

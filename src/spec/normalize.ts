@@ -603,6 +603,32 @@ function postChecks(nodes: IrNode[], bag: DiagnosticBag): void {
       }
     }
 
+    if (node.type === 'hero' && stringProp(node, 'src') !== undefined) {
+      if ((stringProp(node, 'alt') ?? '').trim() === '') {
+        bag.add({
+          code: 'SPEC_VALIDATION_ERROR',
+          message: 'a hero with src needs alt text describing the shot',
+          path: pathKey(node.path, 'alt'),
+          nodeId: node.id,
+        });
+      }
+    }
+
+    // A tile image follows the image block's rule: alt must be present, and an
+    // explicitly empty alt marks the image as decorative.
+    if (node.type === 'bento' && Array.isArray(node.props.items)) {
+      node.props.items.forEach((item, index) => {
+        if (!isPlainObject(item) || typeof item.src !== 'string') return;
+        if (typeof item.alt === 'string') return;
+        bag.add({
+          code: 'SPEC_VALIDATION_ERROR',
+          message: 'a bento tile with src needs alt text (use "" for a decorative image)',
+          path: pathKey(pathIndex(pathKey(node.path, 'items'), index), 'alt'),
+          nodeId: node.id,
+        });
+      });
+    }
+
     if (node.type === 'diagram-panel') {
       const spec = node.props.spec;
       if (!isPlainObject(spec)) {

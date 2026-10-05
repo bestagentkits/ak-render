@@ -22,19 +22,48 @@ blocks:
     title: Default policy is network deny
     text: A video or audio block emits a poster, its metadata, and a link instead of a remote embed.
 
+  - type: video
+    title: Gallery walkthrough
+    src: assets/walkthrough.webm
+    poster: assets/walkthrough-poster.webp
+    caption: A local recording plays inline; the policy only gates remote media.
+    fallback:
+      description: Screen recording of the explain and dashboard fixtures.
+
   - type: gallery
     title: Screenshots
     columns: 3
     items:
-      - src: assets/compiler-pipeline.svg
-        alt: Compiler pipeline diagram
-        caption: Compile pipeline
-      - src: assets/theme-presets.svg
-        alt: Six theme presets side by side
-        caption: Built-in presets
-      - src: assets/interaction-trace.svg
-        alt: Interaction test trace
-        caption: Interaction coverage
+      - src: assets/shot-explain-light.webp
+        alt: The explain fixture in light mode
+        caption: Explain, light
+      - src: assets/shot-dashboard.webp
+        alt: The dashboard fixture with stat tiles and a bar chart
+        caption: Dashboard
+      - src: assets/shot-diff.webp
+        alt: The diff fixture in dark mode
+        caption: Diff, dark
+      - src: assets/shot-plan.webp
+        alt: The plan fixture with its timeline
+        caption: Plan
+      - src: assets/shot-gallery.webp
+        alt: The fixture gallery index
+        caption: Gallery index
+      - src: assets/shot-components.webp
+        alt: The all-components fixture
+        caption: All components
+
+  - type: before-after
+    title: Light and dark
+    before:
+      src: assets/shot-dashboard.webp
+      alt: The dashboard fixture in light mode
+      label: Light
+    after:
+      src: assets/shot-dashboard-dark.webp
+      alt: The dashboard fixture in dark mode
+      label: Dark
+    caption: Drag the divider to compare the same artifact in both schemes.
 
   - type: carousel
     ariaLabel: Feature previews
@@ -66,6 +95,14 @@ blocks:
       description: A short spoken introduction to the declarative page model.
       linkText: Open the recording
       url: https://media.example.com/intro
+
+  - type: showcase
+    eyebrow: Framed
+    title: Screenshots in a browser frame
+    text: The showcase block puts a capture in window chrome beside its copy, and flips sides with one prop.
+    src: assets/shot-components.webp
+    alt: The all-components fixture in the swiss-clean theme
+    address: all-components.html
 
   - type: image
     src: assets/cover.svg

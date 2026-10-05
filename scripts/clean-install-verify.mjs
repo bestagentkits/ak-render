@@ -77,7 +77,11 @@ blocks:
 
 /** External references a default artifact must never contain. */
 const EXTERNAL_MARKERS = [
-  { pattern: /@font-face/iu, label: '@font-face' },
+  // Faces are embedded as data: URLs; any other source would be a request on open.
+  {
+    pattern: /@font-face\{[^}]*(?:url\(\s*['"]?(?!data:)|local\()/iu,
+    label: 'non-embedded @font-face',
+  },
   { pattern: /fonts\.googleapis|fonts\.gstatic/iu, label: 'Google Fonts' },
   { pattern: /@import\s+url/iu, label: '@import url(...)' },
   { pattern: /\ssrc="https?:/iu, label: 'remote src' },

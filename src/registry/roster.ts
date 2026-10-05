@@ -27,7 +27,18 @@ export type RuntimeFeature =
   | 'dialog'
   | 'chart'
   | 'diagram'
-  | 'media';
+  | 'media'
+  | 'outline'
+  | 'bento'
+  | 'marquee'
+  | 'terminal'
+  | 'tree'
+  | 'before-after'
+  | 'kpi'
+  | 'showcase'
+  | 'cta'
+  | 'frame'
+  | 'checklist';
 
 export interface SlotSpec {
   /** Types accepted by the slot; `'*'` accepts any block. */
@@ -94,6 +105,12 @@ const num = (
     description?: string;
   } = {},
 ): PropSchema => ({ kind: 'number', ...o });
+const bool = (
+  o: { required?: boolean; default?: boolean; description?: string } = {},
+): PropSchema => ({
+  kind: 'boolean',
+  ...o,
+});
 const urlProp = (
   o: { required?: boolean; schemes?: readonly string[]; description?: string } = {},
 ): PropSchema => ({
@@ -203,8 +220,17 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   define({
     type: 'section',
     purpose: 'A titled group of blocks.',
-    summary: 'Section with an optional heading wrapping child blocks.',
-    props: { title: OPTIONAL_TITLE, ...anchorProps },
+    summary:
+      'Section with an optional heading wrapping child blocks; an inverse surface sets it on a night band.',
+    props: {
+      title: OPTIONAL_TITLE,
+      surface: enumStr(['plain', 'inverse'], {
+        default: 'plain',
+        description:
+          'inverse renders the section on a dark band using the theme dark palette, in both schemes.',
+      }),
+      ...anchorProps,
+    },
     slots: { children: { accepts: '*', min: 1, max: 200 } },
   }),
   define({
@@ -294,7 +320,8 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
       ...anchorProps,
     },
     assets: ['code'],
-    a11y: 'Renders <pre><code> with the authored text; no syntax highlighting requires network access.',
+    runtimeFeatures: ['copy'],
+    a11y: 'Renders <pre><code> with the authored text and a labelled Copy button; no syntax highlighting requires network access.',
     serializer:
       'Emits the code text verbatim inside the fenced block when serialized back to Markdown.',
   }),
@@ -364,19 +391,31 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   semantic({
     type: 'hero',
     purpose: 'Page opener that states the artifact subject.',
-    summary: 'Hero: eyebrow, title, and one-line description.',
+    summary:
+      'Hero: eyebrow, title, and one-line description, optionally over a framed product shot.',
     props: {
       eyebrow: str({ maxLength: 80 }),
       title: TITLE,
       description: txt(),
+      align: enumStr(['start', 'center'], { default: 'start' }),
+      src: urlProp({
+        description: 'Optional product shot shown in a browser frame below the copy.',
+      }),
+      alt: str({ maxLength: 300, description: 'Required when src is set.' }),
+      address: str({
+        maxLength: 120,
+        description: 'Text shown in the frame address bar; not a link.',
+      }),
       ...anchorProps,
     },
+    network: 'optional',
     sizing: {
       sizes: ['medium', 'large'],
       default: 'large',
-      responsive: 'Full width; text reflows.',
+      responsive:
+        'Full width; text reflows and the product shot scales to the column without cropping.',
     },
-    a11y: 'The hero title is an <h1>; the eyebrow is supporting text, not a heading.',
+    a11y: 'The hero title is an <h1>; the eyebrow is supporting text, not a heading. The shot keeps its alt text and its frame is decorative.',
   }),
   semantic({
     type: 'stats',
@@ -629,6 +668,231 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
     a11y: 'Requires a textual fallback summary when the adapter cannot render; the fallback is always emitted.',
     migration:
       'Adapter contract is versioned separately; a spec that no longer compiles degrades to the fallback.',
+  }),
+
+  // --- showcase -----------------------------------------------------------
+  semantic({
+    type: 'bento',
+    purpose: 'Feature mosaic: tiles of mixed size that each carry one idea, figure, or image.',
+    summary:
+      'Bento: asymmetric tile grid; a tile can hold an eyebrow, title, text, a large figure, and a local image.',
+    props: {
+      title: OPTIONAL_TITLE,
+      items: itemsOf(
+        {
+          title: LABEL,
+          text: txt(),
+          eyebrow: str({ maxLength: 60 }),
+          value: str({ maxLength: 40, description: 'A large figure shown above the title.' }),
+          size: enumStr(['small', 'wide', 'tall', 'large'], { default: 'small' }),
+          src: urlProp({
+            description: 'Optional image; remote sources follow the network policy.',
+          }),
+          alt: str({
+            maxLength: 300,
+            description: 'Required when src is set; use "" for a decorative image.',
+          }),
+        },
+        { minItems: 1, maxItems: 12 },
+      ),
+      ...anchorProps,
+    },
+    runtimeFeatures: ['bento'],
+    network: 'optional',
+    sizing: {
+      sizes: ['large'],
+      default: 'large',
+      responsive:
+        'Four columns on wide screens, two on tablets, one on phones; spans collapse with the grid.',
+    },
+    a11y: 'A list of tiles; each tile title is a heading-styled paragraph, images keep their alt text.',
+  }),
+  define({
+    type: 'marquee',
+    purpose: 'Continuously scrolling strip of short highlights.',
+    summary:
+      'Marquee: looping ticker of short items that pauses on hover and stops under reduced motion.',
+    props: {
+      label: str({ maxLength: 120, default: 'Highlights' }),
+      items: list(str({ required: true, maxLength: 80 }), {
+        required: true,
+        minItems: 1,
+        maxItems: 30,
+      }),
+      speed: enumStr(['slow', 'normal', 'fast'], { default: 'normal' }),
+      ...anchorProps,
+    },
+    runtimeFeatures: ['marquee'],
+    a11y: 'Screen readers get one static list; the duplicated scrolling track is aria-hidden, and motion stops under prefers-reduced-motion.',
+  }),
+  define({
+    type: 'terminal',
+    purpose: 'A command-line session: commands with their output.',
+    summary:
+      'Terminal: window-framed session whose lines type in on load; commands, output, comments, success, and errors are styled apart.',
+    props: {
+      title: str({ maxLength: 120, default: 'Terminal' }),
+      lines: itemsOf(
+        {
+          kind: enumStr(['command', 'output', 'comment', 'success', 'error'], {
+            default: 'output',
+          }),
+          text: txt({ required: true, maxLength: 2_000 }),
+        },
+        { minItems: 1, maxItems: 60 },
+      ),
+      ...anchorProps,
+    },
+    runtimeFeatures: ['terminal', 'copy'],
+    a11y: 'Renders <pre> text; the prompt glyph is decorative, and the line reveal is skipped under reduced motion.',
+  }),
+  semantic({
+    type: 'file-tree',
+    purpose: 'Files and folders, optionally with change status, derived from flat paths.',
+    summary:
+      'File tree: nested folders built from slash-separated paths, with per-file status and notes.',
+    props: {
+      title: OPTIONAL_TITLE,
+      items: itemsOf(
+        {
+          path: str({ required: true, maxLength: 300 }),
+          status: enumStr(['added', 'modified', 'deleted', 'renamed', 'unchanged'], {
+            default: 'unchanged',
+          }),
+          note: str({ maxLength: 200 }),
+        },
+        { minItems: 1, maxItems: 200 },
+      ),
+      ...anchorProps,
+    },
+    runtimeFeatures: ['tree'],
+    a11y: 'Nested lists mirror the folder structure; status is written as text, not only color.',
+  }),
+  semantic({
+    type: 'before-after',
+    purpose: 'Before and after: two images of the same frame, revealed by a draggable divider.',
+    summary:
+      'Compare: before/after image slider driven by a native range input; without script both images stay visible.',
+    props: {
+      title: OPTIONAL_TITLE,
+      before: obj(
+        {
+          src: urlProp({ required: true }),
+          alt: str({ required: true, maxLength: 300 }),
+          label: str({ maxLength: 40, default: 'Before' }),
+        },
+        { required: true },
+      ),
+      after: obj(
+        {
+          src: urlProp({ required: true }),
+          alt: str({ required: true, maxLength: 300 }),
+          label: str({ maxLength: 40, default: 'After' }),
+        },
+        { required: true },
+      ),
+      start: num({ min: 0, max: 100, default: 50 }),
+      caption: txt(),
+      ...anchorProps,
+    },
+    runtimeFeatures: ['before-after'],
+    network: 'optional',
+    a11y: 'The divider is a labelled <input type="range">: keyboard, pointer, and touch all move it, and both images keep their alt text.',
+  }),
+  semantic({
+    type: 'kpi',
+    purpose: 'Headline metrics with direction of change and a small trend line.',
+    summary:
+      'KPI: metric cards with value, signed delta, good/bad direction, and an optional sparkline series.',
+    props: {
+      title: OPTIONAL_TITLE,
+      items: itemsOf(
+        {
+          label: LABEL,
+          value: str({ required: true, maxLength: 40 }),
+          delta: str({ maxLength: 24 }),
+          trend: enumStr(['up', 'down', 'flat'], { default: 'flat' }),
+          good: enumStr(['up', 'down'], {
+            default: 'up',
+            description: 'Which direction counts as an improvement for this metric.',
+          }),
+          series: list(num({ required: true, min: -1e12, max: 1e12 }), { maxItems: 60 }),
+          caption: str({ maxLength: 120 }),
+        },
+        { minItems: 1, maxItems: 8 },
+      ),
+      ...anchorProps,
+    },
+    runtimeFeatures: ['kpi'],
+    a11y: 'Value, delta, and direction are text; the sparkline is decorative and aria-hidden.',
+  }),
+  semantic({
+    type: 'showcase',
+    purpose: 'Feature spotlight: copy beside a framed screenshot.',
+    summary:
+      'Showcase: eyebrow, title, text, and bullets beside an image in a browser frame; the image side can flip.',
+    props: {
+      eyebrow: str({ maxLength: 60 }),
+      title: TITLE,
+      text: txt(),
+      bullets: list(str({ required: true, maxLength: 200 }), { maxItems: 8 }),
+      src: urlProp({ required: true }),
+      alt: str({ required: true, maxLength: 300 }),
+      frame: enumStr(['browser', 'plain'], { default: 'browser' }),
+      address: str({
+        maxLength: 120,
+        description: 'Text shown in the browser frame address bar; not a link.',
+      }),
+      align: enumStr(['media-right', 'media-left'], { default: 'media-right' }),
+      ...anchorProps,
+    },
+    runtimeFeatures: ['showcase'],
+    network: 'optional',
+    sizing: {
+      sizes: ['large'],
+      default: 'large',
+      responsive:
+        'Copy and media sit side by side on wide screens and stack, media last, on narrow ones.',
+    },
+    a11y: 'The title is a heading; the frame chrome is decorative and the image keeps its alt text.',
+  }),
+  define({
+    type: 'checklist',
+    purpose: 'Task list with done and open items and a completion count.',
+    summary: 'Checklist: items marked done or open, with a visible completion count.',
+    props: {
+      title: OPTIONAL_TITLE,
+      items: itemsOf({ text: LABEL, done: bool({ default: false }) }, { maxItems: 100 }),
+      ...anchorProps,
+    },
+    a11y: 'Each item states "done" or "open" in text; the check glyph is decorative.',
+    runtimeFeatures: ['checklist'],
+  }),
+  semantic({
+    type: 'cta',
+    purpose: 'Closing call to action that sends the reader somewhere next.',
+    summary: 'CTA: eyebrow, oversized title, text, and up to three link actions on a night band.',
+    props: {
+      eyebrow: str({ maxLength: 60 }),
+      title: TITLE,
+      text: txt(),
+      actions: list(
+        obj({
+          label: LABEL,
+          href: urlProp({ required: true }),
+          variant: enumStr(['primary', 'secondary'], { default: 'secondary' }),
+        }),
+        { maxItems: 3 },
+      ),
+      ...anchorProps,
+    },
+    runtimeFeatures: ['cta'],
+    sizing: {
+      sizes: ['large'],
+      default: 'large',
+      responsive: 'Full width; the title scales with the viewport and the actions wrap.',
+    },
+    a11y: 'The title is an <h2>; every action is a real link with its own text.',
   }),
 
   // --- media --------------------------------------------------------------

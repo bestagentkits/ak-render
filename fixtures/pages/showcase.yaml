@@ -1,0 +1,237 @@
+version: 1
+
+meta:
+  title: AK Render Showcase
+  description: A landing page compiled from one Page Spec, using the showcase blocks with real screenshots and a real screen recording of the gallery.
+  locale: en
+
+theme:
+  preset: blueprint
+
+policy:
+  network: deny
+
+blocks:
+  - type: hero
+    eyebrow: AK Render · showcase
+    title: Pages your agents ship without writing HTML
+    description: Describe the page in YAML. The compiler emits one offline, deterministic, CSP-locked file, and every image and clip on this page came out of it.
+    align: center
+    src: assets/shot-dashboard.webp
+    alt: The dashboard fixture compiled by AK Render, with stat tiles, a bar chart, and a donut chart
+    address: dashboard.html
+
+  - type: marquee
+    label: What every artifact guarantees
+    speed: normal
+    items:
+      - Deterministic bytes
+      - Opens from file://
+      - Nonce-locked styles and script
+      - No inline handlers
+      - Six built-in themes
+      - Light and dark
+      - Reduced-motion aware
+      - Keyboard first
+
+  - type: showcase
+    eyebrow: Explain
+    title: Turn a walkthrough into a page people finish
+    text: Tabs, steps, diagrams, and code read as one narrative. The outline follows the reader, and every code sample copies in one click.
+    bullets:
+      - Structured diagrams render without a diagram engine
+      - Section outline with scroll-spy on wide screens
+      - Copy buttons with visible confirmation
+    src: assets/shot-explain-light.webp
+    alt: The explain fixture in the editorial theme, showing the hero title and the compile pipeline tabs
+    address: explain.html
+    align: media-right
+
+  - type: section
+    title: Everything in one spec
+    blocks:
+      - type: bento
+        items:
+          - title: Charts that read at a glance
+            text: Gradient bars, value labels on hover, and a data table behind every chart.
+            eyebrow: Chart
+            size: large
+            src: assets/crop-chart.webp
+            alt: A bar chart from the dashboard fixture, cropped at twice the pixel density
+          - title: Built-in themes
+            value: '6'
+            text: Blueprint, editorial, paper-ink, swiss-clean, terminal-mono, and warm-signal.
+            size: small
+          - title: Network requests on open
+            value: '0'
+            text: The policy denies the network unless a spec opts in.
+            size: small
+          - title: Diffs with intent
+            text: Before and after, side by side, with the risk spelled out.
+            eyebrow: Diff
+            size: wide
+            src: assets/crop-compare.webp
+            alt: The comparison block from the diff fixture in dark mode
+          - title: Plans that track themselves
+            text: Milestones, owners, and status on one timeline.
+            eyebrow: Plan
+            size: wide
+            src: assets/crop-timeline.webp
+            alt: The timeline block from the plan fixture
+          - title: Diagrams without an engine
+            text: Structured flows render as accessible markup, with or without an adapter.
+            eyebrow: Diagram
+            size: wide
+            src: assets/crop-diagram.webp
+            alt: The diagram block from the plan fixture, a three-node flow
+          - title: Donuts in dark
+            text: Every chart stop follows the theme into dark mode.
+            eyebrow: Theme
+            size: wide
+            src: assets/crop-donut.webp
+            alt: A donut chart from the dashboard fixture in dark mode
+          - title: Block types in one catalog
+            value: '53'
+            text: Every block below the hero is declared data, from bento to CTA. Nothing here authors markup.
+            eyebrow: Catalog
+            size: wide
+
+  - type: section
+    title: Measured, not claimed
+    surface: inverse
+    blocks:
+      - type: kpi
+        items:
+          - label: Test cases
+            value: '363'
+            delta: '+21 this round'
+            trend: up
+            good: up
+            series: [15, 198, 278, 305, 308, 313, 342, 363]
+            caption: Declared it() and test() cases across the git history
+          - label: Fixture pages
+            value: '11'
+            delta: '+1'
+            trend: up
+            good: up
+            series: [7, 8, 9, 9, 10, 10, 11]
+            caption: Pages in fixtures/pages at each milestone
+          - label: explain.html size
+            value: 121.6 kB
+            delta: '+51.4 kB'
+            trend: up
+            good: down
+            series: [29.6, 29.6, 29.6, 37.4, 70.2, 121.6]
+            caption: The embedded display face costs bytes; still one file, no requests
+          - label: Runtime dependencies
+            value: '1'
+            delta: unchanged
+            trend: flat
+            caption: yaml, for reading specs
+
+  - type: section
+    title: From spec to artifact
+    blocks:
+      - type: split
+        ratio: even
+        blocks:
+          - type: terminal
+            title: ~/project
+            lines:
+              - kind: comment
+                text: '# validate the spec, then compile it'
+              - kind: command
+                text: ak-render validate explain.yaml
+              - kind: success
+                text: 'ok: explain.yaml'
+              - kind: output
+                text: '  blocks: 8 (nodes: 9)'
+              - kind: command
+                text: ak-render explain.yaml --out explain.html
+              - kind: output
+                text: wrote 124500 bytes to explain.html (4 runtime features, hash 0w5t9z60ka9un7)
+              - kind: command
+                text: ak-render themes
+              - kind: output
+                text: blueprint  editorial  paper-ink  swiss-clean  terminal-mono  warm-signal
+          - type: file-tree
+            title: What this round touched
+            items:
+              - path: src/render/font-faces.ts
+                status: added
+                note: inlines the bundled faces
+              - path: src/render/embedded-fonts.generated.ts
+                status: added
+              - path: src/render/surface-styles.ts
+                status: added
+                note: the night band
+              - path: assets/fonts/geist/OFL.txt
+                status: added
+              - path: src/render/showcase-blocks.ts
+                status: modified
+                note: cta and hero frame
+              - path: src/theme/presets.ts
+                status: modified
+              - path: src/theme/load-theme.ts
+                status: modified
+              - path: scripts/capture-demo-media.mjs
+                status: modified
+                note: element crops at 2x
+
+  - type: before-after
+    title: One spec, two color schemes
+    before:
+      src: assets/shot-explain-light.webp
+      alt: The explain fixture in light mode
+      label: Light
+    after:
+      src: assets/shot-explain-dark.webp
+      alt: The explain fixture in dark mode
+      label: Dark
+    start: 50
+    caption: Drag the divider, or focus it and use the arrow keys. Both images are screenshots of the same compiled file.
+
+  - type: video
+    title: Gallery walkthrough
+    src: assets/walkthrough.webm
+    poster: assets/walkthrough-poster.webp
+    caption: 'A screen recording of the compiled gallery: tabs, the theme toggle, and chart hovers.'
+    fallback:
+      description: Screen recording of the explain and dashboard fixtures.
+
+  - type: showcase
+    eyebrow: Dark mode
+    title: Every theme ships a dark scheme
+    text: The toggle remembers the reader's choice, and every token, chart stop, and diagram edge follows it.
+    bullets:
+      - Follows the system setting until the reader chooses
+      - Charts and diagrams recolor from tokens
+    src: assets/shot-dashboard-dark.webp
+    alt: The dashboard fixture in dark mode
+    address: dashboard.html
+    align: media-left
+
+  - type: checklist
+    title: Release gates for this page
+    items:
+      - text: Unit tests, lint, typecheck, and build pass
+        done: true
+      - text: Theme snapshots and the gallery regenerate byte-identical
+        done: true
+      - text: Browser tests pass, including the before/after slider
+        done: true
+      - text: No horizontal overflow at 375 and 1440 pixels
+        done: true
+      - text: Visual regression baselines for the showcase blocks
+        done: false
+
+  - type: cta
+    eyebrow: Ship the next artifact
+    title: Write the spec. Ship the page.
+    text: Install the compiler, point it at a YAML file, and open the result straight from disk. No server, no build step, no requests.
+    actions:
+      - label: Read the docs
+        href: https://github.com/bestagentkits/ak-render#readme
+        variant: primary
+      - label: Browse the gallery
+        href: index.html

@@ -41,7 +41,7 @@ describe('theme snapshots', () => {
 
   it('carries each preset own accent into the artifact', () => {
     const accents: Record<string, string> = {
-      blueprint: '--ak-color-background:#f0f4f8',
+      blueprint: '--ak-color-background:#f4f2ed',
       editorial: '--ak-color-background:#faf8f2',
       'paper-ink': '--ak-color-background:#faf6f0',
       'terminal-mono': '--ak-color-background:#f4f4ef',
@@ -60,9 +60,12 @@ describe('font policy', () => {
     html: readFileSync(`${snapshotDir}/theme-${preset}.html`, 'utf8'),
   }));
 
-  it('bundles no fonts, so there is no font licence to carry', () => {
+  it('inlines its display face as data with the licence notice, and fetches no font', () => {
     for (const { preset, html } of snapshots) {
-      expect(html, preset).not.toContain('@font-face');
+      const sources = [...html.matchAll(/src:url\(([^)]{0,23})/gu)].map((match) => match[1]);
+      expect(sources.length, preset).toBeGreaterThan(0);
+      for (const source of sources) expect(source, preset).toBe('data:font/woff2;base64,');
+      expect(html, preset).toContain('SIL Open Font License 1.1');
       expect(html, preset).not.toContain('fonts.googleapis');
       expect(html, preset).not.toContain('fonts.gstatic');
       expect(html, preset).not.toContain('.woff');

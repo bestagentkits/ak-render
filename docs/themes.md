@@ -113,15 +113,36 @@ const html = render(spec, { theme: 'team-theme', themeCatalog: catalog });
 
 ## Fonts
 
-**No fonts are bundled, and none are fetched.** Every preset uses a system font
-stack that ends in a generic family, which is why the emitted artifact makes no
-network request and why this project carries no font licence. A font stack is
-validated as a list of names only: `url(...)`, `@import`, expressions, and
-backslashes are rejected.
+**Fonts are embedded, never fetched.** Each preset leads its display stack with
+one bundled variable face under the SIL Open Font License 1.1, then falls back
+to a system stack that ends in a generic family:
 
-If bundled fonts are ever added, they must ship their licence and only the
-glyphs actually used. Until then, the [SECURITY](../SECURITY.md) and offline
-contracts hold with no font assets at all.
+| Preset | Bundled face | Used for |
+| --- | --- | --- |
+| `blueprint` | `AK Geist` | headings and body |
+| `editorial` | `AK Fraunces` | headings (body stays the system serif) |
+| `paper-ink` | `AK Bricolage Grotesque` | headings |
+| `swiss-clean` | `AK Inter Tight` | headings and body |
+| `terminal-mono` | `AK JetBrains Mono` | headings, body, and code |
+| `warm-signal` | `AK Plus Jakarta Sans` | headings and body |
+
+The compiler inlines a face as a `data:` WOFF2 only when a resolved font stack
+names it (`src/render/font-faces.ts`). The Latin subset is always emitted; the
+Vietnamese subset is added only when the page text needs it. The CSP opens
+`font-src data:` on those pages and keeps `font-src 'none'` everywhere else, and
+verification rejects any `@font-face` source that is not inlined.
+
+A custom stack that names no `AK ` family embeds nothing. A font stack is still
+validated as a list of names only: `url(...)`, `@import`, expressions, and
+backslashes are rejected. A non-colour token set under `tokens` (a font, a
+spacing, a motion value) applies to both schemes; only colours differ between
+light and dark.
+
+The faces ship unmodified from their Fontsource packages in `assets/fonts/`,
+each beside its `OFL.txt`, which the npm package includes. Every emitted
+`@font-face` carries a comment naming the font, its copyright, and the licence.
+After changing a file there, run `pnpm fonts:generate`; `pnpm fonts:check`
+fails when the generated module is stale.
 
 ## Snapshots
 

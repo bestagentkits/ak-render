@@ -33,13 +33,30 @@ async function open(page: Page): Promise<void> {
   await page.goto(`file://${artifact('interactive.yaml')}`, { waitUntil: 'load' });
 }
 
+test.describe('theme toggle label', () => {
+  test('names the light scheme when the system already chose dark', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await open(page);
+    const toggle = page.locator('[data-ak-theme-toggle]');
+    await expect(toggle).toHaveText('Light');
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('names the dark scheme under a light system', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'light' });
+    await open(page);
+    await expect(page.locator('[data-ak-theme-toggle]')).toHaveText('Dark');
+  });
+});
+
 test.describe('button activation', () => {
   test('responds to a pointer click', async ({ page }) => {
     await open(page);
     const toggle = page.locator('[data-ak-theme-toggle]');
     const before = await page.locator('html').getAttribute('data-theme');
     await toggle.click();
-    expect(await page.locator('html').getAttribute('data-theme')).not.toBe(before);
+    // The switch lands inside a view transition's update callback, a frame later.
+    await expect.poll(() => page.locator('html').getAttribute('data-theme')).not.toBe(before);
   });
 
   test('responds to Enter and to Space', async ({ page }) => {
@@ -347,11 +364,98 @@ theme:
 blocks:
   - type: hero
     title: Still
+  - type: marquee
+    items: [One, Two]
+  - type: stats
+    items:
+      - label: Pages
+        value: '1,240'
 `;
     const target = join(workspace, 'still.html');
     mkdirSync(workspace, { recursive: true });
     writeFileSync(target, compile(source).html, 'utf8');
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.goto(`file://${target}`, { waitUntil: 'load' });
     expect(await duration(page)).toMatch(/^0(m?s)?$/u);
+    // Fixed-duration effects stop too, not only the token-driven ones.
+    const animations = await page.evaluate(() => [
+      window.getComputedStyle(document.querySelector('.ak-hero') as Element, '::before')
+        .animationName,
+      window.getComputedStyle(document.querySelector('.ak-marquee-track') as Element).animationName,
+    ]);
+    expect(animations).toEqual(['none', 'none']);
+    await expect(page.locator('.ak-stat dd')).toHaveText('1,240');
+    expect(await page.locator('.ak-stat dd').evaluate((el) => el.children.length)).toBe(0);
+  });
+});
+
+test.describe('count-up', () => {
+  const source = `version: 1
+meta:
+  title: Counting
+blocks:
+  - type: stats
+    items:
+      - label: Pages
+        value: '1,240'
+`;
+
+  async function openCounting(page: Page): Promise<void> {
+    const target = join(workspace, 'counting.html');
+    mkdirSync(workspace, { recursive: true });
+    writeFileSync(target, compile(source).html, 'utf8');
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.goto(`file://${target}`, { waitUntil: 'load' });
+  }
+
+  test('keeps the authored value readable while the figure rolls', async ({ page }) => {
+    await openCounting(page);
+    const value = page.locator('.ak-stat dd');
+    await expect(value.locator('[aria-hidden="true"]')).toHaveCount(1);
+    await expect(value.locator('.ak-sr')).toHaveText('1,240');
+    // Once it settles, the overlay is gone and only the authored text remains.
+    await expect(value.locator('[aria-hidden="true"]')).toHaveCount(0, { timeout: 4000 });
+    await expect(value).toHaveText('1,240');
+  });
+
+  test('settles at once before the page prints', async ({ page }) => {
+    await openCounting(page);
+    const value = page.locator('.ak-stat dd');
+    await expect(value.locator('[aria-hidden="true"]')).toHaveCount(1);
+    await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+    await expect(value).toHaveText('1,240');
+    expect(await value.evaluate((el) => el.children.length)).toBe(0);
+  });
+});
+
+test.describe('narrow layouts', () => {
+  test('keeps a split of stacked code blocks inside a phone viewport', async ({ page }) => {
+    const source = `version: 1
+meta:
+  title: Split of stacks
+blocks:
+  - type: split
+    blocks:
+      - type: stack
+        blocks:
+          - type: text
+            text: Install
+          - type: code
+            language: bash
+            text: cat spec.yaml | npx @bestagentkits/render - --out page.html --theme editorial
+      - type: stack
+        blocks:
+          - type: code
+            language: json
+            text: '{ "mcpServers": { "ak-render": { "command": "npx", "args": ["-y", "@bestagentkits/render", "mcp"] } } }'
+`;
+    const target = join(workspace, 'split-of-stacks.html');
+    mkdirSync(workspace, { recursive: true });
+    writeFileSync(target, compile(source).html, 'utf8');
+    await page.setViewportSize({ width: 375, height: 800 });
+    await page.goto(`file://${target}`, { waitUntil: 'load' });
+    // A long code line scrolls inside its frame instead of widening the page.
+    const width = await page.evaluate(() => document.documentElement.scrollWidth);
+    expect(width).toBeLessThanOrEqual(375);
   });
 });

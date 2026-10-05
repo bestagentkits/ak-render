@@ -40,7 +40,7 @@ blocks:
 | --- | --- |
 | `images` | `image`, `gallery` sources |
 | `media` | `video`, `audio` sources |
-| `fonts` | reserved; no fonts are fetched today |
+| `fonts` | reserved; no fonts are fetched (bundled faces are inlined as `data:`) |
 
 An unknown capability, an empty `allow` list, or an unknown key inside
 `policy.network` is an error rather than a silently ignored opt-in.
