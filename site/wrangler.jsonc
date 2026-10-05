@@ -1,0 +1,18 @@
+/**
+ * Static site for render.agentkit.best: the landing page at `/` and the
+ * compiled fixture gallery at `/gallery/`.
+ *
+ * Assets only, no Worker script. `pnpm site:build` produces `./dist` (the
+ * landing compiled from site/landing.yaml plus a copy of docs/gallery/), and
+ * `pnpm site:deploy` uploads it. Paths here resolve relative to this file.
+ */
+{
+  "name": "ak-render-site",
+  "account_id": "009dc0fcd0da3e503fbf38eb2b586e4b",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./dist"
+  },
+  "routes": [{ "pattern": "render.agentkit.best", "custom_domain": true }],
+  "workers_dev": false
+}
