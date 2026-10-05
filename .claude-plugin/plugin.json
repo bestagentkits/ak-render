@@ -1,0 +1,20 @@
+{
+  "name": "ak-render",
+  "displayName": "AK Render",
+  "version": "0.2.0",
+  "description": "Turn plans, reports, recaps, diff reviews, dashboards and explainers into one polished, offline, self-contained HTML page from a short YAML Page Spec, without hand-writing HTML.",
+  "author": {
+    "name": "bestagentkits",
+    "url": "https://github.com/bestagentkits"
+  },
+  "homepage": "https://github.com/bestagentkits/ak-render",
+  "repository": "https://github.com/bestagentkits/ak-render",
+  "license": "MIT",
+  "keywords": ["html", "report", "page-spec", "yaml", "offline", "mcp"],
+  "mcpServers": {
+    "ak-render": {
+      "command": "npx",
+      "args": ["-y", "@bestagentkits/render", "mcp"]
+    }
+  }
+}

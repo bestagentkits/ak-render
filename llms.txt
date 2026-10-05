@@ -1,0 +1,25 @@
+# AK Render
+
+> Declarative page compiler for coding agents: a short YAML or JSON Page Spec in, one deterministic, offline, self-contained HTML file out. The agent describes meaning; the compiler owns layout, colour, typography, motion, accessibility and security. npm package: `@bestagentkits/render`, CLI: `ak-render`.
+
+Agent loop: `ak-render catalog` once, `ak-render describe <type> --json` for each block you use, `ak-render validate <spec|-> --json` and fix every diagnostic by its JSON path, then `ak-render <spec|-> --out page.html`. Pass `-` to read the spec from stdin. `ak-render mcp` exposes the same loop as MCP tools over stdio (`catalog`, `describe`, `validate`, `render`, `themes`); `render` writes the file and returns only a summary.
+
+Do not write HTML, CSS or inline scripts: the spec has no field for them. Output makes no network request unless the spec opts in under `policy.network`.
+
+## Docs
+
+- [Agent guide](https://github.com/bestagentkits/ak-render/blob/main/docs/agent-guide.md): the loop, a minimal spec, MCP setup, and rules that save retries
+- [README](https://github.com/bestagentkits/ak-render/blob/main/README.md): install, library API and CLI
+- [Themes](https://github.com/bestagentkits/ak-render/blob/main/docs/themes.md): built-in presets, custom presets and embedded fonts
+- [Media and network policy](https://github.com/bestagentkits/ak-render/blob/main/docs/media-policy.md): what loads offline and how to opt in
+
+## Reference
+
+- [Page Spec JSON Schema](https://github.com/bestagentkits/ak-render/blob/main/schema/page-spec.v1.json): machine-readable schema for editors and validators
+- [Example specs](https://github.com/bestagentkits/ak-render/tree/main/fixtures/pages): plan, explain, recap, diff, dashboard, media, interactive and showcase pages
+
+## Optional
+
+- [Design system](https://github.com/bestagentkits/ak-render/blob/main/DESIGN.md): how the emitted pages look and why
+- [ADR 0001](https://github.com/bestagentkits/ak-render/blob/main/docs/adr/0001-page-spec-compiler-boundary.md): the compiler boundary
+- [Changelog](https://github.com/bestagentkits/ak-render/blob/main/CHANGELOG.md)

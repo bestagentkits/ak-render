@@ -1,0 +1,17 @@
+{
+  "name": "ak-render",
+  "description": "AK Render: compile a short YAML Page Spec into one polished, offline, self-contained HTML page.",
+  "owner": {
+    "name": "bestagentkits",
+    "url": "https://github.com/bestagentkits"
+  },
+  "plugins": [
+    {
+      "name": "ak-render",
+      "source": "./",
+      "description": "Skill and MCP server that turn plans, reports, recaps, diff reviews and dashboards into polished offline HTML pages from a YAML Page Spec.",
+      "category": "productivity",
+      "tags": ["html", "report", "page", "yaml", "offline"]
+    }
+  ]
+}

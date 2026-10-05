@@ -14,6 +14,7 @@ import { readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { isRenderError, type RenderError } from './errors.js';
+import { serveMcp } from './mcp-server.js';
 import { catalog, describe } from './registry/registry.js';
 import { compile } from './render/render.js';
 import { validate } from './spec/validate.js';
@@ -23,12 +24,23 @@ import { PACKAGE_NAME, VERSION } from './version.js';
 export interface CliIo {
   stdout: (text: string) => void;
   stderr: (text: string) => void;
+  /** Reads the whole of standard input; used when the spec path is `-`. */
+  stdin?: () => string;
 }
 
 const defaultIo: CliIo = {
   stdout: (text) => process.stdout.write(text),
   stderr: (text) => process.stderr.write(text),
+  stdin: () => readFileSync(0, 'utf8'),
 };
+
+/** The spec path that means "read the spec from standard input". */
+const STDIN_PATH = '-';
+
+/** Source label for diagnostics: `<stdin>` rather than a misleading `-`. */
+function sourceLabel(path: string): string {
+  return path === STDIN_PATH ? '<stdin>' : path;
+}
 
 interface Flags {
   json: boolean;
@@ -51,10 +63,14 @@ interface Command {
 
 function readSpecFile(path: string, io: CliIo): string | undefined {
   try {
+    if (path === STDIN_PATH) {
+      if (io.stdin === undefined) throw new Error('standard input is not available');
+      return io.stdin();
+    }
     return readFileSync(path, 'utf8');
   } catch (error) {
     io.stderr(
-      `ak-render: cannot read ${path}: ${error instanceof Error ? error.message : String(error)}\n`,
+      `ak-render: cannot read ${sourceLabel(path)}: ${error instanceof Error ? error.message : String(error)}\n`,
     );
     return undefined;
   }
@@ -81,7 +97,7 @@ function compileCommand(args: string[], io: CliIo, flags: Flags): number {
 
   try {
     const result = compile(text, {
-      source: file,
+      source: sourceLabel(file),
       themeCatalog: themeCatalogFor(flags, io),
       ...(flags.theme === undefined ? {} : { theme: flags.theme }),
     });
@@ -102,7 +118,7 @@ function compileCommand(args: string[], io: CliIo, flags: Flags): number {
       io.stdout(
         `${JSON.stringify(
           {
-            source: file,
+            source: sourceLabel(file),
             out: flags.out ?? null,
             bytes: result.bytes,
             hash: result.hash,
@@ -147,12 +163,12 @@ function compileCommand(args: string[], io: CliIo, flags: Flags): number {
 const COMMANDS: Record<string, Command> = {
   compile: {
     summary: 'Compile a Page Spec to a standalone HTML artifact.',
-    usage: 'ak-render <spec.yaml|spec.json> [--out <file.html>] [--theme <preset>] [--json]',
+    usage: 'ak-render <spec.yaml|spec.json|-> [--out <file.html>] [--theme <preset>] [--json]',
     run: compileCommand,
   },
   validate: {
     summary: 'Validate a Page Spec without rendering it.',
-    usage: 'ak-render validate <spec.yaml|spec.json> [--json]',
+    usage: 'ak-render validate <spec.yaml|spec.json|-> [--json]',
     run: (args, io, flags) => {
       const file = args[0];
       if (file === undefined) {
@@ -162,13 +178,13 @@ const COMMANDS: Record<string, Command> = {
       const text = readSpecFile(file, io);
       if (text === undefined) return 2;
 
-      const result = validate(text, { source: file });
+      const result = validate(text, { source: sourceLabel(file) });
       if (flags.json) {
         io.stdout(`${JSON.stringify(result, null, 2)}\n`);
       } else if (result.ok) {
         const { summary } = result;
         io.stdout(
-          `ok: ${file}\n  title: ${summary.title}\n  theme: ${summary.themePreset}\n  blocks: ${summary.blocks} (nodes: ${summary.nodes})\n  depth: ${summary.depth}, bytes: ${summary.bytes}\n`,
+          `ok: ${sourceLabel(file)}\n  title: ${summary.title}\n  theme: ${summary.themePreset}\n  blocks: ${summary.blocks} (nodes: ${summary.nodes})\n  depth: ${summary.depth}, bytes: ${summary.bytes}\n`,
         );
       } else {
         reportDiagnostics(io, result.diagnostics);
@@ -235,6 +251,15 @@ const COMMANDS: Record<string, Command> = {
       return 0;
     },
   },
+  mcp: {
+    summary: 'Serve catalog, describe, validate, render and themes as MCP tools over stdio.',
+    usage: 'ak-render mcp',
+    run: () => {
+      // The server keeps the process alive until its client closes stdin.
+      serveMcp();
+      return 0;
+    },
+  },
   themes: {
     summary: 'List available theme presets, including discovered project or user presets.',
     usage: 'ak-render themes [--theme-file <file>] [--no-theme-discovery] [--json]',
@@ -284,7 +309,8 @@ Commands:
 ${summaries}
 
 The first positional argument may be a spec path with the compile command
-implied. All commands accept --json and never prompt.
+implied. Pass - as the spec path to read the spec from standard input. All
+commands accept --json and never prompt.
 `;
 }
 
@@ -348,6 +374,14 @@ export function run(argv: readonly string[], io: CliIo = defaultIo): number {
   }
   if (first === '--version' || first === '-v' || first === 'version') {
     io.stdout(`${VERSION}\n`);
+    return 0;
+  }
+
+  // `ak-render <command> --help` prints that command's usage instead of
+  // treating the flag as a spec path.
+  const named = first === undefined ? undefined : COMMANDS[first];
+  if (named !== undefined && args.slice(1).some((arg) => arg === '--help' || arg === '-h')) {
+    io.stdout(`${named.summary}\n\nUsage:\n  ${named.usage}\n`);
     return 0;
   }
 

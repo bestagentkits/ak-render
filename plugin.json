@@ -1,0 +1,32 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "ak-render",
+  "version": "0.2.0",
+  "description": "Turn plans, reports, recaps, diff reviews, dashboards and explainers into one polished, offline, self-contained HTML page from a short YAML Page Spec, without hand-writing HTML.",
+  "author": {
+    "name": "bestagentkits",
+    "url": "https://github.com/bestagentkits"
+  },
+  "homepage": "https://github.com/bestagentkits/ak-render",
+  "repository": "https://github.com/bestagentkits/ak-render",
+  "license": "MIT",
+  "keywords": ["html", "report", "page-spec", "yaml", "offline", "mcp"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "AK Render",
+        "shortDescription": "HTML pages from a YAML spec",
+        "longDescription": "Write a short YAML Page Spec and compile it into one deterministic, self-contained HTML page that opens offline. Use it to present plans, reports, recaps, diff reviews, dashboards, explainers and comparisons without hand-writing HTML, CSS or JavaScript. Runs locally through npx; requires Node.js 20.11 or later.",
+        "developerName": "bestagentkits",
+        "category": "Developer Tools",
+        "capabilities": ["Compile Page Specs to HTML", "Validate Page Specs"],
+        "websiteURL": "https://github.com/bestagentkits/ak-render",
+        "defaultPrompt": [
+          "Render this plan as an HTML page with AK Render.",
+          "Turn the diff review into a polished offline report page.",
+          "Make a dashboard page from these metrics."
+        ]
+      }
+    }
+  }
+}
