@@ -290,7 +290,8 @@ capability is not done until a fixture exercises it.
 | `benchmarks/` | Reproducible measurement harnesses |
 | `docs/adr/` | Architecture decision records |
 | `docs/artifacts/` | Captured measurements and evidence |
-| `skills/`, `.claude-plugin/`, `.agents/plugins/` | Agent skill and plugin manifests |
+| `skills/`, `.claude-plugin/`, `.agents/plugins/`, `plugin.json`, `mcp.json` | Agent skill and plugin manifests |
+| `assets/` | Embedded font licences and the plugin icon (`icon.svg` is the source of `logo.png` and `composer-icon.png`) |
 | `site/` | Landing page spec, build script output and Cloudflare config |
 | `apps/cloud/` | Opt-in Cloudflare renderer (cloud milestone) |
 
