@@ -8,6 +8,11 @@
  *
  * All geometry is rounded to two decimals before it reaches the markup, because
  * floating-point noise would otherwise break byte-determinism across engines.
+ *
+ * Colour never appears here: shapes carry a series class (`ak-chart-s0` …
+ * `ak-chart-s5`) and the stylesheet maps each class onto the theme accent and
+ * hue rotations of it, so a chart always follows the active preset and colour
+ * scheme and no two series share a colour.
  */
 
 import { escapeAttribute, escapeText, renderAttributes } from './escape.js';
@@ -26,71 +31,128 @@ export interface ChartInput {
   description?: string;
 }
 
+interface Bounds {
+  min: number;
+  max: number;
+}
+
+interface Frame {
+  width: number;
+  height: number;
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
 const WIDTH = 640;
-const HEIGHT = 240;
-const PADDING = { top: 16, right: 16, bottom: 36, left: 44 };
+/** Number of distinct series colours the stylesheet defines. */
+const PALETTE_SIZE = 6;
+/** Bars wider than this read as slabs rather than marks. */
+const MAX_BAR_WIDTH = 56;
+const PROGRESS_ROW = 32;
+const PROGRESS_LABEL_WIDTH = 132;
+
+const CARTESIAN: Frame = { width: WIDTH, height: 260, top: 16, right: 36, bottom: 34, left: 52 };
+const RADIAL: Frame = { width: WIDTH, height: 240, top: 0, right: 0, bottom: 0, left: 0 };
+const SPARK: Frame = { width: WIDTH, height: 72, top: 10, right: 10, bottom: 10, left: 10 };
 
 function round(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
-function extent(series: ChartSeries[]): { min: number; max: number } {
-  const values = series.flatMap((entry) => entry.values);
-  if (values.length === 0) return { min: 0, max: 1 };
-  const min = Math.min(0, ...values);
-  const max = Math.max(...values);
-  return max === min ? { min, max: min + 1 } : { min, max };
+/** Group digits with a thin comma, deterministically and without locale data. */
+function formatNumber(value: number): string {
+  const rounded = round(value);
+  const [whole = '0', fraction] = String(Math.abs(rounded)).split('.');
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/gu, ',');
+  return `${rounded < 0 ? '-' : ''}${grouped}${fraction === undefined ? '' : `.${fraction}`}`;
 }
 
-function plotWidth(): number {
-  return WIDTH - PADDING.left - PADDING.right;
+function seriesClass(index: number): string {
+  return `ak-chart-s${index % PALETTE_SIZE}`;
 }
 
-function plotHeight(): number {
-  return HEIGHT - PADDING.top - PADDING.bottom;
+/** Round a span up to 1, 2, 2.5 or 5 times a power of ten, so ticks read cleanly. */
+function niceStep(span: number, count: number): number {
+  const raw = span / Math.max(count, 1);
+  const magnitude = 10 ** Math.floor(Math.log10(raw));
+  const normalized = raw / magnitude;
+  const factor = [1, 2, 2.5, 5].find((candidate) => normalized <= candidate) ?? 10;
+  return factor * magnitude;
 }
 
-function scaleY(value: number, bounds: { min: number; max: number }): number {
+/** Axis bounds that include zero and end on a clean tick. */
+function niceBounds(series: ChartSeries[]): Bounds & { step: number } {
+  const values = series.flatMap((entry) => entry.values).filter((value) => Number.isFinite(value));
+  const rawMin = Math.min(0, ...values);
+  const rawMax = Math.max(0, ...values);
+  if (rawMax === rawMin) return { min: rawMin, max: rawMin + 1, step: 0.25 };
+  const step = niceStep(rawMax - rawMin, 4);
+  return {
+    min: Math.floor(rawMin / step) * step,
+    max: Math.ceil(rawMax / step) * step,
+    step,
+  };
+}
+
+function plotWidth(frame: Frame): number {
+  return frame.width - frame.left - frame.right;
+}
+
+function plotHeight(frame: Frame): number {
+  return frame.height - frame.top - frame.bottom;
+}
+
+function scaleY(value: number, bounds: Bounds, frame: Frame): number {
   const ratio = (value - bounds.min) / (bounds.max - bounds.min);
-  return round(PADDING.top + plotHeight() * (1 - ratio));
+  return round(frame.top + plotHeight(frame) * (1 - ratio));
 }
 
-function scaleX(index: number, count: number): number {
-  if (count <= 1) return round(PADDING.left + plotWidth() / 2);
-  return round(PADDING.left + (plotWidth() * index) / (count - 1));
+/** Point charts span the plot edge to edge. */
+function pointX(index: number, count: number, frame: Frame): number {
+  if (count <= 1) return round(frame.left + plotWidth(frame) / 2);
+  return round(frame.left + (plotWidth(frame) * index) / (count - 1));
 }
 
-function axisLabels(labels: string[], bounds: { min: number; max: number }): string {
+/** Bar groups sit in equal bands, labelled at the band centre. */
+function bandCentre(index: number, count: number, frame: Frame): number {
+  const band = plotWidth(frame) / Math.max(count, 1);
+  return round(frame.left + band * index + band / 2);
+}
+
+function gridAndTicks(bounds: Bounds & { step: number }, frame: Frame): string {
   const parts: string[] = [];
-  const step = Math.max(1, Math.ceil(labels.length / 8));
-  for (let index = 0; index < labels.length; index += step) {
-    const x = scaleX(index, labels.length);
+  const steps = Math.round((bounds.max - bounds.min) / bounds.step);
+  for (let index = 0; index <= steps; index += 1) {
+    const value = round(bounds.min + bounds.step * index);
+    const y = scaleY(value, bounds, frame);
     parts.push(
-      `<text class="ak-chart-label" x="${x}" y="${HEIGHT - PADDING.bottom + 16}" text-anchor="middle">${escapeText(
-        labels[index] ?? '',
+      `<line class="${value === 0 ? 'ak-chart-axis' : 'ak-chart-grid'}" x1="${frame.left}" y1="${y}" x2="${
+        frame.width - frame.right
+      }" y2="${y}"/>`,
+    );
+    parts.push(
+      `<text class="ak-chart-label" x="${frame.left - 8}" y="${round(y + 4)}" text-anchor="end">${escapeText(
+        formatNumber(value),
       )}</text>`,
     );
   }
-  parts.push(
-    `<line class="ak-chart-axis" x1="${PADDING.left}" y1="${PADDING.top}" x2="${PADDING.left}" y2="${
-      HEIGHT - PADDING.bottom
-    }"/>`,
-  );
-  parts.push(
-    `<line class="ak-chart-axis" x1="${PADDING.left}" y1="${
-      HEIGHT - PADDING.bottom
-    }" x2="${WIDTH - PADDING.right}" y2="${HEIGHT - PADDING.bottom}"/>`,
-  );
-  parts.push(
-    `<text class="ak-chart-label" x="${PADDING.left - 6}" y="${scaleY(bounds.max, bounds) + 3}" text-anchor="end">${escapeText(
-      String(round(bounds.max)),
-    )}</text>`,
-  );
-  if (bounds.min < 0) {
+  return parts.join('');
+}
+
+function categoryLabels(
+  labels: string[],
+  position: (index: number) => number,
+  frame: Frame,
+): string {
+  const parts: string[] = [];
+  const step = Math.max(1, Math.ceil(labels.length / 8));
+  for (let index = 0; index < labels.length; index += step) {
     parts.push(
-      `<text class="ak-chart-label" x="${PADDING.left - 6}" y="${
-        scaleY(bounds.min, bounds) + 3
-      }" text-anchor="end">${escapeText(String(round(bounds.min)))}</text>`,
+      `<text class="ak-chart-label" x="${position(index)}" y="${frame.height - frame.bottom + 20}" text-anchor="middle">${escapeText(
+        labels[index] ?? '',
+      )}</text>`,
     );
   }
   return parts.join('');
@@ -100,73 +162,118 @@ function pointTitle(label: string, series: ChartSeries, index: number): string {
   return `${label}: ${series.label} ${series.values[index] ?? 0}`;
 }
 
-function barChart(input: ChartInput, bounds: { min: number; max: number }): string {
-  const groups = input.labels.length;
+function barChart(input: ChartInput): string {
+  const frame = CARTESIAN;
+  const bounds = niceBounds(input.series);
+  const groups = Math.max(input.labels.length, 1);
   const seriesCount = Math.max(input.series.length, 1);
-  const groupWidth = plotWidth() / Math.max(groups, 1);
-  const barWidth = round(Math.max(2, (groupWidth - 8) / seriesCount));
+  const band = plotWidth(frame) / groups;
+  const gap = Math.min(4, band * 0.04);
+  const barWidth = round(
+    Math.max(2, Math.min(MAX_BAR_WIDTH, (band * 0.72 - gap * (seriesCount - 1)) / seriesCount)),
+  );
+  const groupWidth = barWidth * seriesCount + gap * (seriesCount - 1);
+  const zeroY = scaleY(Math.max(bounds.min, 0), bounds, frame);
   const parts: string[] = [];
-  const zeroY = scaleY(Math.max(bounds.min, 0), bounds);
 
   input.series.forEach((series, seriesIndex) => {
     input.labels.forEach((label, index) => {
       const value = series.values[index] ?? 0;
-      const x = round(PADDING.left + groupWidth * index + 4 + seriesIndex * barWidth);
-      const y = scaleY(value, bounds);
+      const x = round(
+        bandCentre(index, groups, frame) - groupWidth / 2 + seriesIndex * (barWidth + gap),
+      );
+      const y = scaleY(value, bounds, frame);
       const height = round(Math.abs(zeroY - y));
       const top = Math.min(y, zeroY);
       parts.push(
-        `<rect class="ak-chart-bar${
-          seriesIndex % 2 === 1 ? ' ak-chart-bar--alt' : ''
-        }" tabindex="0" x="${x}" y="${top}" width="${barWidth}" height="${height}"><title>${escapeText(
-          pointTitle(label, series, index),
-        )}</title></rect>`,
+        `<rect class="ak-chart-bar ${seriesClass(seriesIndex)}" tabindex="0" x="${x}" y="${top}" width="${barWidth}" height="${height}" rx="${round(
+          Math.min(3, barWidth / 4),
+        )}"><title>${escapeText(pointTitle(label, series, index))}</title></rect>`,
       );
     });
   });
 
-  return `${axisLabels(input.labels, bounds)}${parts.join('')}`;
+  return `${gridAndTicks(bounds, frame)}${categoryLabels(
+    input.labels,
+    (index) => bandCentre(index, groups, frame),
+    frame,
+  )}${parts.join('')}`;
 }
 
-function linePath(series: ChartSeries, bounds: { min: number; max: number }): string {
-  return series.values
+function linePath(values: number[], bounds: Bounds, frame: Frame): string {
+  return values
     .map(
       (value, index) =>
-        `${index === 0 ? 'M' : 'L'}${scaleX(index, series.values.length)},${scaleY(value, bounds)}`,
+        `${index === 0 ? 'M' : 'L'}${pointX(index, values.length, frame)},${scaleY(value, bounds, frame)}`,
     )
     .join(' ');
 }
 
-function lineChart(input: ChartInput, bounds: { min: number; max: number }, area: boolean): string {
+function lineChart(input: ChartInput, area: boolean): string {
+  const frame = CARTESIAN;
+  const bounds = niceBounds(input.series);
   const parts: string[] = [];
-  input.series.forEach((series) => {
-    const path = linePath(series, bounds);
+  const baseY = scaleY(Math.max(bounds.min, 0), bounds, frame);
+  input.series.forEach((series, seriesIndex) => {
+    const colour = seriesClass(seriesIndex);
+    const path = linePath(series.values, bounds, frame);
     if (area) {
-      const baseY = scaleY(Math.max(bounds.min, 0), bounds);
       parts.push(
-        `<path class="ak-chart-area" d="${path} L${scaleX(series.values.length - 1, series.values.length)},${baseY} L${PADDING.left},${baseY} Z"/>`,
+        `<path class="ak-chart-area ${colour}" d="${path} L${pointX(series.values.length - 1, series.values.length, frame)},${baseY} L${pointX(
+          0,
+          series.values.length,
+          frame,
+        )},${baseY} Z"/>`,
       );
     }
-    parts.push(`<path class="ak-chart-line" d="${path}"/>`);
+    parts.push(`<path class="ak-chart-line ${colour}" d="${path}"/>`);
     series.values.forEach((value, index) => {
       const label = input.labels[Math.min(index, input.labels.length - 1)] ?? '';
       parts.push(
-        `<circle class="ak-chart-bar" tabindex="0" cx="${scaleX(index, series.values.length)}" cy="${scaleY(
+        `<circle class="ak-chart-point ${colour}" tabindex="0" cx="${pointX(index, series.values.length, frame)}" cy="${scaleY(
           value,
           bounds,
-        )}" r="3"><title>${escapeText(pointTitle(label, series, index))}</title></circle>`,
+          frame,
+        )}" r="3.5"><title>${escapeText(pointTitle(label, series, index))}</title></circle>`,
       );
     });
   });
-  const axis = area ? '' : axisLabels(input.labels, bounds);
-  return `${axis}${parts.join('')}`;
+  const count = Math.max(
+    ...input.series.map((series) => series.values.length),
+    input.labels.length,
+    1,
+  );
+  return `${gridAndTicks(bounds, frame)}${categoryLabels(
+    input.labels,
+    (index) => pointX(index, count, frame),
+    frame,
+  )}${parts.join('')}`;
 }
 
-function sparkline(input: ChartInput, bounds: { min: number; max: number }): string {
+/** A sparkline is a trend glyph, so it scales to its own data range, not to zero. */
+function sparkline(input: ChartInput): string {
+  const frame = SPARK;
+  const values = input.series.flatMap((series) => series.values);
+  const low = values.length === 0 ? 0 : Math.min(...values);
+  const high = values.length === 0 ? 1 : Math.max(...values);
+  const bounds = high === low ? { min: low - 1, max: high + 1 } : { min: low, max: high };
   const parts: string[] = [];
-  for (const series of input.series) {
-    parts.push(`<path class="ak-chart-line" d="${linePath(series, bounds)}"/>`);
-  }
+  input.series.forEach((series, seriesIndex) => {
+    const colour = seriesClass(seriesIndex);
+    parts.push(
+      `<path class="ak-chart-line ${colour}" d="${linePath(series.values, bounds, frame)}"/>`,
+    );
+    const last = series.values.length - 1;
+    if (last >= 0) {
+      parts.push(
+        `<circle class="ak-chart-point ${colour}" cx="${pointX(last, series.values.length, frame)}" cy="${scaleY(
+          series.values[last] ?? 0,
+          bounds,
+          frame,
+        )}" r="3.5"/>`,
+      );
+    }
+  });
   return parts.join('');
 }
 
@@ -174,16 +281,18 @@ function radialChart(input: ChartInput, donut: boolean): string {
   const series = input.series[0];
   if (series === undefined) return '';
   const values = input.labels.map((_, index) => Math.max(series.values[index] ?? 0, 0));
-  const total = values.reduce((sum, value) => sum + value, 0) || 1;
-  const centreX = WIDTH / 2;
-  const centreY = HEIGHT / 2;
-  const radius = 84;
-  const inner = donut ? 46 : 0;
+  const sum = values.reduce((total, value) => total + value, 0);
+  const total = sum || 1;
+  const centreX = RADIAL.width / 2;
+  const centreY = RADIAL.height / 2;
+  const radius = 104;
+  const inner = donut ? 64 : 0;
   const parts: string[] = [];
   let angle = -Math.PI / 2;
 
   values.forEach((value, index) => {
-    const sweep = (value / total) * Math.PI * 2;
+    // A single full slice cannot be drawn as one arc, so cap it just short.
+    const sweep = Math.min((value / total) * Math.PI * 2, Math.PI * 2 - 0.0001);
     const start = angle;
     const end = angle + sweep;
     angle = end;
@@ -194,47 +303,87 @@ function radialChart(input: ChartInput, donut: boolean): string {
     const y2 = round(centreY + radius * Math.sin(end));
     const label = input.labels[index] ?? '';
     const title = `<title>${escapeText(`${label}: ${value} (${round((value / total) * 100)}%)`)}</title>`;
+    const colour = `ak-chart-slice ${seriesClass(index)}`;
     if (inner > 0) {
       const ix1 = round(centreX + inner * Math.cos(start));
       const iy1 = round(centreY + inner * Math.sin(start));
       const ix2 = round(centreX + inner * Math.cos(end));
       const iy2 = round(centreY + inner * Math.sin(end));
       parts.push(
-        `<path class="ak-chart-bar${index % 2 === 1 ? ' ak-chart-bar--alt' : ''}" tabindex="0" d="M${x1},${y1} A${radius},${radius} 0 ${large} 1 ${x2},${y2} L${ix2},${iy2} A${inner},${inner} 0 ${large} 0 ${ix1},${iy1} Z">${title}</path>`,
+        `<path class="${colour}" tabindex="0" d="M${x1},${y1} A${radius},${radius} 0 ${large} 1 ${x2},${y2} L${ix2},${iy2} A${inner},${inner} 0 ${large} 0 ${ix1},${iy1} Z">${title}</path>`,
       );
     } else {
       parts.push(
-        `<path class="ak-chart-bar${index % 2 === 1 ? ' ak-chart-bar--alt' : ''}" tabindex="0" d="M${centreX},${centreY} L${x1},${y1} A${radius},${radius} 0 ${large} 1 ${x2},${y2} Z">${title}</path>`,
+        `<path class="${colour}" tabindex="0" d="M${centreX},${centreY} L${x1},${y1} A${radius},${radius} 0 ${large} 1 ${x2},${y2} Z">${title}</path>`,
       );
     }
   });
+  if (donut) {
+    parts.push(
+      `<text class="ak-chart-total" x="${centreX}" y="${centreY - 2}" text-anchor="middle">${escapeText(
+        formatNumber(sum),
+      )}</text><text class="ak-chart-label" x="${centreX}" y="${centreY + 16}" text-anchor="middle">${escapeText(
+        series.label,
+      )}</text>`,
+    );
+  }
   return parts.join('');
+}
+
+function progressFrame(rows: number): Frame {
+  return {
+    width: WIDTH,
+    height: Math.max(rows, 1) * PROGRESS_ROW,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  };
 }
 
 function progressChart(input: ChartInput): string {
   const series = input.series[0];
   if (series === undefined) return '';
   const max = Math.max(1, ...series.values);
-  const rowHeight = 26;
-  const barWidth = plotWidth();
+  const trackStart = PROGRESS_LABEL_WIDTH;
+  const trackWidth = WIDTH - trackStart - 56;
   const parts: string[] = [];
   input.labels.forEach((label, index) => {
     const value = series.values[index] ?? 0;
-    const y = PADDING.top + index * rowHeight;
-    if (y > HEIGHT - PADDING.bottom) return;
+    const centre = index * PROGRESS_ROW + PROGRESS_ROW / 2;
+    const filled = round((trackWidth * Math.max(0, Math.min(value, max))) / max);
     parts.push(
-      `<text class="ak-chart-label" x="0" y="${y + 12}" text-anchor="start">${escapeText(label)}</text>`,
+      `<text class="ak-chart-label ak-chart-label--row" x="0" y="${centre + 4}" text-anchor="start">${escapeText(label)}</text>`,
     );
     parts.push(
-      `<rect x="${PADDING.left}" y="${y + 4}" width="${barWidth}" height="10" fill="var(--ak-color-surface-raised)"/>`,
+      `<rect class="ak-chart-track" x="${trackStart}" y="${centre - 5}" width="${trackWidth}" height="10" rx="5"/>`,
     );
     parts.push(
-      `<rect class="ak-chart-bar" tabindex="0" x="${PADDING.left}" y="${y + 4}" width="${round(
-        (barWidth * Math.max(0, Math.min(value, max))) / max,
-      )}" height="10"><title>${escapeText(`${label}: ${value}`)}</title></rect>`,
+      `<rect class="ak-chart-bar ${seriesClass(0)}" tabindex="0" x="${trackStart}" y="${centre - 5}" width="${filled}" height="10" rx="5"><title>${escapeText(
+        `${label}: ${value}`,
+      )}</title></rect>`,
+    );
+    parts.push(
+      `<text class="ak-chart-label" x="${WIDTH}" y="${centre + 4}" text-anchor="end">${escapeText(
+        formatNumber(value),
+      )}</text>`,
     );
   });
   return parts.join('');
+}
+
+/** A legend whenever colour alone would otherwise have to carry meaning. */
+function legend(input: ChartInput): string {
+  const radial = input.kind === 'pie' || input.kind === 'donut';
+  const entries = radial ? input.labels : input.series.map((series) => series.label);
+  if (input.kind === 'progress' || input.kind === 'sparkline') return '';
+  if (!radial && entries.length < 2) return '';
+  return `<ul class="ak-chart-legend" aria-hidden="true">${entries
+    .map(
+      (entry, index) =>
+        `<li><span class="ak-chart-swatch ${seriesClass(index)}"></span>${escapeText(entry)}</li>`,
+    )
+    .join('')}</ul>`;
 }
 
 function dataTable(input: ChartInput): string {
@@ -263,36 +412,30 @@ function textSummary(input: ChartInput): string {
   return lines.join('. ');
 }
 
-/** Render one chart block as a figure containing SVG, a summary, and a table. */
-export function renderChart(input: ChartInput): string {
-  const bounds = extent(input.series);
-  let body: string;
+function chartBody(input: ChartInput): { body: string; frame: Frame } {
   switch (input.kind) {
     case 'bar':
-      body = barChart(input, bounds);
-      break;
+      return { body: barChart(input), frame: CARTESIAN };
     case 'line':
-      body = lineChart(input, bounds, false);
-      break;
+      return { body: lineChart(input, false), frame: CARTESIAN };
     case 'area':
-      body = lineChart(input, bounds, true);
-      break;
+      return { body: lineChart(input, true), frame: CARTESIAN };
     case 'pie':
-      body = radialChart(input, false);
-      break;
+      return { body: radialChart(input, false), frame: RADIAL };
     case 'donut':
-      body = radialChart(input, true);
-      break;
+      return { body: radialChart(input, true), frame: RADIAL };
     case 'sparkline':
-      body = sparkline(input, bounds);
-      break;
+      return { body: sparkline(input), frame: SPARK };
     case 'progress':
-      body = progressChart(input);
-      break;
+      return { body: progressChart(input), frame: progressFrame(input.labels.length) };
     default:
-      body = '';
+      return { body: '', frame: CARTESIAN };
   }
+}
 
+/** Render one chart block as a figure containing SVG, a summary, and a table. */
+export function renderChart(input: ChartInput): string {
+  const { body, frame } = chartBody(input);
   const summary = textSummary(input);
   const ariaLabel = input.title === undefined ? summary : `${input.title}. ${summary}`;
   const caption =
@@ -301,10 +444,11 @@ export function renderChart(input: ChartInput): string {
   return [
     `<figure class="ak-chart"${renderAttributes({ 'data-ak-kind': input.kind })}>`,
     caption,
-    `<svg viewBox="0 0 ${WIDTH} ${HEIGHT}" role="img"${renderAttributes({
+    `<svg viewBox="0 0 ${frame.width} ${frame.height}" role="img"${renderAttributes({
       'aria-label': ariaLabel,
       'data-ak-chart': input.id,
     })}><title>${escapeText(input.title ?? 'Chart')}</title>${body}</svg>`,
+    legend(input),
     `<p class="ak-sr">${escapeText(summary)}</p>`,
     `<details class="ak-details"><summary>Chart data table</summary>${dataTable(input)}</details>`,
     '</figure>',

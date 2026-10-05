@@ -31,7 +31,7 @@ describe('SVG charts', () => {
 
       it('renders deterministic SVG inside a figure', () => {
         expect(html).toContain('class="ak-chart"');
-        expect(html).toMatch(/<svg viewBox="0 0 640 240"/u);
+        expect(html).toMatch(/<svg viewBox="0 0 640 \d+"/u);
         expect(compile(chartSpec(kind)).html).toBe(html);
       });
 
@@ -51,7 +51,7 @@ describe('SVG charts', () => {
         if (kind === 'sparkline') {
           // A sparkline is a trend glyph: it carries the summary and the table
           // rather than per-point elements.
-          expect(html).toContain('class="ak-chart-line"');
+          expect(html).toMatch(/class="ak-chart-line ak-chart-s0"/u);
           return;
         }
         expect(html).toMatch(/tabindex="0"/u);
@@ -97,5 +97,37 @@ blocks:
 `);
     expect(html).toContain('role="progressbar"'.replace('role="progressbar"', '<progress'));
     expect(html).toContain('70 / 100');
+  });
+});
+
+describe('SVG chart polish', () => {
+  it('colours series through palette classes and adds a legend for multiple series', () => {
+    const { html } = compile(chartSpec('bar'));
+    expect(html).toContain('ak-chart-bar ak-chart-s0');
+    expect(html).toContain('ak-chart-bar ak-chart-s1');
+    expect(html).toContain('<ul class="ak-chart-legend" aria-hidden="true">');
+  });
+
+  it('labels every slice of a donut in the legend and shows the total', () => {
+    const { html } = compile(chartSpec('donut'));
+    expect(html).toMatch(/ak-chart-swatch ak-chart-s2"><\/span>Target/u);
+    expect(html).toContain('class="ak-chart-total"');
+  });
+
+  it('sizes a progress chart to its rows so no label is clipped', () => {
+    const { html } = compile(chartSpec('progress'));
+    expect(html).toMatch(/<svg viewBox="0 0 640 96"/u);
+    expect(html).toContain('>AK Render</text>');
+  });
+
+  it('keeps a sparkline compact', () => {
+    const { html } = compile(chartSpec('sparkline'));
+    expect(html).toMatch(/<svg viewBox="0 0 640 72"/u);
+  });
+
+  it('draws gridlines on clean tick values', () => {
+    const { html } = compile(chartSpec('line'));
+    expect(html).toContain('class="ak-chart-grid"');
+    expect(html).toContain('>20,000</text>');
   });
 });

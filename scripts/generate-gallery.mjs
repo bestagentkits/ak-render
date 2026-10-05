@@ -95,23 +95,31 @@ const indexSpec = {
         { label: 'Network', value: 'denied' },
       ],
     },
+    // One card per artifact: what it is, what it costs, and a link to open it,
+    // so the gallery is navigable without a script.
     {
-      type: 'table',
-      title: 'Fixtures',
-      columns: ['Title', 'Nodes', 'Bytes'],
-      rows: entries.map((entry) => [entry.title, String(entry.nodes), String(entry.bytes)]),
+      type: 'section',
+      title: 'Open an artifact',
+      blocks: [
+        {
+          type: 'grid',
+          columns: 3,
+          blocks: entries.map((entry) => ({
+            type: 'card',
+            title: entry.title,
+            text: entry.description === '' ? entry.file : entry.description,
+            blocks: [
+              {
+                type: 'text',
+                variant: 'caption',
+                text: `${entry.nodes} nodes · ${(entry.bytes / 1024).toFixed(1)} kB`,
+              },
+              { type: 'link', label: `Open ${entry.file}`, href: entry.file },
+            ],
+          })),
+        },
+      ],
     },
-    {
-      type: 'list',
-      title: 'Open a page',
-      items: entries.map((entry) => ({ text: entry.file, badge: `${entry.bytes} B` })),
-    },
-    // One link per artifact, so the gallery is navigable without a script.
-    ...entries.map((entry) => ({
-      type: 'link',
-      label: `${entry.title} (${entry.file})`,
-      href: entry.file,
-    })),
     {
       type: 'list',
       title: 'What each artifact proves',

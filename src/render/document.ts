@@ -91,10 +91,20 @@ export function assembleDocument(input: DocumentInput): AssembledDocument {
   const themeToggle = input.themeToggle
     ? `<div class="ak-page-bar"><button type="button" class="ak-btn ak-theme-toggle" data-ak-theme-toggle aria-pressed="false" aria-label="Toggle dark theme">Dark</button></div>`
     : '';
+  // Share metadata comes only from the spec's own meta, so it stays
+  // deterministic and never invents a URL the artifact does not have.
   const description =
     meta.description === undefined
       ? ''
-      : `<meta name="description" content="${escapeAttribute(meta.description)}" />`;
+      : [
+          `<meta name="description" content="${escapeAttribute(meta.description)}" />`,
+          `<meta property="og:description" content="${escapeAttribute(meta.description)}" />`,
+        ].join('\n');
+  const share = [
+    `<meta property="og:title" content="${escapeAttribute(meta.title)}" />`,
+    '<meta property="og:type" content="article" />',
+    '<meta name="twitter:card" content="summary" />',
+  ].join('\n');
 
   const html = [
     '<!DOCTYPE html>',
@@ -107,6 +117,7 @@ export function assembleDocument(input: DocumentInput): AssembledDocument {
     `<meta http-equiv="Content-Security-Policy" content="${escapeAttribute(csp)}" />`,
     `<title>${escapeText(meta.title)}</title>`,
     description,
+    share,
     `<style nonce="${escapeAttribute(styleNonce)}">${input.css}</style>`,
     '</head>',
     '<body>',
