@@ -24,6 +24,7 @@ describe('fixture corpus', () => {
       'media.yaml',
       'plan.yaml',
       'recap.yaml',
+      'showcase.yaml',
       'theme-showcase.yaml',
     ]);
   });

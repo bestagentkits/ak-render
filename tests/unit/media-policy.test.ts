@@ -106,7 +106,8 @@ describe('media policy: provider allowlist', () => {
         provider: 'youtube',
       }),
     );
-    expect(result.html).toContain('denies network access');
+    // The note names the real reason: the host, not the network as a whole.
+    expect(result.html).toContain('not on the page’s provider allowlist');
     expect(result.html).not.toContain('<video');
   });
 
@@ -114,7 +115,7 @@ describe('media policy: provider allowlist', () => {
     // A direct CDN file is no longer allowed once the page declares providers.
     const result = compile(videoSpec(REMOTE_VIDEO, { policy: withProvider('      - youtube\n') }));
     expect(result.html).not.toContain('<video');
-    expect(result.html).toContain('denies network access');
+    expect(result.html).toContain('not on the page’s provider allowlist');
   });
 
   it('allows a direct CDN file when no provider list is declared', () => {

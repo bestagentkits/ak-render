@@ -42,7 +42,7 @@ describe('theme presets', () => {
 
   it('emits token values as CSS custom properties', () => {
     const { html } = compile(SPEC, { theme: 'blueprint' });
-    expect(html).toContain('--ak-color-background:#f0f4f8');
+    expect(html).toContain('--ak-color-background:#f4f2ed');
     expect(html).toContain('--ak-font-mono:ui-monospace');
     expect(html).toContain('--ak-density'.replace('--ak-density', '--ak-motion-duration'));
   });
@@ -88,6 +88,26 @@ blocks:
     expect(result.html).toContain('--ak-color-accent:#2f8f5b');
   });
 
+  it('applies a non-colour token override to the dark scheme too', () => {
+    const spec = `version: 1
+meta:
+  title: Font override
+theme:
+  preset: team-font
+  extends: blueprint
+  tokens:
+    font-heading: ui-serif, serif
+    color-accent: "#2f8f5b"
+blocks:
+  - type: text
+    text: hello
+`;
+    const result = compile(spec);
+    expect(result.theme.dark['font-heading']).toBe('ui-serif, serif');
+    // Colours stay per scheme: the dark accent is still the preset's own.
+    expect(result.theme.dark['color-accent']).not.toBe('#2f8f5b');
+  });
+
   it('rejects an unknown preset instead of silently falling back', () => {
     try {
       loadTheme({ preset: 'no-such-preset' });
@@ -129,6 +149,23 @@ blocks:
     }
   });
 
+  it('reports a non-object tokens or dark value as a render error, not a TypeError', () => {
+    for (const input of [
+      { tokens: { 'font-body': 'Georgia, serif' }, dark: 5 },
+      { dark: 'x' },
+      { tokens: true },
+      { tokens: ['font-body'] },
+    ]) {
+      let caught: unknown;
+      try {
+        loadTheme({ preset: 'editorial', ...input });
+      } catch (error) {
+        caught = error;
+      }
+      expect(isRenderError(caught), JSON.stringify(input)).toBe(true);
+    }
+  });
+
   it('accepts a safe font stack and rejects one with an escape', () => {
     expect(validateTokenValue('font-body', 'Georgia, "Times New Roman", serif')).toBeUndefined();
     expect(validateTokenValue('font-body', 'Inter} body{display:none')).toBeDefined();
@@ -148,6 +185,19 @@ blocks:
     const theme = loadTheme({ preset: 'editorial', tokens: { 'motion-policy': 'none' } });
     expect(theme.motionPolicy).toBe('none');
     expect(theme.css).toContain('--ak-motion-duration:0ms');
+  });
+
+  it('gates every animation off when the theme disables motion', () => {
+    const still = compile(SPEC, {
+      theme: { preset: 'editorial', tokens: { 'motion-policy': 'none' } },
+    });
+    expect(still.html).toContain('data-motion="none"');
+    expect(still.html).not.toMatch(
+      /\(prefers-reduced-motion:no-preference\)(?! and \(prefers-reduced-motion:reduce\))/u,
+    );
+    const moving = compile(SPEC, { theme: 'editorial' });
+    expect(moving.html).not.toContain('data-motion=');
+    expect(moving.html).toContain('(prefers-reduced-motion:no-preference){');
   });
 
   it('reports every token problem at once', () => {

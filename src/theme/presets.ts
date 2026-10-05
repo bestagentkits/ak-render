@@ -5,9 +5,10 @@
  * references owned in prose (see `docs/adr/0001-page-spec-compiler-boundary.md`
  * and `html-design-guidelines.md`), now as validated token data.
  *
- * Fonts are system stacks only: the offline contract forbids a network fetch, so
- * nothing here can reference a webfont, and therefore nothing here needs a font
- * licence.
+ * Each preset leads its display stack with one bundled SIL OFL face (see
+ * `src/render/font-faces.ts`), which the compiler inlines as `data:` so the
+ * offline contract holds. A system stack always follows as the fallback, and a
+ * custom stack that names no bundled face embeds nothing.
  */
 
 import type { Tokens } from './tokens.js';
@@ -41,6 +42,9 @@ const STRUCTURAL: Tokens = {
 const SYSTEM_SANS = 'ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif';
 const SYSTEM_SERIF = 'ui-serif, Georgia, Times New Roman, serif';
 const SYSTEM_MONO = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+
+/** A bundled face in front of its system fallback. */
+const face = (family: string, fallback: string): string => `AK ${family}, ${fallback}`;
 
 interface PresetInput {
   name: string;
@@ -76,19 +80,20 @@ function preset(input: PresetInput): PresetDefinition {
 export const PRESETS: Readonly<Record<string, PresetDefinition>> = {
   blueprint: preset({
     name: 'blueprint',
-    description: 'Technical drawing: cool slate surfaces, precise borders, monospace labels.',
-    typing: { 'font-heading': SYSTEM_SANS, 'font-mono': SYSTEM_MONO },
+    description:
+      'Technical drawing: warm drafting paper, cobalt ink, precise borders, monospace labels.',
+    typing: { 'font-heading': face('Geist', SYSTEM_SANS), 'font-body': face('Geist', SYSTEM_SANS) },
     colors: {
       light: {
-        'color-background': '#f0f4f8',
-        'color-surface': '#ffffff',
-        'color-surface-raised': '#e8eef4',
-        'color-border': '#c2d2e2',
-        'color-text': '#122334',
-        'color-text-muted': '#4b6480',
-        'color-accent': '#1a5fa8',
+        'color-background': '#f4f2ed',
+        'color-surface': '#fffefb',
+        'color-surface-raised': '#ebe8e0',
+        'color-border': '#d6d1c4',
+        'color-text': '#0f1724',
+        'color-text-muted': '#4f5a6b',
+        'color-accent': '#1d4fd7',
         'color-accent-contrast': '#ffffff',
-        'color-info': '#1a5fa8',
+        'color-info': '#1d4fd7',
         'color-success': '#1d6f4a',
         'color-warning': '#8a5a00',
         'color-danger': '#a32a1f',
@@ -113,7 +118,11 @@ export const PRESETS: Readonly<Record<string, PresetDefinition>> = {
   editorial: preset({
     name: 'editorial',
     description: 'Serif headlines, generous whitespace, deep navy with gold accents.',
-    typing: { 'font-heading': SYSTEM_SERIF, 'font-body': SYSTEM_SERIF, 'line-height': '1.7' },
+    typing: {
+      'font-heading': face('Fraunces', SYSTEM_SERIF),
+      'font-body': SYSTEM_SERIF,
+      'line-height': '1.7',
+    },
     structure: { 'font-size-base': '17px', 'font-scale': '1.333', measure: '68ch' },
     colors: {
       light: {
@@ -150,7 +159,7 @@ export const PRESETS: Readonly<Record<string, PresetDefinition>> = {
   'paper-ink': preset({
     name: 'paper-ink',
     description: 'Warm cream paper with terracotta and sage; informal and readable.',
-    typing: { 'font-heading': SYSTEM_SANS, 'font-body': SYSTEM_SANS },
+    typing: { 'font-heading': face('Bricolage Grotesque', SYSTEM_SANS), 'font-body': SYSTEM_SANS },
     colors: {
       light: {
         'color-background': '#faf6f0',
@@ -186,7 +195,11 @@ export const PRESETS: Readonly<Record<string, PresetDefinition>> = {
   'terminal-mono': preset({
     name: 'terminal-mono',
     description: 'Near-black terminal with green and amber, monospace throughout.',
-    typing: { 'font-heading': SYSTEM_MONO, 'font-body': SYSTEM_MONO },
+    typing: {
+      'font-heading': face('JetBrains Mono', SYSTEM_MONO),
+      'font-body': face('JetBrains Mono', SYSTEM_MONO),
+      'font-mono': face('JetBrains Mono', SYSTEM_MONO),
+    },
     structure: {
       'radius-small': '2px',
       'radius-medium': '3px',
@@ -228,7 +241,10 @@ export const PRESETS: Readonly<Record<string, PresetDefinition>> = {
   'swiss-clean': preset({
     name: 'swiss-clean',
     description: 'Neutral high-contrast grid: one red accent, no decoration.',
-    typing: { 'font-heading': SYSTEM_SANS, 'font-body': SYSTEM_SANS },
+    typing: {
+      'font-heading': face('Inter Tight', SYSTEM_SANS),
+      'font-body': face('Inter Tight', SYSTEM_SANS),
+    },
     structure: {
       'radius-small': '0px',
       'radius-medium': '0px',
@@ -273,7 +289,10 @@ export const PRESETS: Readonly<Record<string, PresetDefinition>> = {
   'warm-signal': preset({
     name: 'warm-signal',
     description: 'Warm neutral surfaces signalling with amber and emerald, data-friendly.',
-    typing: { 'font-heading': SYSTEM_SANS, 'font-body': SYSTEM_SANS },
+    typing: {
+      'font-heading': face('Plus Jakarta Sans', SYSTEM_SANS),
+      'font-body': face('Plus Jakarta Sans', SYSTEM_SANS),
+    },
     structure: { density: 'spacious', 'radius-medium': '12px', 'radius-large': '20px' },
     colors: {
       light: {

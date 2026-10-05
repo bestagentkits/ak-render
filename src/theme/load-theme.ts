@@ -7,8 +7,8 @@
  * token values — which is what makes "themes are typed data, never CSS" a
  * property of the implementation rather than a promise.
  *
- * Nonces and font policy are deliberately absent: nothing here can reference a
- * remote font, so the emitted artifact never needs a webfont licence.
+ * Nonces and font policy are deliberately absent: a font stack is names only,
+ * and the renderer alone decides whether a named bundled face is inlined.
  */
 
 import { type Diagnostic, DiagnosticBag } from '../diagnostics.js';
@@ -80,6 +80,23 @@ interface ChainResult {
   chain: string[];
 }
 
+/**
+ * Non-colour overrides authored under `tokens` apply to both schemes: a font,
+ * spacing, or motion choice is not a colour-scheme decision, so dark mode must
+ * not silently fall back to the parent's value. An explicit dark value wins.
+ */
+function carryModeIndependent(
+  light: Record<string, string>,
+  dark: Record<string, string>,
+  authoredDark: Record<string, unknown>,
+): Record<string, string> {
+  const carried: Record<string, string> = { ...dark };
+  for (const [token, value] of Object.entries(light)) {
+    if (TOKEN_SPECS[token]?.kind !== 'color' && !(token in authoredDark)) carried[token] = value;
+  }
+  return carried;
+}
+
 function resolveChain(
   name: string,
   catalog: ThemeCatalog,
@@ -140,9 +157,11 @@ function resolveChain(
     return merged;
   };
 
+  const ownLight = applyOverrides('tokens', entry.tokens);
+  const ownDark = carryModeIndependent(ownLight, applyOverrides('dark', entry.dark), entry.dark);
   return {
-    tokens: { ...inherited.tokens, ...applyOverrides('tokens', entry.tokens) },
-    dark: { ...inherited.dark, ...applyOverrides('dark', entry.dark) },
+    tokens: { ...inherited.tokens, ...ownLight },
+    dark: { ...inherited.dark, ...ownDark },
     description: entry.description === '' ? inherited.description : entry.description,
     version: entry.version,
     chain: [...inherited.chain, entry.name],
@@ -202,8 +221,22 @@ export function resolveTheme(
   if (root === undefined) return undefined;
   const resolvedName = themeInput.preset ?? lookup;
 
-  const lightOverrides = themeInput.tokens ?? {};
-  const darkOverrides = themeInput.dark ?? {};
+  // `loadTheme` takes `unknown`, so a library caller can pass any shape here.
+  const overridesAt = (key: 'tokens' | 'dark'): Record<string, unknown> => {
+    const value: unknown = themeInput[key];
+    if (value === undefined) return {};
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      return value as Record<string, unknown>;
+    }
+    bag.add({
+      code: 'POLICY_VIOLATION',
+      path: `theme.${key}`,
+      message: `theme ${key} must be an object of token values`,
+    });
+    return {};
+  };
+  const lightOverrides = overridesAt('tokens');
+  const darkOverrides = overridesAt('dark');
   const applyInput = (
     key: 'tokens' | 'dark',
     base: Tokens,
@@ -235,14 +268,14 @@ export function resolveTheme(
     return merged;
   };
 
-  const light = completeTokens(
-    applyInput('tokens', root.tokens, lightOverrides),
-    bag,
-    resolvedName,
-    'tokens',
-  );
+  const authoredLight = applyInput('tokens', {}, lightOverrides);
+  const light = completeTokens({ ...root.tokens, ...authoredLight }, bag, resolvedName, 'tokens');
   const dark = completeTokens(
-    applyInput('dark', root.dark, darkOverrides),
+    carryModeIndependent(
+      authoredLight,
+      applyInput('dark', root.dark, darkOverrides),
+      darkOverrides,
+    ),
     bag,
     resolvedName,
     'dark',

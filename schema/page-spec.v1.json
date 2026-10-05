@@ -219,6 +219,33 @@
           "$ref": "#/$defs/block-diagram-panel"
         },
         {
+          "$ref": "#/$defs/block-bento"
+        },
+        {
+          "$ref": "#/$defs/block-marquee"
+        },
+        {
+          "$ref": "#/$defs/block-terminal"
+        },
+        {
+          "$ref": "#/$defs/block-file-tree"
+        },
+        {
+          "$ref": "#/$defs/block-before-after"
+        },
+        {
+          "$ref": "#/$defs/block-kpi"
+        },
+        {
+          "$ref": "#/$defs/block-showcase"
+        },
+        {
+          "$ref": "#/$defs/block-checklist"
+        },
+        {
+          "$ref": "#/$defs/block-cta"
+        },
+        {
           "$ref": "#/$defs/block-image"
         },
         {
@@ -602,6 +629,14 @@
           "type": "string",
           "maxLength": 200
         },
+        "surface": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "plain",
+            "inverse"
+          ]
+        },
         "id": {
           "type": "string",
           "maxLength": 2000,
@@ -611,7 +646,7 @@
           "$ref": "#/$defs/blockList"
         }
       },
-      "description": "Section with an optional heading wrapping child blocks."
+      "description": "Section with an optional heading wrapping child blocks; an inverse surface sets it on a night band."
     },
     "block-stack": {
       "type": "object",
@@ -1125,13 +1160,33 @@
           "type": "string",
           "maxLength": 50000
         },
+        "align": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "start",
+            "center"
+          ]
+        },
+        "src": {
+          "type": "string",
+          "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+        },
+        "alt": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "address": {
+          "type": "string",
+          "maxLength": 120
+        },
         "id": {
           "type": "string",
           "maxLength": 2000,
           "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
         }
       },
-      "description": "Hero: eyebrow, title, and one-line description."
+      "description": "Hero: eyebrow, title, and one-line description, optionally over a framed product shot."
     },
     "block-stats": {
       "type": "object",
@@ -1984,6 +2039,557 @@
         }
       },
       "description": "DiagramPanel: embeds trusted output from a diagram adapter (ak:diagram when installed)."
+    },
+    "block-bento": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "items"
+      ],
+      "properties": {
+        "type": {
+          "const": "bento"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "text": {
+                "type": "string",
+                "maxLength": 50000
+              },
+              "eyebrow": {
+                "type": "string",
+                "maxLength": 60
+              },
+              "value": {
+                "type": "string",
+                "maxLength": 40
+              },
+              "size": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "small",
+                  "wide",
+                  "tall",
+                  "large"
+                ]
+              },
+              "src": {
+                "type": "string",
+                "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+              },
+              "alt": {
+                "type": "string",
+                "maxLength": 300
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "title"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 12
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Bento: asymmetric tile grid; a tile can hold an eyebrow, title, text, a large figure, and a local image."
+    },
+    "block-marquee": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "items"
+      ],
+      "properties": {
+        "type": {
+          "const": "marquee"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "minItems": 1,
+          "maxItems": 30
+        },
+        "speed": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "slow",
+            "normal",
+            "fast"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Marquee: looping ticker of short items that pauses on hover and stops under reduced motion."
+    },
+    "block-terminal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "lines"
+      ],
+      "properties": {
+        "type": {
+          "const": "terminal"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "lines": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "command",
+                  "output",
+                  "comment",
+                  "success",
+                  "error"
+                ]
+              },
+              "text": {
+                "type": "string",
+                "maxLength": 2000
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "text"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 60
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Terminal: window-framed session whose lines type in on load; commands, output, comments, success, and errors are styled apart."
+    },
+    "block-file-tree": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "items"
+      ],
+      "properties": {
+        "type": {
+          "const": "file-tree"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "maxLength": 300
+              },
+              "status": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "added",
+                  "modified",
+                  "deleted",
+                  "renamed",
+                  "unchanged"
+                ]
+              },
+              "note": {
+                "type": "string",
+                "maxLength": 200
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "path"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 200
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "File tree: nested folders built from slash-separated paths, with per-file status and notes."
+    },
+    "block-before-after": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "before",
+        "after"
+      ],
+      "properties": {
+        "type": {
+          "const": "before-after"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "before": {
+          "type": "object",
+          "properties": {
+            "src": {
+              "type": "string",
+              "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+            },
+            "alt": {
+              "type": "string",
+              "maxLength": 300
+            },
+            "label": {
+              "type": "string",
+              "maxLength": 40
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "src",
+            "alt"
+          ]
+        },
+        "after": {
+          "type": "object",
+          "properties": {
+            "src": {
+              "type": "string",
+              "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+            },
+            "alt": {
+              "type": "string",
+              "maxLength": 300
+            },
+            "label": {
+              "type": "string",
+              "maxLength": 40
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "src",
+            "alt"
+          ]
+        },
+        "start": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "caption": {
+          "type": "string",
+          "maxLength": 50000
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Compare: before/after image slider driven by a native range input; without script both images stay visible."
+    },
+    "block-kpi": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "items"
+      ],
+      "properties": {
+        "type": {
+          "const": "kpi"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "value": {
+                "type": "string",
+                "maxLength": 40
+              },
+              "delta": {
+                "type": "string",
+                "maxLength": 24
+              },
+              "trend": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "up",
+                  "down",
+                  "flat"
+                ]
+              },
+              "good": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "up",
+                  "down"
+                ]
+              },
+              "series": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": -1000000000000,
+                  "maximum": 1000000000000
+                },
+                "maxItems": 60
+              },
+              "caption": {
+                "type": "string",
+                "maxLength": 120
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "label",
+              "value"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 8
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "KPI: metric cards with value, signed delta, good/bad direction, and an optional sparkline series."
+    },
+    "block-showcase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "title",
+        "src",
+        "alt"
+      ],
+      "properties": {
+        "type": {
+          "const": "showcase"
+        },
+        "eyebrow": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 50000
+        },
+        "bullets": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "maxItems": 8
+        },
+        "src": {
+          "type": "string",
+          "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+        },
+        "alt": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "frame": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "browser",
+            "plain"
+          ]
+        },
+        "address": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "align": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "media-right",
+            "media-left"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Showcase: eyebrow, title, text, and bullets beside an image in a browser frame; the image side can flip."
+    },
+    "block-checklist": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "items"
+      ],
+      "properties": {
+        "type": {
+          "const": "checklist"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "done": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "text"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 100
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "Checklist: items marked done or open, with a visible completion count."
+    },
+    "block-cta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "title"
+      ],
+      "properties": {
+        "type": {
+          "const": "cta"
+        },
+        "eyebrow": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 50000
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "href": {
+                "type": "string",
+                "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+              },
+              "variant": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "primary",
+                  "secondary"
+                ]
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "label",
+              "href"
+            ]
+          },
+          "maxItems": 3
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        }
+      },
+      "description": "CTA: eyebrow, oversized title, text, and up to three link actions on a night band."
     },
     "block-image": {
       "type": "object",

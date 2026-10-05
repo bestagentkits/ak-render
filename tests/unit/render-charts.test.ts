@@ -31,7 +31,7 @@ describe('SVG charts', () => {
 
       it('renders deterministic SVG inside a figure', () => {
         expect(html).toContain('class="ak-chart"');
-        expect(html).toMatch(/<svg viewBox="0 0 640 \d+"/u);
+        expect(html).toMatch(/<svg viewBox="0 0 800 \d+"/u);
         expect(compile(chartSpec(kind)).html).toBe(html);
       });
 
@@ -116,18 +116,31 @@ describe('SVG chart polish', () => {
 
   it('sizes a progress chart to its rows so no label is clipped', () => {
     const { html } = compile(chartSpec('progress'));
-    expect(html).toMatch(/<svg viewBox="0 0 640 96"/u);
+    expect(html).toMatch(/<svg viewBox="0 0 800 96"/u);
     expect(html).toContain('>AK Render</text>');
   });
 
   it('keeps a sparkline compact', () => {
     const { html } = compile(chartSpec('sparkline'));
-    expect(html).toMatch(/<svg viewBox="0 0 640 72"/u);
+    expect(html).toMatch(/<svg viewBox="0 0 800 72"/u);
   });
 
   it('draws gridlines on clean tick values', () => {
     const { html } = compile(chartSpec('line'));
     expect(html).toContain('class="ak-chart-grid"');
     expect(html).toContain('>20,000</text>');
+  });
+
+  it('fills an area with a per-chart gradient instead of a flat tint', () => {
+    const { html } = compile(chartSpec('area'));
+    expect(html).toMatch(/<linearGradient id="ak-grad-[A-Za-z0-9_-]+-0"/u);
+    expect(html).toMatch(/class="ak-chart-area[^"]*"[^>]*fill="url\(#ak-grad-/u);
+  });
+
+  it('pairs every bar and point with a hidden value label for hover and focus', () => {
+    const bar = compile(chartSpec('bar')).html;
+    expect(bar).toMatch(/<rect class="ak-chart-bar[^>]*>.*?<\/rect><text class="ak-chart-value"/su);
+    const line = compile(chartSpec('line')).html;
+    expect(line).toContain('class="ak-chart-value"');
   });
 });

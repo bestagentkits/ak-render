@@ -86,6 +86,28 @@ const indexSpec = {
       title: 'Fixture gallery',
       description:
         'Each artifact below was compiled from a Page Spec in fixtures/pages and opens directly from disk with zero external requests.',
+      align: 'center',
+      src: 'assets/shot-components.webp',
+      alt: 'The all-components fixture in the swiss-clean theme, opening on its hero and layout section',
+      address: 'all-components.html',
+    },
+    {
+      type: 'marquee',
+      label: 'Fixtures in this gallery',
+      items: entries.map((entry) => entry.title),
+    },
+    {
+      type: 'showcase',
+      eyebrow: 'Start here',
+      title: 'The showcase page',
+      text: 'One Page Spec using the showcase blocks: a bento mosaic, KPI sparklines, a typing terminal, a file tree, a before/after slider, and a screen recording of this gallery.',
+      bullets: [
+        'Every image is a screenshot of a compiled fixture',
+        'Every number is measured from the repository',
+      ],
+      src: 'assets/shot-showcase.webp',
+      alt: 'The showcase fixture: hero title, marquee, and a framed explain screenshot',
+      address: 'showcase.html',
     },
     {
       type: 'stats',
@@ -132,6 +154,16 @@ const indexSpec = {
           text: 'Every artifact opens over file:// with no CDN, no font fetch, and no remote image.',
         },
         { text: 'Interactions are declarative: no page-authored script and no inline handler.' },
+      ],
+    },
+    {
+      type: 'cta',
+      eyebrow: 'Keep going',
+      title: 'Every block, on one page.',
+      text: 'The all-components fixture renders the whole v1 roster in one artifact, and the showcase puts the presentation blocks to work.',
+      actions: [
+        { label: 'Open all components', href: 'all-components.html', variant: 'primary' },
+        { label: 'Open the showcase', href: 'showcase.html' },
       ],
     },
   ],
