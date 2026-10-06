@@ -74,6 +74,7 @@ export const bentoBlock: BlockModule = {
           value: strProp({ maxLength: 40, description: 'A large figure shown above the title.' }),
           size: enumStr(['small', 'wide', 'tall', 'large'], { default: 'small' }),
           src: urlProp({
+            asset: 'images',
             description: 'Optional image; remote sources follow the network policy.',
           }),
           alt: strProp({

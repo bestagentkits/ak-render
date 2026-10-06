@@ -24,12 +24,13 @@ import type { BlockDefinition, RuntimeFeature } from '../registry/roster.js';
 import { slotKey } from '../render/render-context.js';
 import { validateThemeRecipes } from '../theme/recipes.js';
 import { VERSION } from '../version.js';
+import { assetAllowed, assetReferences } from './asset-references.js';
 import { type BindingMap, validateBindingsDeep } from './bindings.js';
 import { type BoundsReport, checkBounds, LIMITS } from './bounds.js';
 import { validateCondition } from './conditions.js';
 import { scanForbiddenKeys } from './forbidden.js';
 import { migrateSpec } from './migrate.js';
-import { blockedReason, imageReferenceAllowed } from './network-policy.js';
+import { blockedReason } from './network-policy.js';
 import { type ParseOptions, parseSpec } from './parse.js';
 import { EMBED_PROVIDER_NAMES, isEmbedProvider } from './providers.js';
 
@@ -743,19 +744,20 @@ function postChecks(
       }
     }
 
-    // A poster is a still image the page would load on open. A remote one the
-    // policy blocks is reported here, at its own path, rather than surfacing
-    // only after rendering as a page-level emitted-reference failure.
-    if (node.type === 'video') {
-      const poster = node.props.poster;
-      if (typeof poster === 'string' && !imageReferenceAllowed(network, poster)) {
-        bag.add({
-          code: 'POLICY_VIOLATION',
-          message: `remote poster is not allowed because ${blockedReason(network, 'images')}; use a local poster file or allow remote images in policy.network`,
-          path: pathKey(node.path, 'poster'),
-          nodeId: node.id,
-        });
-      }
+    // An asset with no visible fallback (a video poster) that the policy blocks
+    // is reported here, at its own path, nested slots included, rather than
+    // surfacing only after rendering as a page-level emitted-reference failure.
+    const definition = registry.byType.get(node.type);
+    const assets =
+      definition === undefined ? [] : assetReferences(definition.props, node.props, node.path);
+    for (const asset of assets) {
+      if (!asset.rejectBlocked || assetAllowed(network, asset)) continue;
+      bag.add({
+        code: 'POLICY_VIOLATION',
+        message: `remote ${asset.field} is not allowed because ${blockedReason(network, asset.capability)}; use a local ${asset.field} file or allow remote ${asset.capability} in policy.network`,
+        path: asset.path,
+        nodeId: node.id,
+      });
     }
 
     // Progress shares the chart's labels/series shape; the chart module checks its own.

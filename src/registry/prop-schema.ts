@@ -66,6 +66,18 @@ export interface UrlPropSchema extends PropSchemaBase {
   kind: 'url';
   default?: string;
   schemes?: readonly string[];
+  /**
+   * The value is an asset the page loads, gated by this network capability. The
+   * compiler adds an allowed remote origin to the page's policy, wherever the
+   * prop sits (list items and nested slots included).
+   */
+  asset?: 'images' | 'media';
+  /**
+   * A blocked remote reference fails validation at its own path instead of
+   * leaving the renderer to drop it. For assets with no visible fallback, such
+   * as a video poster.
+   */
+  rejectBlocked?: boolean;
 }
 
 export interface ListPropSchema extends PropSchemaBase {
@@ -190,6 +202,73 @@ function defaultFor(schema: PropSchema): JsonValue | undefined {
     default:
       return undefined;
   }
+}
+
+type JsonShape = 'string' | 'number' | 'boolean' | 'array' | 'object' | 'null';
+
+function valueShape(value: unknown): JsonShape | undefined {
+  if (value === null) return 'null';
+  if (Array.isArray(value)) return 'array';
+  if (isPlainObject(value)) return 'object';
+  const type = typeof value;
+  return type === 'string' || type === 'number' || type === 'boolean' ? type : undefined;
+}
+
+/** The JSON shapes a schema accepts; undefined means any shape. */
+function schemaShapes(schema: PropSchema): readonly JsonShape[] | undefined {
+  switch (schema.kind) {
+    case 'string':
+    case 'text':
+    case 'url':
+      return ['string'];
+    case 'number':
+      return ['number'];
+    case 'boolean':
+      return ['boolean'];
+    case 'list':
+    case 'blocks':
+      return ['array'];
+    case 'object':
+    case 'record':
+      return ['object'];
+    case 'oneOf': {
+      const shapes: JsonShape[] = [];
+      for (const option of schema.options) {
+        const nested = schemaShapes(option);
+        if (nested === undefined) return undefined;
+        shapes.push(...nested);
+      }
+      return shapes;
+    }
+    case 'json':
+      return undefined;
+  }
+}
+
+/**
+ * The one option a value that matched none was meant for: the only option of
+ * its JSON shape, or, among object options, the only one whose required
+ * `type` enum names the value's `type`. Undefined when that is ambiguous.
+ */
+function intendedOption(options: readonly PropSchema[], value: unknown): PropSchema | undefined {
+  const shape = valueShape(value);
+  if (shape === undefined) return undefined;
+  const byShape = options.filter((option) => schemaShapes(option)?.includes(shape) ?? false);
+  if (byShape.length === 1) return byShape[0];
+  if (shape !== 'object' || !isPlainObject(value) || typeof value.type !== 'string') {
+    return undefined;
+  }
+  const discriminator = value.type;
+  const byType = byShape.filter((option) => {
+    if (option.kind !== 'object') return false;
+    const field = option.fields.type;
+    return (
+      field?.kind === 'string' &&
+      field.required === true &&
+      field.enum?.includes(discriminator) === true
+    );
+  });
+  return byType.length === 1 ? byType[0] : undefined;
 }
 
 /**
@@ -400,6 +479,10 @@ export function validateProp(
         const candidate = validateProp(option, value, path, attempt);
         if (!attempt.hasErrors) return candidate;
       }
+      // No option fits. When the value's shape, or an object's `type`, singles
+      // out the option the author meant, report that option's own diagnostics.
+      const intended = intendedOption(schema.options, value);
+      if (intended !== undefined) return validateProp(intended, value, path, bag);
       bag.add({
         code: 'SPEC_VALIDATION_ERROR',
         path,

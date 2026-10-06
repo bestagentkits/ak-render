@@ -14,10 +14,10 @@ import type { DiagramAdapter } from '../diagram/adapter.js';
 import { RenderError } from '../errors.js';
 import { stableHash } from '../hash.js';
 import type { IrDocument, IrNode } from '../ir.js';
-import { isPlainObject } from '../json.js';
 import type { BlockRegistry, FeatureModule } from '../registry/block-module.js';
 import { DEFAULT_REGISTRY } from '../registry/registry.js';
 import type { RuntimeFeature } from '../registry/roster.js';
+import { assetOrigins, assetReferences } from '../spec/asset-references.js';
 import { evaluateCondition } from '../spec/conditions.js';
 import { type NormalizeResult, normalizeSpec } from '../spec/normalize.js';
 import { loadTheme, type ResolvedTheme, resolveTheme } from '../theme/load-theme.js';
@@ -111,39 +111,16 @@ function collectFeatures(ir: IrDocument, includeTheme: boolean): Set<RuntimeFeat
   return features;
 }
 
-function collectOrigins(ir: IrDocument): string[] {
-  const policy = ir.policy.network;
-  if (policy === 'deny') return [];
-  const origins: string[] = [];
-  const add = (reference: string, capability: string): void => {
-    if (policy.allow.includes(capability) && /^https?:/iu.test(reference)) {
-      try {
-        origins.push(new URL(reference).origin);
-      } catch {
-        // A reference that is not a URL is handled by the block renderer, not here.
-      }
-    }
-  };
-
-  for (const node of ir.nodes) {
-    // Only players load through the media capability; every other block that
-    // carries a source shows a still image.
-    const capability = node.type === 'video' || node.type === 'audio' ? 'media' : 'images';
-    const src = node.props.src;
-    if (typeof src === 'string') add(src, capability);
-    // A video poster is a still image, gated by `images` whatever the player uses.
-    const poster = node.props.poster;
-    if (typeof poster === 'string') add(poster, 'images');
-    const nested = [
-      ...(Array.isArray(node.props.items) ? node.props.items : []),
-      node.props.before,
-      node.props.after,
-    ];
-    for (const item of nested) {
-      if (isPlainObject(item) && typeof item.src === 'string') add(item.src, capability);
-    }
-  }
-  return origins;
+/** Origins of the allowed remote assets, found through each block's `asset` props. */
+function collectOrigins(ir: IrDocument, registry: BlockRegistry): string[] {
+  return ir.nodes.flatMap((node) => {
+    const definition = registry.byType.get(node.type);
+    if (definition === undefined) return [];
+    return assetOrigins(
+      ir.policy.network,
+      assetReferences(definition.props, node.props, node.path),
+    );
+  });
 }
 
 function buildCss(
@@ -318,7 +295,7 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
     css,
     js,
     body,
-    allowedOrigins: collectOrigins(ir),
+    allowedOrigins: collectOrigins(ir, registry),
     themeToggle: includeThemeToggle,
     density: resolved.density,
     motionDisabled: resolved.motionPolicy === 'none',

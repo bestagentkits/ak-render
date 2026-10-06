@@ -34,7 +34,7 @@ export const galleryBlock: BlockModule = {
       title: OPTIONAL_TITLE,
       columns: num({ integer: true, min: 1, max: 6, default: 3 }),
       items: itemsOf({
-        src: urlProp({ required: true }),
+        src: urlProp({ required: true, asset: 'images' }),
         alt: strProp({ required: true, maxLength: 300 }),
         caption: txt(),
       }),

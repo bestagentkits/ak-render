@@ -350,6 +350,7 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
       description: txt(),
       align: enumStr(['start', 'center'], { default: 'start' }),
       src: urlProp({
+        asset: 'images',
         description: 'Optional product shot shown in a browser frame below the copy.',
       }),
       alt: str({ maxLength: 300, description: 'Required when src is set.' }),
@@ -672,7 +673,7 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
       title: OPTIONAL_TITLE,
       before: obj(
         {
-          src: urlProp({ required: true }),
+          src: urlProp({ required: true, asset: 'images' }),
           alt: str({ required: true, maxLength: 300 }),
           label: str({ maxLength: 40, default: 'Before' }),
         },
@@ -680,7 +681,7 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
       ),
       after: obj(
         {
-          src: urlProp({ required: true }),
+          src: urlProp({ required: true, asset: 'images' }),
           alt: str({ required: true, maxLength: 300 }),
           label: str({ maxLength: 40, default: 'After' }),
         },
@@ -737,7 +738,7 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
       title: TITLE,
       text: txt(),
       bullets: list(str({ required: true, maxLength: 200 }), { maxItems: 8 }),
-      src: urlProp({ required: true }),
+      src: urlProp({ required: true, asset: 'images' }),
       alt: str({ required: true, maxLength: 300 }),
       frame: enumStr(['browser', 'plain'], { default: 'browser' }),
       address: str({
@@ -811,7 +812,7 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
     purpose: 'Single image or picture.',
     summary: 'Image: local asset or allowlisted URL with required alt text.',
     props: {
-      src: urlProp({ required: true }),
+      src: urlProp({ required: true, asset: 'images' }),
       alt: str({ required: true, maxLength: 300 }),
       caption: txt(),
       ...anchorProps,
@@ -830,8 +831,8 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
       'Video: plays local sources; a provider reference becomes a poster plus link; network sources degrade to poster plus link.',
     props: {
       title: LABEL,
-      src: urlProp({ required: true }),
-      poster: urlProp(),
+      src: urlProp({ required: true, asset: 'media' }),
+      poster: urlProp({ asset: 'images', rejectBlocked: true }),
       provider: enumStr(EMBED_PROVIDER_NAMES, {
         description:
           'Network media provider. Requires the media capability and this provider in the page provider allowlist; the page still links out instead of embedding.',
@@ -859,7 +860,7 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
       'Audio: plays local sources; a provider reference becomes metadata plus link; network sources degrade to metadata plus link.',
     props: {
       title: LABEL,
-      src: urlProp({ required: true }),
+      src: urlProp({ required: true, asset: 'media' }),
       provider: enumStr(EMBED_PROVIDER_NAMES, {
         description:
           'Network media provider. Requires the media capability and this provider in the page provider allowlist; the page still links out instead of embedding.',

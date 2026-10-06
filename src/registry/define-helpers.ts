@@ -53,7 +53,13 @@ export const bool = (
   ...o,
 });
 export const urlProp = (
-  o: { required?: boolean; schemes?: readonly string[]; description?: string } = {},
+  o: {
+    required?: boolean;
+    schemes?: readonly string[];
+    description?: string;
+    asset?: 'images' | 'media';
+    rejectBlocked?: boolean;
+  } = {},
 ): PropSchema => ({
   kind: 'url',
   ...o,
