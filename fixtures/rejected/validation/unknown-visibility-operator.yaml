@@ -1,0 +1,13 @@
+# expect: SPEC_VALIDATION_ERROR $.blocks[0].visibleWhen.contains
+version: 1
+meta:
+  title: Unknown visibility operator
+  description: A block whose visibleWhen condition uses an operator the compiler does not define.
+state:
+  view: summary
+blocks:
+  - type: text
+    text: Shown only for the detailed view.
+    visibleWhen:
+      path: state.view
+      contains: detail
