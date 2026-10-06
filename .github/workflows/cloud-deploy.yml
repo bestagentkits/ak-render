@@ -5,7 +5,8 @@ name: Cloud renderer deploy
 #
 # Required repository secrets:
 #   CLOUDFLARE_API_TOKEN   scoped to Workers Scripts + Workers Routes (zone
-#                          agentkit.best) + R2 + KV + Browser Rendering
+#                          agentkit.best) + R2 (including bucket lifecycle) +
+#                          Browser Rendering
 #   CLOUDFLARE_ACCOUNT_ID  the account that owns the bucket and namespace
 # Optional:
 #   AK_RENDER_SMOKE_TOKEN  an AgentKit bearer with an active entitlement. Without
@@ -26,16 +27,28 @@ on:
         description: Skip the deploy and only run the live smoke test
         type: boolean
         default: false
+      # The smoke token is sent to this host, so it is a fixed list, never a
+      # free-form URL.
       base-url:
         description: Endpoint the live smoke test runs against
-        type: string
+        type: choice
+        options:
+          - https://render.agentkit.best
+          - https://ak-render-cloud.digitop-vn.workers.dev
         default: https://render.agentkit.best
 
 permissions:
   contents: read
 
+# One deploy at a time; a second run waits rather than racing the first.
+concurrency:
+  group: cloud-deploy
+  cancel-in-progress: false
+
 env:
   PNPM_VERSION: 9.15.0
+  # Pinned so a deploy is reproducible; bump deliberately.
+  WRANGLER_VERSION: 4.147.0
 
 jobs:
   deploy:
@@ -67,12 +80,23 @@ jobs:
       - name: Validate the Worker bundle
         if: ${{ inputs.smoke-only == false }}
         working-directory: apps/cloud
-        run: npx --yes wrangler@latest deploy --dry-run --outdir /tmp/worker-dry-run
+        run: npx --yes "wrangler@${WRANGLER_VERSION}" deploy --dry-run --outdir /tmp/worker-dry-run
 
       - name: Deploy
         if: ${{ inputs.dry-run == false && inputs.smoke-only == false }}
         working-directory: apps/cloud
-        run: npx --yes wrangler@latest deploy
+        run: npx --yes "wrangler@${WRANGLER_VERSION}" deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # Lifecycle rules delete expired shares and artifacts even if the hourly
+      # sweep never reaches them. `set` replaces the bucket's rules with the
+      # committed file, so re-running it is idempotent.
+      - name: Apply R2 lifecycle rules
+        if: ${{ inputs.dry-run == false && inputs.smoke-only == false }}
+        working-directory: apps/cloud
+        run: npx --yes "wrangler@${WRANGLER_VERSION}" r2 bucket lifecycle set ak-render-shares --file r2-lifecycle.json --force
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -85,6 +109,10 @@ jobs:
         if: ${{ inputs.dry-run == false || inputs.smoke-only == true }}
         run: |
           set -euo pipefail
+          case "${BASE_URL}" in
+            https://render.agentkit.best|https://ak-render-cloud.digitop-vn.workers.dev) ;;
+            *) echo "::error::base-url ${BASE_URL} is not an allowed smoke host"; exit 1 ;;
+          esac
           if [ -z "${TOKEN}" ]; then
             echo "::notice title=Cloud smoke::AK_RENDER_SMOKE_TOKEN is not set; authenticated render, share and export checks are skipped"
           fi
