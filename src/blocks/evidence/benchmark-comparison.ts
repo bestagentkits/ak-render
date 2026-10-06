@@ -49,6 +49,12 @@ import {
   projectRow,
 } from './evidence-helpers.js';
 
+/**
+ * Per-metric format overrides. Currency stays block-wide: one comparison never
+ * mixes currencies, and leaving it out keeps the compact contract in budget.
+ */
+const { currency: _blockWideCurrency, ...METRIC_FORMAT_FIELDS } = FORMAT_OVERRIDE_FIELDS;
+
 export const BENCHMARK_LIMITS = { maxMetrics: 20 } as const;
 
 const VERDICT_TONES: Readonly<Record<Verdict, string>> = {
@@ -301,7 +307,7 @@ export const benchmarkComparisonBlock: BlockModule = {
           baseline: num({ required: true }),
           candidate: num({ required: true }),
           better: enumStr(BETTER_VALUES, { required: true }),
-          ...FORMAT_OVERRIDE_FIELDS,
+          ...METRIC_FORMAT_FIELDS,
         }),
         {
           minItems: 1,

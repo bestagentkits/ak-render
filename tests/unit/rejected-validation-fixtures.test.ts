@@ -20,7 +20,8 @@ const fixtures = existsSync(validationDir)
 function expectation(source: string): { code?: string; path?: string } {
   const match = /^#\s*expect:\s*([A-Z_]+)(?:\s+(\S+))?/u.exec(source);
   if (match === null) return {};
-  return { code: match[1], ...(match[2] === undefined ? {} : { path: match[2] }) };
+  const [, code, path] = match;
+  return { ...(code === undefined ? {} : { code }), ...(path === undefined ? {} : { path }) };
 }
 
 /**
