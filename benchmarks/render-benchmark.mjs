@@ -19,7 +19,7 @@
  *   node benchmarks/render-benchmark.mjs [--agentkit <path>] [--repeat 5]
  *                                        [--out docs/artifacts/benchmark-render.json]
  *
- * Guidance on the AK Render path is what an agent reads for one page task:
+ * Guidance on the ak-render skill route is what an agent reads for one page task:
  * the AgentKit shared HTML contract (also counted in the legacy baseline), the
  * agent skill shipped in this repository, `catalog`, and `describe --json` for
  * each block type the task's fixture uses. `--agentkit` (or AGENTKIT_ROOT)
@@ -52,7 +52,7 @@ function argValue(flag, fallback) {
 }
 
 const AGENTKIT_ROOT = resolve(
-  argValue('--agentkit', process.env['AGENTKIT_ROOT'] ?? join(REPO_ROOT, '..', 'agentkit')),
+  argValue('--agentkit', process.env.AGENTKIT_ROOT ?? join(REPO_ROOT, '..', 'agentkit')),
 );
 const REPEAT = Number(argValue('--repeat', '5'));
 const OUT_JSON = resolve(REPO_ROOT, argValue('--out', 'docs/artifacts/benchmark-render.json'));
@@ -258,7 +258,7 @@ const artifact = {
     tokenEstimate:
       'Estimated from character count at 4 chars/token (point), bounded by 4.5 and 3.5 chars/token. Exact tokenizer counts are not claimed.',
     guidanceScope:
-      'Presentation guidance an agent loads for one page task on the AK Render path: the AgentKit shared HTML contract (also counted in the legacy baseline), the ak-render agent skill, `catalog`, and `describe --json` for each block type the matching fixture uses. Excludes the invoking skill body, fixture content, model output, and retries.',
+      'Presentation guidance an agent loads for one page task on the ak-render skill route: the AgentKit shared HTML contract (also counted in the legacy baseline), the ak-render agent skill, `catalog`, and `describe --json` for each block type the matching fixture uses. Excludes the invoking skill body, fixture content, model output, and retries.',
     agentkitRevision: gitRevision(AGENTKIT_ROOT),
     renderRevision: gitRevision(REPO_ROOT),
   },

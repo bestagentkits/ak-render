@@ -237,13 +237,13 @@
       },
       {
         "label": "legacy-02",
-        "legacyOutputTokens": 9867,
-        "specTokens": 6513,
+        "legacyOutputTokens": 9868,
+        "specTokens": 6514,
         "outputReduction": 0.339912714932027
       },
       {
         "label": "legacy-03",
-        "legacyOutputTokens": 17875,
+        "legacyOutputTokens": 17876,
         "specTokens": 7404,
         "outputReduction": 0.5858062071798327
       },
@@ -261,20 +261,20 @@
       },
       {
         "label": "legacy-06",
-        "legacyOutputTokens": 23405,
+        "legacyOutputTokens": 23406,
         "specTokens": 19089,
         "outputReduction": 0.18442735174614755
       },
       {
         "label": "legacy-07",
         "legacyOutputTokens": 3798,
-        "specTokens": 2829,
+        "specTokens": 2830,
         "outputReduction": 0.25495257534991544
       },
       {
         "label": "legacy-08",
         "legacyOutputTokens": 8625,
-        "specTokens": 1935,
+        "specTokens": 1936,
         "outputReduction": 0.7756166000171403
       },
       {
@@ -286,13 +286,13 @@
       {
         "label": "legacy-10",
         "legacyOutputTokens": 19204,
-        "specTokens": 24804,
+        "specTokens": 24805,
         "outputReduction": -0.29164699157535834
       },
       {
         "label": "legacy-11",
         "legacyOutputTokens": 91627,
-        "specTokens": 23841,
+        "specTokens": 23842,
         "outputReduction": 0.7398000883905098
       },
       {
@@ -307,16 +307,16 @@
   "typicalTask": {
     "before": {
       "guidance": 25026,
-      "output": 13871,
-      "total": 38897
+      "output": 13872,
+      "total": 38898
     },
     "after": {
       "guidance": 7149,
-      "output": 6890,
+      "output": 6891,
       "returned": 121,
-      "total": 14160
+      "total": 14161
     },
-    "reduction": 0.6359616422860375,
+    "reduction": 0.6359452928171114,
     "excludes": "task context and narrative reasoning (equal on both paths), repairs and retries"
   },
   "contextReduction": {

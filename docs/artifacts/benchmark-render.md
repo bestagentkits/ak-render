@@ -31,7 +31,7 @@ Every fixture compiles to identical bytes and an identical hash across 9 repeats
 
 ## Presentation guidance cost
 
-Presentation guidance an agent loads for one page task on the AK Render path: the AgentKit shared HTML contract (also counted in the legacy baseline), the ak-render agent skill, `catalog`, and `describe --json` for each block type the matching fixture uses. Excludes the invoking skill body, fixture content, model output, and retries.
+Presentation guidance an agent loads for one page task on the ak-render skill route: the AgentKit shared HTML contract (also counted in the legacy baseline), the ak-render agent skill, `catalog`, and `describe --json` for each block type the matching fixture uses. Excludes the invoking skill body, fixture content, model output, and retries.
 
 Loaded on every task:
 

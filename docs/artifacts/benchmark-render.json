@@ -9,7 +9,7 @@
   "method": {
     "compilerTime": "Median of 9 compiles after one warm-up compile, per fixture.",
     "tokenEstimate": "Estimated from character count at 4 chars/token (point), bounded by 4.5 and 3.5 chars/token. Exact tokenizer counts are not claimed.",
-    "guidanceScope": "Presentation guidance an agent loads for one page task on the AK Render path: the AgentKit shared HTML contract (also counted in the legacy baseline), the ak-render agent skill, `catalog`, and `describe --json` for each block type the matching fixture uses. Excludes the invoking skill body, fixture content, model output, and retries.",
+    "guidanceScope": "Presentation guidance an agent loads for one page task on the ak-render skill route: the AgentKit shared HTML contract (also counted in the legacy baseline), the ak-render agent skill, `catalog`, and `describe --json` for each block type the matching fixture uses. Excludes the invoking skill body, fixture content, model output, and retries.",
     "agentkitRevision": "9e322f928",
     "renderRevision": "f5b680710"
   },

@@ -204,7 +204,10 @@ is guidance it reads, the spec it writes, and a one-line summary it reads back.
   of AgentKit's legacy HTML guidance to 6.6k–7.1k on the `ak-render` skill
   route: the shared AgentKit contract, the skill, `catalog`, and the `describe`
   output of the blocks a task uses
-  ([render benchmark](./docs/artifacts/benchmark-render.md)).
+  ([render benchmark](./docs/artifacts/benchmark-render.md)). The `ak:preview`
+  diff task (73%) follows AgentKit's reference-loading table directly; the
+  explain, brainstorm and plan rows use the `ak-preview` reference set as a
+  proxy for their hand-written HTML route.
 - **Measured on 12 HTML pages agents wrote in real projects:** a median of 26%
   of each page is visible text; the rest is markup, CSS and script. The
   projected median output saving is 54%. A page that is mostly prose saves
@@ -331,6 +334,7 @@ pnpm verify          # lint + typecheck + unit tests + build
 pnpm test:browser    # Playwright, after: pnpm exec playwright install chromium
 pnpm test:package    # pack, install into a temp project, exercise API and bin
 pnpm bench:baseline  # re-run the legacy presentation-context measurement
+pnpm build && pnpm bench:render --agentkit ../agentkit --repeat 9  # committed render artifact
 pnpm site:build      # compile the landing page and gallery into site/dist
 pnpm site:deploy     # build, then deploy site/dist with wrangler
 ```

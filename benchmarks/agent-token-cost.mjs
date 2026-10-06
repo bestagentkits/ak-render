@@ -47,7 +47,7 @@ import { blockTypes } from './fixture-block-types.mjs';
 const REPO_ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const CLI = join(REPO_ROOT, 'dist/cli.js');
 const CHARS_PER_TOKEN = 4;
-const tokens = (chars) => Math.round(chars / CHARS_PER_TOKEN);
+const tokens = (chars) => Math.ceil(chars / CHARS_PER_TOKEN);
 
 function parseArgs(argv) {
   const options = { legacy: [], reuse: undefined, outDir: join(REPO_ROOT, 'docs/artifacts') };
