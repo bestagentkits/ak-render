@@ -1,0 +1,418 @@
+version: 1
+
+meta:
+  title: Render Service Engineering Review
+  description: Sprint board, roadmap, test run, service log, API reference and payload schema for the render service.
+  locale: en
+
+theme:
+  preset: terminal-mono
+
+policy:
+  network: deny
+
+datasets:
+  service-log:
+    - time: '2026-10-06T10:00:03.000Z'
+      level: info
+      source: api
+      message: 'GET /v1/runs 200 in 41 ms'
+    - time: '2026-10-06T10:00:13.137Z'
+      level: info
+      source: worker
+      message: 'picked job run_8121 (queue=default)'
+    - time: '2026-10-06T10:00:19.274Z'
+      level: debug
+      source: worker
+      message: 'cache lookup key=spec:9f2c hit=false'
+    - time: '2026-10-06T10:00:32.411Z'
+      level: info
+      source: compiler
+      message: 'compiled dashboard.yaml in 118 ms (96.4 kB)'
+    - time: '2026-10-06T10:00:41.548Z'
+      level: info
+      source: api
+      message: 'POST /v1/runs 201 in 63 ms'
+    - time: '2026-10-06T10:00:46.685Z'
+      level: debug
+      source: scheduler
+      message: 'tick: 3 queued, 2 running, 0 delayed'
+    - time: '2026-10-06T10:00:58.822Z'
+      level: info
+      source: worker
+      message: 'picked job run_8122 (queue=default)'
+    - time: '2026-10-06T10:01:06.959Z'
+      level: warn
+      source: worker
+      message: 'job run_8122 exceeded soft limit: 1.8 s > 1.5 s'
+    - time: '2026-10-06T10:01:10.096Z'
+      level: info
+      source: compiler
+      message: 'compiled incident.yaml in 204 ms (131.0 kB)'
+    - time: '2026-10-06T10:01:21.233Z'
+      level: debug
+      source: storage
+      message: 'put artifacts/run_8121.html etag=7c1e'
+    - time: '2026-10-06T10:01:28.370Z'
+      level: info
+      source: api
+      message: 'GET /v1/runs/run_8121 200 in 12 ms'
+    - time: '2026-10-06T10:01:31.507Z'
+      level: warn
+      source: api
+      message: 'rate limit at 80% for key ci-bot'
+    - time: '2026-10-06T10:01:41.644Z'
+      level: info
+      source: worker
+      message: 'picked job run_8123 (queue=priority)'
+    - time: '2026-10-06T10:01:47.781Z'
+      level: error
+      source: storage
+      message: 'put artifacts/run_8123.html failed: connection reset by peer'
+    - time: '2026-10-06T10:02:00.918Z'
+      level: warn
+      source: worker
+      message: 'retrying run_8123 upload (attempt 2 of 3)'
+    - time: '2026-10-06T10:02:09.055Z'
+      level: error
+      source: storage
+      message: 'put artifacts/run_8123.html failed: connection reset by peer'
+    - time: '2026-10-06T10:02:14.192Z'
+      level: warn
+      source: worker
+      message: 'retrying run_8123 upload (attempt 3 of 3)'
+    - time: '2026-10-06T10:02:26.329Z'
+      level: info
+      source: storage
+      message: 'put artifacts/run_8123.html etag=a40d'
+    - time: '2026-10-06T10:02:34.466Z'
+      level: info
+      source: api
+      message: 'GET /v1/runs/run_8123 200 in 15 ms'
+    - time: '2026-10-06T10:02:38.603Z'
+      level: debug
+      source: scheduler
+      message: 'tick: 1 queued, 3 running, 0 delayed'
+    - time: '2026-10-06T10:02:49.740Z'
+      level: info
+      source: worker
+      message: 'picked job run_8124 (queue=default)'
+    - time: '2026-10-06T10:02:56.877Z'
+      level: info
+      source: compiler
+      message: 'compiled plan.yaml in 88 ms (74.9 kB)'
+    - time: '2026-10-06T10:02:59.014Z'
+      level: error
+      source: compiler
+      message: 'run_8124: SPEC_VALIDATION_ERROR at $.blocks[3].items[1].start'
+    - time: '2026-10-06T10:03:09.151Z'
+      level: info
+      source: api
+      message: 'POST /v1/runs 422 in 9 ms'
+    - time: '2026-10-06T10:03:15.288Z'
+      level: warn
+      source: api
+      message: 'rate limit at 92% for key ci-bot'
+    - time: '2026-10-06T10:03:28.425Z'
+      level: info
+      source: worker
+      message: 'picked job run_8125 (queue=default)'
+    - time: '2026-10-06T10:03:37.562Z'
+      level: debug
+      source: worker
+      message: 'cache lookup key=spec:41aa hit=true'
+    - time: '2026-10-06T10:03:42.699Z'
+      level: info
+      source: api
+      message: 'GET /v1/runs/run_8125 200 in 11 ms'
+    - time: '2026-10-06T10:03:54.836Z'
+      level: error
+      source: api
+      message: 'POST /v1/runs 429 for key ci-bot: rate limit exceeded'
+    - time: '2026-10-06T10:04:02.973Z'
+      level: info
+      source: scheduler
+      message: 'delayed 4 jobs for key ci-bot by 30 s'
+    - time: '2026-10-06T10:04:06.110Z'
+      level: debug
+      source: scheduler
+      message: 'tick: 4 queued, 1 running, 4 delayed'
+    - time: '2026-10-06T10:04:17.247Z'
+      level: info
+      source: worker
+      message: 'picked job run_8126 (queue=default)'
+    - time: '2026-10-06T10:04:24.384Z'
+      level: info
+      source: compiler
+      message: 'compiled recap.yaml in 97 ms (88.2 kB)'
+    - time: '2026-10-06T10:04:27.521Z'
+      level: info
+      source: storage
+      message: 'put artifacts/run_8126.html etag=0be3'
+    - time: '2026-10-06T10:04:37.658Z'
+      level: info
+      source: api
+      message: 'GET /v1/runs/run_8126 200 in 14 ms'
+    - time: '2026-10-06T10:04:43.795Z'
+      level: warn
+      source: worker
+      message: 'job run_8127 waiting on lock spec:41aa for 2.1 s'
+    - time: '2026-10-06T10:04:56.932Z'
+      level: info
+      source: worker
+      message: 'picked job run_8127 (queue=default)'
+    - time: '2026-10-06T10:05:05.069Z'
+      level: info
+      source: compiler
+      message: 'compiled diff.yaml in 76 ms (69.5 kB)'
+    - time: '2026-10-06T10:05:10.206Z'
+      level: info
+      source: scheduler
+      message: 'released 4 delayed jobs for key ci-bot'
+    - time: '2026-10-06T10:05:22.343Z'
+      level: debug
+      source: scheduler
+      message: 'tick: 0 queued, 2 running, 0 delayed'
+
+blocks:
+  - type: hero
+    eyebrow: Engineering review
+    title: Render service, sprint 14
+    description: Where the work stands, what ships next quarter, and the evidence from the latest run.
+
+  - type: section
+    title: Sprint board
+    blocks:
+      - type: kanban
+        id: sprint-board
+        columns:
+          - id: todo
+            title: To do
+          - id: doing
+            title: In progress
+          - id: review
+            title: Review
+          - id: done
+            title: Done
+        cards:
+          - title: Retry artifact uploads with backoff
+            column: todo
+            text: Storage resets drop `run_8123` uploads; retry with jitter before failing the run.
+            owner: Linh
+            tags: [storage, reliability]
+            status: bug
+          - title: Per-key rate limit dashboard
+            column: todo
+            owner: Marco
+            tags: [api]
+          - title: Validate roadmap periods at compile time
+            column: doing
+            text: Report unknown and reversed periods at the item path.
+            owner: Aiko
+            tags: [compiler]
+            status: new
+          - title: Stream compile logs to the run page
+            column: doing
+            owner: Linh
+            tags: [worker, ui]
+          - title: Drop the legacy v0 runs endpoint
+            column: review
+            text: Every client moved to `/v1/runs` in sprint 12.
+            owner: Marco
+            tags: [api]
+            status: removed
+          - title: Deterministic schema tree order
+            column: done
+            owner: Aiko
+            tags: [compiler]
+            status: good
+          - title: Cache spec hashes per key
+            column: done
+            owner: Linh
+            tags: [worker, performance]
+
+  - type: section
+    title: Roadmap
+    blocks:
+      - type: roadmap
+        id: render-roadmap
+        periods: [2026-Q3, 2026-Q4, 2027-Q1, 2027-Q2]
+        lanes:
+          - id: core
+            title: Compiler core
+          - id: platform
+            title: Platform
+        items:
+          - title: Composition and datasets
+            lane: core
+            start: 2026-Q3
+            end: 2026-Q4
+            status: done
+          - title: Engineering widgets
+            lane: core
+            start: 2026-Q4
+            status: active
+          - title: Theme dialects
+            lane: core
+            start: 2027-Q1
+            end: 2027-Q2
+            status: planned
+          - title: Upload retries and backoff
+            lane: platform
+            start: 2026-Q4
+            status: at-risk
+          - title: Multi-region artifact storage
+            lane: platform
+            start: 2027-Q1
+            end: 2027-Q2
+            status: planned
+
+  - type: section
+    title: Latest test run
+    blocks:
+      - type: test-results
+        id: test-run
+        coverage: 87.4
+        suites:
+          - name: compiler/normalize
+            cases:
+              - name: keeps node ids stable across runs
+                status: pass
+                duration: 42
+              - name: reports nested slot paths
+                status: pass
+                duration: 37
+              - name: rejects a reversed roadmap range
+                status: fail
+                duration: 18
+                file: tests/unit/engineering-widgets.test.ts:212
+                message: |-
+                  expected diagnostic path "$.blocks[2].items[0].end"
+                  received "$.blocks[2].items[0].start"
+              - name: resolves datasets once
+                status: pass
+                duration: 25
+          - name: render/engineering
+            cases:
+              - name: kanban rows carry the filter contract
+                status: pass
+                duration: 61
+              - name: log viewer adds search past 20 lines
+                status: flaky
+                duration: 1240
+                message: Passed on retry 2 of 3; first attempt timed out waiting for the input.
+              - name: roadmap renders no inline style
+                status: pass
+                duration: 33
+              - name: schema tree prints open
+                status: skip
+          - name: storage/uploads
+            cases:
+              - name: retries a reset connection
+                status: fail
+                duration: 3012
+                file: tests/unit/storage-upload.test.ts:48
+                message: 'Error: connection reset by peer (attempt 3 of 3)'
+              - name: writes the etag on success
+                status: pass
+                duration: 88
+
+  - type: section
+    title: Service log
+    blocks:
+      - type: log-viewer
+        id: service-log
+        title: render-api, 10:00 to 10:08 UTC
+        dataRef: service-log
+
+  - type: section
+    title: API reference
+    blocks:
+      - type: api-endpoint
+        id: create-run
+        method: POST
+        path: /v1/projects/{project}/runs
+        summary: Queues a compile of one Page Spec and returns the run. The artifact is ready when `status` is `done`.
+        params:
+          - name: project
+            in: path
+            type: string
+            required: true
+            description: Project slug, such as `docs-site`.
+          - name: priority
+            in: query
+            type: boolean
+            description: Use the priority queue. Counts double against the rate limit.
+          - name: Idempotency-Key
+            in: header
+            type: string
+            description: Repeat a request safely; the same key returns the same run for 24 hours.
+        request:
+          language: json
+          code: |-
+            {
+              "spec": "version: 1\nmeta:\n  title: Weekly recap",
+              "theme": "terminal-mono"
+            }
+        responses:
+          - status: 201
+            description: The run was queued.
+            code: |-
+              {
+                "id": "run_8128",
+                "status": "queued",
+                "createdAt": "2026-10-06T10:08:12Z"
+              }
+          - status: 422
+            description: The spec failed validation; `diagnostics` lists every problem with its path.
+          - status: 429
+            description: The key exceeded its rate limit. Retry after the `Retry-After` seconds.
+
+  - type: section
+    title: Run payload schema
+    blocks:
+      - type: schema-viewer
+        id: run-schema
+        fields:
+          - path: id
+            type: string
+            required: true
+            description: Run id, such as `run_8128`.
+          - path: status
+            type: enum
+            required: true
+            description: queued, running, done or failed.
+          - path: project.slug
+            type: string
+            required: true
+          - path: project.name
+            type: string
+          - path: spec.hash
+            type: string
+            required: true
+            description: SHA-256 of the normalized spec.
+          - path: spec.bytes
+            type: integer
+          - path: artifact.url
+            type: string
+            description: Present once the run is done.
+          - path: artifact.bytes
+            type: integer
+          - path: artifact.etag
+            type: string
+          - path: timing.queuedMs
+            type: integer
+          - path: timing.compileMs
+            type: integer
+          - path: diagnostics
+            type: array
+            description: Empty when the spec is valid.
+          - path: diagnostics.code
+            type: string
+            required: true
+          - path: diagnostics.path
+            type: string
+            required: true
+            description: JSON path of the problem, such as `$.blocks[2].items[0].end`.
+          - path: diagnostics.message
+            type: string
