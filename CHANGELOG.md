@@ -22,6 +22,7 @@ Release mechanics and the compatibility contract live in
 ### Fixed
 
 - Diagram adapter `<style>` elements now receive the page style nonce, so styled adapter SVG renders as drawn instead of in default black. The policy stays nonce-only: inline `style` attributes are removed from adapter output with a warning, and adapter CSS that uses `@import` or a remote `url()` is rejected. `docs/diagram-adapter.md` explains how to style adapter output.
+- A long unbroken token, such as a path or an env var list, no longer widens the page on a phone. Key-value values, list items, text and callouts break the token inside their own line, so the reported key-value page no longer scrolls sideways at 375px.
 
 ## [0.2.0] - 2026-10-05
 

@@ -122,6 +122,7 @@ Images in these blocks go through the same network gate as `image` and use the `
 
 - ≤768px: grids drop to 2 columns, splits and comparisons stack, and touch targets reach 44px.
 - ≤480px: grids drop to 1 column, stats show 2 per row, and key-value lists stack.
+- A long unbroken token, such as a path or an env var list, breaks inside its line instead of widening the page. Key-value values may break anywhere in the token.
 - Checked at 1440×900, 768×1024 and 375×812 with no horizontal overflow.
 
 ## Voice
