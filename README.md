@@ -67,25 +67,50 @@ Requires Node.js >= 20.11.
 
 ### Find the blocks you need
 
-There are 54 block types, from primitives (`section`, `grid`, `split`, `text`)
-to semantic blocks that carry the design for you (`hero`, `steps`, `timeline`,
-`comparison`, `kpi`, `chart`, `terminal`, `bento`, `cta`). List them, then read
-the full contract of the ones you use:
+There are 83 block types in eight categories (layout, content, data,
+interaction, media, showcase, engineering, product), from primitives (`section`,
+`grid`, `split`, `text`) to semantic blocks that carry the design for you
+(`hero`, `steps`, `timeline`, `kpi`, `data-table`, `chart`, `kanban`,
+`pricing`, `cta`). Find the ones you need, then read only their contracts:
 
 ```bash
-ak-render catalog                # every block and action, one line each
-ak-render describe timeline      # props, defaults, bounds, slots, a11y notes
-ak-render describe kpi --json    # the same, machine-readable
+ak-render catalog                        # every block by category, and every action
+ak-render catalog --category data        # one category
+ak-render search-catalog sortable table  # rank block types by intent words
+ak-render describe kpi chart --compact   # one line per prop, for several types
+ak-render describe timeline --json       # one full contract: defaults, bounds, a11y notes
 ```
 
-Containers (`section`, `grid`, `split`, `stack`) take their children under
-`blocks:`.
+Containers (`section`, `grid`, `split`, `stack` and the page layouts
+`sidebar-layout`, `main-aside`, `rail-layout`) take their children under
+`blocks:`. Tabs, accordion sections, carousel slides and bento tiles hold
+blocks too, under `items[i].blocks`.
 
 Text is plain text, with one exception: in prose props such as `text`, a step's
 or list item's `text`, a `description` or a `caption`, a pair of backticks
 renders as inline code, so `` `ak-render catalog` `` reads as a command. Nothing
 else is parsed as markup, an unpaired backtick stays literal, and titles, code
 and terminal lines are never changed. `describe` marks each prop that does this.
+
+### Start from a page recipe
+
+A recipe is a complete, valid starter spec for a common page: a dashboard, a
+benchmark report, an architecture review, an incident report, a product
+showcase, a case study, a release recap, an implementation plan, a research
+report or a decision memo. Replace its placeholder text and data, then validate.
+
+```bash
+ak-render recipes                          # names, summaries and the blocks each uses
+ak-render recipe dashboard > page.yaml     # the starter spec as YAML
+```
+
+### Datasets and state
+
+Declare a table once under `datasets` and bind charts, tables and widgets to it
+with `dataRef`, reshaped by a bounded `transform`. Native controls write page
+`state`, `visibleWhen` switches views from it, and `filter-bar` filters a table,
+board or log. All of it is data, and every page still reads completely with
+scripts off. See [docs/data-and-state.md](./docs/data-and-state.md).
 
 ### Validate and fix
 
@@ -109,10 +134,12 @@ ak-render plan.yaml --theme blueprint          # override the spec's theme
 
 ### Themes
 
-Six built-in presets, each with a light and a dark scheme and an embedded
-display face: `blueprint`, `editorial`, `paper-ink`, `swiss-clean`,
-`terminal-mono` and `warm-signal`. Pick one under `theme.preset`, or extend one
-with validated tokens:
+Ten built-in presets, each with a light and a dark scheme and an embedded
+display face: `blueprint`, `data-console`, `editorial`, `executive-report`,
+`paper-ink`, `product-studio`, `research-notebook`, `swiss-clean`,
+`terminal-mono` and `warm-signal`. Presets also choose component recipes, such
+as ledger tables or outlined cards, from closed lists. Pick one under
+`theme.preset`, or extend one with validated tokens:
 
 ```yaml
 theme:
@@ -128,8 +155,9 @@ presets. See [docs/themes.md](./docs/themes.md).
 
 ### Interaction
 
-Tabs, accordions, carousels, sliders, dialogs, filters, copy buttons and the
-theme toggle come from a small trusted runtime. A spec wires them with a closed
+Tabs, accordions, carousels, native form controls, filter bars, sortable
+tables, dialogs, copy buttons and the theme toggle come from a small trusted
+runtime. A spec wires them with a closed
 set of declarative actions (`ak-render catalog` lists them); there is no
 JavaScript field. Every page reads completely with scripts off, with motion
 reduced, in print and in a screenshot.
@@ -152,7 +180,8 @@ The page's Content Security Policy is derived from that policy. See
 
 ## Use it from an agent
 
-Agents follow one loop: `catalog` once, `describe` the blocks they use,
+Agents follow one loop: find blocks with `catalog` or `search-catalog`, start
+from a `recipe` when one fits, `describe --compact` the blocks they use,
 `validate` and fix diagnostics by JSON path, then compile. The
 [agent guide](./docs/agent-guide.md) has the details and [llms.txt](./llms.txt)
 is the LLM-facing index.
@@ -198,8 +227,9 @@ that cannot install Node or need a URL to hand someone.
 
 **Local CLI.** The loop above, with `ak-render` on the path or through `npx`.
 
-**Local MCP over stdio.** `ak-render mcp` serves `catalog`, `describe`,
-`validate`, `render` and `themes` as MCP tools. `render` writes the HTML to disk
+**Local MCP over stdio.** `ak-render mcp` serves `catalog`, `search-catalog`,
+`describe`, `recipes`, `recipe`, `validate`, `render` and `themes` as MCP
+tools. `render` writes the HTML to disk
 and returns only a summary, so the page never enters the agent's context.
 
 ```json
@@ -211,12 +241,13 @@ and returns only a summary, so the page never enters the agent's context.
 ```
 
 **Remote MCP over Streamable HTTP.** `https://render.agentkit.best/mcp` serves
-the same five tools. A remote server cannot write into your filesystem, so
+`catalog`, `search-catalog`, `describe`, `validate`, `render` and `themes` with
+the same contracts. A remote server cannot write into your filesystem, so
 `render` takes no `out`: it stores the page and returns the same summary plus an
 `artifactUrl` that lives for one hour, or a share link that lives for 30 days
 with `share: true`. The HTML still never enters the agent's context.
-`catalog`, `describe` and `themes` answer without a token; `validate` and
-`render` need an AgentKit bearer token.
+`catalog`, `search-catalog`, `describe` and `themes` answer without a token;
+`validate` and `render` need an AgentKit bearer token.
 
 ```json
 {
@@ -281,7 +312,8 @@ Six decisions define the boundary, argued in
    model-friendly spec normalizes into a flat node graph with stable IDs for
    rendering, future diff/patch/editor tooling, and MCP surfaces.
 2. **Catalog and registry are separate.** `catalog()` is compact and cheap;
-   `describe(type)` carries the full contract. Discovery stays out of the token
+   `describe(type)` carries the full contract, and `--compact` one line per
+   prop. Discovery stays out of the token
    budget until a block is actually selected.
 3. **The interaction runtime is trusted and declarative.** A closed action
    vocabulary, one small event-delegation script, native HTML controls first,
@@ -320,8 +352,11 @@ import {
 | `render(spec, options)` | Compile a spec to a standalone HTML artifact | Available |
 | `validate(spec)` | Report spec diagnostics without rendering | Available |
 | `normalize(spec)` | Produce the flat internal IR | Available |
-| `catalog()` | Compact list of available blocks and actions | Available |
+| `catalog(options)` | Compact list of blocks and actions, optionally one `category` | Available |
+| `searchCatalog(query)` | Block types ranked by intent words | Available |
 | `describe(type)` | Full machine-readable contract for one entry | Available |
+| `describeMany(types, options)` | Up to 12 contracts, full or `compact` | Available |
+| `recipes()`, `recipe(name)` | Page recipe list, and one recipe's starter spec | Available |
 | `loadTheme(input)` | Validate and resolve a theme preset | Available |
 | `buildThemeCatalog(options)` | Discover built-in, user, project, and explicit presets | Available |
 
@@ -331,8 +366,11 @@ import {
 ak-render page.yaml --out page.html
 ak-render - --out page.html < page.yaml   # read the spec from stdin
 ak-render validate page.json
-ak-render catalog
-ak-render describe carousel
+ak-render catalog [--category <c>]
+ak-render search-catalog <terms...>
+ak-render describe <type...> [--compact]
+ak-render recipes
+ak-render recipe <name>                   # YAML by default
 ak-render themes
 ak-render mcp                             # MCP server over stdio
 
@@ -345,8 +383,9 @@ Every command accepts `--json` and never prompts.
 ## Fixtures and snapshots
 
 `fixtures/pages/` holds the representative corpus the compiler is built
-against: plan, explain, recap, diff, dashboard, media, interactive, and theme
-showcase pages. `fixtures/snapshots/` holds one committed artifact per built-in
+against: plan, explain, recap, diff, dashboard, media, interactive and theme
+showcase pages, plus one page per widget family, layout, data and theme
+feature. `fixtures/snapshots/` holds one committed artifact per built-in
 preset. See [fixtures/README.md](./fixtures/README.md) and
 [docs/themes.md](./docs/themes.md). Fixtures are the specification: a new
 capability is not done until a fixture exercises it.
