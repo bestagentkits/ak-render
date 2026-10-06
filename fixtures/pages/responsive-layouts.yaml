@@ -1,0 +1,182 @@
+version: 1
+
+meta:
+  title: Responsive layouts
+  description: Explicit grid spans and semantic page layouts that reflow from desktop to phone without authored CSS
+  locale: en
+
+theme:
+  preset: swiss-clean
+
+policy:
+  network: deny
+
+blocks:
+  - type: hero
+    eyebrow: Layout
+    title: Release health, laid out by meaning
+    description: A 12-track dashboard grid, auto-fitting cards, and sidebar, aside and rail layouts. Every placement is a named value; the compiler owns the CSS.
+
+  - type: section
+    id: dashboard
+    title: Dashboard grid
+    blocks:
+      - type: grid
+        blocks:
+          - type: grid-item
+            span: 8
+            tabletSpan: 12
+            rowSpan: 2
+            blocks:
+              - type: chart
+                kind: line
+                title: Compile time by week
+                labels: [W1, W2, W3, W4, W5, W6]
+                series:
+                  - label: Milliseconds
+                    values: [52, 48, 46, 41, 39, 36]
+          - type: grid-item
+            span: 4
+            tabletSpan: 6
+            blocks:
+              - type: kpi
+                items:
+                  - label: Pass rate
+                    value: 98.4%
+                    delta: '+1.2'
+                    trend: up
+                    good: up
+          - type: grid-item
+            span: 4
+            tabletSpan: 6
+            blocks:
+              - type: key-value
+                title: Build
+                items:
+                  - key: Branch
+                    value: release/0.3
+                  - key: Runner
+                    value: linux-x64
+          - type: grid-item
+            span: 6
+            mobileSpan: 12
+            blocks:
+              - type: card
+                title: Determinism
+                text: Three compiles of every fixture produce the same hash.
+          - type: grid-item
+            span: 6
+            blocks:
+              - type: card
+                title: Offline
+                text: Every page opens from disk with zero network requests.
+
+  - type: section
+    id: cards
+    title: Auto-fit cards
+    blocks:
+      - type: grid
+        columns: auto
+        minItemWidth: narrow
+        gap: tight
+        blocks:
+          - type: card
+            title: Schema
+            text: The Page Spec stays version 1.
+          - type: card
+            title: Compiler
+            text: Placement derives from content.
+          - type: card
+            title: Themes
+            text: Every value comes from a token.
+          - type: card
+            title: Runtime
+            text: Scripts only decorate.
+          - type: card
+            title: Gallery
+            text: Each fixture is a page.
+
+  - type: section
+    id: sidebar
+    title: Sidebar layout
+    blocks:
+      - type: sidebar-layout
+        sidebar:
+          - type: list
+            title: Filters
+            items:
+              - text: Failing suites
+                badge: '3'
+              - text: Flaky tests
+                badge: '1'
+              - text: Slow tests
+        blocks:
+          - type: text
+            text: The sidebar stacks above the main column on narrow screens, matching its place in the reading order.
+          - type: table
+            columns: [Suite, Tests, Status]
+            rows:
+              - [render, '212', pass]
+              - [normalize, '96', pass]
+              - [browser, '31', flaky]
+
+  - type: section
+    id: aside
+    title: Main and aside
+    blocks:
+      - type: main-aside
+        aside:
+          - type: callout
+            tone: info
+            title: Key facts
+            text: The aside stays in view on wide screens and follows the main column on phones.
+          - type: stats
+            items:
+              - label: Blocks
+                value: '64'
+              - label: Presets
+                value: '10'
+        blocks:
+          - type: text
+            text: A report reads top to bottom in the main column while its summary stays beside it. The aside never overlaps the content and prints in place.
+          - type: steps
+            items:
+              - title: Validate
+                text: The spec is checked against the schema.
+              - title: Normalize
+                text: Blocks become a typed tree with stable ids.
+              - title: Render
+                text: The compiler emits one self-contained page.
+              - title: Verify
+                text: The output is checked for tree-shaking and policy.
+
+  - type: section
+    id: rail
+    title: Rail layout
+    blocks:
+      - type: rail-layout
+        label: Report sections
+        rail:
+          - type: link
+            label: Dashboard
+            href: '#ak-sec-dashboard'
+          - type: link
+            label: Cards
+            href: '#ak-sec-cards'
+          - type: link
+            label: Sidebar
+            href: '#ak-sec-sidebar'
+          - type: link
+            label: Aside
+            href: '#ak-sec-aside'
+        blocks:
+          - type: text
+            text: The rail is a compact vertical list of links beside the content. Below 768px it becomes a strip above it that scrolls sideways on its own.
+          - type: stack
+            align: center
+            gap: tight
+            blocks:
+              - type: badge
+                text: Centered stack
+              - type: text
+                text: A stack can center its children.
