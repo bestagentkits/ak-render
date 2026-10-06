@@ -19,6 +19,9 @@ const fixtures = readdirSync(pagesDir)
 // reports missing-asset console errors that belong to the harness, not the page.
 const workspace = browserWorkspace('benchmark', { assets: true });
 
+/** Chromium's console message for a view transition that outlived its update window. */
+const VIEW_TRANSITION_TIMEOUT = 'Transition was aborted because of timeout in DOM update';
+
 /** Widths the responsive contract names. */
 const WIDTHS = [375, 768, 1440] as const;
 
@@ -152,7 +155,12 @@ test('measures every fixture for browser-side gates', async ({ page }) => {
 
     const consoleErrors: string[] = [];
     page.on('console', (message) => {
-      if (message.type() === 'error') consoleErrors.push(message.text());
+      if (message.type() !== 'error') return;
+      // Chromium reports this when a starved main thread lets a view
+      // transition's ~4s update window lapse; the switch itself still lands.
+      // It measures the machine's load, not the page.
+      if (message.text().startsWith(VIEW_TRANSITION_TIMEOUT)) return;
+      consoleErrors.push(message.text());
     });
     page.on('pageerror', (error) => consoleErrors.push(error.message));
 

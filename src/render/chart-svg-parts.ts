@@ -88,14 +88,31 @@ export function numericXTicks(
     .join('');
 }
 
+/**
+ * At most about eight evenly spaced label positions. The first and the last
+ * category are always labelled, so a series never reads as ending early; when
+ * the last would crowd the previous kept label, that one gives way.
+ */
+export function thinnedLabelIndexes(count: number): number[] {
+  const step = Math.max(1, Math.ceil(count / 8));
+  const indexes: number[] = [];
+  for (let index = 0; index < count; index += step) indexes.push(index);
+  const last = count - 1;
+  const previous = indexes.at(-1);
+  if (previous !== undefined && previous !== last) {
+    if (indexes.length > 1 && last - previous < step) indexes.pop();
+    indexes.push(last);
+  }
+  return indexes;
+}
+
 export function categoryLabels(
   labels: string[],
   position: (index: number) => number,
   frame: Frame,
 ): string {
   const parts: string[] = [];
-  const step = Math.max(1, Math.ceil(labels.length / 8));
-  for (let index = 0; index < labels.length; index += step) {
+  for (const index of thinnedLabelIndexes(labels.length)) {
     parts.push(
       `<text class="ak-chart-label" x="${position(index)}" y="${frame.height - frame.bottom + 20}" text-anchor="middle">${escapeText(
         labels[index] ?? '',

@@ -7,6 +7,7 @@ import {
   histogramEdges,
 } from '../../src/render/chart-kinds-histogram-waterfall.js';
 import { tickFormatter, tickValues } from '../../src/render/chart-scales.js';
+import { thinnedLabelIndexes } from '../../src/render/chart-svg-parts.js';
 import { validate } from '../../src/spec/validate.js';
 
 /**
@@ -121,5 +122,11 @@ blocks:
       expect(fitted.ok, markup).toBe(false);
       expect(fitted.ok ? '' : fitted.reason, markup).toMatch(/poster|href/u);
     }
+  });
+
+  it('always labels the first and last category of a long axis', () => {
+    expect(thinnedLabelIndexes(8)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+    expect(thinnedLabelIndexes(12)).toEqual([0, 2, 4, 6, 8, 11]);
+    expect(thinnedLabelIndexes(40)).toEqual([0, 5, 10, 15, 20, 25, 30, 39]);
   });
 });
