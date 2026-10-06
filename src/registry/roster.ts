@@ -619,7 +619,7 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
     useCases: ['install steps', 'cli session'],
     purpose: 'A command-line session: commands with their output.',
     summary:
-      'Terminal: window-framed session whose lines type in on load; commands, output, comments, success, and errors are styled apart.',
+      'Terminal: window-framed session that types in on load; commands, output and errors are styled apart.',
     props: {
       title: str({ maxLength: 120, default: 'Terminal' }),
       lines: itemsOf(
@@ -828,7 +828,7 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
     useCases: ['product demo', 'recorded talk'],
     purpose: 'Local video or a network-denied fallback.',
     summary:
-      'Video: plays local sources; a provider reference becomes a poster plus link; network sources degrade to poster plus link.',
+      'Video: plays local sources; a provider or network source degrades to a poster plus link.',
     props: {
       title: LABEL,
       src: urlProp({ required: true, asset: 'media' }),
@@ -857,7 +857,7 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
     useCases: ['podcast clip', 'voice note'],
     purpose: 'Local audio or a network-denied fallback.',
     summary:
-      'Audio: plays local sources; a provider reference becomes metadata plus link; network sources degrade to metadata plus link.',
+      'Audio: plays local sources; a provider or network source degrades to metadata plus link.',
     props: {
       title: LABEL,
       src: urlProp({ required: true, asset: 'media' }),

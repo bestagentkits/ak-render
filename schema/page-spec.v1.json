@@ -2066,7 +2066,7 @@
           "$ref": "#/$defs/condition"
         }
       },
-      "description": "Terminal: window-framed session whose lines type in on load; commands, output, comments, success, and errors are styled apart."
+      "description": "Terminal: window-framed session that types in on load; commands, output and errors are styled apart."
     },
     "block-file-tree": {
       "type": "object",
@@ -2582,7 +2582,7 @@
           "$ref": "#/$defs/condition"
         }
       },
-      "description": "Video: plays local sources; a provider reference becomes a poster plus link; network sources degrade to poster plus link."
+      "description": "Video: plays local sources; a provider or network source degrades to a poster plus link."
     },
     "block-audio": {
       "type": "object",
@@ -2650,7 +2650,7 @@
           "$ref": "#/$defs/condition"
         }
       },
-      "description": "Audio: plays local sources; a provider reference becomes metadata plus link; network sources degrade to metadata plus link."
+      "description": "Audio: plays local sources; a provider or network source degrades to metadata plus link."
     },
     "block-button": {
       "type": "object",

@@ -1,11 +1,25 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { compile } from '../../src/render/render.js';
 import { validate } from '../../src/spec/validate.js';
 
 const pagesDir = fileURLToPath(new URL('../../fixtures/pages', import.meta.url));
-const files = readdirSync(pagesDir).filter((name) => name.endsWith('.yaml'));
+// The corpus as it stood before these features existed. Newer fixtures exist
+// to exercise the new fields, so they are not part of this contract.
+const files = [
+  'all-components.yaml',
+  'brainstorm.yaml',
+  'dashboard.yaml',
+  'diff.yaml',
+  'explain.yaml',
+  'interactive.yaml',
+  'media.yaml',
+  'plan.yaml',
+  'recap.yaml',
+  'showcase.yaml',
+  'theme-showcase.yaml',
+];
 
 /**
  * Specs written before nested slots, datasets, conditions and recipes existed

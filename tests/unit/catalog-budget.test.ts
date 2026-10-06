@@ -30,7 +30,7 @@ const PLANNED_BLOCKS = 83;
  * Summaries written before the length cap existed. Each entry must still be
  * over the cap, so trimming one forces its removal here; the list only shrinks.
  */
-const SUMMARIES_AWAITING_TRIM: readonly string[] = ['terminal', 'video', 'audio'];
+const SUMMARIES_AWAITING_TRIM: readonly string[] = [];
 
 function cliBytes(args: string[]): number {
   let stdout = '';
