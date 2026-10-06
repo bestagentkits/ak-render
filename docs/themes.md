@@ -16,11 +16,20 @@ constrained as a built-in one.
 | `terminal-mono` | Near-black terminal with green and amber, monospace throughout. |
 | `swiss-clean` | Neutral high-contrast grid: one red accent, no decoration. |
 | `warm-signal` | Warm neutral surfaces signalling with amber and emerald. |
+| `data-console` | Dense operations console: slate surfaces, a cyan accent, ledger tables and quiet charts. |
+| `executive-report` | White and ink with a navy accent, headline metrics, outlined cards. |
+| `product-studio` | Soft neutral surfaces, a violet accent, framed media and raised cards. |
+| `research-notebook` | Paper with an oxblood accent, serif reading type, ledger tables and outlined notes. |
 
 Each preset declares a **light and a dark** token set, so the emitted artifact
 supports both schemes and the built-in theme toggle. The legacy curated palettes
 from the AgentKit HTML references were carried over as token data; see
 [ADR 0001](./adr/0001-page-spec-compiler-boundary.md).
+
+Every built-in meets WCAG 2.2 contrast in both schemes: body text at 7:1 or
+more on the background, surface and raised surface, and muted text, the accent,
+the four tones and text on the accent at 4.5:1 or more
+(`tests/unit/theme-contrast.test.ts`).
 
 ## Token catalogue
 
@@ -44,6 +53,50 @@ hex.
 
 `motion-policy: none` and the `prefers-reduced-motion` media query both zero the
 transition duration in the emitted artifact.
+
+## Recipes
+
+Tokens change colour, type and spacing. **Recipes** change how a component is
+drawn: a preset or a spec picks one value per surface from a closed list, and
+the compiler owns the CSS behind each value. A recipe is never CSS.
+
+| Surface | Values (first is the default) | What a non-default value does |
+| --- | --- | --- |
+| `cards` | `raised`, `flat`, `outlined` | `flat`: a tonal fill with no border or shadow. `outlined`: a firm hairline, no shadow. |
+| `sections` | `ruled`, `divided`, `plain` | `divided`: a heavier full-width rule and a larger break. `plain`: no rule and no accent tab. |
+| `tables` | `default`, `ledger`, `minimal` | `ledger`: zebra rows, lining tabular figures, a strong header rule. `minimal`: no frame, a quiet header, compact rows. |
+| `charts` | `default`, `minimal` | Gridlines drop away except the baseline; axis labels lose weight but keep their contrast. |
+| `hero` | `default`, `compact` | Left-aligned, tighter, one step down the display scale. |
+| `metrics` | `default`, `headline` | Stats and KPI values grow, with the label above the value. |
+| `media` | `default`, `framed` | Images sit in an inset frame with the caption inside it. |
+| `callouts` | `tinted`, `outlined` | A tone outline on the page instead of a tinted fill; the glyph stays. |
+
+Density is not a recipe: it stays the `density` token.
+
+```yaml
+theme:
+  preset: data-console
+  recipes:
+    cards: raised        # override one surface; the rest come from the preset
+```
+
+Resolution, from lowest to highest: the defaults, then the `extends` chain from
+its root, then the preset, then the spec's `theme.recipes`. A theme passed with
+`--theme` (or the `theme` render option) replaces the spec's theme, recipes
+included. Only non-default choices reach the page, as `data-r-<surface>`
+attributes on `<html>` plus their sheets, and a sheet for a feature block (a
+chart, a KPI, a data table) is emitted only when the page uses it. A page that
+keeps every default renders the same bytes as one without recipes.
+
+| Preset | Recipes |
+| --- | --- |
+| `data-console` | `hero: compact`, `tables: ledger`, `charts: minimal`, `cards: flat`, `sections: divided` (and `density: compact`) |
+| `executive-report` | `metrics: headline`, `charts: minimal`, `sections: divided`, `cards: outlined` |
+| `product-studio` | `media: framed`, `cards: raised` |
+| `research-notebook` | `callouts: outlined`, `tables: ledger`, `hero: compact`, `cards: flat` |
+
+An unknown surface or value is a `SPEC_VALIDATION_ERROR` whose
+`details.allowed` lists the valid choices.
 
 ## Defining a preset inline
 
@@ -80,6 +133,8 @@ tokens:
   color-accent: "#b8860b"
 dark:
   color-accent: "#e0b64a"
+recipes:
+  tables: ledger
 ```
 
 Reusable presets are discovered from, in **increasing** precedence:
@@ -125,6 +180,10 @@ to a system stack that ends in a generic family:
 | `swiss-clean` | `AK Inter Tight` | headings and body |
 | `terminal-mono` | `AK JetBrains Mono` | headings, body, and code |
 | `warm-signal` | `AK Plus Jakarta Sans` | headings and body |
+| `data-console` | `AK Geist`, `AK JetBrains Mono` | headings and body; labels and code |
+| `executive-report` | `AK Inter Tight` | headings and body |
+| `product-studio` | `AK Plus Jakarta Sans` | headings and body |
+| `research-notebook` | `AK Fraunces` | headings (body stays the system serif) |
 
 The compiler inlines a face as a `data:` WOFF2 only when a resolved font stack
 names it (`src/render/font-faces.ts`). The Latin subset is always emitted; the
@@ -169,3 +228,4 @@ as a failing hash assertion.
 | `space-unit: 8px; color: red` | `POLICY_VIOLATION` |
 | `density: gigantic` | `POLICY_VIOLATION` |
 | Unknown field in a preset file | `SPEC_VALIDATION_ERROR` listing allowed fields |
+| `recipes: { tables: spreadsheet }` or an unknown surface | `SPEC_VALIDATION_ERROR` with `details.allowed` |
