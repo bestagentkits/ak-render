@@ -18,12 +18,18 @@ const SLOW = 'calc(var(--ak-motion-duration) * 4)';
 const MID = 'calc(var(--ak-motion-duration) * 1.6)';
 const UNIT = (n: number) => `calc(var(--ak-space-unit) * ${n})`;
 
-/** Stagger for terminal lines; lines past the last step share its delay. */
-const TERMINAL_STEPS = Array.from(
-  { length: 24 },
-  (_, index) =>
-    `.ak-terminal[data-ak-inview] .ak-term-line:nth-child(${index + 1}){animation-delay:${(index * 0.34).toFixed(2)}s}`,
-).join('');
+/**
+ * Stagger for terminal lines; lines past the last step share its delay.
+ *
+ * A line waiting for its turn is invisible, so the whole session must settle
+ * fast: the last line starts by 0.88s and every line is drawn by about 1.4s.
+ * A longer cascade left the last lines blank in captures taken after a scroll.
+ */
+const TERMINAL_STEP_COUNT = 12;
+const TERMINAL_STEPS = Array.from({ length: TERMINAL_STEP_COUNT }, (_, index) => {
+  const nth = index === TERMINAL_STEP_COUNT - 1 ? `n + ${TERMINAL_STEP_COUNT}` : String(index + 1);
+  return `.ak-terminal[data-ak-inview] .ak-term-line:nth-child(${nth}){animation-delay:${(index * 0.08).toFixed(2)}s}`;
+}).join('');
 
 /** Each KPI card's sparkline draws a beat after the previous one. */
 const KPI_STEPS = [2, 3, 4]

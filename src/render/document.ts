@@ -13,6 +13,7 @@
  * to be useful here (it only has to distinguish the compiler's own elements).
  */
 
+import { ADAPTER_STYLE_MARKER } from '../diagram/adapter.js';
 import { stableHash } from '../hash.js';
 import type { IrDocument, NetworkPolicy } from '../ir.js';
 import { escapeAttribute, escapeText } from './escape.js';
@@ -88,6 +89,21 @@ export function buildContentSecurityPolicy(input: DocumentInput): {
   };
 }
 
+/**
+ * Give accepted diagram adapter `<style>` elements the page style nonce.
+ *
+ * Adapter markup passed the trust check before it reached the body, and the
+ * renderer marked each of its style elements. Spec text cannot forge the
+ * marker, because every `<` in spec text is escaped. The policy stays
+ * nonce-only: no `'unsafe-inline'`, and inline `style` attributes stay refused.
+ */
+function nonceAdapterStyles(body: string, styleNonce: string): string {
+  return body.replaceAll(
+    `<style ${ADAPTER_STYLE_MARKER}`,
+    `<style nonce="${escapeAttribute(styleNonce)}" ${ADAPTER_STYLE_MARKER}`,
+  );
+}
+
 export function assembleDocument(input: DocumentInput): AssembledDocument {
   const { csp, styleNonce, scriptNonce } = buildContentSecurityPolicy(input);
   const { meta } = input.ir;
@@ -144,7 +160,7 @@ export function assembleDocument(input: DocumentInput): AssembledDocument {
     '<div class="ak-progress-rail" aria-hidden="true"></div>',
     `<div class="ak-shell${outline === '' ? '' : ' ak-shell--outline'}">`,
     themeToggle,
-    input.body,
+    nonceAdapterStyles(input.body, styleNonce),
     outline,
     colophon,
     '</div>',

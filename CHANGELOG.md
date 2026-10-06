@@ -24,6 +24,15 @@ Release mechanics and the compatibility contract live in
 
 - A remote video `poster` that the network policy blocks now fails `validate` with a `POLICY_VIOLATION` at the block's `poster` path, naming the reason. Before, validate passed and compile failed at `$` with "emitted a remote resource reference". A poster is gated by the `images` capability, an allowed remote poster's origin joins the CSP, and the renderer drops a blocked poster even for an IR that skipped validation.
 
+### Fixed
+
+- Diagram adapter `<style>` elements now receive the page style nonce, so styled adapter SVG renders as drawn instead of in default black. The policy stays nonce-only: inline `style` attributes are removed from adapter output with a warning, and adapter CSS that uses `@import` or a remote `url()` is rejected. `docs/diagram-adapter.md` explains how to style adapter output.
+- A long unbroken token, such as a path or an env var list, no longer widens the page on a phone. Key-value values, list items, text and callouts break the token inside their own line, so the reported key-value page no longer scrolls sideways at 375px.
+- A `diagram-panel` shows adapter SVG at its natural size. A wide diagram scrolls sideways inside its panel, a named region that scrolls from the keyboard, instead of shrinking its labels until they are unreadable. In print it is scaled to the page width.
+- A `diagram-panel` whose adapter rendered no longer shows the structured description beside the drawing. The description stays in the document behind a closed "Text description" disclosure.
+- A long `terminal` session no longer leaves its last lines blank in a capture. Lines now stagger 80ms apart instead of 340ms, lines past the twelfth share its delay, and the whole session is drawn about 1.4s after it arrives.
+- A wide `table` or adapter diagram now shows a soft shade on each edge that has more content beyond it, so a frame that scrolls sideways no longer looks clipped. A frame that fits shows none.
+
 ## [0.2.0] - 2026-10-05
 
 Every emitted page changes in this release: new styles, embedded fonts, and a

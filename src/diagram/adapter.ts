@@ -17,6 +17,9 @@
  *   "verified before it reaches the artifact".
  * - The fallback text is always emitted, so the diagram's content is available
  *   to assistive technology and to a reader whose adapter is not installed.
+ * - Accepted markup is fitted to the page's Content Security Policy: its
+ *   `<style>` elements are marked to receive the page style nonce, and inline
+ *   `style` attributes, which that policy refuses, are removed and reported.
  */
 
 import type { JsonValue } from '../json.js';
@@ -50,6 +53,11 @@ export interface DiagramAdapterResult {
   readonly adapter: string;
   /** Set when the adapter produced output that the trust boundary rejected. */
   readonly rejected?: string;
+  /**
+   * Number of inline `style` attributes removed from accepted markup. The page
+   * policy would refuse them anyway; the count lets the compiler say so.
+   */
+  readonly removedInlineStyles?: number;
 }
 
 export const DIAGRAM_ADAPTER_CONTRACT_VERSION = 1 as const;
@@ -76,6 +84,10 @@ const FORBIDDEN_ADAPTER_PATTERNS: readonly { pattern: RegExp; reason: string }[]
   { pattern: /\son[a-z]+\s*=/iu, reason: 'inline event handler' },
   { pattern: /javascript\s*:/iu, reason: 'javascript: URL' },
   { pattern: /\bdata\s*:\s*text\/html/iu, reason: 'data: text/html URL' },
+  // Adapter `<style>` elements are live on the page, so they must not pull in
+  // another stylesheet or reach the network from CSS.
+  { pattern: /@import/iu, reason: 'CSS @import' },
+  { pattern: /url\(\s*['"]?\s*(?:[a-z][a-z0-9+.-]*:)?\/\//iu, reason: 'remote CSS url()' },
 ];
 
 export interface AdapterMarkupCheck {
@@ -103,6 +115,56 @@ export function checkAdapterMarkup(markup: string): AdapterMarkupCheck {
 }
 
 /**
+ * Attribute that marks an adapter `<style>` element for the page style nonce.
+ *
+ * The nonce is a hash of the finished page stylesheet, which is only known
+ * after every block has rendered, so the renderer marks the element and the
+ * document assembler fills the nonce in (see `src/render/document.ts`).
+ */
+export const ADAPTER_STYLE_MARKER = 'data-ak-adapter-style';
+
+/** A start tag: name, attribute list, optional self-closing slash. */
+const START_TAG =
+  /<([A-Za-z][A-Za-z0-9:-]*)((?:\s+[^\s"'>/=]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?)*)\s*(\/?)>/gu;
+/** One attribute inside a start tag's attribute list. */
+const ATTRIBUTE = /\s+([^\s"'>/=]+)(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?/gu;
+
+/**
+ * Fit checked adapter markup to the page's Content Security Policy.
+ *
+ * The page allows styles only by nonce. A `<style>` element gets the marker the
+ * assembler swaps for that nonce; any nonce the adapter wrote itself is dropped,
+ * so the page decides which elements it trusts. Inline `style` attributes can
+ * never carry a nonce, so the browser would refuse them and log a violation on
+ * open; they are removed here and counted instead. Removal changes nothing a
+ * reader sees, because the policy already ignores those attributes.
+ */
+export function fitAdapterMarkupToPolicy(markup: string): {
+  markup: string;
+  removedInlineStyles: number;
+} {
+  let removedInlineStyles = 0;
+  const fitted = markup.replace(
+    START_TAG,
+    (_tag: string, name: string, attributes: string, selfClosing: string) => {
+      const kept = attributes.replace(ATTRIBUTE, (attribute: string, attributeName: string) => {
+        const lowered = attributeName.toLowerCase();
+        if (lowered === 'style') {
+          removedInlineStyles += 1;
+          return '';
+        }
+        return lowered === 'nonce' || lowered === ADAPTER_STYLE_MARKER ? '' : attribute;
+      });
+      const isStyle = name.toLowerCase() === 'style';
+      return `<${isStyle ? 'style' : name}${isStyle ? ` ${ADAPTER_STYLE_MARKER}` : ''}${kept}${
+        selfClosing === '' ? '' : ' /'
+      }>`;
+    },
+  );
+  return { markup: fitted, removedInlineStyles };
+}
+
+/**
  * Run an adapter and return markup that has passed the trust boundary.
  *
  * A `rejected` reason means the adapter answered but its answer was refused; the
@@ -124,5 +186,12 @@ export function runDiagramAdapter(
   if (!check.ok) {
     return { markup: '', adapter: adapter.name, rejected: check.reason ?? 'rejected' };
   }
-  return { markup, adapter: adapter.name };
+  const fitted = fitAdapterMarkupToPolicy(markup);
+  return {
+    markup: fitted.markup,
+    adapter: adapter.name,
+    ...(fitted.removedInlineStyles === 0
+      ? {}
+      : { removedInlineStyles: fitted.removedInlineStyles }),
+  };
 }
