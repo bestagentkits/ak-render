@@ -58,7 +58,7 @@ blocks:
         right:
           label: The agent writes a Page Spec
           items:
-            - The explain gallery page is a 2.6 kB spec; the compiler emits the other 119.0 kB
+            - The explain gallery page is a 2.6 kB spec; the compiler emits the other 121.4 kB
             - The same spec and compiler version produce identical bytes and hash
             - One file that opens from disk, with fonts embedded and the network denied
             - Keyboard, reduced motion, print and the dark scheme come from the compiler
@@ -69,10 +69,10 @@ blocks:
     blocks:
       - type: steps
         items:
-          - title: Catalog
-            text: 'ak-render catalog lists all 54 block types and every action in 5,164 bytes. The agent reads it once per task.'
+          - title: Find
+            text: 'ak-render catalog lists all 83 block types and every action in 7,228 bytes. search-catalog ranks block types by intent words, and catalog --category lists one group.'
           - title: Describe
-            text: 'ak-render describe <type> --json returns one contract: props, defaults, bounds, slots and actions. The hero contract is 1,844 bytes.'
+            text: 'ak-render describe <type...> --compact returns one line per prop for several blocks at once. The full hero contract with --json is 2,021 bytes.'
           - title: Validate
             text: 'ak-render validate <spec> --json returns diagnostics with a stable code and the JSON path to fix. Exit code 1 means fix and retry.'
           - title: Compile
@@ -85,11 +85,11 @@ blocks:
           - kind: command
             text: ak-render catalog | head -1
           - kind: output
-            text: Page Spec v1 — 54 blocks
+            text: Page Spec v1 — 83 blocks
           - kind: command
             text: ak-render describe hero --json | wc -c
           - kind: output
-            text: '1844'
+            text: '2021'
           - kind: comment
             text: '# a typo in the spec comes back with the path to fix'
           - kind: command
@@ -107,13 +107,13 @@ blocks:
           - kind: command
             text: ak-render plan.yaml --out plan.html
           - kind: output
-            text: wrote 108051 bytes to plan.html (1 runtime features, hash 03km1ph142z3zh)
+            text: wrote 109000 bytes to plan.html (1 runtime features, hash 0j9tjby0y34eej)
           - kind: comment
             text: '# same spec from stdin, same bytes'
           - kind: command
             text: cat plan.yaml | ak-render - --out again.html
           - kind: output
-            text: wrote 108051 bytes to again.html (1 runtime features, hash 03km1ph142z3zh)
+            text: wrote 109000 bytes to again.html (1 runtime features, hash 0j9tjby0y34eej)
           - kind: command
             text: cmp plan.html again.html && echo identical
           - kind: success
@@ -165,13 +165,13 @@ blocks:
         title: Where the savings come from
         items:
           - title: Context
-            text: The 5.2 kB catalog and per-block contracts replace pages of HTML style guidance.
+            text: The 7.2 kB catalog and per-block contracts replace pages of HTML style guidance.
           - title: Generation
             text: The agent stops writing CSS, script and markup. The median legacy page was 26% visible text.
           - title: Validation
             text: A failed check returns a stable code and the JSON path to fix, not a broken page to inspect.
           - title: Context shielding
-            text: A compiled page is 107–227 kB. The summary the agent reads back is under 800 characters.
+            text: A compiled page is 109–240 kB. The summary the agent reads back is under 800 characters.
           - title: Determinism
             text: The same spec compiles to the same bytes, so a rerun gives the agent nothing new to review.
           - title: Edits
@@ -188,18 +188,18 @@ blocks:
       - type: bento
         items:
           - title: Charts that read at a glance
-            text: Bar, line, area, pie, donut, sparkline and progress, each with a data table behind it.
+            text: Sixteen kinds, from bar and line to scatter, heatmap, waterfall and treemap, bound to shared datasets, each with a data table behind it.
             eyebrow: Chart
             size: large
             src: assets/crop-chart.webp
             alt: A bar chart from the dashboard gallery page, cropped at twice the pixel density
           - title: Block types in the catalog
-            value: '54'
-            text: From hero and bento to terminal and CTA, including the page root.
+            value: '83'
+            text: From hero and bento to data tables, kanban boards and pricing, including the page root.
             size: small
           - title: Built-in theme presets
-            value: '6'
-            text: Each with a light and a dark token set and an embedded display face.
+            value: '10'
+            text: Each with a light and a dark token set, an embedded display face and its own component recipes.
             size: small
           - title: Diffs with intent
             text: Before and after, side by side, with the risk spelled out.
@@ -394,11 +394,11 @@ blocks:
 
   - type: section
     id: themes
-    title: Six presets, light and dark
+    title: Ten presets, light and dark
     blocks:
       - type: text
         variant: lead
-        text: A theme is typed data, never CSS. Pick a preset, or extend one with validated tokens; every preset ships both schemes and its fonts inside the file.
+        text: A theme is typed data, never CSS. Pick a preset, or extend one with validated tokens and component recipes; every preset ships both schemes and its fonts inside the file.
       - type: card-grid
         items:
           - title: blueprint
@@ -413,6 +413,14 @@ blocks:
             text: Neutral high-contrast grid with one red accent. Set in Inter Tight.
           - title: warm-signal
             text: Warm neutral surfaces signalling with amber and emerald. Set in Plus Jakarta Sans.
+          - title: data-console
+            text: Dense operations console with a cyan accent, ledger tables and quiet charts. Set in Geist and JetBrains Mono.
+          - title: executive-report
+            text: White and ink with a navy accent, headline metrics and outlined cards. Set in Inter Tight.
+          - title: product-studio
+            text: Soft neutral surfaces, a violet accent, framed media and raised cards. Set in Plus Jakarta Sans.
+          - title: research-notebook
+            text: Paper with an oxblood accent, serif reading type, ledger tables and outlined notes. Set in Fraunces.
       - type: before-after
         title: One spec, two color schemes
         before:
@@ -497,7 +505,7 @@ blocks:
           codex plugin marketplace add bestagentkits/ak-render
           codex plugin add ak-render@ak-render
       - type: text
-        text: 'ak-render mcp serves the same loop over stdio as five MCP tools: catalog, describe, validate, render and themes. The render tool writes the file and returns only a summary, so the page never enters the context.'
+        text: 'ak-render mcp serves the same loop over stdio as MCP tools: catalog, search-catalog, describe, recipes, recipe, validate, render and themes. The render tool writes the file and returns only a summary, so the page never enters the context.'
       - type: code
         language: json
         title: MCP client configuration
@@ -552,7 +560,7 @@ blocks:
             caption: 'Media: video, images, before and after'
           - src: assets/shot-theme-showcase.webp
             alt: Screenshot of the theme-showcase.html gallery page compiled by AK Render
-            caption: 'Theme showcase: one spec, six presets'
+            caption: 'Theme showcase: one spec under every preset'
       - type: toolbar
         title: Open a demo
         items:
@@ -589,6 +597,33 @@ blocks:
           - type: link
             label: theme-showcase
             href: gallery/theme-showcase.html
+          - type: link
+            label: rich-composition
+            href: gallery/rich-composition.html
+          - type: link
+            label: responsive-layouts
+            href: gallery/responsive-layouts.html
+          - type: link
+            label: data-tables
+            href: gallery/data-tables.html
+          - type: link
+            label: charts-v2
+            href: gallery/charts-v2.html
+          - type: link
+            label: controls
+            href: gallery/controls.html
+          - type: link
+            label: engineering-widgets
+            href: gallery/engineering-widgets.html
+          - type: link
+            label: evidence-widgets
+            href: gallery/evidence-widgets.html
+          - type: link
+            label: product-widgets
+            href: gallery/product-widgets.html
+          - type: link
+            label: theme-dialects
+            href: gallery/theme-dialects.html
 
   - type: section
     id: measured
@@ -598,11 +633,11 @@ blocks:
       - type: kpi
         items:
           - label: Catalog the agent reads once
-            value: 5.2 kB
-            caption: ak-render catalog prints 5,164 bytes
+            value: 7.2 kB
+            caption: ak-render catalog prints 7,228 bytes
           - label: Spec the agent writes
             value: 2.6 kB
-            caption: explain.yaml; the compiled page is 121.6 kB
+            caption: explain.yaml; the compiled page is 124.0 kB
           - label: Network requests on open
             value: '0'
             caption: explain.html from file:// in Chromium
