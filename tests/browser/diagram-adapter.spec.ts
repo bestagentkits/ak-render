@@ -57,4 +57,60 @@ test.describe('diagram adapter output in the browser', () => {
     expect(fill).toBe('rgb(255, 255, 255)');
     expect(errors).toEqual([]);
   });
+
+  for (const width of [1440, 768, 375]) {
+    test(`a wide diagram keeps its size and scrolls inside the panel at ${width}px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 812 });
+      await open(page, `wide-${width}`);
+      const svgWidth = await page
+        .locator('.ak-diagram-rendered svg')
+        .evaluate((svg) => svg.getBoundingClientRect().width);
+      expect(svgWidth).toBe(2000);
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - window.innerWidth,
+      );
+      expect(overflow).toBe(0);
+    });
+  }
+
+  test('the scroller is a named region that scrolls from the keyboard', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await open(page, 'keyboard');
+    const region = page.getByRole('region', { name: 'Architecture' });
+    await expect(region).toHaveAttribute('tabindex', '0');
+    await region.focus();
+    await page.keyboard.press('ArrowRight');
+    await expect.poll(() => region.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0);
+  });
+
+  test('edge shades follow the scroll position', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await open(page, 'edges');
+    const region = page.locator('.ak-diagram-rendered');
+    const sizes = () =>
+      region.evaluate((element) => getComputedStyle(element).backgroundSize.split(','));
+    // At the start only the trailing edge is shaded.
+    expect((await sizes()).slice(0, 2).map((size) => size.trim())).toEqual([
+      '0px 100%',
+      '14px 100%',
+    ]);
+    await region.evaluate((element) => {
+      element.scrollLeft = element.scrollWidth / 2;
+    });
+    await expect
+      .poll(async () => (await sizes()).slice(0, 2).map((size) => size.trim()))
+      .toEqual(['14px 100%', '14px 100%']);
+  });
+
+  test('the text description folds away behind a disclosure', async ({ page }) => {
+    await open(page, 'fallback');
+    const details = page.locator('details[data-ak-diagram-fallback]');
+    await expect(details).not.toHaveAttribute('open', '');
+    await expect(page.locator('.ak-diagram-fallback')).toBeHidden();
+    await details.locator('summary').click();
+    await expect(page.locator('.ak-diagram-fallback')).toBeVisible();
+    await expect(page.locator('.ak-diagram-fallback')).toContainText('Alpha');
+  });
 });

@@ -41,6 +41,11 @@ Themes are typed data (`src/theme/tokens.ts`); the stylesheet consumes these tok
 - Any other graph (branches, cycles, unknown ids) shows its nodes as cards plus an explicit `from → to` list. Arrows are never drawn between nodes the spec does not connect.
 - The code lives in `src/render/diagram-fallback.ts`.
 
+## Diagrams with an adapter
+
+- The adapter's SVG sits in a card panel at its natural size. A wide drawing scrolls sideways inside the panel, with the same edge shades as a wide table, and prints scaled to the page width.
+- The structured description folds behind a closed "Text description" disclosure, so it does not repeat the drawing. See `docs/diagram-adapter.md`.
+
 ## Signature layer
 
 The signature layer is `src/render/signature-styles.ts`, which ships on every page.
@@ -87,7 +92,7 @@ The renderers are in `src/render/showcase-blocks.ts` and the feature sheets in `
 |---|---|---|
 | `bento` | `bento` | Four-column dense grid. Tiles are `small`, `wide`, `tall` or `large`, and can hold an image, a gradient display figure, an eyebrow, a title and text. 2 columns at ≤900px, 1 at ≤560px. |
 | `marquee` | `marquee` | The first track is the real list. A duplicate `aria-hidden` track makes the loop seamless and appears only while it moves. Even items are outlined. Hovering pauses it. Under reduced motion or in print it is a static wrapped list. |
-| `terminal` | `terminal`, `copy` | An always-dark window (fixed palette, accent-tinted) with command, output, comment, success and error lines. Commands type in and other lines fade in, staggered. A caret blinks. Copy copies the text without the prompt glyphs. |
+| `terminal` | `terminal`, `copy` | An always-dark window (fixed palette, accent-tinted) with command, output, comment, success and error lines. Commands type in and other lines fade in, staggered 80ms apart; lines past the twelfth share its delay, so a session of any length is fully drawn about 1.4s after it arrives. The body grows to its last line. A caret blinks. Copy copies the text without the prompt glyphs. |
 | `file-tree` | `tree` | Built from flat paths. Folders sort first; single-folder chains fold into `a/b/`. Uses native `<details>` folders, status pills in text, and a summary count. |
 | `before-after` | `before-after` | Without script, two images side by side. With script, an overlay clipped at `--ak-split`, driven by a transparent native range input (keyboard, pointer drag, touch) and a decorative handle. |
 | `kpi` | `kpi` | Value, signed delta, and a verdict from `trend` against `good` (green, red or neutral, also stated in text), plus an edge-to-edge sparkline that draws in. |
@@ -109,6 +114,7 @@ Images in these blocks go through the same network gate as `image` and use the `
 - Every page ends with a colophon: the title, the generator version and "Back to top". It contains no dates, so output stays deterministic.
 - Code blocks number their lines when there are two or more, show the language as a pill, and have a Copy button that shows a ✓ for 1.6s.
 - Numeric table columns align right.
+- A table wider than the column scrolls inside its frame, never the page. A soft shade marks each edge that has more beyond it, driven by a scroll timeline, so a table that fits shows none.
 - Status values map to toned badges: diff status, risk level, and review kind. Diff line counts are signed and colored, and zero stays muted.
 
 ## Motion

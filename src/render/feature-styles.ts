@@ -11,9 +11,24 @@
  */
 
 import type { RuntimeFeature } from '../registry/roster.js';
+import { scrollEdges } from './derived-variables.js';
 import { SHOWCASE_CSS } from './showcase-styles.js';
 
 const TRANSITION = 'transition:var(--ak-transition)';
+
+/**
+ * The quiet disclosure summary: a mono label with a chevron that turns when the
+ * `<details>` opens. A chart's data table and an adapter diagram's text
+ * description both sit behind one.
+ */
+function disclosureSummary(details: string): string {
+  return `${details} summary{display:inline-flex;align-items:center;gap:.55em;cursor:pointer;list-style:none;font-family:var(--ak-font-mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ak-color-text-muted);${TRANSITION}}
+${details} summary::-webkit-details-marker{display:none}
+${details} summary::before{content:"";width:.42em;height:.42em;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(-45deg);${TRANSITION}}
+${details}[open] summary::before{transform:rotate(45deg)}
+${details} summary:hover{color:var(--ak-color-accent)}
+${details}[open] summary{margin-bottom:calc(var(--ak-space-unit) * 1.5)}`;
+}
 
 export const FEATURE_CSS: Readonly<Partial<Record<RuntimeFeature, string>>> = {
   ...SHOWCASE_CSS,
@@ -103,12 +118,7 @@ dialog.ak-dialog > p{color:var(--ak-color-text-muted)}
 .ak-chart-legend li{display:inline-flex;align-items:center;gap:.5em}
 .ak-chart-swatch{width:.7em;height:.7em;border-radius:2px;background:var(--ak-series,var(--ak-c0))}
 .ak-details{border-top:var(--ak-border-width) solid var(--ak-color-border);padding-top:calc(var(--ak-space-unit) * 1.5);margin-top:calc(var(--ak-space-unit) * -.5)}
-.ak-details summary{display:inline-flex;align-items:center;gap:.55em;cursor:pointer;list-style:none;font-family:var(--ak-font-mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ak-color-text-muted);${TRANSITION}}
-.ak-details summary::-webkit-details-marker{display:none}
-.ak-details summary::before{content:"";width:.42em;height:.42em;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(-45deg);${TRANSITION}}
-.ak-details[open] summary::before{transform:rotate(45deg)}
-.ak-details summary:hover{color:var(--ak-color-accent)}
-.ak-details[open] summary{margin-bottom:calc(var(--ak-space-unit) * 1.5)}
+${disclosureSummary('.ak-details')}
 .ak-details table{font-size:.85rem;border:var(--ak-border-width) solid var(--ak-color-border)}
 .ak-details caption{font-size:.8rem}
 @media (max-width:768px){.ak-details summary{min-height:44px}}`,
@@ -145,8 +155,14 @@ dialog.ak-dialog > p{color:var(--ak-color-text-muted)}
 .ak-toc a[aria-current]{color:var(--ak-color-accent);border-left-color:var(--ak-color-accent);font-weight:600}
 @media (min-width:1280px){.ak-shell--outline{max-width:1400px;display:grid;grid-template-columns:minmax(0,1fr) 216px;column-gap:calc(var(--ak-space-unit) * 8);align-items:start}.ak-shell--outline > *{grid-column:1}.ak-shell--outline > .ak-toc{display:block;grid-column:2;grid-row:1 / span 2;position:sticky;top:calc(var(--ak-space-unit) * 4);max-height:calc(100vh - var(--ak-space-unit) * 8);overflow-y:auto;padding-top:calc(var(--ak-space-unit) * 1)}}
 @media print{.ak-toc{display:none!important}}`,
-  diagram: `.ak-diagram{overflow-x:auto}
-.ak-diagram svg{max-width:100%;height:auto}
+  diagram: `.ak-diagram{min-width:0}
+.ak-diagram-rendered{overflow-x:auto;overscroll-behavior-x:contain;padding:calc(var(--ak-space-unit) * 2);background:var(--ak-fill);border:var(--ak-border-width) solid var(--ak-color-border);border-radius:var(--ak-radius-medium);box-shadow:var(--ak-elevation-card)}
+${scrollEdges('.ak-diagram-rendered')}
+.ak-diagram-rendered svg{display:block;max-width:none;height:auto}
+.ak-diagram-details{margin-top:calc(var(--ak-space-unit) * 1.5)}
+${disclosureSummary('.ak-diagram-details')}
+@media (max-width:768px){.ak-diagram-details summary{min-height:44px}}
+@media print{.ak-diagram-rendered{overflow:visible;box-shadow:none}.ak-diagram-rendered svg{max-width:100%}}
 .ak-diagram-fallback{display:flex;flex-direction:column;gap:var(--ak-space-unit);background:var(--ak-fill);border:var(--ak-border-width) solid var(--ak-color-border);border-radius:var(--ak-radius-medium);padding:calc(var(--ak-space-unit) * 3);box-shadow:var(--ak-elevation-card)}
 .ak-diagram-fallback{gap:calc(var(--ak-space-unit) * 2)}
 .ak-diagram-fallback > .ak-caption{font-size:.74rem;color:var(--ak-color-text-muted)}

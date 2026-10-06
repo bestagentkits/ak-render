@@ -61,6 +61,29 @@ describe('diagram adapter: public contract', () => {
     expect(seen?.spec).toMatchObject({ meta: { title: 'Compiler pipeline' } });
   });
 
+  it('puts adapter output in a named, keyboard-scrollable region', () => {
+    const result = compile(SPEC, { diagramAdapter: adapter(() => VALID_SVG) });
+    expect(result.html).toContain(
+      '<div class="ak-diagram-rendered" data-ak-diagram-adapter="test-adapter" role="region" aria-label="Compiler pipeline" tabindex="0"><svg',
+    );
+  });
+
+  it('folds the text description behind a closed disclosure when the adapter rendered', () => {
+    const result = compile(SPEC, { diagramAdapter: adapter(() => VALID_SVG) });
+    expect(result.html).toMatch(
+      /<details class="ak-diagram-details" data-ak-diagram-fallback><summary>Text description<\/summary><div class="ak-diagram-fallback">/u,
+    );
+    expect(result.html).not.toMatch(/<details class="ak-diagram-details"[^>]*\sopen/u);
+    expect(result.html).not.toContain('no diagram adapter is configured');
+  });
+
+  it('shows the description openly when there is no drawing', () => {
+    const result = compile(SPEC);
+    expect(result.html).not.toContain('<details class="ak-diagram-details"');
+    expect(result.html).not.toContain('role="region"');
+    expect(result.html).toContain('<div class="ak-diagram-fallback" data-ak-diagram-fallback>');
+  });
+
   it('uses the structured fallback when no adapter is configured', () => {
     const result = compile(SPEC);
     expect(result.html).not.toContain('data-ak-diagram-adapter');

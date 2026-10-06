@@ -853,21 +853,23 @@ const RENDERERS: Record<string, Renderer> = {
       adapterResult.rejected === undefined &&
       adapterResult.markup !== '';
 
+    const description = `<p class="ak-diagram-title">${escapeText(diagramTitle)}</p>${fallbackBody}`;
+
     return [
       `<figure${renderAttributes(nodeAttributes(node, { class: 'ak-block ak-diagram' }))}>`,
       titleHeader(node, 2),
+      // Adapter output keeps its natural size: a wide diagram scrolls sideways
+      // inside a keyboard-focusable region instead of shrinking its labels. The
+      // text description then folds away behind a disclosure, so it does not
+      // repeat the drawing; it stays in the document, and the static SVG reads
+      // without script and in print.
       accepted
         ? `<div class="ak-diagram-rendered" data-ak-diagram-adapter="${escapeAttribute(
             adapterResult.adapter,
-          )}">${adapterResult.markup}</div>`
-        : '',
-      `<div class="ak-diagram-fallback" data-ak-diagram-fallback>`,
-      `<p class="ak-diagram-title">${escapeText(diagramTitle)}</p>`,
-      fallbackBody,
-      accepted
-        ? '<p class="ak-caption">Rendered by a diagram adapter. The structured description below is the accessible equivalent.</p>'
-        : '<p class="ak-caption">Rendered as a structured fallback because no diagram adapter is configured.</p>',
-      '</div>',
+          )}" role="region" aria-label="${escapeAttribute(diagramTitle)}" tabindex="0">${
+            adapterResult.markup
+          }</div><details class="ak-diagram-details" data-ak-diagram-fallback><summary>Text description</summary><div class="ak-diagram-fallback">${description}</div></details>`
+        : `<div class="ak-diagram-fallback" data-ak-diagram-fallback>${description}<p class="ak-caption">Rendered as a structured fallback because no diagram adapter is configured.</p></div>`,
       figureCaption(caption),
       '</figure>',
     ]

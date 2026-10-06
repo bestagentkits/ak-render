@@ -22,7 +22,7 @@
 
 export { FEATURE_CSS } from './feature-styles.js';
 
-import { DARK_FILL, RING, TINT } from './derived-variables.js';
+import { DARK_FILL, RING, SCROLL_EDGE_KEYFRAMES, scrollEdges, TINT } from './derived-variables.js';
 import { EFFECTS_CSS } from './effects-styles.js';
 import { SIGNATURE_CSS } from './signature-styles.js';
 
@@ -152,7 +152,9 @@ ul.ak-grid{list-style:none;padding:0;margin:0}
 .ak-timeline time{display:block;font-family:var(--ak-font-mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ak-color-accent);margin-bottom:.3em}
 .ak-timeline li > p:first-of-type{font-family:var(--ak-font-heading)}
 .ak-timeline li > p:not(:first-of-type){color:var(--ak-color-text-muted);margin-top:.15em;max-width:var(--ak-measure)}
-.ak-table-wrap{overflow-x:auto;border:var(--ak-border-width) solid var(--ak-color-border);border-radius:var(--ak-radius-medium);background:var(--ak-fill);box-shadow:var(--ak-elevation-card)}
+.ak-table-wrap{overflow-x:auto;overscroll-behavior-x:contain;border:var(--ak-border-width) solid var(--ak-color-border);border-radius:var(--ak-radius-medium);background:var(--ak-fill);box-shadow:var(--ak-elevation-card)}
+${scrollEdges('.ak-table-wrap')}
+${SCROLL_EDGE_KEYFRAMES}
 table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
 caption{text-align:left;padding-bottom:.5em;color:var(--ak-color-text-muted)}
 .ak-table-wrap caption:not(.ak-sr){padding:calc(var(--ak-space-unit) * 1.75) calc(var(--ak-space-unit) * 2);font-family:var(--ak-font-heading);font-weight:600;color:var(--ak-color-text);border-bottom:var(--ak-border-width) solid var(--ak-color-border)}
