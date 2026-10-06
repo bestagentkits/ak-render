@@ -58,6 +58,9 @@ function renderBento(node: IrNode, context: RenderContext): string {
 export const bentoBlock: BlockModule = {
   definition: semantic({
     type: 'bento',
+    category: 'showcase',
+    tags: ['mosaic', 'tiles', 'features'],
+    useCases: ['feature highlights', 'product overview'],
     purpose: 'Feature mosaic: tiles of mixed size that each carry one idea, figure, or image.',
     summary:
       'Bento: asymmetric tile grid; a tile can hold an eyebrow, title, text, a large figure, and a local image.',

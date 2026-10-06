@@ -7,6 +7,9 @@ import { element, nodeAttributes, numberProp } from '../../render/block-helpers.
 export const gridBlock: BlockModule = {
   definition: define({
     type: 'grid',
+    category: 'layout',
+    tags: ['container', 'columns', 'responsive'],
+    useCases: ['side-by-side cards', 'multi-column layout'],
     purpose: 'Responsive grid container.',
     summary: 'Grid: children in N columns that collapse on narrow viewports.',
     props: {

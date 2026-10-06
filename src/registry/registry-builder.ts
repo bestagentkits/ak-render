@@ -7,10 +7,18 @@
  * every test rather than one page.
  */
 
-import type { BlockGroup, BlockModule, BlockRegistry, FeatureModule } from './block-module.js';
+import {
+  BLOCK_CATEGORIES,
+  type BlockGroup,
+  type BlockModule,
+  type BlockRegistry,
+  type FeatureModule,
+} from './block-module.js';
 import { type BlockDefinition, CORE_BLOCK_DEFINITIONS, CORE_RUNTIME_FEATURES } from './roster.js';
 
 const FEATURE_NAME_PATTERN = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
+const TAG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const METADATA_LIMITS = { tags: 6, useCases: 4, useCaseLength: 40 } as const;
 
 function registrationError(message: string): Error {
   return new Error(`block registry: ${message}`);
@@ -31,7 +39,28 @@ function checkFeature(feature: FeatureModule, known: Set<string>): void {
   known.add(feature.name);
 }
 
+function checkMetadata(definition: BlockDefinition): void {
+  const { type, category, tags, useCases } = definition;
+  if (!BLOCK_CATEGORIES.includes(category)) {
+    throw registrationError(`block "${type}" has unknown category "${String(category)}"`);
+  }
+  if (tags.length > METADATA_LIMITS.tags || tags.some((tag) => !TAG_PATTERN.test(tag))) {
+    throw registrationError(
+      `block "${type}" needs at most ${METADATA_LIMITS.tags} kebab-case tags`,
+    );
+  }
+  if (
+    useCases.length > METADATA_LIMITS.useCases ||
+    useCases.some((useCase) => useCase === '' || useCase.length > METADATA_LIMITS.useCaseLength)
+  ) {
+    throw registrationError(
+      `block "${type}" needs at most ${METADATA_LIMITS.useCases} use cases of 1-${METADATA_LIMITS.useCaseLength} characters`,
+    );
+  }
+}
+
 function checkDefinition(definition: BlockDefinition, features: Set<string>): void {
+  checkMetadata(definition);
   for (const feature of definition.runtimeFeatures) {
     if (!features.has(feature)) {
       throw registrationError(`block "${definition.type}" uses unknown feature "${feature}"`);
@@ -42,7 +71,8 @@ function checkDefinition(definition: BlockDefinition, features: Set<string>): vo
 /**
  * Assemble a registry from the core roster plus block groups, in order.
  * Throws on a duplicate block type or feature, a block that names an unknown
- * feature, or a feature whose css lacks its marker.
+ * feature or parent, invalid catalog metadata, or a feature whose css lacks
+ * its marker.
  */
 export function buildRegistry(groups: readonly BlockGroup[]): BlockRegistry {
   const featureNames = new Set<string>(CORE_RUNTIME_FEATURES);
@@ -69,6 +99,15 @@ export function buildRegistry(groups: readonly BlockGroup[]): BlockRegistry {
   for (const definition of CORE_BLOCK_DEFINITIONS) register(definition);
   for (const group of groups) {
     for (const module of group.blocks) register(module.definition, module);
+  }
+
+  // Parents may name a block registered later, so they are checked last.
+  for (const definition of definitions) {
+    for (const parent of definition.parents ?? []) {
+      if (parent !== 'page' && !byType.has(parent)) {
+        throw registrationError(`block "${definition.type}" names unknown parent "${parent}"`);
+      }
+    }
   }
 
   return { definitions, byType, modules, features };

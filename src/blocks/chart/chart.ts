@@ -56,6 +56,9 @@ export function checkSeriesLengths(node: IrNode, bag: DiagnosticBag): void {
 export const chartBlock: BlockModule = {
   definition: define({
     type: 'chart',
+    category: 'data',
+    tags: ['visualization', 'svg', 'series'],
+    useCases: ['trend over time', 'category comparison', 'share of total'],
     purpose: 'Deterministic SVG chart with a text summary.',
     summary: 'Chart: bar, line, area, pie, donut, sparkline, or progress from labeled series.',
     props: {

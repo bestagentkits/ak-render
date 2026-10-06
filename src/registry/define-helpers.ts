@@ -111,7 +111,10 @@ export const LABEL = str({ required: true, maxLength: 200 });
 /** A block definition with the shared defaults filled in. */
 export function define(
   specification: Partial<BlockDefinition> &
-    Pick<BlockDefinition, 'type' | 'purpose' | 'summary' | 'props'>,
+    Pick<
+      BlockDefinition,
+      'type' | 'category' | 'tags' | 'useCases' | 'purpose' | 'summary' | 'props'
+    >,
 ): BlockDefinition {
   return {
     version: 1,
@@ -130,7 +133,10 @@ export function define(
 
 export function semantic(
   specification: Partial<BlockDefinition> &
-    Pick<BlockDefinition, 'type' | 'purpose' | 'summary' | 'props'>,
+    Pick<
+      BlockDefinition,
+      'type' | 'category' | 'tags' | 'useCases' | 'purpose' | 'summary' | 'props'
+    >,
 ): BlockDefinition {
   return define({ kind: 'semantic', ...specification });
 }

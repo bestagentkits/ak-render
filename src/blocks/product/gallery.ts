@@ -25,6 +25,9 @@ import { escapeAttribute, escapeInlineText, escapeText } from '../../render/esca
 export const galleryBlock: BlockModule = {
   definition: semantic({
     type: 'gallery',
+    category: 'media',
+    tags: ['images', 'grid'],
+    useCases: ['screenshot set', 'photo grid'],
     purpose: 'Image grid.',
     summary: 'Gallery: responsive image grid with captions.',
     props: {

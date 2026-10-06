@@ -7,6 +7,9 @@ import { element, nodeAttributes, stringProp } from '../../render/block-helpers.
 export const splitBlock: BlockModule = {
   definition: define({
     type: 'split',
+    category: 'layout',
+    tags: ['container', 'two-column'],
+    useCases: ['text beside media', 'two-pane comparison'],
     purpose: 'Two-column split container.',
     summary: 'Split: two child groups side by side, stacking when narrow.',
     props: {

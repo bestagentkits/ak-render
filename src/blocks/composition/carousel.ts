@@ -22,6 +22,9 @@ import { escapeInlineText, escapeText } from '../../render/escape.js';
 export const carouselBlock: BlockModule = {
   definition: define({
     type: 'carousel',
+    category: 'interaction',
+    tags: ['slides', 'sequence'],
+    useCases: ['slide sequence', 'walkthrough'],
     purpose: 'Sequenced slides with manual navigation.',
     summary: 'Carousel: prev/next, keyboard, and swipe across slides.',
     props: {

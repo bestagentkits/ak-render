@@ -7,6 +7,9 @@ import { element, nodeAttributes, stringProp } from '../../render/block-helpers.
 export const stackBlock: BlockModule = {
   definition: define({
     type: 'stack',
+    category: 'layout',
+    tags: ['container', 'vertical'],
+    useCases: ['vertical flow of blocks'],
     purpose: 'Vertical flow container.',
     summary: 'Stack: children flow vertically with a controlled gap.',
     props: { gap: enumStr(['tight', 'normal', 'loose'], { default: 'normal' }), ...anchorProps },

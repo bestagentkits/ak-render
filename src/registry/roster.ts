@@ -14,6 +14,7 @@
 
 import { EMBED_PROVIDER_NAMES } from '../spec/providers.js';
 import type { ActionType } from './actions.js';
+import type { BlockCategory } from './block-module.js';
 import {
   anchorProps,
   bool,
@@ -97,6 +98,18 @@ export interface BlockDefinition {
   type: string;
   version: number;
   kind: 'semantic' | 'primitive';
+  /** Catalog grouping for discovery. */
+  category: BlockCategory;
+  /** Up to 6 kebab-case search tags. */
+  tags: readonly string[];
+  /** Up to 4 short phrases (40 characters max) naming what the block is for. */
+  useCases: readonly string[];
+  /** Allowed direct parent types; absent means any parent, including the page. */
+  parents?: readonly string[];
+  /** Rows carry `data-ak-filter-item` and a `data-ak-row` JSON payload a filter can read. */
+  filterable?: boolean;
+  /** The block reads rows from `dataRef` or inline `data`, reshaped by an optional `transform`. */
+  data?: { required: boolean; description: string };
   purpose: string;
   /** One line, used by the compact `catalog()` surface. */
   summary: string;
@@ -121,6 +134,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   // --- root ---------------------------------------------------------------
   define({
     type: 'page',
+    category: 'layout',
+    tags: ['root', 'document'],
+    useCases: ['page shell'],
     kind: 'semantic',
     purpose: 'The document root. Synthesized by the normalizer from the spec envelope.',
     summary: 'Page root: title, description, locale, and top-level blocks.',
@@ -136,6 +152,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   // --- layout primitives --------------------------------------------------
   define({
     type: 'section',
+    category: 'layout',
+    tags: ['container', 'heading', 'band'],
+    useCases: ['group related blocks', 'dark feature band'],
     purpose: 'A titled group of blocks.',
     summary:
       'Section with an optional heading wrapping child blocks; an inverse surface sets it on a night band.',
@@ -152,6 +171,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'spacer',
+    category: 'layout',
+    tags: ['spacing'],
+    useCases: ['vertical breathing room'],
     purpose: 'Vertical rhythm spacer.',
     summary: 'Spacer: vertical space without content.',
     props: { size: enumStr(['small', 'medium', 'large'], { default: 'medium' }), ...anchorProps },
@@ -159,6 +181,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'divider',
+    category: 'layout',
+    tags: ['rule', 'separator'],
+    useCases: ['separate sections'],
     purpose: 'Horizontal rule with an optional label.',
     summary: 'Divider: semantic separator with an optional label.',
     props: { label: str({ maxLength: 120 }), ...anchorProps },
@@ -168,6 +193,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   // --- typography and content --------------------------------------------
   define({
     type: 'heading',
+    category: 'content',
+    tags: ['title', 'outline'],
+    useCases: ['section title'],
     purpose: 'Section heading at a chosen level.',
     summary: 'Heading: h1–h6 with the author-chosen level.',
     props: {
@@ -179,6 +207,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'text',
+    category: 'content',
+    tags: ['prose', 'paragraph'],
+    useCases: ['body copy'],
     purpose: 'A paragraph, lead sentence, or caption.',
     summary: 'Text: single paragraph with body, lead, or caption treatment.',
     props: {
@@ -189,18 +220,27 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'rich-text',
+    category: 'content',
+    tags: ['prose', 'inline-marks'],
+    useCases: ['formatted paragraphs'],
     purpose: 'Multi-paragraph prose.',
     summary: 'RichText: multiple paragraphs from line breaks.',
     props: { text: txt({ required: true }), ...anchorProps },
   }),
   define({
     type: 'quote',
+    category: 'content',
+    tags: ['testimonial', 'citation'],
+    useCases: ['customer quote', 'pull quote'],
     purpose: 'Pulled quotation.',
     summary: 'Quote: blockquote with an optional attribution.',
     props: { text: txt({ required: true }), cite: str({ maxLength: 200 }), ...anchorProps },
   }),
   define({
     type: 'code',
+    category: 'content',
+    tags: ['source', 'snippet', 'copy'],
+    useCases: ['code sample', 'command to copy'],
     purpose: 'Code or configuration sample.',
     summary: 'Code: preformatted block with optional language and copy target.',
     props: {
@@ -217,6 +257,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'badge',
+    category: 'content',
+    tags: ['label', 'status'],
+    useCases: ['status label'],
     purpose: 'Short status or category label.',
     summary: 'Badge: inline status chip.',
     props: {
@@ -227,6 +270,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'kbd',
+    category: 'content',
+    tags: ['keyboard', 'shortcut'],
+    useCases: ['keyboard shortcut'],
     purpose: 'Keyboard key sequence.',
     summary: 'Kbd: one or more keys rendered as <kbd> elements.',
     props: {
@@ -237,6 +283,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'key-value',
+    category: 'content',
+    tags: ['metadata', 'pairs'],
+    useCases: ['spec sheet', 'document metadata'],
     purpose: 'Compact definition list.',
     summary: 'KeyValue: label/value pairs rendered as a description list.',
     props: {
@@ -250,6 +299,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   // --- information --------------------------------------------------------
   define({
     type: 'card',
+    category: 'layout',
+    tags: ['surface', 'container'],
+    useCases: ['boxed summary', 'feature card'],
     purpose: 'Bounded content container.',
     summary: 'Card: titled container that holds child blocks.',
     props: { title: OPTIONAL_TITLE, text: txt(), ...anchorProps },
@@ -257,6 +309,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'alert',
+    category: 'content',
+    tags: ['notice', 'status'],
+    useCases: ['warning banner', 'status notice'],
     purpose: 'Inline notice.',
     summary: 'Alert: notice with tone and title.',
     props: {
@@ -269,6 +324,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   semantic({
     type: 'callout',
+    category: 'content',
+    tags: ['note', 'aside'],
+    useCases: ['tip or note', 'highlighted aside'],
     purpose: 'Emphasized aside for a key point or risk.',
     summary: 'Callout: highlighted aside with tone, title, and body.',
     props: {
@@ -280,6 +338,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   semantic({
     type: 'hero',
+    category: 'content',
+    tags: ['landing', 'headline', 'intro'],
+    useCases: ['landing page header', 'report title'],
     purpose: 'Page opener that states the artifact subject.',
     summary:
       'Hero: eyebrow, title, and one-line description, optionally over a framed product shot.',
@@ -309,6 +370,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   semantic({
     type: 'stats',
+    category: 'data',
+    tags: ['numbers', 'summary'],
+    useCases: ['headline numbers', 'report summary'],
     purpose: 'KPI or summary figures.',
     summary: 'Stats: labeled values as a figure list.',
     props: {
@@ -320,6 +384,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'progress',
+    category: 'data',
+    tags: ['completion', 'bars'],
+    useCases: ['completion status', 'goal tracking'],
     purpose: 'Single progress or completeness value.',
     summary: 'Progress: single bar with an accessible value range.',
     props: {
@@ -333,6 +400,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   semantic({
     type: 'steps',
+    category: 'content',
+    tags: ['process', 'ordered'],
+    useCases: ['how-to steps', 'onboarding flow'],
     purpose: 'Ordered procedure.',
     summary: 'Steps: numbered sequence of titled steps.',
     props: {
@@ -345,6 +415,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   semantic({
     type: 'timeline',
+    category: 'content',
+    tags: ['chronology', 'history'],
+    useCases: ['release history', 'project milestones'],
     purpose: 'Chronological or staged events.',
     summary: 'Timeline: ordered entries with a when/title/body shape.',
     props: {
@@ -358,6 +431,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   // --- collections --------------------------------------------------------
   define({
     type: 'list',
+    category: 'content',
+    tags: ['bullets', 'items'],
+    useCases: ['bullet list', 'checklist of points'],
     purpose: 'Short item list with optional badges.',
     summary: 'List: bulleted items with optional status badges.',
     props: {
@@ -371,6 +447,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   semantic({
     type: 'card-grid',
+    category: 'content',
+    tags: ['cards', 'overview'],
+    useCases: ['feature overview', 'link directory'],
     purpose: 'Grid of short cards.',
     summary: 'CardGrid: titled cards in a responsive grid.',
     props: {
@@ -381,6 +460,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'table',
+    category: 'data',
+    tags: ['tabular', 'rows', 'columns'],
+    useCases: ['tabular data', 'comparison rows'],
     purpose: 'Tabular data with a header row.',
     summary: 'Table: columns and rows with a real header row.',
     props: {
@@ -394,6 +476,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   semantic({
     type: 'comparison',
+    category: 'data',
+    tags: ['versus', 'options'],
+    useCases: ['compare options', 'plan comparison'],
     purpose: 'Side-by-side comparison of two alternatives.',
     summary: 'Comparison: two labeled columns of points.',
     props: {
@@ -412,6 +497,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   semantic({
     type: 'risk-matrix',
+    category: 'data',
+    tags: ['risk', 'impact', 'likelihood'],
+    useCases: ['risk register', 'threat assessment'],
     purpose: 'Impact/likelihood risk table.',
     summary: 'RiskMatrix: risks rated by impact and likelihood.',
     props: {
@@ -431,6 +519,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   // --- interactive collections -------------------------------------------
   semantic({
     type: 'toolbar',
+    category: 'interaction',
+    tags: ['controls', 'actions'],
+    useCases: ['page actions', 'quick links'],
     purpose: 'Row of controls or chips.',
     summary: 'Toolbar: buttons, badges, and links in one accessible row.',
     props: {
@@ -472,6 +563,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   // --- diagrams (adapter) -------------------------------------------------
   semantic({
     type: 'diagram-panel',
+    category: 'engineering',
+    tags: ['diagram', 'architecture'],
+    useCases: ['architecture diagram', 'flow chart'],
     purpose: 'Typed diagram rendered through an adapter.',
     summary:
       'DiagramPanel: embeds trusted output from a diagram adapter (ak:diagram when installed).',
@@ -498,6 +592,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   // --- showcase -----------------------------------------------------------
   define({
     type: 'marquee',
+    category: 'showcase',
+    tags: ['ticker', 'logos'],
+    useCases: ['customer logos', 'highlight ticker'],
     purpose: 'Continuously scrolling strip of short highlights.',
     summary:
       'Marquee: looping ticker of short items that pauses on hover and stops under reduced motion.',
@@ -516,6 +613,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'terminal',
+    category: 'engineering',
+    tags: ['shell', 'commands', 'output'],
+    useCases: ['install steps', 'cli session'],
     purpose: 'A command-line session: commands with their output.',
     summary:
       'Terminal: window-framed session whose lines type in on load; commands, output, comments, success, and errors are styled apart.',
@@ -537,6 +637,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   semantic({
     type: 'file-tree',
+    category: 'engineering',
+    tags: ['files', 'paths', 'repository'],
+    useCases: ['project layout', 'changed files'],
     purpose: 'Files and folders, optionally with change status, derived from flat paths.',
     summary:
       'File tree: nested folders built from slash-separated paths, with per-file status and notes.',
@@ -559,6 +662,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   semantic({
     type: 'before-after',
+    category: 'media',
+    tags: ['comparison', 'slider', 'images'],
+    useCases: ['redesign comparison', 'visual diff'],
     purpose: 'Before and after: two images of the same frame, revealed by a draggable divider.',
     summary:
       'Compare: before/after image slider driven by a native range input; without script both images stay visible.',
@@ -590,6 +696,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   semantic({
     type: 'kpi',
+    category: 'data',
+    tags: ['metrics', 'sparkline', 'trend'],
+    useCases: ['dashboard metrics', 'performance summary'],
     purpose: 'Headline metrics with direction of change and a small trend line.',
     summary:
       'KPI: metric cards with value, signed delta, good/bad direction, and an optional sparkline series.',
@@ -617,6 +726,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   semantic({
     type: 'showcase',
+    category: 'showcase',
+    tags: ['spotlight', 'screenshot'],
+    useCases: ['feature spotlight', 'product tour'],
     purpose: 'Feature spotlight: copy beside a framed screenshot.',
     summary:
       'Showcase: eyebrow, title, text, and bullets beside an image in a browser frame; the image side can flip.',
@@ -647,6 +759,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'checklist',
+    category: 'data',
+    tags: ['tasks', 'status'],
+    useCases: ['launch checklist', 'review checklist'],
     purpose: 'Task list with done and open items and a completion count.',
     summary: 'Checklist: items marked done or open, with a visible completion count.',
     props: {
@@ -659,6 +774,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   semantic({
     type: 'cta',
+    category: 'showcase',
+    tags: ['conversion', 'action'],
+    useCases: ['sign-up prompt', 'closing call to action'],
     purpose: 'Closing call to action that sends the reader somewhere next.',
     summary: 'CTA: eyebrow, oversized title, text, and up to three link actions on a night band.',
     props: {
@@ -687,6 +805,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   // --- media --------------------------------------------------------------
   define({
     type: 'image',
+    category: 'media',
+    tags: ['picture', 'figure'],
+    useCases: ['screenshot', 'illustration'],
     purpose: 'Single image or picture.',
     summary: 'Image: local asset or allowlisted URL with required alt text.',
     props: {
@@ -701,6 +822,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'video',
+    category: 'media',
+    tags: ['player', 'poster'],
+    useCases: ['product demo', 'recorded talk'],
     purpose: 'Local video or a network-denied fallback.',
     summary:
       'Video: plays local sources; a provider reference becomes a poster plus link; network sources degrade to poster plus link.',
@@ -727,6 +851,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'audio',
+    category: 'media',
+    tags: ['player', 'sound'],
+    useCases: ['podcast clip', 'voice note'],
     purpose: 'Local audio or a network-denied fallback.',
     summary:
       'Audio: plays local sources; a provider reference becomes metadata plus link; network sources degrade to metadata plus link.',
@@ -754,6 +881,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   // --- controls -----------------------------------------------------------
   define({
     type: 'button',
+    category: 'interaction',
+    tags: ['action', 'control'],
+    useCases: ['trigger an action', 'primary call'],
     purpose: 'Single actionable control.',
     summary: 'Button: clickable control with declarative action bindings.',
     props: {
@@ -768,6 +898,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'link',
+    category: 'interaction',
+    tags: ['navigation', 'anchor'],
+    useCases: ['external link', 'related page'],
     purpose: 'Navigational link.',
     summary: 'Link: allowlisted URL with descriptive text.',
     props: { label: LABEL, href: urlProp({ required: true }), ...anchorProps },
@@ -776,6 +909,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'slider',
+    category: 'interaction',
+    tags: ['range', 'input', 'state'],
+    useCases: ['adjust a value', 'what-if input'],
     purpose: 'Bounded numeric input.',
     summary: 'Slider: range input with pointer drag and full keyboard support.',
     props: {
@@ -793,6 +929,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'search',
+    category: 'interaction',
+    tags: ['filter', 'input'],
+    useCases: ['filter a list', 'find an item'],
     purpose: 'Filter input for a collection.',
     summary: 'Search: labeled filter input bound to a collection.',
     props: {
@@ -807,6 +946,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'dialog',
+    category: 'interaction',
+    tags: ['modal', 'overlay'],
+    useCases: ['confirmation', 'detail popup'],
     purpose: 'Modal detail surface.',
     summary: 'Dialog: native <dialog> with labeled title and close controls.',
     props: {
@@ -824,6 +966,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   // --- review-specific semantic blocks ------------------------------------
   semantic({
     type: 'diff-summary',
+    category: 'engineering',
+    tags: ['diff', 'changes'],
+    useCases: ['change summary', 'pull request files'],
     purpose: 'Changed-file summary from a diff.',
     summary: 'DiffSummary: file paths with change status and line counts.',
     props: {
@@ -840,6 +985,9 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   semantic({
     type: 'code-review',
+    category: 'engineering',
+    tags: ['review', 'findings'],
+    useCases: ['review findings', 'audit notes'],
     purpose: 'Structured review findings.',
     summary: 'CodeReview: good/bad/ugly/concern/question findings.',
     props: {

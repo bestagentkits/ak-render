@@ -22,6 +22,9 @@ import { escapeInlineText, escapeText, renderAttributes } from '../../render/esc
 export const accordionBlock: BlockModule = {
   definition: define({
     type: 'accordion',
+    category: 'interaction',
+    tags: ['disclosure', 'collapsible', 'faq'],
+    useCases: ['faq', 'collapsible details'],
     purpose: 'Collapsible sections.',
     summary: 'Accordion: disclosure sections that expand and collapse.',
     props: {

@@ -24,6 +24,9 @@ import { escapeAttribute, escapeInlineText, escapeText } from '../../render/esca
 export const tabsBlock: BlockModule = {
   definition: define({
     type: 'tabs',
+    category: 'interaction',
+    tags: ['tabbed', 'panels'],
+    useCases: ['alternate views', 'grouped content'],
     purpose: 'Tabbed groups of related content.',
     summary: 'Tabs: roving-tabindex tablist with tabpanels.',
     props: {
