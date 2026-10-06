@@ -8,8 +8,14 @@
  */
 
 import { BLOCK_GROUPS } from '../blocks/index.js';
+import {
+  BLOCK_DATA_JSON_SCHEMA_PROPERTIES,
+  DATA_JSON_SCHEMA_DEFS,
+} from '../data/data-json-schema.js';
 import { RenderError } from '../errors.js';
 import { LIMITS } from '../spec/bounds.js';
+import { CONDITION_JSON_SCHEMA } from '../spec/conditions.js';
+import { THEME_RECIPES_JSON_SCHEMA } from '../theme/recipes.js';
 import { ACTION_DEFINITIONS, type ActionType, ALLOWED_EVENTS, actionsCatalog } from './actions.js';
 import type { BlockRegistry } from './block-module.js';
 import { propSchemaToJsonSchema } from './prop-schema.js';
@@ -108,6 +114,10 @@ function blockSchema(definition: BlockDefinition): Record<string, unknown> {
   if (definition.slots?.children !== undefined) {
     properties.blocks = { $ref: '#/$defs/blockList' };
   }
+  if (definition.data !== undefined) {
+    Object.assign(properties, BLOCK_DATA_JSON_SCHEMA_PROPERTIES);
+  }
+  properties.visibleWhen = { $ref: '#/$defs/condition' };
 
   return {
     type: 'object',
@@ -169,6 +179,8 @@ export function buildPageSpecJsonSchema(): Record<string, unknown> {
     blockList: blockListSchema(),
     actionMap: actionMapSchema(),
     action: actionSchema(),
+    condition: CONDITION_JSON_SCHEMA,
+    ...DATA_JSON_SCHEMA_DEFS,
   };
   for (const definition of BLOCK_DEFINITIONS) {
     defs[`block-${definition.type}`] = blockSchema(definition);
@@ -203,6 +215,8 @@ export function buildPageSpecJsonSchema(): Record<string, unknown> {
           preset: { type: 'string', maxLength: 120 },
           extends: { type: 'string', maxLength: 120 },
           tokens: { type: 'object' },
+          dark: { type: 'object', description: 'Token overrides for the dark scheme.' },
+          recipes: THEME_RECIPES_JSON_SCHEMA,
         },
       },
       policy: {
@@ -236,6 +250,7 @@ export function buildPageSpecJsonSchema(): Record<string, unknown> {
           type: ['string', 'number', 'boolean', 'null'],
         },
       },
+      datasets: { $ref: '#/$defs/datasets' },
       blocks: blockListSchema(),
     },
     $defs: defs,

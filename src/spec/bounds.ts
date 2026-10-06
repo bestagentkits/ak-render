@@ -7,6 +7,7 @@
  * inside a worker with a bounded memory budget and a request-size ceiling.
  */
 
+import { DATA_LIMITS } from '../data/dataset-types.js';
 import { type DiagnosticBag, pathIndex, pathKey } from '../diagnostics.js';
 import { isPlainObject } from '../json.js';
 
@@ -27,6 +28,12 @@ export const LIMITS = {
   maxStringLength: 2_000,
   /** Length of multiline text. */
   maxTextLength: 50_000,
+  /** Named datasets; enforced with the dataset's path by `validateDatasets`. */
+  maxDatasets: DATA_LIMITS.maxDatasets,
+  /** Rows in one dataset or inline `data` list. */
+  maxDatasetRows: DATA_LIMITS.maxRows,
+  /** Distinct fields across one dataset's rows. */
+  maxDatasetFields: DATA_LIMITS.maxFields,
 } as const;
 
 export interface BoundsReport {

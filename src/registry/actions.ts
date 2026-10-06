@@ -300,8 +300,11 @@ export function validateAction(
 }
 
 /** True when a string is a plain `state.` dotted key path. */
+/** A `state.` path: lowercase kebab keys only, so no prototype key can be named. */
+export const STATE_PATH_PATTERN = /^state\.[a-z0-9][a-z0-9-]*(?:\.[a-z0-9][a-z0-9-]*)*$/;
+
 export function isSafeStatePath(value: string): boolean {
-  return /^state\.[a-z0-9][a-z0-9-]*(?:\.[a-z0-9][a-z0-9-]*)*$/.test(value);
+  return STATE_PATH_PATTERN.test(value);
 }
 
 /** Collect every action record from a validated binding map. */

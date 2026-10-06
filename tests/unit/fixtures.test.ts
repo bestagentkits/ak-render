@@ -14,19 +14,22 @@ const fixtureFiles = readdirSync(pagesDir).filter((name) => name.endsWith('.yaml
  */
 describe('fixture corpus', () => {
   it('covers the page classes the epic requires', () => {
-    expect(fixtureFiles.sort()).toEqual([
-      'all-components.yaml',
-      'brainstorm.yaml',
-      'dashboard.yaml',
-      'diff.yaml',
-      'explain.yaml',
-      'interactive.yaml',
-      'media.yaml',
-      'plan.yaml',
-      'recap.yaml',
-      'showcase.yaml',
-      'theme-showcase.yaml',
-    ]);
+    // Contains, not equals: a new block may add its own fixture without editing this list.
+    expect(fixtureFiles.sort()).toEqual(
+      expect.arrayContaining([
+        'all-components.yaml',
+        'brainstorm.yaml',
+        'dashboard.yaml',
+        'diff.yaml',
+        'explain.yaml',
+        'interactive.yaml',
+        'media.yaml',
+        'plan.yaml',
+        'recap.yaml',
+        'showcase.yaml',
+        'theme-showcase.yaml',
+      ]),
+    );
   });
 
   for (const file of fixtureFiles) {

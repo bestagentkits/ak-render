@@ -12,7 +12,7 @@
 import { type DataScalar, isDataScalar } from '../data/dataset-types.js';
 import { type DiagnosticBag, pathIndex, pathKey } from '../diagnostics.js';
 import { isPlainObject, type JsonValue } from '../json.js';
-import { isSafeStatePath } from '../registry/actions.js';
+import { isSafeStatePath, STATE_PATH_PATTERN } from '../registry/actions.js';
 
 export type Condition =
   | { path: string; op: 'equals' | 'notEquals'; value: DataScalar }
@@ -33,6 +33,35 @@ type ConditionOperator = (typeof CONDITION_OPERATORS)[number];
 export const MAX_CONDITION_VALUES = 20;
 
 const CONDITION_KEYS: readonly string[] = ['path', ...CONDITION_OPERATORS];
+
+/** JSON Schema for `visibleWhen`: the path plus exactly one operator. */
+export const CONDITION_JSON_SCHEMA: Record<string, unknown> = {
+  type: 'object',
+  description: 'Show the block only while a state value matches. Exactly one operator.',
+  additionalProperties: false,
+  required: ['path'],
+  minProperties: 2,
+  maxProperties: 2,
+  properties: {
+    path: { type: 'string', pattern: STATE_PATH_PATTERN.source },
+    equals: { $ref: '#/$defs/dataScalar' },
+    notEquals: { $ref: '#/$defs/dataScalar' },
+    in: {
+      type: 'array',
+      minItems: 1,
+      maxItems: MAX_CONDITION_VALUES,
+      items: { $ref: '#/$defs/dataScalar' },
+    },
+    notIn: {
+      type: 'array',
+      minItems: 1,
+      maxItems: MAX_CONDITION_VALUES,
+      items: { $ref: '#/$defs/dataScalar' },
+    },
+    truthy: { const: true },
+    falsy: { const: true },
+  },
+};
 
 function isOperator(key: string): key is ConditionOperator {
   return (CONDITION_OPERATORS as readonly string[]).includes(key);

@@ -45,6 +45,7 @@ describe('published JSON Schema', () => {
       'theme',
       'policy',
       'state',
+      'datasets',
       'blocks',
     ]);
     expect(schema.required).toEqual(['version', 'meta', 'blocks']);
@@ -109,5 +110,37 @@ describe('published JSON Schema', () => {
     // The schema bounds the shape; scheme allowlisting is enforced by the
     // compiler at validation time (see security-forbidden.test.ts).
     expect(typeof valid).toBe('boolean');
+  });
+
+  it('accepts visibleWhen with exactly one operator', () => {
+    const page = (visibleWhen: unknown) => ({
+      version: 1,
+      meta: { title: 'X' },
+      state: { view: 'a' },
+      blocks: [{ type: 'text', text: 'a', visibleWhen }],
+    });
+    expect(validateAgainstSchema(page({ path: 'state.view', equals: 'a' }))).toBe(true);
+    expect(validateAgainstSchema(page({ path: 'state.view', in: ['a', 1, null] }))).toBe(true);
+    expect(validateAgainstSchema(page({ path: 'state.view' }))).toBe(false);
+    expect(validateAgainstSchema(page({ path: 'state.view', equals: 'a', truthy: true }))).toBe(
+      false,
+    );
+    expect(validateAgainstSchema(page({ path: 'view', equals: 'a' }))).toBe(false);
+  });
+
+  it('declares datasets and typed theme recipes', () => {
+    const page = (extra: Record<string, unknown>) => ({
+      version: 1,
+      meta: { title: 'X' },
+      blocks: [{ type: 'text', text: 'a' }],
+      ...extra,
+    });
+    expect(validateAgainstSchema(page({ datasets: { sales: [{ month: 'Jan', n: 1 }] } }))).toBe(
+      true,
+    );
+    expect(validateAgainstSchema(page({ datasets: { sales: [{ month: { x: 1 } }] } }))).toBe(false);
+    expect(validateAgainstSchema(page({ theme: { recipes: { cards: 'flat' } } }))).toBe(true);
+    expect(validateAgainstSchema(page({ theme: { recipes: { cards: 'glass' } } }))).toBe(false);
+    expect(validateAgainstSchema(page({ theme: { recipes: { css: 'flat' } } }))).toBe(false);
   });
 });

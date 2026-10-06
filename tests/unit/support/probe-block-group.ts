@@ -5,6 +5,7 @@
  */
 
 import { BLOCK_GROUPS } from '../../../src/blocks/index.js';
+import { formatValue } from '../../../src/data/format-value.js';
 import type { BlockGroup, BlockModule } from '../../../src/registry/block-module.js';
 import {
   blocks,
@@ -73,9 +74,49 @@ export const probeCell: BlockModule = {
   render: (node) => element('div', nodeAttributes(node, { class: 'ak-block' }), ''),
 };
 
+/** Renders its materialized rows as `field=value` items; checks `labelField`. */
+export const probeList: BlockModule = {
+  definition: define({
+    type: 'probe-list',
+    ...META,
+    category: 'data',
+    data: { required: true, description: 'Rows to list.' },
+    purpose: 'Data binding probe.',
+    summary: 'Probe list of data rows.',
+    props: { title: OPTIONAL_TITLE, labelField: { kind: 'string', maxLength: 64 } },
+  }),
+  render: (node) =>
+    element(
+      'ul',
+      nodeAttributes(node, { class: 'ak-block' }),
+      (node.data?.rows ?? [])
+        .map(
+          (row) =>
+            `<li>${escapeText(
+              Object.entries(row)
+                .map(([field, value]) => `${field}=${formatValue(value)}`)
+                .join(' '),
+            )}</li>`,
+        )
+        .join(''),
+    ),
+  check: (node, { bag }) => {
+    const field = node.props.labelField;
+    if (typeof field === 'string' && node.data !== undefined && !node.data.fields.includes(field)) {
+      bag.add({
+        code: 'SPEC_VALIDATION_ERROR',
+        path: `${node.path}.labelField`,
+        nodeId: node.id,
+        message: `unknown field "${field}"`,
+        details: { allowed: [...node.data.fields] },
+      });
+    }
+  },
+};
+
 export const PROBE_GROUP: BlockGroup = {
   name: 'probe',
-  blocks: [probePanel, probeGrid, probeCell],
+  blocks: [probePanel, probeGrid, probeCell, probeList],
   features: [],
 };
 

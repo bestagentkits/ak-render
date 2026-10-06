@@ -1,0 +1,16 @@
+version: 1
+meta:
+  title: Nested raw markup attempt
+  description: A spec that hides raw HTML inside a nested block slot.
+blocks:
+  - type: tabs
+    title: Views
+    items:
+      - title: First
+        text: The nested block below attempts to supply raw markup.
+        blocks:
+          - type: text
+            text: Nested.
+            html: '<img src=x onerror="alert(1)" />'
+      - title: Second
+        text: Plain content.

@@ -78,3 +78,13 @@ export function validateThemeRecipes(
   }
   return recipes;
 }
+
+/** JSON Schema for `theme.recipes`. */
+export const THEME_RECIPES_JSON_SCHEMA: Record<string, unknown> = {
+  type: 'object',
+  description: 'A presentation choice per surface; the first value of each list is the default.',
+  additionalProperties: false,
+  properties: Object.fromEntries(
+    THEME_RECIPE_SURFACES.map((surface) => [surface, { enum: [...THEME_RECIPE_SPECS[surface]] }]),
+  ),
+};
