@@ -111,19 +111,30 @@ describe('remote MCP: discovery', () => {
       { cwd: '/', home: '/' },
     );
     const local = (stdio?.result as { tools: { name: string }[] } | undefined)?.tools ?? [];
-    expect(local.length).toBe(6);
+    expect(local.length).toBe(8);
     expect(remote.map((entry) => entry.name)).toEqual(local.map((entry) => entry.name));
     // Discovery never reaches the entitlements endpoint.
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('serves catalog, search-catalog, describe and themes without a bearer', async () => {
+  it('serves catalog, search-catalog, describe, recipes, recipe and themes without a bearer', async () => {
     const { env, fetchMock } = harness();
     expect((await tool(env, 'catalog', {}, null)).payload['blockCount']).toBeGreaterThan(40);
     const search = await tool(env, 'search-catalog', { query: 'architecture diagram' }, null);
     expect(search.reply.isError).toBeUndefined();
     expect((search.payload as unknown as { type: string }[])[0]?.type).toBe('diagram-panel');
     expect((await tool(env, 'describe', { type: 'hero' }, null)).payload['type']).toBe('hero');
+    const listed = await tool(env, 'recipes', {}, null);
+    expect(listed.reply.isError).toBeUndefined();
+    expect((listed.payload as unknown as { name: string }[]).map((entry) => entry.name)).toContain(
+      'dashboard',
+    );
+    const starter = await tool(env, 'recipe', { name: 'dashboard' }, null);
+    expect(starter.reply.isError).toBeUndefined();
+    expect(starter.reply.content[0]?.text).toMatch(/^version: 1\n/u);
+    const unknown = await tool(env, 'recipe', { name: 'nope' }, null);
+    expect(unknown.reply.isError).toBe(true);
+    expect(unknown.payload['code']).toBe('SPEC_VALIDATION_ERROR');
     const themes = (await tool(env, 'themes', {}, null)).payload as {
       presets: { name: string; origin: string }[];
     };

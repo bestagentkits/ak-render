@@ -2,8 +2,8 @@
  * The MCP tool contract: one source of truth for every transport.
  *
  * The stdio server and the Streamable HTTP server list tools from here. The
- * read-only tools (`catalog`, `search-catalog`, `describe`, `validate`) are
- * complete and pure, so both transports run the very same function. `render`
+ * read-only tools (`catalog`, `search-catalog`, `describe`, `recipes`,
+ * `recipe`, `validate`) are complete and pure, so both transports run the very same function. `render`
  * and `themes` differ only
  * in where their output goes or where presets come from, so this module owns
  * their descriptions, input schemas and result shapes, and each transport
@@ -12,6 +12,7 @@
  * No Node-only import is allowed here; the Worker bundles this module.
  */
 
+import { recipe, recipes } from '../recipes/index.js';
 import { BLOCK_CATEGORIES } from '../registry/block-module.js';
 import { CATALOG_SEARCH_LIMITS, searchCatalog } from '../registry/catalog-search.js';
 import { DESCRIBE_MANY_LIMIT, describeMany } from '../registry/describe-many.js';
@@ -165,6 +166,29 @@ export const DESCRIBE_TOOL: McpTool<unknown> = {
     // The single-type reply keeps its original shape: one contract object.
     return text(compact ? describeMany([type], { compact: true })[0] : describe(type));
   },
+};
+
+export const RECIPES_TOOL: McpTool<unknown> = {
+  name: 'recipes',
+  description:
+    'List page recipes (name, summary, use cases, block types): complete starter specs for common pages such as dashboard or incident-report. Fetch one with recipe.',
+  inputSchema: NO_INPUT,
+  run: () => text(recipes()),
+};
+
+export const RECIPE_TOOL: McpTool<unknown> = {
+  name: 'recipe',
+  description:
+    'Get one page recipe as a valid starter Page Spec in YAML. Replace its placeholder text and sample dataset rows, then validate and render.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      name: { type: 'string', description: 'Recipe name from recipes, e.g. "dashboard".' },
+    },
+    required: ['name'],
+    additionalProperties: false,
+  },
+  run: (args) => text(recipe(requireString(args, 'name')).spec),
 };
 
 export const VALIDATE_TOOL: McpTool<unknown> = {

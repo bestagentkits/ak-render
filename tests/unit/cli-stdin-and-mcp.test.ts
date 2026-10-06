@@ -108,7 +108,7 @@ describe('MCP server', () => {
     expect(result?.protocolVersion).toBe('2025-11-25');
   });
 
-  it('lists the six tools in loop order, each described in at most 200 characters', () => {
+  it('lists the eight tools in loop order, each described in at most 200 characters', () => {
     const response = handleMcpMessage({ jsonrpc: '2.0', id: 2, method: 'tools/list' }, context);
     const result = response?.result as
       | { tools: { name: string; description: string }[] }
@@ -120,6 +120,8 @@ describe('MCP server', () => {
       'catalog',
       'search-catalog',
       'describe',
+      'recipes',
+      'recipe',
       'validate',
       'render',
       'themes',

@@ -13,10 +13,10 @@
  *   - a stored artifact URL in place of a filesystem path for `render`;
  *   - error results that never carry an internal message.
  *
- * `catalog`, `search-catalog`, `describe` and `themes` answer without a bearer
- * so a client can discover the server before it is configured with a token.
- * They take no spec and read only static compiler data (a search query is at
- * most 200 characters), but each call still builds a response of
+ * `catalog`, `search-catalog`, `describe`, `recipes`, `recipe` and `themes`
+ * answer without a bearer so a client can discover the server before it is
+ * configured with a token. They take no spec and read only static compiler
+ * data (a search query is at most 200 characters), but each call still builds a response of
  * several kilobytes, so they count per client IP, and the transport caps a
  * batch at 16 members. `validate` parses an arbitrary spec, so it needs a
  * bearer with the render grant and counts against its own limit.
@@ -43,6 +43,8 @@ import {
   DESCRIBE_TOOL,
   type McpTool,
   optionalTheme,
+  RECIPE_TOOL,
+  RECIPES_TOOL,
   REMOTE_RENDER_DEFINITION,
   SEARCH_CATALOG_TOOL,
   VALIDATE_TOOL,
@@ -62,7 +64,7 @@ import { renderArtifact } from './render.js';
 import { createArtifact, createShare } from './share.js';
 
 export const REMOTE_INSTRUCTIONS = `AK Render compiles a Page Spec (YAML or JSON) into one self-contained, offline HTML file.
-Loop: call catalog once (or search-catalog with a few words), describe only the block types you plan to use (several at once with types, compact: true for the short form), validate the spec and fix every diagnostic by its JSON path, then render.
+Loop: call catalog once (or search-catalog with a few words), describe only the block types you plan to use (several at once with types, compact: true for the short form), optionally start from a recipe (list them with recipes), validate the spec and fix every diagnostic by its JSON path, then render.
 On this remote server render stores the page and returns its artifactUrl and a short summary, never the HTML. Pass share: true for a longer-lived share link.
 validate and render need an AgentKit bearer token in the Authorization header.
 Describe meaning, not presentation: the compiler owns layout, colour, typography and motion.`;
@@ -175,6 +177,8 @@ export const REMOTE_TOOLS: readonly RemoteTool[] = [
   anonymous(CATALOG_TOOL),
   anonymous(SEARCH_CATALOG_TOOL),
   anonymous(DESCRIBE_TOOL),
+  anonymous(RECIPES_TOOL),
+  anonymous(RECIPE_TOOL),
   REMOTE_VALIDATE_TOOL,
   REMOTE_RENDER_TOOL,
   anonymous(BUILTIN_THEMES_TOOL),
