@@ -131,8 +131,8 @@ presets it finds. Use only a name it lists. Don't try to restyle the page.
   from the conversation, the repository, or tool output. If a value is
   unknown, leave the block out or ask. Don't fill it with a plausible guess.
 - **Keep the page offline.** `policy.network` defaults to `deny`, so a remote
-  image or video renders as a labelled fallback. Opt in only when the user
-  asks for remote media:
+  image or video renders as a labelled fallback, and a remote video `poster`
+  fails validation. Opt in only when the user asks for remote media:
 
   ```yaml
   policy:

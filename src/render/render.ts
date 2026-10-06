@@ -119,6 +119,9 @@ function collectOrigins(ir: IrDocument): string[] {
     const capability = node.type === 'video' || node.type === 'audio' ? 'media' : 'images';
     const src = node.props.src;
     if (typeof src === 'string') add(src, capability);
+    // A video poster is a still image, gated by `images` whatever the player uses.
+    const poster = node.props.poster;
+    if (typeof poster === 'string') add(poster, 'images');
     const nested = [
       ...(Array.isArray(node.props.items) ? node.props.items : []),
       node.props.before,

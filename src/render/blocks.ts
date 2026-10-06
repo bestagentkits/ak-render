@@ -24,6 +24,7 @@ import {
   element,
   figureCaption,
   heading,
+  imageReferenceAllowed,
   listProp,
   nodeAttributes,
   numberProp,
@@ -923,6 +924,13 @@ const RENDERERS: Record<string, Renderer> = {
     const resolved = resolveMedia(source, context.ir.policy.network, 'media', provider);
     const fallback = isPlainObject(node.props.fallback) ? node.props.fallback : {};
     const captionText = stringProp(node, 'caption');
+    // A poster is a still image, so it passes the same `images` gate as an image
+    // block. Validation rejects a blocked remote poster; dropping it here keeps
+    // the renderer safe for an IR that did not come through validation.
+    const requestedPoster = stringProp(node, 'poster');
+    const poster = imageReferenceAllowed(context.ir.policy.network, requestedPoster)
+      ? requestedPoster
+      : '';
     // A provider reference never becomes a frame, whether or not it is allowed:
     // the page links to the provider and keeps the poster, so the artifact stays
     // frame-free. Only the explanation differs between allowed and denied.
@@ -934,7 +942,7 @@ const RENDERERS: Record<string, Renderer> = {
           stringProp(node, 'title'),
           str(fallback.description, `${label} content`),
           source,
-          stringProp(node, 'poster'),
+          poster,
           str(fallback.linkText, `Open on ${label}`),
           resolved.allowed
             ? `Embedded players are not emitted; this page links to ${label} instead.`
@@ -951,7 +959,7 @@ const RENDERERS: Record<string, Renderer> = {
           stringProp(node, 'title'),
           str(fallback.description, 'Remote video is not available on this page.'),
           str(fallback.url, source),
-          stringProp(node, 'poster'),
+          poster,
           str(fallback.linkText, 'Open video'),
           `Remote media is not embedded because ${blockedReason(context.ir.policy.network, 'media')}.`,
         )}</div>`,
@@ -959,10 +967,9 @@ const RENDERERS: Record<string, Renderer> = {
         '</figure>',
       ].join('');
     }
-    const poster = stringProp(node, 'poster');
     return [
       `<figure${renderAttributes(nodeAttributes(node, { class: 'ak-block ak-media' }))}>`,
-      `<video controls preload="metadata"${poster === '' ? '' : ` poster="${escapeAttribute(poster)}"`}><source src="${escapeAttribute(
+      `<video controls preload="metadata"${poster === '' ? '' : ` poster="${escapeAttribute(escapeUrl(poster))}"`}><source src="${escapeAttribute(
         resolved.src,
       )}" />${escapeText(str(fallback.description, 'Video content'))}</video>`,
       figureCaption(captionText),

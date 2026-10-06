@@ -11,7 +11,7 @@
 import { type Diagnostic, DiagnosticBag, pathIndex, pathKey } from '../diagnostics.js';
 import { isRenderError, RenderError } from '../errors.js';
 import { derivedNodeId } from '../hash.js';
-import type { IrDocument, IrNode, IrTheme } from '../ir.js';
+import type { IrDocument, IrNode, IrTheme, NetworkPolicy } from '../ir.js';
 import { isPlainObject, type JsonValue } from '../json.js';
 import { NODE_ID_PATTERN, validateProps } from '../registry/prop-schema.js';
 import { blockTypes, getBlockDefinition } from '../registry/registry.js';
@@ -21,6 +21,7 @@ import { type BindingMap, validateBindingsDeep } from './bindings.js';
 import { type BoundsReport, checkBounds } from './bounds.js';
 import { scanForbiddenKeys } from './forbidden.js';
 import { migrateSpec } from './migrate.js';
+import { blockedReason, imageReferenceAllowed } from './network-policy.js';
 import { type ParseOptions, parseSpec } from './parse.js';
 import { EMBED_PROVIDER_NAMES, isEmbedProvider } from './providers.js';
 
@@ -484,7 +485,7 @@ function stringProp(node: IrNode, key: string): string | undefined {
 }
 
 /** Checks that need more than one field, or more than one node. */
-function postChecks(nodes: IrNode[], bag: DiagnosticBag): void {
+function postChecks(nodes: IrNode[], network: NetworkPolicy, bag: DiagnosticBag): void {
   let previousHeadingLevel: number | undefined;
 
   for (const node of nodes) {
@@ -556,6 +557,21 @@ function postChecks(nodes: IrNode[], bag: DiagnosticBag): void {
             });
           }
         }
+      }
+    }
+
+    // A poster is a still image the page would load on open. A remote one the
+    // policy blocks is reported here, at its own path, rather than surfacing
+    // only after rendering as a page-level emitted-reference failure.
+    if (node.type === 'video') {
+      const poster = node.props.poster;
+      if (typeof poster === 'string' && !imageReferenceAllowed(network, poster)) {
+        bag.add({
+          code: 'POLICY_VIOLATION',
+          message: `remote poster is not allowed because ${blockedReason(network, 'images')}; use a local poster file or allow remote images in policy.network`,
+          path: pathKey(node.path, 'poster'),
+          nodeId: node.id,
+        });
       }
     }
 
@@ -690,7 +706,7 @@ export function normalizeSpec(input: unknown, options: ParseOptions = {}): Norma
     }
   }
 
-  postChecks(context.nodes, bag);
+  postChecks(context.nodes, envelope?.policy.network ?? 'deny', bag);
 
   const root: IrNode = {
     id: 'page',

@@ -7,8 +7,17 @@
 
 import type { IrNode, NetworkPolicy } from '../ir.js';
 import { isPlainObject, type JsonValue } from '../json.js';
-import { hostMatchesAnyProvider, hostMatchesProvider } from '../spec/providers.js';
+import { isRemote, type MediaCapability, networkAllows } from '../spec/network-policy.js';
 import { type AttributeValue, escapeText, escapeUrl, renderAttributes } from './escape.js';
+
+// The network gate is shared with validation; renderers keep importing it from here.
+export {
+  blockedReason,
+  capabilityAllowed,
+  imageReferenceAllowed,
+  isRemote,
+  networkAllows,
+} from '../spec/network-policy.js';
 
 export function stringProp(node: IrNode, key: string, fallback = ''): string {
   const value = node.props[key];
@@ -66,50 +75,6 @@ export function figureCaption(value: string): string {
   return value === '' ? '' : `<figcaption>${escapeText(value)}</figcaption>`;
 }
 
-export function isRemote(reference: string): boolean {
-  return /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(reference);
-}
-
-export function capabilityAllowed(policy: NetworkPolicy, capability: string): boolean {
-  if (policy === 'deny') return false;
-  return policy.allow.includes(capability);
-}
-
-/**
- * Decide whether a remote reference may be loaded.
- *
- * Two gates apply. The capability must be opted into, and when the page declares
- * a provider allowlist the reference's host must belong to one of those
- * providers. A block that names a provider itself requires that provider to be
- * allowlisted, so a spec cannot promote an arbitrary host to trusted by
- * labelling it "youtube".
- */
-export function networkAllows(
-  policy: NetworkPolicy,
-  capability: 'images' | 'media',
-  reference: string,
-  provider: string,
-): boolean {
-  if (!capabilityAllowed(policy, capability)) return false;
-  if (policy === 'deny') return false;
-  const declared = policy.providers ?? [];
-  if (provider !== '') {
-    return declared.includes(provider) && hostMatchesProvider(provider, reference);
-  }
-  if (declared.length === 0) return true;
-  return hostMatchesAnyProvider(declared, reference);
-}
-
-/**
- * Why a remote reference was held back. The page may deny the network outright,
- * leave the capability out, or allow it only for other hosts.
- */
-export function blockedReason(policy: NetworkPolicy, capability: 'images' | 'media'): string {
-  if (policy === 'deny') return 'the page denies network access';
-  if (!capabilityAllowed(policy, capability)) return `the page does not allow remote ${capability}`;
-  return 'its host is not on the page’s provider allowlist';
-}
-
 /**
  * Resolve a media reference against the network policy.
  *
@@ -121,7 +86,7 @@ export function blockedReason(policy: NetworkPolicy, capability: 'images' | 'med
 export function resolveMedia(
   reference: string,
   policy: NetworkPolicy,
-  capability: 'images' | 'media',
+  capability: MediaCapability,
   provider = '',
 ): { allowed: boolean; src: string } {
   if (!isRemote(reference)) return { allowed: true, src: escapeUrl(reference) };

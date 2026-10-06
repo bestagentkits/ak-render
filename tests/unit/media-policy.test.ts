@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { compile, isRenderError, type RenderError } from '../../src/index.js';
+import {
+  compile,
+  isRenderError,
+  loadTheme,
+  normalizeSpec,
+  type RenderError,
+  validate,
+} from '../../src/index.js';
+import { renderNode } from '../../src/render/blocks.js';
 
 const REMOTE_VIDEO = 'https://cdn.example.test/clip.mp4';
 const YOUTUBE = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
@@ -202,5 +210,90 @@ blocks:
       description: A track.
 `);
     expect(result.html).toContain('<audio controls');
+  });
+});
+
+describe('media policy: video poster', () => {
+  const REMOTE_POSTER = 'https://img.example.test/poster.png';
+  const allowImages = 'policy:\n  network:\n    allow:\n      - images\n';
+  const posterSpec = (
+    src: string,
+    options: { policy?: string; provider?: string; poster?: string } = {},
+  ): string =>
+    videoSpec(src, options).replace(
+      '    fallback:\n',
+      `    poster: ${options.poster ?? REMOTE_POSTER}\n    fallback:\n`,
+    );
+
+  it('rejects a remote poster at validate with its own path and the policy reason', () => {
+    for (const spec of [
+      posterSpec(REMOTE_VIDEO),
+      posterSpec(YOUTUBE, { provider: 'youtube' }),
+      posterSpec('./assets/clip.mp4'),
+    ]) {
+      const result = validate(spec);
+      expect(result.ok).toBe(false);
+      const diagnostic = result.diagnostics.find((entry) => entry.severity === 'error');
+      expect(diagnostic?.code).toBe('POLICY_VIOLATION');
+      expect(diagnostic?.path).toBe('$.blocks[0].poster');
+      expect(diagnostic?.nodeId).toBe('clip');
+      expect(diagnostic?.message).toContain('the page denies network access');
+    }
+  });
+
+  it('names the missing capability when the page allows only media', () => {
+    const result = validate(
+      posterSpec(REMOTE_VIDEO, { policy: 'policy:\n  network:\n    allow:\n      - media\n' }),
+    );
+    expect(result.ok).toBe(false);
+    expect(result.diagnostics[0]?.path).toBe('$.blocks[0].poster');
+    expect(result.diagnostics[0]?.message).toContain('the page does not allow remote images');
+  });
+
+  it('fails compile at the poster path rather than the document root', () => {
+    try {
+      compile(posterSpec(REMOTE_VIDEO));
+      throw new Error('expected a rejection');
+    } catch (error) {
+      expect(isRenderError(error)).toBe(true);
+      expect((error as RenderError).code).toBe('POLICY_VIOLATION');
+      expect((error as RenderError).path).toBe('$.blocks[0].poster');
+    }
+  });
+
+  it('accepts a local poster under the default deny policy', () => {
+    const spec = posterSpec(REMOTE_VIDEO, { poster: 'assets/poster.png' });
+    expect(validate(spec).ok).toBe(true);
+    expect(compile(spec).html).toContain('<img src="assets/poster.png" alt="" />');
+  });
+
+  it('emits a remote poster once remote images are allowed, with its origin in the CSP', () => {
+    const fallback = compile(posterSpec(REMOTE_VIDEO, { policy: allowImages }));
+    expect(validate(posterSpec(REMOTE_VIDEO, { policy: allowImages })).ok).toBe(true);
+    expect(fallback.html).toContain(`<img src="${REMOTE_POSTER}" alt="" />`);
+    // The CSP sits in a meta attribute, so its quotes are entity-escaped.
+    expect(fallback.html).toContain('img-src data: file: &#39;self&#39; https://img.example.test;');
+
+    const player = compile(
+      posterSpec(REMOTE_VIDEO, {
+        policy: 'policy:\n  network:\n    allow:\n      - images\n      - media\n',
+      }),
+    );
+    expect(player.html).toContain(`<video controls preload="metadata" poster="${REMOTE_POSTER}">`);
+  });
+
+  it('drops a blocked poster in the renderer when the IR skipped validation', () => {
+    const { ir } = normalizeSpec(posterSpec(REMOTE_VIDEO));
+    const node = ir.nodes.find((candidate) => candidate.type === 'video');
+    if (node === undefined) throw new Error('expected a video node');
+    const markup = renderNode(node, {
+      ir,
+      theme: loadTheme(),
+      features: new Set(),
+      renderChildren: () => '',
+    });
+    expect(markup).toContain('ak-media-fallback');
+    expect(markup).not.toContain(REMOTE_POSTER);
+    expect(markup).not.toContain('<img');
   });
 });

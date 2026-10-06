@@ -131,7 +131,9 @@ reduced, in print and in a screenshot.
 ### Images, video and the network
 
 Local paths (`assets/shot.png`) always work. A remote URL renders as a labelled
-fallback with a link unless the spec opts in:
+fallback with a link unless the spec opts in. A remote video `poster` is the
+exception: it has no fallback, so `validate` rejects it at its own path until
+the page allows remote `images`:
 
 ```yaml
 policy:

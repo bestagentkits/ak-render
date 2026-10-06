@@ -79,7 +79,8 @@ it points, so review it like any file write. `spec` may be YAML/JSON text or the
 
 - The output is offline. A remote image or video stays a labelled fallback
   unless the spec opts in under `policy.network`; see
-  [media-policy.md](./media-policy.md).
+  [media-policy.md](./media-policy.md). A remote video `poster` is rejected at
+  its path unless the page allows remote `images`.
 - URLs accept `https`, `http`, `mailto` and relative paths; `javascript:` and
   similar schemes are rejected.
 - Use semantic blocks (`hero`, `steps`, `timeline`, `comparison`, `kpi`, `cta`)

@@ -19,6 +19,10 @@ Release mechanics and the compatibility contract live in
 - `benchmarks/agent-token-cost.mjs` estimates the tokens of a page task end to end: guidance read, output written and what returns into context, against a corpus of hand-written HTML passed with `--legacy-html`. Results are in `docs/artifacts/agent-token-cost.md`, with the corpus recorded by anonymous label.
 - `scripts/capture-demo-media.mjs` captures five more page shots and four component crops (KPI, terminal, checklist, file tree), and `--only <names>` recaptures a subset without the walkthrough video.
 
+### Fixed
+
+- A remote video `poster` that the network policy blocks now fails `validate` with a `POLICY_VIOLATION` at the block's `poster` path, naming the reason. Before, validate passed and compile failed at `$` with "emitted a remote resource reference". A poster is gated by the `images` capability, an allowed remote poster's origin joins the CSP, and the renderer drops a blocked poster even for an IR that skipped validation.
+
 ## [0.2.0] - 2026-10-05
 
 Every emitted page changes in this release: new styles, embedded fonts, and a
