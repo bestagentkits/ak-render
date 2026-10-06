@@ -28,11 +28,15 @@
  * Usage:
  *   pnpm build
  *   node benchmarks/agent-token-cost.mjs --legacy-html a.html b.html ... [--out-dir docs/artifacts]
- *   node benchmarks/agent-token-cost.mjs --legacy-from docs/artifacts/agent-token-cost.json
+ *   node benchmarks/agent-token-cost.mjs --reuse-legacy docs/artifacts/agent-token-cost.json
  *
- * The legacy corpus is private, so `--legacy-from` reuses the anonymous legacy
- * rows recorded in an earlier artifact and re-measures everything else. Use it
- * to refresh the artifact after a compiler or catalog change.
+ * `--reuse-legacy` takes the corpus measurements (per anonymous label) from an
+ * earlier artifact instead of re-reading the HTML files, which are private and
+ * not committed. Everything else is measured again.
+ *
+ * Presentation guidance on the AK Render side counts the AgentKit shared HTML
+ * contract (taken from the baseline artifact) as well as the skill, `catalog`
+ * and `describe`, because the baseline counts that contract on the legacy side.
  */
 
 import { execFileSync } from 'node:child_process';
@@ -40,53 +44,51 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'n
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { specBlockTypes } from './spec-block-types.mjs';
+import { blockTypes } from './fixture-block-types.mjs';
 
 const REPO_ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const CLI = join(REPO_ROOT, 'dist/cli.js');
 const CHARS_PER_TOKEN = 4;
 /** The CLI's describe-many limit. */
 const DESCRIBE_BATCH = 12;
-const tokens = (chars) => Math.round(chars / CHARS_PER_TOKEN);
+const tokens = (chars) => Math.ceil(chars / CHARS_PER_TOKEN);
 
 function parseArgs(argv) {
-  const options = { legacy: [], legacyFrom: undefined, outDir: join(REPO_ROOT, 'docs/artifacts') };
+  const options = { legacy: [], reuse: undefined, outDir: join(REPO_ROOT, 'docs/artifacts') };
   let mode;
   for (const arg of argv) {
     if (arg === '--legacy-html') mode = 'legacy';
     else if (arg === '--out-dir') mode = 'out';
-    else if (arg === '--legacy-from') mode = 'from';
+    else if (arg === '--reuse-legacy') mode = 'reuse';
     else if (mode === 'legacy') options.legacy.push(resolve(arg));
-    else if (mode === 'out' || mode === 'from') {
+    else if (mode === 'out' || mode === 'reuse') {
       if (mode === 'out') options.outDir = resolve(arg);
-      else options.legacyFrom = resolve(arg);
+      else options.reuse = resolve(arg);
       mode = undefined;
     } else throw new Error(`unexpected argument: ${arg}`);
   }
-  if ((options.legacy.length === 0) === (options.legacyFrom === undefined)) {
-    throw new Error('pass either files with --legacy-html or one artifact with --legacy-from');
+  if ((options.legacy.length === 0) === (options.reuse === undefined)) {
+    throw new Error('pass either --legacy-html <files...> or --reuse-legacy <artifact.json>');
   }
   return options;
 }
 
-/** Legacy rows recorded in an earlier artifact, checked for the expected shape. */
-function recordedLegacy(file) {
-  const rows = JSON.parse(readFileSync(file, 'utf8'))?.legacy?.artifacts;
-  const fields = ['chars', 'textChars', 'cssChars', 'jsChars', 'textShare'];
-  if (
-    !Array.isArray(rows) ||
-    rows.length === 0 ||
-    !rows.every(
-      (row) =>
-        typeof row?.label === 'string' &&
-        fields.every((field) => typeof row[field] === 'number' && Number.isFinite(row[field])),
-    )
-  ) {
-    throw new Error(`${file} has no recorded legacy artifacts`);
+/** Corpus rows recorded by an earlier run; fails when a row is incomplete. */
+function reuseLegacy(path) {
+  const rows = JSON.parse(readFileSync(path, 'utf8')).legacy?.artifacts;
+  if (!Array.isArray(rows) || rows.length === 0) throw new Error(`${path} has no legacy.artifacts`);
+  for (const row of rows) {
+    for (const key of ['chars', 'textChars', 'cssChars', 'jsChars']) {
+      if (!Number.isFinite(row[key])) throw new Error(`${path}: ${row.label ?? '?'} lacks ${key}`);
+    }
   }
-  return rows.map((row) => ({
-    label: row.label,
-    ...Object.fromEntries(fields.map((field) => [field, row[field]])),
+  return rows.map(({ label, chars, textChars, cssChars, jsChars }) => ({
+    label,
+    chars,
+    textChars,
+    cssChars,
+    jsChars,
+    textShare: textChars / chars,
   }));
 }
 
@@ -138,7 +140,7 @@ function measureLegacy(files) {
 
 const cli = (args) => execFileSync(process.execPath, [CLI, ...args], { encoding: 'utf8' });
 
-function measureFixtures() {
+function measureFixtures(compile) {
   const directory = join(REPO_ROOT, 'fixtures/pages');
   const skill = readFileSync(join(REPO_ROOT, 'skills/ak-render/SKILL.md'), 'utf8').length;
   const catalog = cli(['catalog']).length;
@@ -166,7 +168,7 @@ function measureFixtures() {
         const out = join(scratch, name.replace(/\.yaml$/u, '.html'));
         const summary = cli([path, '--out', out, '--json']).length;
         const html = readFileSync(out, 'utf8');
-        const types = specBlockTypes(spec);
+        const types = blockTypes(compile, spec, name);
         const discovery = skill + catalog + types.reduce((sum, type) => sum + describe(type), 0);
         const text = visibleText(html).length;
         return {
@@ -186,15 +188,18 @@ function measureFixtures() {
   }
 }
 
-function build(options) {
+const SHARED_CONTRACT = 'kits/core/skills/ak-preview/references/html-skill-composition.md';
+
+function build(options, compile) {
   const baseline = JSON.parse(
     readFileSync(join(REPO_ROOT, 'docs/artifacts/baseline-legacy-html-context.json'), 'utf8'),
   );
-  const legacy =
-    options.legacyFrom === undefined
-      ? measureLegacy(options.legacy)
-      : recordedLegacy(options.legacyFrom);
-  const fixtures = measureFixtures();
+  const sharedContract = baseline.references?.find((entry) => entry.path === SHARED_CONTRACT);
+  if (!Number.isFinite(sharedContract?.chars)) {
+    throw new Error(`baseline artifact does not record ${SHARED_CONTRACT}`);
+  }
+  const legacy = options.reuse ? reuseLegacy(options.reuse) : measureLegacy(options.legacy);
+  const fixtures = measureFixtures(compile);
   const ratio = median(fixtures.map((row) => row.specToText));
 
   const projected = legacy.map((row) => {
@@ -208,13 +213,17 @@ function build(options) {
   });
 
   const guidanceBefore = baseline.totals.meanTaskTokens;
-  const guidanceAfter = tokens(median(fixtures.map((row) => row.discoveryChars)));
+  const guidanceAfter = tokens(
+    sharedContract.chars + median(fixtures.map((row) => row.discoveryChars)),
+  );
   const outputBefore = tokens(median(legacy.map((row) => row.chars)));
   const outputAfter = tokens(median(legacy.map((row) => row.textChars)) * ratio);
   const returned = tokens(median(fixtures.map((row) => row.summaryChars)));
   const before = guidanceBefore + outputBefore;
   const after = guidanceAfter + outputAfter + returned;
-  const guidanceCompact = tokens(median(fixtures.map((row) => row.compactDiscoveryChars)));
+  const guidanceCompact = tokens(
+    sharedContract.chars + median(fixtures.map((row) => row.compactDiscoveryChars)),
+  );
   const afterCompact = guidanceCompact + outputAfter + returned;
 
   return {
@@ -223,6 +232,8 @@ function build(options) {
     compiler: cli(['--version']).trim(),
     method: {
       tokens: `estimated at ${CHARS_PER_TOKEN} characters per token, as in the legacy baseline`,
+      guidance:
+        'legacy: baseline mean task; AK Render: the AgentKit shared contract plus the median fixture discovery (skill, catalog, describe --json)',
       visibleText: 'characters outside tags, <style> and <script>, whitespace collapsed',
       projectedSpec: 'legacy visible text times the median fixture spec-to-text ratio',
       legacyCorpus: 'agent-written HTML artifacts from real projects, recorded by anonymous label',
@@ -246,7 +257,6 @@ function build(options) {
       after: { guidance: guidanceAfter, output: outputAfter, returned, total: after },
       reduction: 1 - after / before,
       excludes: 'task context and narrative reasoning (equal on both paths), repairs and retries',
-      describe: 'describe <type> --json for each block type (full contracts)',
     },
     typicalTaskCompact: {
       describe: 'describe <types...> --compact (batches of 12), as the agent guide recommends',
@@ -255,7 +265,7 @@ function build(options) {
     },
     contextReduction: {
       source: 'docs/artifacts/benchmark-render.md',
-      note: 'presentation guidance only, benchmarked against AgentKit with its ak-render skill',
+      note: 'presentation guidance only: the AgentKit legacy HTML references against the shared contract plus the ak-render plugin skill route',
     },
     notMeasured: [
       'live model input and output tokens per task (needs the A/B harness)',
@@ -286,7 +296,7 @@ function markdown(result) {
     '',
     '| Part | Hand-written HTML | AK Render |',
     '| --- | ---: | ---: |',
-    `| Presentation guidance read | ${k(task.before.guidance)} (baseline mean) | ${k(task.after.guidance)} (skill, catalog, describe --json) |`,
+    `| Presentation guidance read | ${k(task.before.guidance)} (baseline mean) | ${k(task.after.guidance)} (shared contract, skill, catalog, describe) |`,
     `| Written by the agent | ${k(task.before.output)} (median legacy page) | ${k(task.after.output)} (projected spec) |`,
     `| Returned into context | written page stays in context | ${k(task.after.returned)} (render summary) |`,
     `| **Total** | **${k(task.before.total)}** | **${k(task.after.total)}** |`,
@@ -335,7 +345,8 @@ function markdown(result) {
 }
 
 const options = parseArgs(process.argv.slice(2));
-const result = build(options);
+const { compile } = await import(new URL('../dist/index.js', import.meta.url));
+const result = build(options, compile);
 writeFileSync(
   join(options.outDir, 'agent-token-cost.json'),
   `${JSON.stringify(result, null, 2)}\n`,

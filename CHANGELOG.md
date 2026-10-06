@@ -25,6 +25,9 @@ valid. These changes alter existing behaviour or output on purpose:
   reads without scripts and in print.
 - `catalog` text is grouped by category, and `catalog --json` prints one block
   per line with new `category` and `tags` fields.
+- The Claude Code and Codex plugin manifests link to https://render.agentkit.best, and the Codex plugin shows an icon, a logo and the brand colour in the plugin directory.
+- The benchmarks are measured against AgentKit `9e322f928`. The legacy baseline no longer counts the slide guide for document tasks (AgentKit loads it for `--slides` only), so its per-task mean is ~25.0k tokens, not ~33.7k. `render-benchmark.mjs` measures the `ak-render` skill route per task: the AgentKit shared HTML contract, the skill, `catalog`, and `describe --json` for each block type the task's fixture compiles to. It fails when the AgentKit checkout is missing. Presentation context now drops 64–68% (previously reported as 87–88%). The typical-task estimate is 54% with full contracts and 66% with `describe --compact`, which counts the shared contract too (previously 65% and 75%). `agent-token-cost.mjs --reuse-legacy` reruns that estimate from recorded corpus measurements. The README and landing page use the new figures.
+- The landing page shows what the compiler saves an agent (measured and estimated token figures, kept apart), each component crop beside the fixture YAML that produced it, and a gallery of every demo page. The README gains a token cost section.
 
 ### Added
 

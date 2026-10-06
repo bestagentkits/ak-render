@@ -271,18 +271,23 @@ is guidance it reads, the spec it writes, and a one-line summary it reads back.
 
 | Part of a page task | Hand-written HTML | AK Render |
 | --- | ---: | ---: |
-| Presentation guidance read | 33.7k (baseline mean) | 9.1k (skill, catalog, `describe --json`) |
+| Presentation guidance read | 25.0k (baseline mean) | 10.6k (shared contract, skill, catalog, `describe --json`) |
 | Written by the agent | 13.9k (median legacy page) | 7.2k (projected spec) |
 | Returned into context | the written page is already there | 0.1k (render summary) |
-| **Total, estimated** | **47.5k** | **16.5k (−65%)** |
+| **Total, estimated** | **38.9k** | **17.9k (−54%)** |
 
 With the compact workflow the agent guide recommends,
-`describe <types...> --compact`, the guidance read is 4.5k and the total
-11.8k (−75%). The spec written and the summary returned are the same.
+`describe <types...> --compact`, the guidance read is 5.7k and the total
+13.1k (−66%). The spec written and the summary returned are the same.
 
-- **Benchmarked:** presentation context drops 87–88%, from 33.7k–36.6k tokens
-  of legacy guidance to 4.4k of AgentKit skill files, measured with 0.1.1
-  ([render benchmark](./docs/artifacts/benchmark-render.md)).
+- **Benchmarked:** presentation context drops 64–68%, from 23.7k–26.6k tokens
+  of AgentKit's legacy HTML guidance to 7.9k–8.5k on the `ak-render` skill
+  route: the shared AgentKit contract, the skill, `catalog`, and the
+  `describe --json` output of the blocks a task uses
+  ([render benchmark](./docs/artifacts/benchmark-render.md)). The `ak:preview`
+  diff task (68%) follows AgentKit's reference-loading table directly; the
+  explain, brainstorm and plan rows use the `ak-preview` reference set as a
+  proxy for their hand-written HTML route.
 - **Measured on 12 HTML pages agents wrote in real projects:** a median of 26%
   of each page is visible text; the rest is markup, CSS and script. The
   projected median output saving is 52%. A page that is mostly prose saves
@@ -421,6 +426,7 @@ pnpm test:browser    # Playwright, after: pnpm exec playwright install chromium
 pnpm test:package    # pack, install into a temp project, exercise API and bin
 pnpm bench:baseline  # re-run the legacy presentation-context measurement
 pnpm bench:spec      # spec compression for the composition fixtures
+pnpm build && pnpm bench:render --agentkit ../agentkit --repeat 9  # committed render artifact
 pnpm site:build      # compile the landing page and gallery into site/dist
 pnpm site:deploy     # build, then deploy site/dist with wrangler
 ```

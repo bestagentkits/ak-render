@@ -4,8 +4,7 @@
   "method": {
     "tokenEstimate": "Estimated from character count at 4 chars/token (point), bounded by 4.5 and 3.5 chars/token. Exact tokenizer counts are not claimed.",
     "scope": "Presentation guidance the legacy shared HTML contract instructs a run to load. Does not include skill bodies, fixture content, model output, or retries.",
-    "agentkitRoot": "/home/orca/orca/workspaces/agentkit/feat-render-ak-render-declarative-interactive-pa",
-    "agentkitRevision": "1035b17c"
+    "agentkitRevision": "9e322f928"
   },
   "totals": {
     "referenceFiles": 16,
@@ -15,9 +14,9 @@
       "point": 45390,
       "high": 51874
     },
-    "largestTaskTokens": 40631,
+    "largestTaskTokens": 35100,
     "smallestTaskTokens": 3203,
-    "meanTaskTokens": 33669
+    "meanTaskTokens": 25026
   },
   "references": [
     {
@@ -99,7 +98,7 @@
       }
     },
     {
-      "group": "mode-specific",
+      "group": "slides-only",
       "path": "kits/core/skills/ak-preview/references/html-slide-patterns.md",
       "bytes": 40110,
       "chars": 39991,
@@ -234,228 +233,228 @@
       "id": "explain-html",
       "skill": "ak:explain",
       "mode": "--html",
-      "referenceCount": 7,
-      "chars": 134781,
+      "referenceCount": 6,
+      "chars": 94790,
       "estimatedTokens": {
-        "low": 29952,
-        "point": 33696,
-        "high": 38509
+        "low": 21065,
+        "point": 23698,
+        "high": 27083
       }
     },
     {
       "id": "explain-diagram",
       "skill": "ak:explain",
       "mode": "--diagram",
-      "referenceCount": 8,
-      "chars": 141009,
+      "referenceCount": 7,
+      "chars": 101018,
       "estimatedTokens": {
-        "low": 31336,
-        "point": 35253,
-        "high": 40289
+        "low": 22449,
+        "point": 25255,
+        "high": 28863
       }
     },
     {
       "id": "explain-slides",
       "skill": "ak:explain",
       "mode": "--slides",
-      "referenceCount": 7,
-      "chars": 134781,
+      "referenceCount": 6,
+      "chars": 128976,
       "estimatedTokens": {
-        "low": 29952,
-        "point": 33696,
-        "high": 38509
+        "low": 28662,
+        "point": 32244,
+        "high": 36851
       }
     },
     {
       "id": "brainstorm-html",
       "skill": "ak:brainstorm",
       "mode": "--html",
-      "referenceCount": 7,
-      "chars": 134781,
+      "referenceCount": 6,
+      "chars": 94790,
       "estimatedTokens": {
-        "low": 29952,
-        "point": 33696,
-        "high": 38509
+        "low": 21065,
+        "point": 23698,
+        "high": 27083
       }
     },
     {
       "id": "plan-review-engineer",
       "skill": "ak:plan (Engineer)",
       "mode": "--html",
-      "referenceCount": 7,
-      "chars": 134781,
+      "referenceCount": 6,
+      "chars": 94790,
       "estimatedTokens": {
-        "low": 29952,
-        "point": 33696,
-        "high": 38509
+        "low": 21065,
+        "point": 23698,
+        "high": 27083
       }
     },
     {
       "id": "plan-review-marketing",
       "skill": "ak:plan (Marketing)",
       "mode": "--html",
-      "referenceCount": 7,
-      "chars": 134781,
+      "referenceCount": 6,
+      "chars": 94790,
       "estimatedTokens": {
-        "low": 29952,
-        "point": 33696,
-        "high": 38509
+        "low": 21065,
+        "point": 23698,
+        "high": 27083
       }
     },
     {
       "id": "plan-html-diagram-panel",
       "skill": "ak:plan (Engineer)",
       "mode": "--html + diagram",
-      "referenceCount": 8,
-      "chars": 141009,
+      "referenceCount": 7,
+      "chars": 101018,
       "estimatedTokens": {
-        "low": 31336,
-        "point": 35253,
-        "high": 40289
+        "low": 22449,
+        "point": 25255,
+        "high": 28863
       }
     },
     {
       "id": "plan-html-kpi-panel",
       "skill": "ak:plan (Engineer)",
       "mode": "--html + KPI panel",
-      "referenceCount": 9,
-      "chars": 151100,
+      "referenceCount": 8,
+      "chars": 111109,
       "estimatedTokens": {
-        "low": 33578,
-        "point": 37775,
-        "high": 43172
+        "low": 24691,
+        "point": 27778,
+        "high": 31746
       }
     },
     {
       "id": "preview-diff",
       "skill": "ak:preview",
       "mode": "--diff",
-      "referenceCount": 10,
-      "chars": 146202,
+      "referenceCount": 9,
+      "chars": 106211,
       "estimatedTokens": {
-        "low": 32490,
-        "point": 36551,
-        "high": 41772
+        "low": 23603,
+        "point": 26553,
+        "high": 30346
       }
     },
     {
       "id": "preview-plan-review",
       "skill": "ak:preview",
       "mode": "--plan-review",
-      "referenceCount": 10,
-      "chars": 146202,
+      "referenceCount": 9,
+      "chars": 106211,
       "estimatedTokens": {
-        "low": 32490,
-        "point": 36551,
-        "high": 41772
+        "low": 23603,
+        "point": 26553,
+        "high": 30346
       }
     },
     {
       "id": "preview-recap",
       "skill": "ak:preview",
       "mode": "--recap",
-      "referenceCount": 10,
-      "chars": 146202,
+      "referenceCount": 9,
+      "chars": 106211,
       "estimatedTokens": {
-        "low": 32490,
-        "point": 36551,
-        "high": 41772
+        "low": 23603,
+        "point": 26553,
+        "high": 30346
       }
     },
     {
       "id": "preview-diagram",
       "skill": "ak:preview",
       "mode": "--diagram",
-      "referenceCount": 11,
-      "chars": 152430,
+      "referenceCount": 10,
+      "chars": 112439,
       "estimatedTokens": {
-        "low": 33874,
-        "point": 38108,
-        "high": 43552
+        "low": 24987,
+        "point": 28110,
+        "high": 32126
       }
     },
     {
       "id": "preview-slides",
       "skill": "ak:preview",
       "mode": "--slides",
-      "referenceCount": 10,
-      "chars": 146202,
+      "referenceCount": 9,
+      "chars": 140397,
       "estimatedTokens": {
-        "low": 32490,
-        "point": 36551,
-        "high": 41772
+        "low": 31200,
+        "point": 35100,
+        "high": 40114
       }
     },
     {
       "id": "preview-editorial-architecture",
       "skill": "ak:preview",
       "mode": "--diagram + editorial",
-      "referenceCount": 12,
-      "chars": 162521,
+      "referenceCount": 11,
+      "chars": 122530,
       "estimatedTokens": {
-        "low": 36116,
-        "point": 40631,
-        "high": 46435
+        "low": 27229,
+        "point": 30633,
+        "high": 35009
       }
     },
     {
       "id": "show-off",
       "skill": "ak:show-off",
       "mode": "always HTML",
-      "referenceCount": 7,
-      "chars": 134781,
+      "referenceCount": 6,
+      "chars": 94790,
       "estimatedTokens": {
-        "low": 29952,
-        "point": 33696,
-        "high": 38509
+        "low": 21065,
+        "point": 23698,
+        "high": 27083
       }
     },
     {
       "id": "retro-html",
       "skill": "ak:retro",
       "mode": "--format html",
-      "referenceCount": 7,
-      "chars": 134781,
+      "referenceCount": 6,
+      "chars": 94790,
       "estimatedTokens": {
-        "low": 29952,
-        "point": 33696,
-        "high": 38509
+        "low": 21065,
+        "point": 23698,
+        "high": 27083
       }
     },
     {
       "id": "advise-html",
       "skill": "ak:advise",
       "mode": "--html",
-      "referenceCount": 7,
-      "chars": 134781,
+      "referenceCount": 6,
+      "chars": 94790,
       "estimatedTokens": {
-        "low": 29952,
-        "point": 33696,
-        "high": 38509
+        "low": 21065,
+        "point": 23698,
+        "high": 27083
       }
     },
     {
       "id": "cti-html",
       "skill": "ak:cti-expert",
       "mode": "--format html",
-      "referenceCount": 7,
-      "chars": 134781,
+      "referenceCount": 6,
+      "chars": 94790,
       "estimatedTokens": {
-        "low": 29952,
-        "point": 33696,
-        "high": 38509
+        "low": 21065,
+        "point": 23698,
+        "high": 27083
       }
     },
     {
       "id": "issue-to-plan-html",
       "skill": "ak:issue-to-plan",
       "mode": "delegates ak:plan --html",
-      "referenceCount": 7,
-      "chars": 134781,
+      "referenceCount": 6,
+      "chars": 94790,
       "estimatedTokens": {
-        "low": 29952,
-        "point": 33696,
-        "high": 38509
+        "low": 21065,
+        "point": 23698,
+        "high": 27083
       }
     },
     {
