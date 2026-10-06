@@ -1,0 +1,144 @@
+version: 1
+
+meta:
+  title: Native Controls
+  description: Labeled native inputs that write safe page state and switch views without authored script
+  locale: en
+
+theme:
+  preset: editorial
+
+policy:
+  network: deny
+
+state:
+  metric: cost
+  show-details: false
+  region: eu
+  owner: ''
+  budget: 1200
+  since: '2026-09-01'
+  alerts: true
+
+blocks:
+  - type: hero
+    eyebrow: Controls
+    title: Switch the view, not the script
+    description: Every control below is a native input with a visible label. Each one writes one state key; the page decides what to show from that state.
+
+  - type: section
+    title: Metric switcher
+    blocks:
+      - type: select
+        id: metric-select
+        label: Metric
+        bind: state.metric
+        hint: Changes which summary is shown below.
+        options:
+          - value: cost
+            label: Cost per run
+          - value: latency
+            label: Latency (p95)
+      - type: kpi
+        id: cost-view
+        visibleWhen:
+          path: state.metric
+          equals: cost
+        items:
+          - label: Cost per run
+            value: $0.42
+            delta: -18%
+            trend: down
+            good: down
+          - label: Monthly spend
+            value: $1,140
+            delta: -6%
+            trend: down
+            good: down
+      - type: kpi
+        id: latency-view
+        visibleWhen:
+          path: state.metric
+          equals: latency
+        items:
+          - label: Latency p95
+            value: 840 ms
+            delta: -120 ms
+            trend: down
+            good: down
+          - label: Latency p50
+            value: 310 ms
+            delta: -40 ms
+            trend: down
+            good: down
+
+  - type: section
+    title: Details on demand
+    blocks:
+      - type: switch
+        id: details-switch
+        label: Show methodology
+        bind: state.show-details
+      - type: callout
+        id: details-callout
+        tone: info
+        title: Methodology
+        text: Costs are the median of 40 runs per model on the same prompt set, priced at list rates.
+        visibleWhen:
+          path: state.show-details
+          truthy: true
+
+  - type: section
+    title: Run settings
+    blocks:
+      - type: grid
+        columns: 2
+        blocks:
+          - type: radio-group
+            id: region-radios
+            label: Region
+            bind: state.region
+            options:
+              - value: eu
+                label: Europe
+              - value: us
+                label: United States
+              - value: apac
+                label: Asia Pacific
+          - type: text-input
+            id: owner-input
+            label: Owner
+            bind: state.owner
+            placeholder: Team or person
+            maxLength: 80
+          - type: number-input
+            id: budget-input
+            label: Monthly budget (USD)
+            bind: state.budget
+            min: 0
+            max: 100000
+            step: 100
+          - type: date-input
+            id: since-input
+            label: Report since
+            bind: state.since
+          - type: checkbox
+            id: alerts-checkbox
+            label: Email me when the budget is exceeded
+            bind: state.alerts
+      - type: callout
+        id: alerts-on
+        tone: success
+        title: Alerts are on
+        text: A budget alert goes out once the monthly spend passes the budget.
+        visibleWhen:
+          path: state.alerts
+          truthy: true
+      - type: callout
+        id: apac-note
+        tone: warning
+        title: Asia Pacific runs are slower
+        text: Requests from this region route through a single gateway, so latency is about 2x.
+        visibleWhen:
+          path: state.region
+          equals: apac
