@@ -1,17 +1,17 @@
 {
   "artifact": "benchmark-render",
   "producer": "benchmarks/render-benchmark.mjs",
-  "measuredAt": "2026-10-06T03:58:00.496Z",
+  "measuredAt": "2026-10-06T04:25:22.167Z",
   "compiler": {
     "name": "@bestagentkits/render",
     "version": "0.2.0"
   },
   "method": {
-    "compilerTime": "Median of 5 compiles after one warm-up compile, per fixture.",
+    "compilerTime": "Median of 9 compiles after one warm-up compile, per fixture.",
     "tokenEstimate": "Estimated from character count at 4 chars/token (point), bounded by 4.5 and 3.5 chars/token. Exact tokenizer counts are not claimed.",
     "guidanceScope": "Presentation guidance an agent loads for one page task on the AK Render path: the AgentKit shared HTML contract (also counted in the legacy baseline), the ak-render agent skill, `catalog`, and `describe --json` for each block type the matching fixture uses. Excludes the invoking skill body, fixture content, model output, and retries.",
     "agentkitRevision": "9e322f928",
-    "renderRevision": "50a47d75d"
+    "renderRevision": "f5b680710"
   },
   "guidance": {
     "files": [
@@ -22,7 +22,7 @@
         "lines": 72,
         "estimatedTokens": {
           "low": 1044,
-          "point": 1174,
+          "point": 1175,
           "high": 1342
         }
       },
@@ -32,9 +32,9 @@
         "chars": 5892,
         "lines": 159,
         "estimatedTokens": {
-          "low": 1309,
+          "low": 1310,
           "point": 1473,
-          "high": 1683
+          "high": 1684
         }
       },
       {
@@ -45,7 +45,7 @@
         "estimatedTokens": {
           "low": 1147,
           "point": 1290,
-          "high": 1474
+          "high": 1475
         }
       }
     ],
@@ -54,6 +54,7 @@
         "task": "explain-html",
         "fixture": "explain.yaml",
         "blockTypes": [
+          "page",
           "hero",
           "text",
           "code",
@@ -63,18 +64,19 @@
           "rich-text",
           "key-value"
         ],
-        "describeChars": 10907,
-        "chars": 26656,
+        "describeChars": 12080,
+        "chars": 27829,
         "estimatedTokens": {
-          "low": 5924,
-          "point": 6664,
-          "high": 7616
+          "low": 6185,
+          "point": 6958,
+          "high": 7952
         }
       },
       {
         "task": "brainstorm-html",
         "fixture": "brainstorm.yaml",
         "blockTypes": [
+          "page",
           "hero",
           "callout",
           "comparison",
@@ -82,18 +84,19 @@
           "risk-matrix",
           "list"
         ],
-        "describeChars": 9575,
-        "chars": 25324,
+        "describeChars": 10748,
+        "chars": 26497,
         "estimatedTokens": {
-          "low": 5628,
-          "point": 6331,
-          "high": 7235
+          "low": 5889,
+          "point": 6625,
+          "high": 7571
         }
       },
       {
         "task": "plan-review-engineer",
         "fixture": "plan.yaml",
         "blockTypes": [
+          "page",
           "hero",
           "stats",
           "callout",
@@ -103,18 +106,19 @@
           "diagram-panel",
           "accordion"
         ],
-        "describeChars": 11599,
-        "chars": 27348,
+        "describeChars": 12772,
+        "chars": 28521,
         "estimatedTokens": {
-          "low": 6077,
-          "point": 6837,
-          "high": 7814
+          "low": 6338,
+          "point": 7131,
+          "high": 8149
         }
       },
       {
         "task": "plan-review-marketing",
         "fixture": "plan.yaml",
         "blockTypes": [
+          "page",
           "hero",
           "stats",
           "callout",
@@ -124,18 +128,19 @@
           "diagram-panel",
           "accordion"
         ],
-        "describeChars": 11599,
-        "chars": 27348,
+        "describeChars": 12772,
+        "chars": 28521,
         "estimatedTokens": {
-          "low": 6077,
-          "point": 6837,
-          "high": 7814
+          "low": 6338,
+          "point": 7131,
+          "high": 8149
         }
       },
       {
         "task": "preview-diff",
         "fixture": "diff.yaml",
         "blockTypes": [
+          "page",
           "hero",
           "stats",
           "diff-summary",
@@ -144,12 +149,12 @@
           "code-review",
           "callout"
         ],
-        "describeChars": 11673,
-        "chars": 27422,
+        "describeChars": 12846,
+        "chars": 28595,
         "estimatedTokens": {
-          "low": 6094,
-          "point": 6856,
-          "high": 7835
+          "low": 6355,
+          "point": 7149,
+          "high": 8170
         }
       }
     ],
@@ -157,20 +162,20 @@
       "fixedChars": 15749,
       "fixedEstimatedTokens": {
         "low": 3500,
-        "point": 3937,
+        "point": 3938,
         "high": 4500
       },
-      "minTaskTokens": 6331,
-      "maxTaskTokens": 6856
+      "minTaskTokens": 6625,
+      "maxTaskTokens": 7149
     }
   },
   "compile": [
     {
       "fixture": "all-components.yaml",
-      "compilerMsMedian": 418.425,
-      "compilerMsMin": 68.503,
-      "compilerMsMax": 574.172,
-      "samples": 5,
+      "compilerMsMedian": 212.608,
+      "compilerMsMin": 53.983,
+      "compilerMsMax": 297.446,
+      "samples": 9,
       "bytes": 226989,
       "nodes": 84,
       "features": [
@@ -203,10 +208,10 @@
     },
     {
       "fixture": "brainstorm.yaml",
-      "compilerMsMedian": 3.224,
-      "compilerMsMin": 2.372,
-      "compilerMsMax": 265.631,
-      "samples": 5,
+      "compilerMsMedian": 18.388,
+      "compilerMsMin": 2.615,
+      "compilerMsMax": 97.942,
+      "samples": 9,
       "bytes": 117222,
       "nodes": 7,
       "features": [
@@ -220,10 +225,10 @@
     },
     {
       "fixture": "dashboard.yaml",
-      "compilerMsMedian": 3.662,
-      "compilerMsMin": 3.435,
-      "compilerMsMax": 201.125,
-      "samples": 5,
+      "compilerMsMedian": 8.055,
+      "compilerMsMin": 3.466,
+      "compilerMsMax": 128.525,
+      "samples": 9,
       "bytes": 142647,
       "nodes": 11,
       "features": [
@@ -236,10 +241,10 @@
     },
     {
       "fixture": "diff.yaml",
-      "compilerMsMedian": 2.925,
-      "compilerMsMin": 2.687,
-      "compilerMsMax": 92.258,
-      "samples": 5,
+      "compilerMsMedian": 5.588,
+      "compilerMsMin": 2.805,
+      "compilerMsMax": 61.615,
+      "samples": 9,
       "bytes": 117026,
       "nodes": 8,
       "features": [
@@ -251,10 +256,10 @@
     },
     {
       "fixture": "explain.yaml",
-      "compilerMsMedian": 24.853,
-      "compilerMsMin": 2.636,
-      "compilerMsMax": 77.436,
-      "samples": 5,
+      "compilerMsMedian": 38.194,
+      "compilerMsMin": 2.531,
+      "compilerMsMax": 84.457,
+      "samples": 9,
       "bytes": 121596,
       "nodes": 9,
       "features": [
@@ -269,10 +274,10 @@
     },
     {
       "fixture": "interactive.yaml",
-      "compilerMsMedian": 165.761,
-      "compilerMsMin": 56.685,
-      "compilerMsMax": 295.594,
-      "samples": 5,
+      "compilerMsMedian": 14.029,
+      "compilerMsMin": 6.463,
+      "compilerMsMax": 197.546,
+      "samples": 9,
       "bytes": 131414,
       "nodes": 15,
       "features": [
@@ -291,10 +296,10 @@
     },
     {
       "fixture": "media.yaml",
-      "compilerMsMedian": 2.679,
-      "compilerMsMin": 2.476,
-      "compilerMsMax": 161.031,
-      "samples": 5,
+      "compilerMsMedian": 5.812,
+      "compilerMsMin": 2.97,
+      "compilerMsMax": 18.798,
+      "samples": 9,
       "bytes": 115586,
       "nodes": 11,
       "features": [
@@ -311,10 +316,10 @@
     },
     {
       "fixture": "plan.yaml",
-      "compilerMsMedian": 2.463,
-      "compilerMsMin": 2.419,
-      "compilerMsMax": 96.565,
-      "samples": 5,
+      "compilerMsMedian": 15.978,
+      "compilerMsMin": 2.589,
+      "compilerMsMax": 263.197,
+      "samples": 9,
       "bytes": 107535,
       "nodes": 9,
       "features": [
@@ -328,10 +333,10 @@
     },
     {
       "fixture": "recap.yaml",
-      "compilerMsMedian": 2.475,
-      "compilerMsMin": 2.349,
-      "compilerMsMax": 6.091,
-      "samples": 5,
+      "compilerMsMedian": 36.254,
+      "compilerMsMin": 2.946,
+      "compilerMsMax": 147.295,
+      "samples": 9,
       "bytes": 128127,
       "nodes": 8,
       "features": [
@@ -345,10 +350,10 @@
     },
     {
       "fixture": "showcase.yaml",
-      "compilerMsMedian": 5.179,
-      "compilerMsMin": 4.494,
-      "compilerMsMax": 164.119,
-      "samples": 5,
+      "compilerMsMedian": 9.016,
+      "compilerMsMin": 6.999,
+      "compilerMsMax": 97.832,
+      "samples": 9,
       "bytes": 154158,
       "nodes": 17,
       "features": [
@@ -373,10 +378,10 @@
     },
     {
       "fixture": "theme-showcase.yaml",
-      "compilerMsMedian": 5.117,
-      "compilerMsMin": 2.635,
-      "compilerMsMax": 11.554,
-      "samples": 5,
+      "compilerMsMedian": 5.225,
+      "compilerMsMin": 2.599,
+      "compilerMsMax": 189.25,
+      "samples": 9,
       "bytes": 127173,
       "nodes": 11,
       "features": [
@@ -397,50 +402,50 @@
       "fixture": "explain.yaml",
       "skill": "ak:explain",
       "mode": "--html",
-      "beforeTokens": 33696,
-      "afterTokens": 6664,
-      "deltaTokens": -27032,
-      "reductionPercent": 80.2
+      "beforeTokens": 23698,
+      "afterTokens": 6958,
+      "deltaTokens": -16740,
+      "reductionPercent": 70.6
     },
     {
       "task": "brainstorm-html",
       "fixture": "brainstorm.yaml",
       "skill": "ak:brainstorm",
       "mode": "--html",
-      "beforeTokens": 33696,
-      "afterTokens": 6331,
-      "deltaTokens": -27365,
-      "reductionPercent": 81.2
+      "beforeTokens": 23698,
+      "afterTokens": 6625,
+      "deltaTokens": -17073,
+      "reductionPercent": 72
     },
     {
       "task": "plan-review-engineer",
       "fixture": "plan.yaml",
       "skill": "ak:plan (Engineer)",
       "mode": "--html",
-      "beforeTokens": 33696,
-      "afterTokens": 6837,
-      "deltaTokens": -26859,
-      "reductionPercent": 79.7
+      "beforeTokens": 23698,
+      "afterTokens": 7131,
+      "deltaTokens": -16567,
+      "reductionPercent": 69.9
     },
     {
       "task": "plan-review-marketing",
       "fixture": "plan.yaml",
       "skill": "ak:plan (Marketing)",
       "mode": "--html",
-      "beforeTokens": 33696,
-      "afterTokens": 6837,
-      "deltaTokens": -26859,
-      "reductionPercent": 79.7
+      "beforeTokens": 23698,
+      "afterTokens": 7131,
+      "deltaTokens": -16567,
+      "reductionPercent": 69.9
     },
     {
       "task": "preview-diff",
       "fixture": "diff.yaml",
       "skill": "ak:preview",
       "mode": "--diff",
-      "beforeTokens": 36551,
-      "afterTokens": 6856,
-      "deltaTokens": -29695,
-      "reductionPercent": 81.2
+      "beforeTokens": 26553,
+      "afterTokens": 7149,
+      "deltaTokens": -19404,
+      "reductionPercent": 73.1
     }
   ],
   "regressionAnalysis": {
