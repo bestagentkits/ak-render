@@ -51,7 +51,9 @@ script, iframe, object, embed, `foreignObject`, `base`, and `form` elements, any
 `on*` handler, `javascript:` URLs, `data:text/html` URLs, `srcdoc`, CSS
 `@import`, remote CSS `url()` references, empty output, and output over 256 KB.
 It also rejects markup that writes a `nonce` attribute or any `data-ak-*`
-attribute (the page and its runtime use those as hooks), and any `<style>`
+attribute (the page and its runtime use those as hooks), an `href`,
+`xlink:href`, `src` or `srcset` (in any case) whose value is not a literal
+same-document fragment such as `#arrow`, and any `<style>`
 element whose stylesheet breaks the rules in
 [Styling adapter output](#styling-adapter-output).
 
