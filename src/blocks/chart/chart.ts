@@ -8,25 +8,18 @@ import {
   anchorProps,
   define,
   enumStr,
-  itemsOf,
-  LABEL,
   list,
-  num,
   OPTIONAL_TITLE,
   str as strProp,
   txt,
 } from '../../registry/define-helpers.js';
-import {
-  listProp,
-  nodeAttributes,
-  numProp,
-  objectListProp,
-  str,
-  stringProp,
-} from '../../render/block-helpers.js';
-import { type ChartSeries, renderChart } from '../../render/charts.js';
+import { nodeAttributes } from '../../render/block-helpers.js';
+import { renderChart } from '../../render/charts.js';
 import { renderAttributes } from '../../render/escape.js';
+import { checkChart } from './chart-check.js';
+import { CHART_ENCODING_PROPS, SERIES_PROP } from './chart-encoding-schema.js';
 import { CHART_KINDS } from './chart-kinds.js';
+import { buildChartInput } from './chart-model.js';
 
 /**
  * Warn when a series carries a different number of values than there are
@@ -36,7 +29,7 @@ import { CHART_KINDS } from './chart-kinds.js';
 export function checkSeriesLengths(node: IrNode, bag: DiagnosticBag): void {
   const labels = node.props.labels;
   const series = node.props.series;
-  if (!Array.isArray(labels) || !Array.isArray(series)) return;
+  if (!Array.isArray(labels) || labels.length === 0 || !Array.isArray(series)) return;
   for (let index = 0; index < series.length; index += 1) {
     const entry = series[index];
     if (!isPlainObject(entry)) continue;
@@ -58,44 +51,37 @@ export const chartBlock: BlockModule = {
     type: 'chart',
     category: 'data',
     tags: ['visualization', 'svg', 'series'],
-    useCases: ['trend over time', 'category comparison', 'share of total'],
+    useCases: ['trend over time', 'category comparison', 'share of total', 'distribution'],
     purpose: 'Deterministic SVG chart with a text summary.',
-    summary: 'Chart: bar, line, area, pie, donut, sparkline, or progress from labeled series.',
+    summary:
+      'Chart from labels/series or bound rows (x, y, series, value). Kinds: bar, line, area, pie, donut, sparkline, progress, scatter, histogram, stacked-bar, stacked-bar-100, heatmap, waterfall, funnel, gauge, treemap.',
     props: {
       kind: enumStr(CHART_KINDS, { required: true }),
       title: OPTIONAL_TITLE,
       description: txt({
         description: 'Text summary for assistive technology; backticks stay literal.',
       }),
-      labels: list(strProp({ maxLength: 80 }), { required: true, minItems: 1, maxItems: 200 }),
-      series: itemsOf(
-        { label: LABEL, values: list(num(), { required: true, minItems: 1, maxItems: 200 }) },
-        { minItems: 1 },
-      ),
+      labels: list(strProp({ maxLength: 80 }), {
+        minItems: 1,
+        maxItems: 200,
+        description: 'Required unless rows are bound.',
+      }),
+      series: SERIES_PROP,
+      ...CHART_ENCODING_PROPS,
       ...anchorProps,
     },
+    data: { required: false, description: 'Rows the x/y/series/value encodings read.' },
     runtimeFeatures: ['chart'],
     assets: ['chart'],
     a11y: 'SVG carries role="img" plus a generated text summary; the same values are available as a table for assistive technology.',
-    serializer: 'Serializes to the labels/series data, never to rendered SVG.',
+    serializer: 'Serializes to the labels/series data or the encodings, never to rendered SVG.',
   }),
-  render: (node) => {
-    const series: ChartSeries[] = objectListProp(node, 'series').map((entry) => ({
-      label: str(entry.label),
-      values: (Array.isArray(entry.values) ? entry.values : []).map((value) => numProp(value, 0)),
-    }));
-    const description = stringProp(node, 'description');
-    const title = stringProp(node, 'title');
-    return `<div${renderAttributes(nodeAttributes(node, { class: 'ak-block' }))}>${renderChart({
-      kind: stringProp(node, 'kind', 'bar'),
-      id: node.id,
-      labels: listProp(node, 'labels').map((label) => str(label)),
-      series,
-      ...(title === '' ? {} : { title }),
-      ...(description === '' ? {} : { description }),
-    })}</div>`;
-  },
+  render: (node) =>
+    `<div${renderAttributes(nodeAttributes(node, { class: 'ak-block' }))}>${renderChart(
+      buildChartInput(node),
+    )}</div>`,
   check(node, { bag }) {
     checkSeriesLengths(node, bag);
+    checkChart(node, bag);
   },
 };

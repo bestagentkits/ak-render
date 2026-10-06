@@ -1,0 +1,168 @@
+version: 1
+meta:
+  title: Chart kinds and data encodings
+  description: Every chart kind bound to shared datasets, with markers, annotations and axis formats.
+  locale: en
+
+theme:
+  preset: swiss-clean
+
+policy:
+  network: deny
+
+datasets:
+  usage:
+    - { month: Jan, model: Opus, tokens: 42000 }
+    - { month: Jan, model: Sonnet, tokens: 88000 }
+    - { month: Jan, model: Haiku, tokens: 31000 }
+    - { month: Feb, model: Opus, tokens: 51000 }
+    - { month: Feb, model: Sonnet, tokens: 97000 }
+    - { month: Feb, model: Haiku, tokens: 36000 }
+    - { month: Mar, model: Opus, tokens: 64000 }
+    - { month: Mar, model: Sonnet, tokens: 121000 }
+    - { month: Mar, model: Haiku, tokens: 40000 }
+    - { month: Apr, model: Opus, tokens: 70000 }
+    - { month: Apr, model: Sonnet, tokens: 118000 }
+    - { month: Apr, model: Haiku, tokens: 52000 }
+  requests:
+    - { model: Opus, latency: 1840, cost: 0.42 }
+    - { model: Opus, latency: 2210, cost: 0.51 }
+    - { model: Opus, latency: 1620, cost: 0.38 }
+    - { model: Opus, latency: 2480, cost: 0.57 }
+    - { model: Sonnet, latency: 920, cost: 0.12 }
+    - { model: Sonnet, latency: 1140, cost: 0.15 }
+    - { model: Sonnet, latency: 780, cost: 0.1 }
+    - { model: Sonnet, latency: 1310, cost: 0.17 }
+    - { model: Haiku, latency: 310, cost: 0.02 }
+    - { model: Haiku, latency: 420, cost: 0.03 }
+    - { model: Haiku, latency: 380, cost: 0.03 }
+    - { model: Haiku, latency: 290, cost: 0.02 }
+  builds:
+    - { day: Mon, hour: Morning, runs: 12 }
+    - { day: Mon, hour: Afternoon, runs: 31 }
+    - { day: Mon, hour: Evening, runs: 8 }
+    - { day: Tue, hour: Morning, runs: 18 }
+    - { day: Tue, hour: Afternoon, runs: 42 }
+    - { day: Tue, hour: Evening, runs: 11 }
+    - { day: Wed, hour: Morning, runs: 22 }
+    - { day: Wed, hour: Afternoon, runs: 37 }
+    - { day: Wed, hour: Evening, runs: 5 }
+    - { day: Thu, hour: Morning, runs: 15 }
+    - { day: Thu, hour: Afternoon, runs: 48 }
+    - { day: Thu, hour: Evening, runs: 14 }
+    - { day: Fri, hour: Morning, runs: 9 }
+    - { day: Fri, hour: Afternoon, runs: 26 }
+    - { day: Fri, hour: Evening, runs: 3 }
+
+blocks:
+  - type: hero
+    eyebrow: Charts
+    title: Chart kinds and data encodings
+    description: One dataset feeds several views. Every chart keeps a text summary and a data table.
+
+  - type: section
+    title: Usage over time
+    blocks:
+      - type: chart
+        kind: stacked-bar
+        title: Tokens per month by model
+        dataRef: usage
+        x: { field: month, label: Month }
+        y: { field: tokens, label: Tokens, format: compact }
+        series: { field: model }
+        markers:
+          - { x: Mar, label: Launch }
+
+      - type: chart
+        kind: line
+        title: Token trend by model
+        dataRef: usage
+        x: { field: month, label: Month }
+        y: { field: tokens, label: Tokens, format: compact, min: 0 }
+        series: { field: model }
+        annotations:
+          - { x: Mar, y: 121000, text: Sonnet peak after the launch }
+
+      - type: chart
+        kind: stacked-bar-100
+        title: Share of tokens by model
+        dataRef: usage
+        x: { field: month, label: Month }
+        y: { field: tokens, label: Share }
+        series: { field: model }
+
+  - type: section
+    title: Cost and latency
+    blocks:
+      - type: chart
+        kind: scatter
+        title: Latency against cost per request
+        dataRef: requests
+        x: { field: latency, label: Latency, format: duration }
+        y: { field: cost, label: Cost, format: currency, currency: USD }
+        series: { field: model }
+
+      - type: chart
+        kind: histogram
+        title: Latency distribution
+        dataRef: requests
+        x: { field: latency, label: Latency, format: duration }
+        bins: 8
+
+      - type: chart
+        kind: heatmap
+        title: Build runs by day and time
+        dataRef: builds
+        x: { field: day, label: Day }
+        y: { field: hour, label: Time of day }
+        value: { field: runs, label: Runs, format: integer }
+
+  - type: section
+    title: Budgets and funnels
+    blocks:
+      - type: chart
+        kind: waterfall
+        title: Monthly budget bridge
+        labels: [Plan, Overrun, Savings, Credits, Refund]
+        series:
+          - label: Budget
+            values: [12000, 2400, -1800, -900, -350]
+        y: { label: Budget, format: currency, currency: USD }
+
+      - type: chart
+        kind: funnel
+        title: Trial to paid
+        labels: [Visits, Signups, Activated, Paid]
+        series:
+          - label: Accounts
+            values: [12400, 3100, 1480, 520]
+        value: { format: integer }
+
+      - type: chart
+        kind: gauge
+        title: Test coverage
+        labels: [Coverage]
+        series:
+          - label: Coverage
+            values: [87]
+        value: { format: percent, min: 0, max: 100 }
+        target: 90
+
+      - type: chart
+        kind: treemap
+        title: Bundle bytes by module
+        labels: [Render, Charts, Runtime, Themes, Fonts, Registry, Data, Diagnostics]
+        series:
+          - label: Bytes
+            values: [48200, 31400, 22800, 17600, 64000, 9800, 12100, 4300]
+        value: { format: bytes }
+
+      - type: chart
+        kind: bar
+        title: Context tokens per task
+        labels: [Legacy, AK Render]
+        series:
+          - label: Context tokens
+            values: [22000, 6500]
+          - label: Output tokens
+            values: [14000, 3100]
