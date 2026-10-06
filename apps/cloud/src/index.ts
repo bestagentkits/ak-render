@@ -12,17 +12,28 @@
  *   POST   /v1/pdf             compile and export a PDF through Browser Run.
  *   GET    /v1/share/:id       serve one valid, unexpired share.
  *   DELETE /v1/share/:id       revoke a share the caller owns.
+ *   GET    /v1/artifact/:id    serve one short-lived artifact a remote MCP render stored.
+ *   POST   /mcp                MCP over Streamable HTTP (see remote-mcp-endpoint.ts).
  *
  * No content telemetry. No analytics. The bearer is validated against the
  * canonical AgentKit entitlements endpoint and is never persisted.
  */
 
-import { authenticate, authorize, type AuthOutcome, type Principal, type Scope } from './auth.js';
+import {
+  type AuthFailure,
+  authenticate,
+  authorizeAll,
+  bearerChallenge,
+  type Principal,
+  type Scope,
+} from './auth.js';
 import type { Env } from './bindings.js';
-import { checkRequestBytes, RATE_LIMITS, RATE_WINDOW_SECONDS } from './config.js';
+import { checkRequestBytes, type RateLimitKey } from './config.js';
+import { withinRateLimit } from './rate-limit.js';
+import { handleMcp } from './remote-mcp-endpoint.js';
 import { renderArtifact, type RenderPayload } from './render.js';
 import { exportArtifact } from './screenshot.js';
-import { createShare, purgeExpiredShares, readShare, revokeShare } from './share.js';
+import { createShare, purgeExpiredShares, readStored, revokeShare } from './share.js';
 
 const JSON_TYPE = 'application/json; charset=utf-8';
 
@@ -33,7 +44,19 @@ function json(status: number, body: unknown): Response {
   });
 }
 
-function htmlResponse(html: string, cacheControl: string): Response {
+/**
+ * Response CSP for a stored share or artifact. The page carries its own meta
+ * CSP for fetch directives; this header adds what a meta CSP cannot: the page
+ * runs in an opaque origin (no `allow-same-origin`), so untrusted-spec output
+ * can never read or act as `render.agentkit.best`, and it cannot be framed.
+ * Scripts, popups, popups that leave the sandbox (an `open-url` action) and
+ * downloads (a `download` action) stay allowed so the page works as compiled;
+ * the runtime already tolerates the storage errors an opaque origin raises.
+ */
+export const STORED_PAGE_CSP =
+  "sandbox allow-scripts allow-popups allow-popups-to-escape-sandbox allow-downloads; frame-ancestors 'none'";
+
+function htmlResponse(html: string, cacheControl: string, stored = false): Response {
   return new Response(html, {
     status: 200,
     headers: {
@@ -41,30 +64,17 @@ function htmlResponse(html: string, cacheControl: string): Response {
       'cache-control': cacheControl,
       'x-content-type-options': 'nosniff',
       'referrer-policy': 'no-referrer',
+      ...(stored ? { 'content-security-policy': STORED_PAGE_CSP } : {}),
     },
   });
 }
 
-/**
- * Fixed-window rate limit per subject and route.
- *
- * KV is eventually consistent, so two simultaneous requests can both read the
- * same count. That is a deliberate trade: the limit is a cost guard, not a
- * security boundary, and the budgets are the hard limit.
- */
-async function withinRateLimit(env: Env, subject: string, route: string, now: Date): Promise<boolean> {
-  const limit = RATE_LIMITS[route];
-  if (limit === undefined) return true;
-  const window = Math.floor(now.getTime() / 1000 / RATE_WINDOW_SECONDS);
-  const key = `rl:${route}:${subject}:${window}`;
-  const current = Number((await env.RATE_LIMIT.get(key)) ?? '0');
-  if (current >= limit) return false;
-  await env.RATE_LIMIT.put(key, String(current + 1), { expirationTtl: RATE_WINDOW_SECONDS * 2 });
-  return true;
-}
-
-function denied(outcome: Extract<AuthOutcome, { ok: false }>): Response {
-  return json(outcome.status, { code: outcome.code, message: outcome.message });
+function denied(request: Request, outcome: AuthFailure): Response {
+  const response = json(outcome.status, { code: outcome.code, message: outcome.message });
+  if (outcome.status === 401) {
+    response.headers.set('www-authenticate', bearerChallenge(request));
+  }
+  return response;
 }
 
 async function readPayload(
@@ -107,12 +117,11 @@ async function requireScope(
   request: Request,
   env: Env,
   scope: Scope,
+  now: Date,
 ): Promise<{ ok: true; principal: Principal } | { ok: false; response: Response }> {
-  const auth = await authenticate(request, env);
-  if (!auth.ok) return { ok: false, response: denied(auth) };
-  const permitted = authorize(auth.principal, scope);
-  if (!permitted.ok) return { ok: false, response: denied(permitted) };
-  return { ok: true, principal: auth.principal };
+  const outcome = authorizeAll(await authenticate(request, env, now.getTime()), [scope]);
+  if (!outcome.ok) return { ok: false, response: denied(request, outcome) };
+  return { ok: true, principal: outcome.principal };
 }
 
 export async function handleRequest(
@@ -124,17 +133,28 @@ export async function handleRequest(
   const path = url.pathname;
   const method = request.method.toUpperCase();
 
+  // --- remote MCP: Streamable HTTP, authorization per tool -----------------
+  if (path === '/mcp') return handleMcp(request, env, now);
+
   // --- preview: no bearer, but only a valid unexpired share resolves --------
   if (method === 'GET' && path.startsWith('/v1/share/')) {
     const id = path.slice('/v1/share/'.length);
-    const found = await readShare(env, id, now);
+    const found = await readStored(env, 'share', id, now);
     if (!found.ok) return json(found.status, { code: found.code, message: found.message });
-    return htmlResponse(found.html, 'public, max-age=60');
+    return htmlResponse(found.html, 'public, max-age=60', true);
+  }
+
+  // --- artifact: the short-lived page a remote MCP render points at --------
+  if (method === 'GET' && path.startsWith('/v1/artifact/')) {
+    const id = path.slice('/v1/artifact/'.length);
+    const found = await readStored(env, 'artifact', id, now);
+    if (!found.ok) return json(found.status, { code: found.code, message: found.message });
+    return htmlResponse(found.html, 'private, max-age=60', true);
   }
 
   // --- revoke: share scope, owner only -------------------------------------
   if (method === 'DELETE' && path.startsWith('/v1/share/')) {
-    const scoped = await requireScope(request, env, 'share');
+    const scoped = await requireScope(request, env, 'share', now);
     if (!scoped.ok) return scoped.response;
     const id = path.slice('/v1/share/'.length);
     const revoked = await revokeShare(env, scoped.principal, id);
@@ -159,11 +179,12 @@ export async function handleRequest(
     return json(404, { code: 'NOT_FOUND', message: 'no such route' });
   }
 
-  const scoped = await requireScope(request, env, scope);
+  const scoped = await requireScope(request, env, scope, now);
   if (!scoped.ok) return scoped.response;
 
-  const rateKey = path === '/v1/share' ? 'share' : path === '/v1/render' ? 'render' : 'export';
-  if (!(await withinRateLimit(env, scoped.principal.subject, rateKey, now))) {
+  const rateKey: RateLimitKey =
+    path === '/v1/share' ? 'share' : path === '/v1/render' ? 'render' : 'export';
+  if (!(await withinRateLimit(env, rateKey, scoped.principal.subject))) {
     return json(429, { code: 'RATE_LIMITED', message: `too many ${rateKey} requests` });
   }
 
@@ -194,12 +215,6 @@ export async function handleRequest(
     rendered.artifact.html,
     path === '/v1/pdf' ? 'pdf' : 'screenshot',
   );
-  if (exported.code !== undefined) {
-    return new Response(exported.body, {
-      status: exported.status,
-      headers: { 'content-type': exported.contentType, 'cache-control': 'no-store' },
-    });
-  }
   return new Response(exported.body, {
     status: exported.status,
     headers: { 'content-type': exported.contentType, 'cache-control': 'no-store' },
@@ -208,7 +223,13 @@ export async function handleRequest(
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    return handleRequest(request, env);
+    try {
+      return await handleRequest(request, env);
+    } catch {
+      // A storage or binding fault must not surface as a platform error page
+      // or leak its message; the caller gets a generic, retryable answer.
+      return json(500, { code: 'INTERNAL_ERROR', message: 'the request failed; try again later' });
+    }
   },
   async scheduled(_event: unknown, env: Env): Promise<void> {
     await purgeExpiredShares(env);

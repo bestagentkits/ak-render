@@ -7,3 +7,5 @@ playwright-report/
 *.log
 *.tsbuildinfo
 site/dist/
+
+apps/cloud/.wrangler/

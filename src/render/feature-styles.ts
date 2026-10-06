@@ -10,43 +10,34 @@
  * `--ak-tint` for hover washes and `--ak-ring` for focus halos on inputs.
  */
 
+import { CHART_CSS } from '../blocks/chart/chart-styles.js';
+import { ACCORDION_CSS, CAROUSEL_CSS, TABS_CSS } from '../blocks/composition/composition-styles.js';
 import type { RuntimeFeature } from '../registry/roster.js';
+import { scrollEdges } from './derived-variables.js';
 import { SHOWCASE_CSS } from './showcase-styles.js';
+import { disclosureSummary, TRANSITION } from './style-units.js';
 
-const TRANSITION = 'transition:var(--ak-transition)';
+/**
+ * Selectors for a block that follows a visible block across `visibleWhen`
+ * wrappers: a block inside a wrapper with a visible block or wrapper before it,
+ * and a block after a visible wrapper (or after a hidden one that itself
+ * follows a block). `scope` prefixes the parent, as in `.ak-section > `.
+ */
+function whenGapTargets(target: string, scope = ''): string {
+  const before = ':where(.ak-block,.ak-when:not([hidden]))';
+  const wrapperBefore = ':where(.ak-when:not([hidden]),.ak-block ~ .ak-when)';
+  return [`${scope}${before} ~ .ak-when > ${target}`, `${scope}${wrapperBefore} ~ ${target}`].join(
+    ',',
+  );
+}
 
 export const FEATURE_CSS: Readonly<Partial<Record<RuntimeFeature, string>>> = {
   ...SHOWCASE_CSS,
-  tabs: `.ak-tabs [role="tablist"]{display:inline-flex;flex-wrap:wrap;gap:3px;max-width:100%;padding:3px;margin-bottom:calc(var(--ak-space-unit) * 2);background:color-mix(in srgb,var(--ak-color-text) 5%,var(--ak-color-background));border:var(--ak-border-width) solid var(--ak-color-border);border-radius:var(--ak-radius-medium)}
-.ak-tabs [role="tab"]{font:inherit;font-size:.92em;font-weight:550;background:transparent;border:0;padding:.5em 1.05em;min-height:36px;cursor:pointer;color:var(--ak-color-text-muted);border-radius:max(0px,calc(var(--ak-radius-medium) - 3px));${TRANSITION}}
-.ak-tabs [role="tab"]:hover{color:var(--ak-color-text)}
-.ak-tabs [role="tab"][aria-selected="true"]{color:var(--ak-color-text);background:var(--ak-color-surface);box-shadow:0 0 0 var(--ak-border-width) var(--ak-color-border),0 1px 3px color-mix(in srgb,var(--ak-color-text) 10%,transparent)}
-.ak-tabs [role="tabpanel"]{padding:0;max-width:var(--ak-measure)}
-.ak-tabs [role="tabpanel"][hidden]{display:none}
-@media (max-width:768px){.ak-tabs [role="tab"]{min-height:44px}}`,
+  tabs: TABS_CSS,
 
-  accordion: `.ak-accordion{display:flex;flex-direction:column;gap:calc(var(--ak-space-unit) * 1)}
-.ak-accordion details{background:var(--ak-fill);border:var(--ak-border-width) solid var(--ak-color-border);border-radius:var(--ak-radius-medium);${TRANSITION}}
-.ak-accordion details[open]{border-color:color-mix(in srgb,var(--ak-color-accent) 28%,var(--ak-color-border));box-shadow:var(--ak-elevation-card)}
-.ak-accordion summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:calc(var(--ak-space-unit) * 2);cursor:pointer;padding:calc(var(--ak-space-unit) * 1.75) calc(var(--ak-space-unit) * 2.25);min-height:48px;font-family:var(--ak-font-heading);font-weight:600;border-radius:inherit;${TRANSITION}}
-.ak-accordion summary::-webkit-details-marker{display:none}
-.ak-accordion summary::after{content:"";flex:none;width:26px;height:26px;border-radius:50%;border:var(--ak-border-width) solid var(--ak-color-border);color:var(--ak-color-text-muted);background:linear-gradient(currentColor,currentColor) center/10px 1.5px no-repeat,linear-gradient(currentColor,currentColor) center/1.5px 10px no-repeat;${TRANSITION}}
-.ak-accordion summary:hover{color:var(--ak-color-accent)}
-.ak-accordion summary:hover::after{border-color:var(--ak-color-accent);color:var(--ak-color-accent)}
-.ak-accordion details[open] summary::after{transform:rotate(180deg);background-size:10px 1.5px,1.5px 0;background-color:var(--ak-tint);color:var(--ak-color-accent);border-color:color-mix(in srgb,var(--ak-color-accent) 40%,var(--ak-color-border))}
-.ak-accordion details > :not(summary){padding:0 calc(var(--ak-space-unit) * 2.25) calc(var(--ak-space-unit) * 2);margin:0;max-width:var(--ak-measure);color:var(--ak-color-text-muted)}`,
+  accordion: ACCORDION_CSS,
 
-  carousel: `.ak-carousel{display:flex;flex-direction:column;gap:calc(var(--ak-space-unit) * 1.5)}
-.ak-carousel-slides{position:relative;min-height:120px}
-.ak-carousel-slide{display:flex;flex-direction:column;justify-content:flex-end;gap:.5em;min-height:200px;padding:calc(var(--ak-space-unit) * 4);border:var(--ak-border-width) solid var(--ak-color-border);border-radius:var(--ak-radius-large);background:radial-gradient(120% 140% at 100% 0%,color-mix(in srgb,var(--ak-color-accent) 12%,transparent),transparent 55%),var(--ak-fill);box-shadow:var(--ak-elevation-card)}
-.ak-carousel-slide h3{font-size:calc(var(--ak-font-size-base) * 1.56);font-size:calc(var(--ak-font-size-base) * pow(var(--ak-font-scale),2));letter-spacing:-.018em}
-.ak-carousel-slide p{color:var(--ak-color-text-muted);max-width:56ch;margin:0}
-.ak-carousel-slide[hidden]{display:none}
-.ak-carousel-controls{display:flex;gap:var(--ak-space-unit);align-items:center}
-.ak-carousel-controls [data-ak-carousel="prev"]::before{content:"\\2190";font-family:var(--ak-font-mono)}
-.ak-carousel-controls [data-ak-carousel="next"]::after{content:"\\2192";font-family:var(--ak-font-mono)}
-.ak-carousel-status{margin-left:auto;font-family:var(--ak-font-mono);font-size:.78rem;letter-spacing:.08em;color:var(--ak-color-text-muted);font-variant-numeric:tabular-nums}
-@media (max-width:480px){.ak-carousel-slide{min-height:160px;padding:calc(var(--ak-space-unit) * 2.5)}}`,
+  carousel: CAROUSEL_CSS,
 
   slider: `.ak-slider{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:.6em var(--ak-space-unit);max-width:440px}
 .ak-slider label{font-weight:550}
@@ -63,55 +54,7 @@ dialog.ak-dialog[open]{animation:ak-rise calc(var(--ak-motion-duration) * 1.5) v
 dialog.ak-dialog > p{color:var(--ak-color-text-muted)}
 .ak-dialog-actions{display:flex;flex-wrap:wrap;gap:var(--ak-space-unit);justify-content:flex-end;margin:calc(var(--ak-space-unit) * 3) calc(var(--ak-space-unit) * -3.5) calc(var(--ak-space-unit) * -3.5);padding:calc(var(--ak-space-unit) * 2) calc(var(--ak-space-unit) * 3.5);border-top:var(--ak-border-width) solid var(--ak-color-border);background:color-mix(in srgb,var(--ak-color-text) 3%,transparent);border-radius:0 0 var(--ak-radius-large) var(--ak-radius-large)}`,
 
-  chart: `.ak-chart{display:flex;flex-direction:column;gap:calc(var(--ak-space-unit) * 2);background:var(--ak-fill);border:var(--ak-border-width) solid var(--ak-color-border);border-radius:var(--ak-radius-medium);padding:calc(var(--ak-space-unit) * 3);box-shadow:var(--ak-elevation-card);--ak-c0:var(--ak-color-accent);--ak-c1:var(--ak-color-info);--ak-c2:var(--ak-color-success);--ak-c3:var(--ak-color-warning);--ak-c4:var(--ak-color-danger);--ak-c5:var(--ak-color-text-muted)}
-@supports (color:oklch(from red l c h)){.ak-chart{--ak-c1:oklch(from var(--ak-color-accent) l max(c,.1) calc(h + 210));--ak-c2:oklch(from var(--ak-color-accent) l max(c,.1) calc(h + 120));--ak-c3:oklch(from var(--ak-color-accent) l max(c,.1) calc(h + 60));--ak-c4:oklch(from var(--ak-color-accent) l max(c,.1) calc(h + 290));--ak-c5:oklch(from var(--ak-color-accent) l max(c,.1) calc(h + 165))}}
-.ak-chart svg{display:block;width:100%;height:auto;overflow:visible}
-.ak-chart:is([data-ak-kind="pie"],[data-ak-kind="donut"]) svg{max-height:320px}
-.ak-chart figcaption{font-family:var(--ak-font-heading);font-weight:600;font-size:calc(var(--ak-font-size-base) * 1.06);letter-spacing:-.01em;color:var(--ak-color-text)}
-.ak-chart .ak-chart-s0{--ak-series:var(--ak-c0)}
-.ak-chart .ak-chart-s1{--ak-series:var(--ak-c1)}
-.ak-chart .ak-chart-s2{--ak-series:var(--ak-c2)}
-.ak-chart .ak-chart-s3{--ak-series:var(--ak-c3)}
-.ak-chart .ak-chart-s4{--ak-series:var(--ak-c4)}
-.ak-chart .ak-chart-s5{--ak-series:var(--ak-c5)}
-.ak-chart .ak-chart-bar:not([fill]),.ak-chart .ak-chart-slice{fill:var(--ak-series,var(--ak-c0))}
-.ak-chart .ak-chart-bar,.ak-chart .ak-chart-slice{${TRANSITION}}
-.ak-chart .ak-chart-slice{stroke:var(--ak-color-surface);stroke-width:3}
-.ak-chart .ak-chart-slice:hover,.ak-chart .ak-chart-slice:focus-visible{opacity:.72}
-.ak-chart svg:has(.ak-chart-bar:is(:hover,:focus-visible)) .ak-chart-bar:not(:hover,:focus-visible){opacity:.38}
-.ak-chart-canvas{overflow-x:auto;overscroll-behavior-x:contain}
-.ak-chart:is([data-ak-kind="bar"],[data-ak-kind="line"],[data-ak-kind="area"]) .ak-chart-canvas svg{min-width:560px}
-.ak-chart .ak-chart-stop{stop-color:var(--ak-series,var(--ak-c0));stop-opacity:.34}
-.ak-chart .ak-chart-stop--end{stop-opacity:0}
-.ak-chart .ak-chart-stop--bar{stop-opacity:1}
-.ak-chart .ak-chart-stop--bar.ak-chart-stop--end{stop-opacity:.62}
-.ak-chart .ak-chart-value{fill:var(--ak-color-text);font-family:var(--ak-font-mono);font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;opacity:0;pointer-events:none;${TRANSITION}}
-.ak-chart :is(.ak-chart-bar,.ak-chart-point):is(:hover,:focus-visible) + .ak-chart-value{opacity:1}
-.ak-chart .ak-chart-line{fill:none;stroke:var(--ak-series,var(--ak-c0));stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
-.ak-chart .ak-chart-point{fill:var(--ak-color-surface);stroke:var(--ak-series,var(--ak-c0));stroke-width:2.25;${TRANSITION}}
-.ak-chart .ak-chart-point:hover,.ak-chart .ak-chart-point:focus-visible{fill:var(--ak-series,var(--ak-c0));stroke-width:5;stroke-opacity:.35}
-.ak-chart .ak-chart-area{stroke:none}
-.ak-chart .ak-chart-axis{stroke:color-mix(in srgb,var(--ak-color-text) 28%,var(--ak-color-border));stroke-width:1}
-.ak-chart .ak-chart-grid{stroke:var(--ak-color-border);stroke-width:1;stroke-dasharray:1 5;stroke-linecap:round}
-.ak-chart .ak-chart-track{fill:color-mix(in srgb,var(--ak-color-text) 7%,var(--ak-color-surface))}
-.ak-chart .ak-chart-label{fill:var(--ak-color-text-muted);font-family:var(--ak-font-mono);font-size:10.5px;font-variant-numeric:tabular-nums}
-.ak-chart .ak-chart-label--row{fill:var(--ak-color-text);font-family:var(--ak-font-body);font-size:13px;font-weight:500}
-.ak-chart .ak-chart-total{fill:var(--ak-color-text);font-family:var(--ak-font-heading);font-size:26px;font-weight:700;letter-spacing:-.02em}
-.ak-chart :focus-visible{outline:2px solid var(--ak-color-accent)}
-.ak-chart-legend{display:flex;flex-wrap:wrap;gap:.5em 1.4em;list-style:none;margin:0;padding:0;font-size:.82rem;color:var(--ak-color-text-muted)}
-.ak-chart:is([data-ak-kind="pie"],[data-ak-kind="donut"]) .ak-chart-legend{justify-content:center}
-.ak-chart-legend li{display:inline-flex;align-items:center;gap:.5em}
-.ak-chart-swatch{width:.7em;height:.7em;border-radius:2px;background:var(--ak-series,var(--ak-c0))}
-.ak-details{border-top:var(--ak-border-width) solid var(--ak-color-border);padding-top:calc(var(--ak-space-unit) * 1.5);margin-top:calc(var(--ak-space-unit) * -.5)}
-.ak-details summary{display:inline-flex;align-items:center;gap:.55em;cursor:pointer;list-style:none;font-family:var(--ak-font-mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ak-color-text-muted);${TRANSITION}}
-.ak-details summary::-webkit-details-marker{display:none}
-.ak-details summary::before{content:"";width:.42em;height:.42em;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(-45deg);${TRANSITION}}
-.ak-details[open] summary::before{transform:rotate(45deg)}
-.ak-details summary:hover{color:var(--ak-color-accent)}
-.ak-details[open] summary{margin-bottom:calc(var(--ak-space-unit) * 1.5)}
-.ak-details table{font-size:.85rem;border:var(--ak-border-width) solid var(--ak-color-border)}
-.ak-details caption{font-size:.8rem}
-@media (max-width:768px){.ak-details summary{min-height:44px}}`,
+  chart: CHART_CSS,
 
   filter: `.ak-search{display:flex;flex-direction:column;gap:.5em;max-width:420px}
 .ak-search label{font-weight:550}
@@ -145,8 +88,29 @@ dialog.ak-dialog > p{color:var(--ak-color-text-muted)}
 .ak-toc a[aria-current]{color:var(--ak-color-accent);border-left-color:var(--ak-color-accent);font-weight:600}
 @media (min-width:1280px){.ak-shell--outline{max-width:1400px;display:grid;grid-template-columns:minmax(0,1fr) 216px;column-gap:calc(var(--ak-space-unit) * 8);align-items:start}.ak-shell--outline > *{grid-column:1}.ak-shell--outline > .ak-toc{display:block;grid-column:2;grid-row:1 / span 2;position:sticky;top:calc(var(--ak-space-unit) * 4);max-height:calc(100vh - var(--ak-space-unit) * 8);overflow-y:auto;padding-top:calc(var(--ak-space-unit) * 1)}}
 @media print{.ak-toc{display:none!important}}`,
-  diagram: `.ak-diagram{overflow-x:auto}
-.ak-diagram svg{max-width:100%;height:auto}
+  // A `visibleWhen` wrapper adds no box of its own; `hidden` must win over any
+  // display a block sets, and the compiler already emitted the initial view.
+  // Because the wrapper is not a block, the base `.ak-block + .ak-block` gap
+  // skips it: these rules restore the gap (and the section-break gaps) for a
+  // block inside a wrapper and for a block after one, whenever a visible block
+  // comes earlier. They stay at low specificity, so the base resets of flex and
+  // grid containers keep winning.
+  state: `.ak-when{display:contents}
+.ak-when[hidden]{display:none!important}
+${whenGapTargets('.ak-block')}{margin-top:var(--ak-gap)}
+${whenGapTargets('.ak-block:has(> .ak-section-head)', '.ak-section > ')}{margin-top:calc(var(--ak-gap) * 1.75)}
+${whenGapTargets('.ak-block:is(.ak-section,:has(> .ak-section-head))', '.ak-main > ')}{margin-top:calc(var(--ak-gap) * 2.5)}
+:where(.ak-stack,.ak-grid,.ak-split) > .ak-when > .ak-block{margin-top:0}`,
+  diagram: `.ak-diagram{min-width:0}
+.ak-diagram-rendered{overflow-x:auto;overscroll-behavior-x:contain;contain:paint;padding:calc(var(--ak-space-unit) * 2);background:var(--ak-fill);border:var(--ak-border-width) solid var(--ak-color-border);border-radius:var(--ak-radius-medium);box-shadow:var(--ak-elevation-card)}
+${scrollEdges('.ak-diagram-rendered')}
+.ak-diagram-rendered svg{display:block;max-width:none;height:auto}
+.ak-diagram-details{margin-top:calc(var(--ak-space-unit) * 1.5)}
+${disclosureSummary('.ak-diagram-details')}
+@media (max-width:768px){.ak-diagram-details summary{min-height:44px}}
+@media print{.ak-diagram-rendered{overflow:visible;box-shadow:none}.ak-diagram-rendered svg{max-width:100%}.ak-diagram-details::details-content{content-visibility:visible;display:block}.ak-diagram-details summary::before{display:none}}
+@media (prefers-reduced-motion:reduce),print{.ak-diagram-canvas,.ak-diagram-canvas *{animation:none!important;transition:none!important}}
+[data-motion="none"] .ak-diagram-canvas,[data-motion="none"] .ak-diagram-canvas *{animation:none!important;transition:none!important}
 .ak-diagram-fallback{display:flex;flex-direction:column;gap:var(--ak-space-unit);background:var(--ak-fill);border:var(--ak-border-width) solid var(--ak-color-border);border-radius:var(--ak-radius-medium);padding:calc(var(--ak-space-unit) * 3);box-shadow:var(--ak-elevation-card)}
 .ak-diagram-fallback{gap:calc(var(--ak-space-unit) * 2)}
 .ak-diagram-fallback > .ak-caption{font-size:.74rem;color:var(--ak-color-text-muted)}

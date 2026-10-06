@@ -1,0 +1,173 @@
+version: 1
+
+meta:
+  title: Platform Operations Dashboard
+  description: A 12-column operations dashboard where KPIs, stacked and line charts and a typed table all read one shared dataset
+  locale: en
+
+theme:
+  preset: data-console
+
+policy:
+  network: deny
+
+datasets:
+  traffic:
+    - { week: W36, service: Gateway, requests: 182000, errors: 410, p95: 212 }
+    - { week: W36, service: Search, requests: 96000, errors: 260, p95: 348 }
+    - { week: W36, service: Billing, requests: 41000, errors: 95, p95: 190 }
+    - { week: W37, service: Gateway, requests: 194000, errors: 380, p95: 205 }
+    - { week: W37, service: Search, requests: 103000, errors: 240, p95: 331 }
+    - { week: W37, service: Billing, requests: 43000, errors: 88, p95: 184 }
+    - { week: W38, service: Gateway, requests: 211000, errors: 520, p95: 236 }
+    - { week: W38, service: Search, requests: 118000, errors: 310, p95: 362 }
+    - { week: W38, service: Billing, requests: 47000, errors: 120, p95: 201 }
+    - { week: W39, service: Gateway, requests: 226000, errors: 300, p95: 198 }
+    - { week: W39, service: Search, requests: 124000, errors: 190, p95: 307 }
+    - { week: W39, service: Billing, requests: 52000, errors: 70, p95: 176 }
+  services:
+    - service: Gateway
+      owner: Edge team
+      status: healthy
+      availability: 99.97
+      budget: 82
+      w36: 212
+      w37: 205
+      w38: 236
+      w39: 198
+    - service: Search
+      owner: Discovery
+      status: degraded
+      availability: 99.81
+      budget: 46
+      w36: 348
+      w37: 331
+      w38: 362
+      w39: 307
+    - service: Billing
+      owner: Payments
+      status: healthy
+      availability: 99.99
+      budget: 91
+      w36: 190
+      w37: 184
+      w38: 201
+      w39: 176
+
+blocks:
+  - type: hero
+    eyebrow: Operations · Week 39
+    title: Platform health at a glance
+    description: Traffic, errors and latency for the three customer-facing services, from one shared dataset.
+
+  - type: section
+    id: overview
+    title: Overview
+    blocks:
+      - type: grid
+        blocks:
+          - type: grid-item
+            span: 12
+            blocks:
+              - type: kpi
+                items:
+                  - label: Requests this week
+                    value: 402k
+                    delta: +6.4%
+                    trend: up
+                    good: up
+                    series: [319, 340, 376, 402]
+                  - label: Error rate
+                    value: 0.14%
+                    delta: -0.08 pt
+                    trend: down
+                    good: down
+                    series: [0.24, 0.21, 0.25, 0.14]
+                  - label: Gateway p95
+                    value: 198 ms
+                    delta: -38 ms
+                    trend: down
+                    good: down
+                    series: [212, 205, 236, 198]
+                  - label: Error budget left
+                    value: 73%
+                    delta: +9 pt
+                    trend: up
+                    good: up
+          - type: grid-item
+            span: 8
+            tabletSpan: 12
+            blocks:
+              - type: chart
+                kind: stacked-bar
+                title: Requests per week by service
+                dataRef: traffic
+                x: { field: week, label: Week }
+                y: { field: requests, label: Requests, format: compact }
+                series: { field: service }
+                markers:
+                  - { x: W38, label: Release 4.2 }
+          - type: grid-item
+            span: 4
+            tabletSpan: 12
+            blocks:
+              - type: stats
+                title: Availability, week 39
+                items:
+                  - label: Gateway
+                    value: 99.97%
+                  - label: Search
+                    value: 99.81%
+                  - label: Billing
+                    value: 99.99%
+          - type: grid-item
+            span: 12
+            blocks:
+              - type: chart
+                kind: line
+                title: p95 latency by service
+                dataRef: traffic
+                x: { field: week, label: Week }
+                y: { field: p95, label: Latency, format: duration, min: 0 }
+                series: { field: service }
+
+  - type: section
+    id: services
+    title: Services
+    blocks:
+      - type: main-aside
+        blocks:
+          - type: data-table
+            title: Service health
+            dataRef: services
+            columns:
+              - { key: service, label: Service }
+              - key: status
+                label: Status
+                type: badge
+                tones: { healthy: success, degraded: warning }
+              - { key: availability, label: Availability, type: percent, decimals: 2 }
+              - { key: budget, label: Budget left, type: progress, max: 100 }
+              - { key: w39, label: p95 trend, type: sparkline, fields: [w36, w37, w38, w39] }
+          - type: chart
+            kind: bar
+            title: Errors per week
+            dataRef: traffic
+            transform:
+              groupBy: { field: week, aggregate: sum, value: errors }
+            x: { field: week, label: Week }
+            y: { field: errors, label: Errors, format: integer }
+        aside:
+          - type: callout
+            tone: warning
+            title: Search is degraded
+            text: Release 4.2 raised Search p95 to 362 ms in W38. The index warm-up fix brought it back to 307 ms, but the error budget is under half.
+          - type: key-value
+            title: On call
+            items:
+              - key: Primary
+                value: Edge team
+              - key: Secondary
+                value: Discovery
+              - key: Next review
+                value: Monday 10:00

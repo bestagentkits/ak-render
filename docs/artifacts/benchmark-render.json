@@ -1,17 +1,17 @@
 {
   "artifact": "benchmark-render",
   "producer": "benchmarks/render-benchmark.mjs",
-  "measuredAt": "2026-10-06T04:25:22.167Z",
+  "measuredAt": "2026-10-06T09:48:44.463Z",
   "compiler": {
     "name": "@bestagentkits/render",
-    "version": "0.2.0"
+    "version": "0.3.0"
   },
   "method": {
     "compilerTime": "Median of 9 compiles after one warm-up compile, per fixture.",
     "tokenEstimate": "Estimated from character count at 4 chars/token (point), bounded by 4.5 and 3.5 chars/token. Exact tokenizer counts are not claimed.",
     "guidanceScope": "Presentation guidance an agent loads for one page task on the ak-render skill route: the AgentKit shared HTML contract (also counted in the legacy baseline), the ak-render agent skill, `catalog`, and `describe --json` for each block type the matching fixture uses. Excludes the invoking skill body, fixture content, model output, and retries.",
     "agentkitRevision": "9e322f928",
-    "renderRevision": "f5b680710"
+    "renderRevision": "ac4c13efe-dirty"
   },
   "guidance": {
     "files": [
@@ -28,24 +28,24 @@
       },
       {
         "path": "skills/ak-render/SKILL.md",
-        "bytes": 5892,
-        "chars": 5892,
-        "lines": 159,
+        "bytes": 7635,
+        "chars": 7635,
+        "lines": 185,
         "estimatedTokens": {
-          "low": 1310,
-          "point": 1473,
-          "high": 1684
+          "low": 1697,
+          "point": 1909,
+          "high": 2182
         }
       },
       {
         "path": "ak-render catalog",
-        "bytes": 5164,
-        "chars": 5160,
-        "lines": 59,
+        "bytes": 7228,
+        "chars": 7056,
+        "lines": 103,
         "estimatedTokens": {
-          "low": 1147,
-          "point": 1290,
-          "high": 1475
+          "low": 1568,
+          "point": 1764,
+          "high": 2016
         }
       }
     ],
@@ -64,12 +64,12 @@
           "rich-text",
           "key-value"
         ],
-        "describeChars": 12080,
-        "chars": 27829,
+        "describeChars": 14048,
+        "chars": 33436,
         "estimatedTokens": {
-          "low": 6185,
-          "point": 6958,
-          "high": 7952
+          "low": 7431,
+          "point": 8359,
+          "high": 9554
         }
       },
       {
@@ -84,12 +84,12 @@
           "risk-matrix",
           "list"
         ],
-        "describeChars": 10748,
-        "chars": 26497,
+        "describeChars": 12125,
+        "chars": 31513,
         "estimatedTokens": {
-          "low": 5889,
-          "point": 6625,
-          "high": 7571
+          "low": 7003,
+          "point": 7879,
+          "high": 9004
         }
       },
       {
@@ -106,12 +106,12 @@
           "diagram-panel",
           "accordion"
         ],
-        "describeChars": 12772,
-        "chars": 28521,
+        "describeChars": 14692,
+        "chars": 34080,
         "estimatedTokens": {
-          "low": 6338,
-          "point": 7131,
-          "high": 8149
+          "low": 7574,
+          "point": 8520,
+          "high": 9738
         }
       },
       {
@@ -128,12 +128,12 @@
           "diagram-panel",
           "accordion"
         ],
-        "describeChars": 12772,
-        "chars": 28521,
+        "describeChars": 14692,
+        "chars": 34080,
         "estimatedTokens": {
-          "low": 6338,
-          "point": 7131,
-          "high": 8149
+          "low": 7574,
+          "point": 8520,
+          "high": 9738
         }
       },
       {
@@ -149,34 +149,34 @@
           "code-review",
           "callout"
         ],
-        "describeChars": 12846,
-        "chars": 28595,
+        "describeChars": 14275,
+        "chars": 33663,
         "estimatedTokens": {
-          "low": 6355,
-          "point": 7149,
-          "high": 8170
+          "low": 7481,
+          "point": 8416,
+          "high": 9618
         }
       }
     ],
     "totals": {
-      "fixedChars": 15749,
+      "fixedChars": 19388,
       "fixedEstimatedTokens": {
-        "low": 3500,
-        "point": 3938,
-        "high": 4500
+        "low": 4309,
+        "point": 4847,
+        "high": 5540
       },
-      "minTaskTokens": 6625,
-      "maxTaskTokens": 7149
+      "minTaskTokens": 7879,
+      "maxTaskTokens": 8520
     }
   },
   "compile": [
     {
       "fixture": "all-components.yaml",
-      "compilerMsMedian": 212.608,
-      "compilerMsMin": 53.983,
-      "compilerMsMax": 297.446,
+      "compilerMsMedian": 32.231,
+      "compilerMsMin": 17.785,
+      "compilerMsMax": 83.406,
       "samples": 9,
-      "bytes": 226989,
+      "bytes": 245539,
       "nodes": 84,
       "features": [
         "tabs",
@@ -200,7 +200,28 @@
         "kpi",
         "checklist",
         "showcase",
-        "cta"
+        "cta",
+        "lightbox"
+      ],
+      "distinctHashes": 1,
+      "distinctByteCounts": 1,
+      "deterministic": true
+    },
+    {
+      "fixture": "benchmark-report.yaml",
+      "compilerMsMedian": 10.708,
+      "compilerMsMin": 6.88,
+      "compilerMsMax": 25.15,
+      "samples": 9,
+      "bytes": 183462,
+      "nodes": 12,
+      "features": [
+        "tabs",
+        "theme",
+        "chart",
+        "outline",
+        "data-table",
+        "evidence"
       ],
       "distinctHashes": 1,
       "distinctByteCounts": 1,
@@ -208,11 +229,11 @@
     },
     {
       "fixture": "brainstorm.yaml",
-      "compilerMsMedian": 18.388,
-      "compilerMsMin": 2.615,
-      "compilerMsMax": 97.942,
+      "compilerMsMedian": 2.852,
+      "compilerMsMin": 2.324,
+      "compilerMsMax": 3.184,
       "samples": 9,
-      "bytes": 117222,
+      "bytes": 120893,
       "nodes": 7,
       "features": [
         "filter",
@@ -224,12 +245,68 @@
       "deterministic": true
     },
     {
-      "fixture": "dashboard.yaml",
-      "compilerMsMedian": 8.055,
-      "compilerMsMin": 3.466,
-      "compilerMsMax": 128.525,
+      "fixture": "charts-v2.yaml",
+      "compilerMsMedian": 13.952,
+      "compilerMsMin": 11.26,
+      "compilerMsMax": 20.6,
       "samples": 9,
-      "bytes": 142647,
+      "bytes": 186192,
+      "nodes": 16,
+      "features": [
+        "theme",
+        "chart",
+        "outline"
+      ],
+      "distinctHashes": 1,
+      "distinctByteCounts": 1,
+      "deterministic": true
+    },
+    {
+      "fixture": "complex-dashboard.yaml",
+      "compilerMsMedian": 9.143,
+      "compilerMsMin": 7.551,
+      "compilerMsMax": 16.364,
+      "samples": 9,
+      "bytes": 213713,
+      "nodes": 18,
+      "features": [
+        "theme",
+        "chart",
+        "kpi",
+        "layout-tracks",
+        "semantic-layout",
+        "data-table"
+      ],
+      "distinctHashes": 1,
+      "distinctByteCounts": 1,
+      "deterministic": true
+    },
+    {
+      "fixture": "controls.yaml",
+      "compilerMsMedian": 5.946,
+      "compilerMsMin": 4.784,
+      "compilerMsMax": 124.979,
+      "samples": 9,
+      "bytes": 130089,
+      "nodes": 18,
+      "features": [
+        "theme",
+        "outline",
+        "kpi",
+        "state",
+        "controls"
+      ],
+      "distinctHashes": 1,
+      "distinctByteCounts": 1,
+      "deterministic": true
+    },
+    {
+      "fixture": "dashboard.yaml",
+      "compilerMsMedian": 4.284,
+      "compilerMsMin": 3.672,
+      "compilerMsMax": 6.943,
+      "samples": 9,
+      "bytes": 146898,
       "nodes": 11,
       "features": [
         "theme",
@@ -240,12 +317,28 @@
       "deterministic": true
     },
     {
-      "fixture": "diff.yaml",
-      "compilerMsMedian": 5.588,
-      "compilerMsMin": 2.805,
-      "compilerMsMax": 61.615,
+      "fixture": "data-tables.yaml",
+      "compilerMsMedian": 11.217,
+      "compilerMsMin": 9.32,
+      "compilerMsMax": 13.923,
       "samples": 9,
-      "bytes": 117026,
+      "bytes": 181328,
+      "nodes": 5,
+      "features": [
+        "theme",
+        "data-table"
+      ],
+      "distinctHashes": 1,
+      "distinctByteCounts": 1,
+      "deterministic": true
+    },
+    {
+      "fixture": "diff.yaml",
+      "compilerMsMedian": 3.803,
+      "compilerMsMin": 2.868,
+      "compilerMsMax": 7.255,
+      "samples": 9,
+      "bytes": 118138,
       "nodes": 8,
       "features": [
         "theme"
@@ -255,12 +348,54 @@
       "deterministic": true
     },
     {
-      "fixture": "explain.yaml",
-      "compilerMsMedian": 38.194,
-      "compilerMsMin": 2.531,
-      "compilerMsMax": 84.457,
+      "fixture": "engineering-widgets.yaml",
+      "compilerMsMedian": 10.682,
+      "compilerMsMin": 8.434,
+      "compilerMsMax": 13.564,
       "samples": 9,
-      "bytes": 121596,
+      "bytes": 188880,
+      "nodes": 14,
+      "features": [
+        "filter",
+        "copy",
+        "theme",
+        "outline",
+        "kanban",
+        "roadmap",
+        "test-results",
+        "log-viewer",
+        "api-endpoint",
+        "schema-viewer"
+      ],
+      "distinctHashes": 1,
+      "distinctByteCounts": 1,
+      "deterministic": true
+    },
+    {
+      "fixture": "evidence-widgets.yaml",
+      "compilerMsMedian": 6.232,
+      "compilerMsMin": 4.073,
+      "compilerMsMax": 12.408,
+      "samples": 9,
+      "bytes": 135706,
+      "nodes": 11,
+      "features": [
+        "theme",
+        "outline",
+        "evidence",
+        "annotated-image"
+      ],
+      "distinctHashes": 1,
+      "distinctByteCounts": 1,
+      "deterministic": true
+    },
+    {
+      "fixture": "explain.yaml",
+      "compilerMsMedian": 3.364,
+      "compilerMsMin": 2.74,
+      "compilerMsMax": 5.668,
+      "samples": 9,
+      "bytes": 126975,
       "nodes": 9,
       "features": [
         "tabs",
@@ -273,12 +408,55 @@
       "deterministic": true
     },
     {
-      "fixture": "interactive.yaml",
-      "compilerMsMedian": 14.029,
-      "compilerMsMin": 6.463,
-      "compilerMsMax": 197.546,
+      "fixture": "incident-report.yaml",
+      "compilerMsMedian": 5.794,
+      "compilerMsMin": 4.963,
+      "compilerMsMax": 7.686,
       "samples": 9,
-      "bytes": 131414,
+      "bytes": 167866,
+      "nodes": 14,
+      "features": [
+        "filter",
+        "copy",
+        "theme",
+        "outline",
+        "kanban",
+        "roadmap",
+        "test-results",
+        "log-viewer",
+        "api-endpoint"
+      ],
+      "distinctHashes": 1,
+      "distinctByteCounts": 1,
+      "deterministic": true
+    },
+    {
+      "fixture": "interactive-data-explorer.yaml",
+      "compilerMsMedian": 8.421,
+      "compilerMsMin": 5.383,
+      "compilerMsMax": 12.159,
+      "samples": 9,
+      "bytes": 176586,
+      "nodes": 12,
+      "features": [
+        "theme",
+        "chart",
+        "state",
+        "data-table",
+        "controls",
+        "filter-bar"
+      ],
+      "distinctHashes": 1,
+      "distinctByteCounts": 1,
+      "deterministic": true
+    },
+    {
+      "fixture": "interactive.yaml",
+      "compilerMsMedian": 4.1,
+      "compilerMsMin": 3.506,
+      "compilerMsMax": 5.746,
+      "samples": 9,
+      "bytes": 135784,
       "nodes": 15,
       "features": [
         "tabs",
@@ -296,11 +474,11 @@
     },
     {
       "fixture": "media.yaml",
-      "compilerMsMedian": 5.812,
-      "compilerMsMin": 2.97,
-      "compilerMsMax": 18.798,
+      "compilerMsMedian": 3.449,
+      "compilerMsMin": 2.886,
+      "compilerMsMax": 5.101,
       "samples": 9,
-      "bytes": 115586,
+      "bytes": 129917,
       "nodes": 11,
       "features": [
         "carousel",
@@ -308,7 +486,8 @@
         "media",
         "frame",
         "before-after",
-        "showcase"
+        "showcase",
+        "lightbox"
       ],
       "distinctHashes": 1,
       "distinctByteCounts": 1,
@@ -316,11 +495,11 @@
     },
     {
       "fixture": "plan.yaml",
-      "compilerMsMedian": 15.978,
-      "compilerMsMin": 2.589,
-      "compilerMsMax": 263.197,
+      "compilerMsMedian": 3.138,
+      "compilerMsMin": 2.807,
+      "compilerMsMax": 4.855,
       "samples": 9,
-      "bytes": 107535,
+      "bytes": 111479,
       "nodes": 9,
       "features": [
         "accordion",
@@ -332,12 +511,58 @@
       "deterministic": true
     },
     {
-      "fixture": "recap.yaml",
-      "compilerMsMedian": 36.254,
-      "compilerMsMin": 2.946,
-      "compilerMsMax": 147.295,
+      "fixture": "product-case-study.yaml",
+      "compilerMsMedian": 6.164,
+      "compilerMsMin": 4.822,
+      "compilerMsMax": 15.037,
       "samples": 9,
-      "bytes": 128127,
+      "bytes": 135655,
+      "nodes": 14,
+      "features": [
+        "theme",
+        "outline",
+        "frame",
+        "pricing",
+        "feature-matrix",
+        "testimonial",
+        "logo-cloud",
+        "people",
+        "lightbox"
+      ],
+      "distinctHashes": 1,
+      "distinctByteCounts": 1,
+      "deterministic": true
+    },
+    {
+      "fixture": "product-widgets.yaml",
+      "compilerMsMedian": 15.949,
+      "compilerMsMin": 7.774,
+      "compilerMsMax": 40.32,
+      "samples": 9,
+      "bytes": 162200,
+      "nodes": 15,
+      "features": [
+        "theme",
+        "outline",
+        "pricing",
+        "feature-matrix",
+        "testimonial",
+        "logo-cloud",
+        "people",
+        "calendar",
+        "lightbox"
+      ],
+      "distinctHashes": 1,
+      "distinctByteCounts": 1,
+      "deterministic": true
+    },
+    {
+      "fixture": "recap.yaml",
+      "compilerMsMedian": 5.944,
+      "compilerMsMin": 3.698,
+      "compilerMsMax": 20.528,
+      "samples": 9,
+      "bytes": 132378,
       "nodes": 8,
       "features": [
         "filter",
@@ -349,12 +574,77 @@
       "deterministic": true
     },
     {
-      "fixture": "showcase.yaml",
-      "compilerMsMedian": 9.016,
-      "compilerMsMin": 6.999,
-      "compilerMsMax": 97.832,
+      "fixture": "research-report.yaml",
+      "compilerMsMedian": 8.671,
+      "compilerMsMin": 5.958,
+      "compilerMsMax": 36.27,
       "samples": 9,
-      "bytes": 154158,
+      "bytes": 139334,
+      "nodes": 20,
+      "features": [
+        "accordion",
+        "filter",
+        "theme",
+        "semantic-layout",
+        "evidence",
+        "annotated-image"
+      ],
+      "distinctHashes": 1,
+      "distinctByteCounts": 1,
+      "deterministic": true
+    },
+    {
+      "fixture": "responsive-layouts.yaml",
+      "compilerMsMedian": 6.326,
+      "compilerMsMin": 4.682,
+      "compilerMsMax": 16.639,
+      "samples": 9,
+      "bytes": 156904,
+      "nodes": 42,
+      "features": [
+        "filter",
+        "theme",
+        "chart",
+        "outline",
+        "kpi",
+        "layout-options",
+        "layout-tracks",
+        "semantic-layout"
+      ],
+      "distinctHashes": 1,
+      "distinctByteCounts": 1,
+      "deterministic": true
+    },
+    {
+      "fixture": "rich-composition.yaml",
+      "compilerMsMedian": 4.635,
+      "compilerMsMin": 4.127,
+      "compilerMsMax": 8.244,
+      "samples": 9,
+      "bytes": 153621,
+      "nodes": 17,
+      "features": [
+        "tabs",
+        "accordion",
+        "carousel",
+        "copy",
+        "theme",
+        "chart",
+        "bento",
+        "kpi",
+        "checklist"
+      ],
+      "distinctHashes": 1,
+      "distinctByteCounts": 1,
+      "deterministic": true
+    },
+    {
+      "fixture": "showcase.yaml",
+      "compilerMsMedian": 5.122,
+      "compilerMsMin": 4.632,
+      "compilerMsMax": 10.176,
+      "samples": 9,
+      "bytes": 154449,
       "nodes": 17,
       "features": [
         "copy",
@@ -377,12 +667,30 @@
       "deterministic": true
     },
     {
-      "fixture": "theme-showcase.yaml",
-      "compilerMsMedian": 5.225,
-      "compilerMsMin": 2.599,
-      "compilerMsMax": 189.25,
+      "fixture": "theme-dialects.yaml",
+      "compilerMsMedian": 4.194,
+      "compilerMsMin": 3.628,
+      "compilerMsMax": 22.446,
       "samples": 9,
-      "bytes": 127173,
+      "bytes": 178828,
+      "nodes": 13,
+      "features": [
+        "theme",
+        "chart",
+        "outline",
+        "kpi"
+      ],
+      "distinctHashes": 1,
+      "distinctByteCounts": 1,
+      "deterministic": true
+    },
+    {
+      "fixture": "theme-showcase.yaml",
+      "compilerMsMedian": 3.07,
+      "compilerMsMin": 2.827,
+      "compilerMsMax": 3.364,
+      "samples": 9,
+      "bytes": 133133,
       "nodes": 11,
       "features": [
         "carousel",
@@ -403,9 +711,9 @@
       "skill": "ak:explain",
       "mode": "--html",
       "beforeTokens": 23698,
-      "afterTokens": 6958,
-      "deltaTokens": -16740,
-      "reductionPercent": 70.6
+      "afterTokens": 8359,
+      "deltaTokens": -15339,
+      "reductionPercent": 64.7
     },
     {
       "task": "brainstorm-html",
@@ -413,9 +721,9 @@
       "skill": "ak:brainstorm",
       "mode": "--html",
       "beforeTokens": 23698,
-      "afterTokens": 6625,
-      "deltaTokens": -17073,
-      "reductionPercent": 72
+      "afterTokens": 7879,
+      "deltaTokens": -15819,
+      "reductionPercent": 66.8
     },
     {
       "task": "plan-review-engineer",
@@ -423,9 +731,9 @@
       "skill": "ak:plan (Engineer)",
       "mode": "--html",
       "beforeTokens": 23698,
-      "afterTokens": 7131,
-      "deltaTokens": -16567,
-      "reductionPercent": 69.9
+      "afterTokens": 8520,
+      "deltaTokens": -15178,
+      "reductionPercent": 64
     },
     {
       "task": "plan-review-marketing",
@@ -433,9 +741,9 @@
       "skill": "ak:plan (Marketing)",
       "mode": "--html",
       "beforeTokens": 23698,
-      "afterTokens": 7131,
-      "deltaTokens": -16567,
-      "reductionPercent": 69.9
+      "afterTokens": 8520,
+      "deltaTokens": -15178,
+      "reductionPercent": 64
     },
     {
       "task": "preview-diff",
@@ -443,9 +751,9 @@
       "skill": "ak:preview",
       "mode": "--diff",
       "beforeTokens": 26553,
-      "afterTokens": 7149,
-      "deltaTokens": -19404,
-      "reductionPercent": 73.1
+      "afterTokens": 8416,
+      "deltaTokens": -18137,
+      "reductionPercent": 68.3
     }
   ],
   "regressionAnalysis": {

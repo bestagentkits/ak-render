@@ -1,0 +1,53 @@
+# summary: Release highlights, numbers, changed files, a test summary, upgrade notes and what comes next.
+# use-cases: release notes page; sprint or milestone recap; changelog for stakeholders
+version: 1
+meta:
+  title: Replace with the product and version — release recap
+  description: Replace with the release in one line.
+theme:
+  preset: editorial
+blocks:
+  - type: hero
+    eyebrow: Release · Replace with the version
+    title: Replace with the theme of this release
+    description: Replace with who benefits and what changes for them.
+  - type: stats
+    items:
+      - { label: Pull requests, value: '48' }
+      - { label: Contributors, value: '11' }
+      - { label: Issues closed, value: '63' }
+      - { label: Breaking changes, value: '1' }
+  - type: card-grid
+    title: Highlights
+    items:
+      - { title: Replace with highlight one, text: Replace with what users can do now. }
+      - { title: Replace with highlight two, text: Replace with what got faster or simpler. }
+      - { title: Replace with highlight three, text: Replace with what got fixed. }
+  - type: tabs
+    items:
+      - title: Changes
+        blocks:
+          - type: diff-summary
+            items:
+              - { path: src/replace/with-a-file.ts, status: added, additions: 214 }
+              - { path: src/replace/with-another.ts, status: modified, additions: 38, deletions: 12 }
+              - { path: src/replace/old-module.ts, status: deleted, deletions: 140 }
+      - title: Tests
+        blocks:
+          - type: test-results
+            coverage: 87
+            suites:
+              - name: Replace with a suite
+                cases:
+                  - { name: Replace with a test, status: pass, duration: 42 }
+                  - { name: Replace with a test, status: pass, duration: 18 }
+                  - { name: Replace with a flaky test, status: flaky, duration: 230 }
+  - type: callout
+    tone: warning
+    title: Upgrade notes
+    text: Replace with the breaking change and the one step users must take.
+  - type: list
+    title: Next up
+    items:
+      - { text: Replace with a planned item, badge: next }
+      - { text: Replace with a planned item, badge: later }

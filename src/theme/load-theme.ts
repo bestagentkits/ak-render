@@ -14,6 +14,7 @@
 import { type Diagnostic, DiagnosticBag } from '../diagnostics.js';
 import { RenderError } from '../errors.js';
 import { DEFAULT_PRESET } from './presets.js';
+import { defaultRecipes, type ThemeRecipes, validateThemeRecipes } from './recipes.js';
 import { builtinThemeCatalog, catalogPresetNames, type ThemeCatalog } from './theme-catalog.js';
 import {
   TOKEN_SPECS,
@@ -28,6 +29,8 @@ export interface ThemeInput {
   extends?: string;
   tokens?: Record<string, unknown>;
   dark?: Record<string, unknown>;
+  /** Component recipe per surface; overrides the preset chain's choices. */
+  recipes?: Record<string, unknown>;
 }
 
 export interface ResolvedTheme {
@@ -44,6 +47,11 @@ export interface ResolvedTheme {
   css: string;
   motionPolicy: string;
   density: string;
+  /**
+   * Component recipe for every surface: defaults, then the extends chain from
+   * its root, then the preset itself, then the input's own `recipes`.
+   */
+  recipes: ThemeRecipes;
 }
 
 function declarations(tokens: Tokens): string {
@@ -81,6 +89,7 @@ function coerceInput(input: unknown): ThemeInput {
 interface ChainResult {
   tokens: Tokens;
   dark: Tokens;
+  recipes: Record<string, string>;
   description: string;
   version: number;
   chain: string[];
@@ -130,7 +139,14 @@ function resolveChain(
     return undefined;
   }
 
-  let inherited: ChainResult = { tokens: {}, dark: {}, description: '', version: 1, chain: [] };
+  let inherited: ChainResult = {
+    tokens: {},
+    dark: {},
+    recipes: {},
+    description: '',
+    version: 1,
+    chain: [],
+  };
   if (entry.extends !== undefined) {
     const parent = resolveChain(entry.extends, catalog, bag, [...trail, name]);
     if (parent === undefined) return undefined;
@@ -168,6 +184,14 @@ function resolveChain(
   return {
     tokens: { ...inherited.tokens, ...ownLight },
     dark: { ...inherited.dark, ...ownDark },
+    // Built-in and file presets are validated when they load; this keeps a
+    // hand-built catalog entry to the same closed recipe lists.
+    recipes: {
+      ...inherited.recipes,
+      ...(entry.recipes === undefined
+        ? {}
+        : validateThemeRecipes(entry.recipes, 'theme.recipes', bag)),
+    },
     description: entry.description === '' ? inherited.description : entry.description,
     version: entry.version,
     chain: [...inherited.chain, entry.name],
@@ -287,6 +311,13 @@ export function resolveTheme(
     'dark',
   );
   const motionPolicy = light['motion-policy'] ?? 'full';
+  // The spec envelope validates recipes already; a library caller passing
+  // `loadTheme(unknown)` gets the same diagnostics here.
+  const authoredRecipes =
+    themeInput.recipes === undefined
+      ? {}
+      : validateThemeRecipes(themeInput.recipes, 'theme.recipes', bag);
+  const recipes: ThemeRecipes = { ...defaultRecipes(), ...root.recipes, ...authoredRecipes };
 
   return {
     name: resolvedName,
@@ -299,6 +330,7 @@ export function resolveTheme(
     css: buildThemeCss(light, dark, motionPolicy === 'none'),
     motionPolicy,
     density: light.density ?? 'comfortable',
+    recipes,
   };
 }
 
@@ -310,7 +342,7 @@ export interface LoadThemeOptions {
  * Load and validate a theme preset.
  *
  * Accepts a preset name (`'blueprint'`), an object with `preset`, `extends`,
- * `tokens`, and `dark`, or a spec-shaped theme block. Throws a `RenderError`
+ * `tokens`, `dark`, and `recipes`, or a spec-shaped theme block. Throws a `RenderError`
  * carrying every token problem when the input is invalid.
  */
 export function loadTheme(input?: unknown, options: LoadThemeOptions = {}): ResolvedTheme {

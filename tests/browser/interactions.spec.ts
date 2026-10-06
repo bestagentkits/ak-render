@@ -1,12 +1,11 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { expect, type Page, test } from '@playwright/test';
 import { compile } from '../../src/render/render.js';
+import { browserWorkspace } from './browser-workspace.js';
 
 const pagesDir = fileURLToPath(new URL('../../fixtures/pages', import.meta.url));
-const workspace = mkdtempSync(join(tmpdir(), 'ak-render-interactions-'));
+const workspace = browserWorkspace('interactions');
 
 /**
  * Each fixture is compiled once and opened over `file://`, which is the same
@@ -15,17 +14,8 @@ const workspace = mkdtempSync(join(tmpdir(), 'ak-render-interactions-'));
  */
 function artifact(name: string): string {
   const source = readFileSync(`${pagesDir}/${name}`, 'utf8');
-  const target = join(workspace, `${name.replace(/\.yaml$/u, '')}.html`);
-  // The workspace is recreated on demand: a retry or a parallel worker may have
-  // cleaned up an earlier copy.
-  mkdirSync(workspace, { recursive: true });
-  writeFileSync(target, compile(source, { source: name }).html, 'utf8');
-  return target;
+  return workspace.write(name.replace(/\.yaml$/u, ''), compile(source, { source: name }).html);
 }
-
-test.afterAll(() => {
-  rmSync(workspace, { recursive: true, force: true });
-});
 
 async function open(page: Page): Promise<void> {
   // Written per test rather than once at import time, so a retry or a parallel
@@ -393,9 +383,7 @@ blocks:
       - label: Pages
         value: '1,240'
 `;
-    const target = join(workspace, 'still.html');
-    mkdirSync(workspace, { recursive: true });
-    writeFileSync(target, compile(source).html, 'utf8');
+    const target = workspace.write('still', compile(source).html);
     await page.emulateMedia({ reducedMotion: 'no-preference', colorScheme: 'dark' });
     await page.goto(`file://${target}`, { waitUntil: 'load' });
     expect(await duration(page)).toMatch(/^0(m?s)?$/u);
@@ -423,9 +411,7 @@ blocks:
 `;
 
   async function openCounting(page: Page): Promise<void> {
-    const target = join(workspace, 'counting.html');
-    mkdirSync(workspace, { recursive: true });
-    writeFileSync(target, compile(source).html, 'utf8');
+    const target = workspace.write('counting', compile(source).html);
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.goto(`file://${target}`, { waitUntil: 'load' });
   }
@@ -471,13 +457,167 @@ blocks:
             language: json
             text: '{ "mcpServers": { "ak-render": { "command": "npx", "args": ["-y", "@bestagentkits/render", "mcp"] } } }'
 `;
-    const target = join(workspace, 'split-of-stacks.html');
-    mkdirSync(workspace, { recursive: true });
-    writeFileSync(target, compile(source).html, 'utf8');
+    const target = workspace.write('split-of-stacks', compile(source).html);
     await page.setViewportSize({ width: 375, height: 800 });
     await page.goto(`file://${target}`, { waitUntil: 'load' });
     // A long code line scrolls inside its frame instead of widening the page.
     const width = await page.evaluate(() => document.documentElement.scrollWidth);
     expect(width).toBeLessThanOrEqual(375);
   });
+});
+
+test.describe('rich composition', () => {
+  const openRich = (page: Page) =>
+    page.goto(`file://${artifact('rich-composition.yaml')}`, { waitUntil: 'load' });
+  const outer = (page: Page) => page.locator('[data-ak-id="release-tabs"]');
+  const inner = (page: Page) => page.locator('[data-ak-id="platform-tabs"]');
+  const ownTabs = (scope: ReturnType<typeof outer>) =>
+    scope.locator(':scope > [role="tablist"] > [role="tab"]');
+  const ownPanels = (scope: ReturnType<typeof outer>) =>
+    scope.locator(':scope > [role="tabpanel"]');
+
+  test('switches nested tabs by keyboard without touching the enclosing tabs', async ({ page }) => {
+    await openRich(page);
+    await page.getByText('Platform notes', { exact: true }).click();
+    const first = ownTabs(inner(page)).first();
+    await first.focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(ownTabs(inner(page)).nth(1)).toHaveAttribute('aria-selected', 'true');
+    await expect(ownTabs(inner(page)).nth(1)).toBeFocused();
+    await expect(inner(page).locator('#platform-tabs-panel-1')).toBeVisible();
+    await expect(inner(page).locator('#platform-tabs-panel-0')).toBeHidden();
+
+    // The enclosing tabs keep their first panel and their own selection.
+    await expect(ownTabs(outer(page)).first()).toHaveAttribute('aria-selected', 'true');
+    await expect(ownPanels(outer(page))).toHaveCount(3);
+    await expect(outer(page).locator('#release-tabs-panel-0')).toBeVisible();
+
+    await ownTabs(outer(page)).nth(2).click();
+    await expect(outer(page).locator('#release-tabs-panel-2')).toBeVisible();
+    await expect(ownTabs(inner(page)).nth(1)).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test('shows nested blocks in the active panel and slide', async ({ page }) => {
+    await openRich(page);
+    await expect(outer(page).locator('#release-tabs-panel-0 .ak-chart')).toBeVisible();
+    await ownTabs(outer(page)).nth(1).click();
+    await expect(outer(page).locator('#release-tabs-panel-1 table')).toBeVisible();
+    const carousel = page.locator('[data-ak-id="release-tour"]');
+    await expect(carousel.locator('[data-ak-slide]').first().locator('img')).toBeVisible();
+    await carousel.locator('[data-ak-carousel="next"]').click();
+    await expect(carousel.locator('[data-ak-slide]').nth(1).locator('blockquote')).toBeVisible();
+  });
+
+  test('stores the selected tab id through a set-value binding', async ({ page }) => {
+    const spec = {
+      version: 1,
+      meta: { title: 'Tab state' },
+      state: { view: 'tab-a' },
+      blocks: [
+        {
+          type: 'tabs',
+          id: 'views',
+          on: { select: { action: 'set-value', path: 'state.view' } },
+          items: [
+            { id: 'tab-a', title: 'A', text: 'Panel A.' },
+            { id: 'tab-b', title: 'B', text: 'Panel B.' },
+          ],
+        },
+        {
+          type: 'text',
+          id: 'note-a',
+          text: 'Viewing A.',
+          visibleWhen: { path: 'state.view', equals: 'tab-a' },
+        },
+        {
+          type: 'text',
+          id: 'note-b',
+          text: 'Viewing B.',
+          visibleWhen: { path: 'state.view', equals: 'tab-b' },
+        },
+      ],
+    };
+    const target = workspace.write('tab-state', compile(spec).html);
+    await page.goto(`file://${target}`, { waitUntil: 'load' });
+    // Loading selects the first tab without firing, so the declared state stands.
+    await expect(page.getByText('Viewing A.')).toBeVisible();
+    await expect(page.getByText('Viewing B.')).toBeHidden();
+    await page.locator('#tab-b').click();
+    await expect(page.getByText('Viewing B.')).toBeVisible();
+    await expect(page.getByText('Viewing A.')).toBeHidden();
+  });
+
+  test('reads every panel and slide with scripts off', async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    try {
+      await openRich(page);
+      for (const scope of [outer(page), inner(page)]) {
+        await expect(scope.locator(':scope > [role="tablist"]')).toBeHidden();
+      }
+      const panels = ownPanels(outer(page));
+      await expect(panels).toHaveCount(3);
+      for (let index = 0; index < 3; index += 1) {
+        await expect(panels.nth(index)).toBeVisible();
+        await expect(panels.nth(index).locator('.ak-tab-panel-title')).toBeVisible();
+      }
+      await expect(outer(page).locator('#release-tabs-panel-1 table')).toBeVisible();
+      const slides = page.locator('[data-ak-id="release-tour"] [data-ak-slide]');
+      await expect(slides).toHaveCount(3);
+      for (let index = 0; index < 3; index += 1) {
+        expect(
+          await slides.nth(index).evaluate((el) => el.getBoundingClientRect().height),
+        ).toBeGreaterThan(0);
+      }
+    } finally {
+      await context.close();
+    }
+  });
+
+  test('prints every panel, slide and accordion section', async ({ page }) => {
+    await openRich(page);
+    await page.emulateMedia({ media: 'print' });
+    for (const scope of [outer(page), inner(page)]) {
+      const panels = ownPanels(scope);
+      const count = await panels.count();
+      for (let index = 0; index < count; index += 1) await expect(panels.nth(index)).toBeVisible();
+      await expect(scope.locator(':scope > [role="tablist"]')).toBeHidden();
+    }
+    const slides = page.locator('[data-ak-id="release-tour"] [data-ak-slide]');
+    for (let index = 0; index < 3; index += 1) await expect(slides.nth(index)).toBeVisible();
+    // Closed sections print open, nested blocks included.
+    const accordion = page.locator('[data-ak-id="release-details"]');
+    await expect(accordion.getByText('Release notes drafted')).toBeVisible();
+    await expect(accordion.getByText('Per-platform notes, as nested tabs.')).toBeVisible();
+  });
+
+  test('runs tab and slide changes without transitions under reduced motion', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await openRich(page);
+    const durations = await page
+      .locator('[role="tab"], .ak-accordion > details, .ak-tile')
+      .evaluateAll((elements) =>
+        elements.flatMap((element) =>
+          window
+            .getComputedStyle(element)
+            .transitionDuration.split(',')
+            .map((value) => value.trim()),
+        ),
+      );
+    expect(durations.length).toBeGreaterThan(0);
+    for (const value of durations) expect(value).toMatch(/^0(m?s)?$/u);
+  });
+
+  for (const width of [320, 375]) {
+    test(`keeps the page inside a ${width}px viewport`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await openRich(page);
+      const overflow = () =>
+        page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(await overflow()).toBeLessThanOrEqual(0);
+      await page.getByText('Platform notes', { exact: true }).click();
+      await ownTabs(outer(page)).nth(1).click();
+      expect(await overflow()).toBeLessThanOrEqual(0);
+    });
+  }
 });

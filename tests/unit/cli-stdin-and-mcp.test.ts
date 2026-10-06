@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { run } from '../../src/cli.js';
 import { handleMcpLine, handleMcpMessage, type McpContext } from '../../src/mcp-server.js';
+import { describe as describeBlock } from '../../src/registry/registry.js';
 
 const SPEC = `version: 1
 meta:
@@ -107,12 +108,20 @@ describe('MCP server', () => {
     expect(result?.protocolVersion).toBe('2025-11-25');
   });
 
-  it('lists the five tools in loop order', () => {
+  it('lists the eight tools in loop order, each described in at most 200 characters', () => {
     const response = handleMcpMessage({ jsonrpc: '2.0', id: 2, method: 'tools/list' }, context);
-    const result = response?.result as { tools: { name: string }[] } | undefined;
+    const result = response?.result as
+      | { tools: { name: string; description: string }[] }
+      | undefined;
+    for (const tool of result?.tools ?? []) {
+      expect(tool.description.length, tool.name).toBeLessThanOrEqual(200);
+    }
     expect(result?.tools.map((tool) => tool.name)).toEqual([
       'catalog',
+      'search-catalog',
       'describe',
+      'recipes',
+      'recipe',
       'validate',
       'render',
       'themes',
@@ -123,6 +132,62 @@ describe('MCP server', () => {
     expect(JSON.parse(call('catalog').content[0]?.text ?? '').blockCount).toBeGreaterThan(40);
     expect(JSON.parse(call('describe', { type: 'cta' }).content[0]?.text ?? '').type).toBe('cta');
     expect(call('describe', { type: 'nope' }).isError).toBe(true);
+  });
+
+  it('keeps describe with one type byte-identical to the full contract', () => {
+    for (const type of ['tabs', 'cta']) {
+      const expected = JSON.stringify(describeBlock(type), null, 2);
+      expect(call('describe', { type }).content[0]?.text).toBe(expected);
+      expect(call('describe', { type, compact: false }).content[0]?.text).toBe(expected);
+    }
+  });
+
+  it('filters the catalog by category', () => {
+    const listing = JSON.parse(call('catalog', { category: 'media' }).content[0]?.text ?? '') as {
+      category: string;
+      blocks: { category: string }[];
+    };
+    expect(listing.category).toBe('media');
+    expect(listing.blocks.every((entry) => entry.category === 'media')).toBe(true);
+    expect(JSON.parse(call('catalog', { category: '' }).content[0]?.text ?? '').category).toBe(
+      undefined,
+    );
+    const unknown = call('catalog', { category: 'widgets' });
+    expect(unknown.isError).toBe(true);
+    expect(unknown.content[0]?.text).toContain('expected one of: layout');
+    expect(call('catalog', { category: 3 }).isError).toBe(true);
+  });
+
+  it('searches the catalog', () => {
+    const hits = JSON.parse(
+      call('search-catalog', { query: 'architecture diagram' }).content[0]?.text ?? '',
+    ) as { type: string }[];
+    expect(hits[0]?.type).toBe('diagram-panel');
+    expect(call('search-catalog', {}).isError).toBe(true);
+    expect(call('search-catalog', { query: 'x'.repeat(201) }).isError).toBe(true);
+  });
+
+  it('describes several types, optionally compact, with exactly one of type and types', () => {
+    const many = JSON.parse(
+      call('describe', { types: ['kpi', 'tabs', 'kpi'], compact: true }).content[0]?.text ?? '',
+    ) as { type: string; props: string[] }[];
+    expect(many.map((entry) => entry.type)).toEqual(['kpi', 'tabs']);
+    expect(many[0]?.props).toContain('items: list<object>, required');
+
+    const one = JSON.parse(call('describe', { type: 'kpi', compact: true }).content[0]?.text ?? '');
+    expect(one.type).toBe('kpi');
+    expect(Array.isArray(one.props)).toBe(true);
+
+    const both = call('describe', { type: 'kpi', types: ['tabs'] });
+    expect(both.isError).toBe(true);
+    expect(both.content[0]?.text).toContain('either "type" or "types"');
+    expect(call('describe', {}).content[0]?.text).toContain('"type" must be a non-empty string');
+    expect(call('describe', { types: [] }).isError).toBe(true);
+    expect(call('describe', { types: Array.from({ length: 13 }, () => 'kpi') }).isError).toBe(true);
+    expect(call('describe', { type: 'kpi', compact: 'yes' }).isError).toBe(true);
+    const unknown = call('describe', { types: ['diagram-chart'] });
+    expect(unknown.isError).toBe(true);
+    expect(unknown.content[0]?.text).toContain('closest: ');
   });
 
   it('flags an invalid spec with paths to fix', () => {

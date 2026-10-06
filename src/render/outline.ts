@@ -19,7 +19,7 @@ export interface OutlineEntry {
   title: string;
 }
 
-/** Titled sections that are direct children of the page root, in document order. */
+/** Always-visible titled sections that are direct children of the page root, in document order. */
 export function outlineEntries(ir: IrDocument): OutlineEntry[] {
   const byId = new Map(ir.nodes.map((node) => [node.id, node]));
   const root = byId.get(ir.rootId);
@@ -28,6 +28,8 @@ export function outlineEntries(ir: IrDocument): OutlineEntry[] {
   for (const childId of root.children) {
     const child = byId.get(childId);
     if (child === undefined || child.type !== 'section') continue;
+    // A section behind visibleWhen can be hidden, so a link to it could go nowhere.
+    if (child.when !== undefined) continue;
     const title = child.props.title;
     if (typeof title !== 'string' || title.trim() === '') continue;
     entries.push({ anchor: sectionAnchor(child.id), title });

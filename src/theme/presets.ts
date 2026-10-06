@@ -11,65 +11,17 @@
  * custom stack that names no bundled face embeds nothing.
  */
 
-import type { Tokens } from './tokens.js';
+import { DIALECT_PRESETS } from './dialect-presets.js';
+import {
+  face,
+  type PresetDefinition,
+  preset,
+  SYSTEM_MONO,
+  SYSTEM_SANS,
+  SYSTEM_SERIF,
+} from './preset-builder.js';
 
-export interface PresetDefinition {
-  name: string;
-  description: string;
-  light: Tokens;
-  dark: Tokens;
-}
-
-/** Structural defaults shared by every preset; each preset overrides colours and voice. */
-const STRUCTURAL: Tokens = {
-  'font-size-base': '16px',
-  'font-scale': '1.25',
-  'line-height': '1.65',
-  measure: '72ch',
-  'space-unit': '8px',
-  density: 'comfortable',
-  'radius-small': '4px',
-  'radius-medium': '8px',
-  'radius-large': '16px',
-  'border-width': '1px',
-  'elevation-card': 'subtle',
-  'elevation-popover': 'medium',
-  'motion-duration': '160ms',
-  'motion-easing': 'ease',
-  'motion-policy': 'full',
-};
-
-const SYSTEM_SANS = 'ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif';
-const SYSTEM_SERIF = 'ui-serif, Georgia, Times New Roman, serif';
-const SYSTEM_MONO = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
-
-/** A bundled face in front of its system fallback. */
-const face = (family: string, fallback: string): string => `AK ${family}, ${fallback}`;
-
-interface PresetInput {
-  name: string;
-  description: string;
-  colors: { light: Tokens; dark: Tokens };
-  typing?: Tokens;
-  structure?: Tokens;
-}
-
-function preset(input: PresetInput): PresetDefinition {
-  const shared: Tokens = {
-    ...STRUCTURAL,
-    'font-heading': SYSTEM_SANS,
-    'font-body': SYSTEM_SANS,
-    'font-mono': SYSTEM_MONO,
-    ...input.typing,
-    ...input.structure,
-  };
-  return {
-    name: input.name,
-    description: input.description,
-    light: { ...shared, ...input.colors.light },
-    dark: { ...shared, ...input.colors.dark },
-  };
-}
+export type { PresetDefinition } from './preset-builder.js';
 
 /**
  * Palette notes, kept next to the data so a reviewer can check the intent:
@@ -325,6 +277,7 @@ export const PRESETS: Readonly<Record<string, PresetDefinition>> = {
       },
     },
   }),
+  ...DIALECT_PRESETS,
 };
 
 /** Default preset used when a spec does not name one. */
@@ -350,6 +303,8 @@ export interface PresetEntry {
   tokens: Record<string, string>;
   /** Dark-scheme token values. */
   dark: Record<string, string>;
+  /** Component recipes the preset selects; unset surfaces inherit. */
+  recipes?: Record<string, string>;
   origin: 'built-in' | 'user' | 'project' | 'file';
   file?: string;
 }
@@ -358,7 +313,7 @@ export interface PresetEntry {
 export function builtinPresetEntries(): Record<string, PresetEntry> {
   const entries: Record<string, PresetEntry> = {};
   for (const definition of Object.values(PRESETS)) {
-    entries[definition.name] = {
+    const entry: PresetEntry = {
       name: definition.name,
       version: 1,
       description: definition.description,
@@ -366,6 +321,8 @@ export function builtinPresetEntries(): Record<string, PresetEntry> {
       dark: { ...definition.dark },
       origin: 'built-in',
     };
+    if (definition.recipes !== undefined) entry.recipes = { ...definition.recipes };
+    entries[definition.name] = entry;
   }
   return entries;
 }

@@ -1,11 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { isRenderError, type RenderError } from '../../src/index.js';
 import { getAction, listActionTypes } from '../../src/registry/actions.js';
-import { blockTypes, catalog, describe as describeBlock } from '../../src/registry/registry.js';
-import { BLOCK_DEFINITIONS } from '../../src/registry/roster.js';
+import { BLOCK_CATEGORIES } from '../../src/registry/block-module.js';
+import {
+  BLOCK_DEFINITIONS,
+  blockTypes,
+  catalog,
+  describe as describeBlock,
+  formatCatalogJson,
+} from '../../src/registry/registry.js';
 
 describe('catalog and describe', () => {
-  it('keeps the catalog compact: names, kinds, versions, and one-line summaries', () => {
+  it('keeps the catalog compact: names, kinds, versions, summaries, categories and tags', () => {
     const listing = catalog();
     expect(listing.schemaVersion).toBe(1);
     expect(listing.blockCount).toBe(BLOCK_DEFINITIONS.length);
@@ -17,9 +23,60 @@ describe('catalog and describe', () => {
       kind: 'primitive',
       version: 1,
       summary: 'Carousel: prev/next, keyboard, and swipe across slides.',
+      category: 'interaction',
+      tags: ['slides', 'sequence'],
     });
-    // The compact surface must not leak full contracts into model context.
-    expect(Object.keys(entry ?? {})).toEqual(['type', 'kind', 'version', 'summary']);
+    // The compact surface must not leak full contracts into model context;
+    // existing fields keep their order and new ones follow.
+    expect(Object.keys(entry ?? {})).toEqual([
+      'type',
+      'kind',
+      'version',
+      'summary',
+      'category',
+      'tags',
+    ]);
+    expect(listing.category).toBeUndefined();
+  });
+
+  it('filters the catalog to one category in registry order', () => {
+    for (const category of BLOCK_CATEGORIES) {
+      const listing = catalog({ category });
+      const expected = BLOCK_DEFINITIONS.filter((definition) => definition.category === category);
+      expect(listing.category).toBe(category);
+      expect(listing.blockCount).toBe(expected.length);
+      expect(listing.blocks.map((entry) => entry.type)).toEqual(
+        expected.map((definition) => definition.type),
+      );
+      expect(listing.actions).toEqual(catalog().actions);
+    }
+  });
+
+  it('rejects an unknown category and lists the allowed ones', () => {
+    try {
+      catalog({ category: 'widgets' });
+      throw new Error('expected an error');
+    } catch (error) {
+      expect(isRenderError(error)).toBe(true);
+      const renderError = error as RenderError;
+      expect(renderError.code).toBe('SPEC_VALIDATION_ERROR');
+      expect(renderError.path).toBe('category');
+      expect(renderError.message).toContain(BLOCK_CATEGORIES.join(', '));
+      expect(renderError.details?.allowed).toEqual([...BLOCK_CATEGORIES]);
+    }
+  });
+
+  it('prints the catalog JSON with one block and one action per line', () => {
+    const listing = catalog();
+    const json = formatCatalogJson(listing);
+    expect(JSON.parse(json)).toEqual(listing);
+    const lines = json.split('\n');
+    expect(lines).toHaveLength(listing.blocks.length + listing.actions.length + 8);
+    expect(lines[0]).toBe('{');
+    expect(lines.at(-1)).toBe('}');
+    const filtered = formatCatalogJson(catalog({ category: 'media' }));
+    expect(JSON.parse(filtered)).toEqual(catalog({ category: 'media' }));
+    expect(filtered).toContain('  "category": "media",');
   });
 
   it('lists the closed action vocabulary with summaries', () => {

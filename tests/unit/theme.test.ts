@@ -18,11 +18,15 @@ blocks:
 `;
 
 describe('theme presets', () => {
-  it('ships the six built-in presets the epic requires', () => {
+  it('ships the ten built-in presets', () => {
     expect(themePresetNames()).toEqual([
       'blueprint',
+      'data-console',
       'editorial',
+      'executive-report',
       'paper-ink',
+      'product-studio',
+      'research-notebook',
       'swiss-clean',
       'terminal-mono',
       'warm-signal',

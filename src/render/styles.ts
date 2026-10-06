@@ -22,7 +22,7 @@
 
 export { FEATURE_CSS } from './feature-styles.js';
 
-import { DARK_FILL, RING, TINT } from './derived-variables.js';
+import { DARK_FILL, RING, SCROLL_EDGE_KEYFRAMES, scrollEdges, TINT } from './derived-variables.js';
 import { EFFECTS_CSS } from './effects-styles.js';
 import { SIGNATURE_CSS } from './signature-styles.js';
 
@@ -40,7 +40,7 @@ export const BASE_CSS = `*,*::before,*::after{box-sizing:border-box}
 [data-density="compact"]{--ak-gap:calc(var(--ak-space-unit) * 2)}
 [data-density="spacious"]{--ak-gap:calc(var(--ak-space-unit) * 4)}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%;scroll-padding-top:calc(var(--ak-space-unit) * 2)}
-body{margin:0;background:linear-gradient(180deg,color-mix(in srgb,var(--ak-color-accent) 5%,var(--ak-color-background)),var(--ak-color-background) 520px) no-repeat,var(--ak-color-background);color:var(--ak-color-text);font-family:var(--ak-font-body);font-size:var(--ak-font-size-base);line-height:var(--ak-line-height);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;font-kerning:normal}
+body{margin:0;background:linear-gradient(180deg,color-mix(in srgb,var(--ak-color-accent) 5%,var(--ak-color-background)),var(--ak-color-background) 520px) no-repeat,var(--ak-color-background);color:var(--ak-color-text);font-family:var(--ak-font-body);font-size:var(--ak-font-size-base);line-height:var(--ak-line-height);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;font-kerning:normal;overflow-wrap:break-word}
 ::selection{background:color-mix(in srgb,var(--ak-color-accent) 24%,transparent)}
 .ak-skip{position:fixed;left:var(--ak-space-unit);top:var(--ak-space-unit);transform:translateY(-200%);background:var(--ak-color-text);color:var(--ak-color-background);padding:.6em 1em;border-radius:var(--ak-radius-small);z-index:10;font-weight:600;${TRANSITION}}
 .ak-skip:focus{transform:none}
@@ -131,7 +131,7 @@ ul.ak-grid{list-style:none;padding:0;margin:0}
 .ak-kv{display:grid;grid-template-columns:minmax(120px,max-content) minmax(0,1fr);margin:0;border-top:var(--ak-border-width) solid var(--ak-color-border)}
 .ak-kv dt,.ak-kv dd{padding:.75em 0;border-bottom:var(--ak-border-width) solid var(--ak-color-border)}
 .ak-kv dt{font-family:var(--ak-font-mono);font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;line-height:var(--ak-line-height);color:var(--ak-color-text-muted);padding-right:calc(var(--ak-space-unit) * 4);padding-top:calc(.75em + .2rem)}
-.ak-kv dd{margin:0}
+.ak-kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
 .ak-stats{display:grid;gap:0;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin:0;padding:0;list-style:none;overflow:hidden;background:var(--ak-fill);border:var(--ak-border-width) solid var(--ak-color-border);border-radius:var(--ak-radius-medium);box-shadow:var(--ak-elevation-card)}
 .ak-stat{padding:calc(var(--ak-space-unit) * 2.5) calc(var(--ak-space-unit) * 3) calc(var(--ak-space-unit) * 3);box-shadow:calc(var(--ak-border-width) * -1) calc(var(--ak-border-width) * -1) 0 0 var(--ak-color-border)}
 .ak-stat dt{display:flex;align-items:center;gap:.6em;font-family:var(--ak-font-mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ak-color-text-muted)}
@@ -152,7 +152,9 @@ ul.ak-grid{list-style:none;padding:0;margin:0}
 .ak-timeline time{display:block;font-family:var(--ak-font-mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ak-color-accent);margin-bottom:.3em}
 .ak-timeline li > p:first-of-type{font-family:var(--ak-font-heading)}
 .ak-timeline li > p:not(:first-of-type){color:var(--ak-color-text-muted);margin-top:.15em;max-width:var(--ak-measure)}
-.ak-table-wrap{overflow-x:auto;border:var(--ak-border-width) solid var(--ak-color-border);border-radius:var(--ak-radius-medium);background:var(--ak-fill);box-shadow:var(--ak-elevation-card)}
+.ak-table-wrap{overflow-x:auto;overscroll-behavior-x:contain;border:var(--ak-border-width) solid var(--ak-color-border);border-radius:var(--ak-radius-medium);background:var(--ak-fill);box-shadow:var(--ak-elevation-card)}
+${scrollEdges('.ak-table-wrap')}
+${SCROLL_EDGE_KEYFRAMES}
 table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
 caption{text-align:left;padding-bottom:.5em;color:var(--ak-color-text-muted)}
 .ak-table-wrap caption:not(.ak-sr){padding:calc(var(--ak-space-unit) * 1.75) calc(var(--ak-space-unit) * 2);font-family:var(--ak-font-heading);font-weight:600;color:var(--ak-color-text);border-bottom:var(--ak-border-width) solid var(--ak-color-border)}
@@ -204,6 +206,7 @@ thead th{background:color-mix(in srgb,var(--ak-color-text) 3.5%,var(--ak-color-s
 .ak-list li{display:flex;gap:calc(var(--ak-space-unit) * 2);align-items:center;justify-content:space-between;border-bottom:var(--ak-border-width) solid var(--ak-color-border);padding:.8em 0}
 .ak-list li:first-child{border-top:var(--ak-border-width) solid var(--ak-color-border)}
 .ak-list li[hidden]{display:none}
+.ak-list li > span:first-child{min-width:0}
 li.ak-hidden{display:none}
 .ak-progress{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;gap:.6em var(--ak-space-unit)}
 .ak-progress .ak-caption{grid-row:1;grid-column:2;font-family:var(--ak-font-mono);font-size:.78rem;font-variant-numeric:tabular-nums;color:var(--ak-color-text)}
@@ -256,7 +259,7 @@ td > .ak-badge{vertical-align:middle}
 .ak-colophon a::before{content:"\\2191"}
 .ak-colophon a:hover{color:var(--ak-color-accent)}
 @media (max-width:768px){body{--ak-font-size-base:16px}.ak-grid:not([data-ak-columns="1"]),.ak-gallery:not([data-ak-columns="1"]){grid-template-columns:repeat(2,minmax(0,1fr))}.ak-compare,.ak-split{grid-template-columns:1fr!important}.ak-shell{padding:calc(var(--ak-space-unit) * 2) calc(var(--ak-space-unit) * 2) calc(var(--ak-space-unit) * 8)}h1{font-size:calc(var(--ak-font-size-base) * 2);font-size:calc(var(--ak-font-size-base) * pow(var(--ak-font-scale),3))}.ak-hero h1{font-size:calc(var(--ak-font-size-base) * 2.2);font-size:calc(var(--ak-font-size-base) * pow(var(--ak-font-scale),3.5))}h2{font-size:calc(var(--ak-font-size-base) * 1.4);font-size:calc(var(--ak-font-size-base) * pow(var(--ak-font-scale),1.5))}.ak-btn{min-height:44px}.ak-toolbar > a{min-height:44px}.ak-code-copy{min-height:44px}.ak-table-wrap table{min-width:560px}.ak-hero{padding-top:calc(var(--ak-space-unit) * 3)}.ak-main > .ak-block + .ak-block:is(.ak-section,:has(> .ak-section-head)){margin-top:calc(var(--ak-gap) * 2)}}
-@media (max-width:480px){.ak-grid,.ak-gallery{grid-template-columns:1fr!important}.ak-toolbar{flex-direction:column;align-items:stretch}.ak-toolbar > a{margin-left:0}.ak-stats{grid-template-columns:1fr 1fr}.ak-stat{padding:calc(var(--ak-space-unit) * 2)}.ak-stat dd{font-size:calc(var(--ak-font-size-base) * 1.85)}.ak-kv{grid-template-columns:1fr}.ak-kv dt{border-bottom:0;padding-bottom:0}.ak-callout,.ak-alert{padding-left:calc(var(--ak-space-unit) * 6)}.ak-callout::before,.ak-alert::before{left:calc(var(--ak-space-unit) * 2)}.ak-quote{padding-left:calc(var(--ak-space-unit) * 4.5)}.ak-quote::before{font-size:calc(var(--ak-font-size-base) * 3.5)}.ak-card,.ak-surface{padding:calc(var(--ak-space-unit) * 2.5)}th,td{padding-left:calc(var(--ak-space-unit) * 1.5);padding-right:calc(var(--ak-space-unit) * 1.5)}}
+@media (max-width:480px){.ak-grid,.ak-gallery{grid-template-columns:1fr!important}.ak-toolbar{flex-direction:column;align-items:stretch}.ak-toolbar > a{margin-left:0}.ak-stats{grid-template-columns:1fr 1fr}.ak-stat{padding:calc(var(--ak-space-unit) * 2)}.ak-stat dd{font-size:calc(var(--ak-font-size-base) * 1.85)}.ak-kv{grid-template-columns:minmax(0,1fr)}.ak-kv dt{border-bottom:0;padding-bottom:0}.ak-callout,.ak-alert{padding-left:calc(var(--ak-space-unit) * 6)}.ak-callout::before,.ak-alert::before{left:calc(var(--ak-space-unit) * 2)}.ak-quote{padding-left:calc(var(--ak-space-unit) * 4.5)}.ak-quote::before{font-size:calc(var(--ak-font-size-base) * 3.5)}.ak-card,.ak-surface{padding:calc(var(--ak-space-unit) * 2.5)}th,td{padding-left:calc(var(--ak-space-unit) * 1.5);padding-right:calc(var(--ak-space-unit) * 1.5)}}
 @media print{body{background:none}.ak-skip,.ak-page-bar,.ak-progress-rail,.ak-code-copy,.ak-colophon a{display:none}.ak-shell{max-width:none;padding:0}.ak-card,.ak-surface,.ak-stat,.ak-stats,.ak-table-wrap,.ak-toolbar{box-shadow:none}}
 ${SIGNATURE_CSS}
 ${EFFECTS_CSS}`;

@@ -6,6 +6,9 @@
  * yet are not exported — the package never advertises a scaffold.
  */
 
+export type { DataRow, DataScalar, MaterializedData } from './data/dataset-types.js';
+export type { ValueFormat } from './data/format-value.js';
+export { VALUE_FORMATS } from './data/format-value.js';
 export type { Diagnostic, DiagnosticSeverity } from './diagnostics.js';
 export type {
   AdapterMarkupCheck,
@@ -23,9 +26,21 @@ export type { RenderErrorCode, RenderErrorOptions } from './errors.js';
 export { isRenderError, RenderError } from './errors.js';
 export type { IrDocument, IrNode, IrTheme, NetworkPolicy } from './ir.js';
 export type { JsonValue } from './json.js';
+export type { PageRecipe, PageRecipeSummary } from './recipes/index.js';
+export { recipe, recipes } from './recipes/index.js';
 export type { ActionDefinition, ActionType } from './registry/actions.js';
 export { ACTION_DEFINITIONS, ALLOWED_EVENTS, listActionTypes } from './registry/actions.js';
-export type { Catalog, CatalogEntry } from './registry/registry.js';
+export type { BlockCategory } from './registry/block-module.js';
+export { BLOCK_CATEGORIES } from './registry/block-module.js';
+export type { CatalogSearchHit } from './registry/catalog-search.js';
+export { searchCatalog } from './registry/catalog-search.js';
+export type {
+  BlockDescription,
+  CompactBlockDescription,
+  DescribeManyOptions,
+} from './registry/describe-many.js';
+export { describeMany } from './registry/describe-many.js';
+export type { Catalog, CatalogEntry, CatalogOptions } from './registry/registry.js';
 export {
   blockTypes,
   buildPageSpecJsonSchema,
@@ -59,6 +74,8 @@ export { validate, validateOrThrow } from './spec/validate.js';
 export type { LoadThemeOptions, ResolvedTheme, ThemeInput } from './theme/load-theme.js';
 export { loadTheme, resolveTheme, themeDiagnostics, themePresetNames } from './theme/load-theme.js';
 export type { PresetEntry } from './theme/presets.js';
+export type { ThemeRecipeSurface } from './theme/recipes.js';
+export { THEME_RECIPE_SPECS } from './theme/recipes.js';
 export type { PresetSource, ThemeCatalog, ThemeCatalogOptions } from './theme/theme-catalog.js';
 export {
   buildThemeCatalog,

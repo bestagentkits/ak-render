@@ -16,7 +16,12 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isRenderError, type RenderError } from './errors.js';
 import { serveMcp } from './mcp-server.js';
-import { catalog, describe } from './registry/registry.js';
+import { type PageRecipe, recipe, recipes } from './recipes/index.js';
+import { BLOCK_CATEGORIES } from './registry/block-module.js';
+import { searchCatalog } from './registry/catalog-search.js';
+import { type CompactBlockDescription, describeMany } from './registry/describe-many.js';
+import { type Catalog, catalog, describe, formatCatalogJson } from './registry/registry.js';
+import type { BlockDefinition } from './registry/roster.js';
 import { compile } from './render/render.js';
 import { validate } from './spec/validate.js';
 import { buildThemeCatalog, type ThemeCatalog } from './theme/theme-catalog.js';
@@ -45,6 +50,8 @@ function sourceLabel(path: string): string {
 
 interface Flags {
   json: boolean;
+  compact: boolean;
+  category?: string;
   out?: string;
   theme?: string;
   themeFile?: string;
@@ -170,6 +177,56 @@ function compileCommand(args: string[], io: CliIo, flags: Flags): number {
   }
 }
 
+/**
+ * The catalog for reading: one section per category, in `BLOCK_CATEGORIES`
+ * order, one `type — summary` line per block, then the action names.
+ */
+function catalogText(listing: Catalog): string {
+  const lines = [`Page Spec v${listing.schemaVersion} — ${listing.blockCount} blocks`];
+  for (const category of BLOCK_CATEGORIES) {
+    const entries = listing.blocks.filter((entry) => entry.category === category);
+    if (entries.length === 0) continue;
+    lines.push('', `## ${category}`);
+    for (const entry of entries) lines.push(`${entry.type} — ${entry.summary}`);
+  }
+  lines.push('', `Actions: ${listing.actions.map((action) => action.type).join(', ')}`);
+  return lines.join('\n');
+}
+
+/** The full contract as text: the fields an author scans first. */
+function contractText(contract: BlockDefinition): string {
+  return `${contract.type} (${contract.kind}, v${contract.version})
+
+purpose:  ${contract.purpose}
+summary:  ${contract.summary}
+props:    ${Object.keys(contract.props).join(', ') || '(none)'}
+actions:  ${contract.actions.join(', ') || '(none)'}
+features: ${contract.runtimeFeatures.join(', ') || '(none)'}
+network:  ${contract.network}
+sizes:    ${contract.sizing.sizes.join(', ')} (default: ${contract.sizing.default})
+a11y:     ${contract.a11y}
+`;
+}
+
+/** The compact contract as text: one line per prop, slot and parent. */
+function compactContractText(contract: CompactBlockDescription): string {
+  const lines = [
+    `${contract.type} (${contract.kind}, ${contract.category}, v${contract.version}) — ${contract.summary}`,
+    '  props:',
+    ...contract.props.map((prop) => `    ${prop}`),
+  ];
+  if (contract.slots !== undefined) {
+    lines.push('  slots:', ...contract.slots.map((slot) => `    ${slot}`));
+  }
+  if (contract.parents !== undefined) lines.push(`  parents: ${contract.parents.join(', ')}`);
+  if (contract.data !== undefined) {
+    const need = contract.data.required ? 'required' : 'optional';
+    lines.push(`  data: ${need} — ${contract.data.description}`);
+  }
+  if (contract.actions !== undefined) lines.push(`  actions: ${contract.actions.join(', ')}`);
+  return `${lines.join('\n')}\n`;
+}
+
 const COMMANDS: Record<string, Command> = {
   compile: {
     summary: 'Compile a Page Spec to a standalone HTML artifact.',
@@ -208,34 +265,49 @@ const COMMANDS: Record<string, Command> = {
     },
   },
   catalog: {
-    summary: 'List available blocks and actions (compact).',
-    usage: 'ak-render catalog [--json]',
+    summary: 'List available blocks by category, and actions (compact).',
+    usage: `ak-render catalog [--category <${BLOCK_CATEGORIES.join('|')}>] [--json]`,
     run: (_args, io, flags) => {
-      const listing = catalog();
+      const listing = catalog(flags.category === undefined ? {} : { category: flags.category });
+      io.stdout(`${flags.json ? formatCatalogJson(listing) : catalogText(listing)}\n`);
+      return 0;
+    },
+  },
+  'search-catalog': {
+    summary: 'Find block types by intent words, best match first.',
+    usage: 'ak-render search-catalog <terms...> [--json]',
+    run: (args, io, flags) => {
+      if (args.length === 0) {
+        io.stderr('ak-render: search-catalog requires search terms\n');
+        return 2;
+      }
+      const query = args.join(' ');
+      const hits = searchCatalog(query);
       if (flags.json) {
-        io.stdout(`${JSON.stringify(listing, null, 2)}\n`);
-        return 0;
+        io.stdout(`${JSON.stringify(hits, null, 2)}\n`);
+      } else if (hits.length === 0) {
+        io.stdout(`no blocks match "${query}"\n`);
+      } else {
+        for (const hit of hits) io.stdout(`${hit.type} (${hit.category}) — ${hit.summary}\n`);
       }
-      io.stdout(`Page Spec v${listing.schemaVersion} — ${listing.blockCount} blocks\n\n`);
-      for (const entry of listing.blocks) {
-        io.stdout(`${entry.type.padEnd(16)} ${entry.kind.padEnd(10)} ${entry.summary}\n`);
-      }
-      io.stdout(`\nActions: ${listing.actions.map((action) => action.type).join(', ')}\n`);
       return 0;
     },
   },
   describe: {
-    summary: 'Show the full machine-readable contract for one block type.',
-    usage: 'ak-render describe <type> [--json]',
+    summary: 'Show the machine-readable contract for one or more block types.',
+    usage: 'ak-render describe <type...> [--compact] [--json]',
     run: (args, io, flags) => {
-      const type = args[0];
-      if (type === undefined) {
+      if (args.length === 0) {
         io.stderr('ak-render: describe requires a block type\n');
         return 2;
       }
-      let contract: ReturnType<typeof describe>;
+      let contracts: (BlockDefinition | CompactBlockDescription)[];
       try {
-        contract = describe(type);
+        // One type without --compact keeps the original single-contract path.
+        contracts =
+          args.length === 1 && !flags.compact
+            ? [describe(args[0] as string)]
+            : describeMany(args, { compact: flags.compact });
       } catch (error) {
         if (isRenderError(error)) {
           io.stderr(`ak-render: ${error.message}\n`);
@@ -244,25 +316,57 @@ const COMMANDS: Record<string, Command> = {
         throw error;
       }
       if (flags.json) {
-        io.stdout(`${JSON.stringify(contract, null, 2)}\n`);
+        // The reply's shape follows the call: one type, one object.
+        io.stdout(`${JSON.stringify(args.length === 1 ? contracts[0] : contracts, null, 2)}\n`);
         return 0;
       }
-      io.stdout(`${contract.type} (${contract.kind}, v${contract.version})\n\n`);
-      io.stdout(`purpose:  ${contract.purpose}\n`);
-      io.stdout(`summary:  ${contract.summary}\n`);
-      io.stdout(`props:    ${Object.keys(contract.props).join(', ') || '(none)'}\n`);
-      io.stdout(`actions:  ${contract.actions.join(', ') || '(none)'}\n`);
-      io.stdout(`features: ${contract.runtimeFeatures.join(', ') || '(none)'}\n`);
-      io.stdout(`network:  ${contract.network}\n`);
-      io.stdout(
-        `sizes:    ${contract.sizing.sizes.join(', ')} (default: ${contract.sizing.default})\n`,
+      const sections = contracts.map((contract) =>
+        'purpose' in contract ? contractText(contract) : compactContractText(contract),
       );
-      io.stdout(`a11y:     ${contract.a11y}\n`);
+      io.stdout(sections.join('\n'));
+      return 0;
+    },
+  },
+  recipes: {
+    summary: 'List page recipes: complete starter specs for common pages.',
+    usage: 'ak-render recipes [--json]',
+    run: (_args, io, flags) => {
+      const listing = recipes();
+      if (flags.json) {
+        io.stdout(`${JSON.stringify(listing, null, 2)}\n`);
+        return 0;
+      }
+      const width = Math.max(...listing.map((entry) => entry.name.length));
+      for (const entry of listing) io.stdout(`${entry.name.padEnd(width)}  ${entry.summary}\n`);
+      return 0;
+    },
+  },
+  recipe: {
+    summary: 'Print one page recipe as a starter Page Spec (YAML).',
+    usage: 'ak-render recipe <name> [--json]',
+    run: (args, io, flags) => {
+      const name = args[0];
+      if (name === undefined) {
+        io.stderr('ak-render: recipe requires a recipe name (see ak-render recipes)\n');
+        return 2;
+      }
+      let found: PageRecipe;
+      try {
+        found = recipe(name);
+      } catch (error) {
+        if (isRenderError(error)) {
+          io.stderr(`ak-render: ${error.message}\n`);
+          return 1;
+        }
+        throw error;
+      }
+      io.stdout(flags.json ? `${JSON.stringify(found, null, 2)}\n` : found.spec);
       return 0;
     },
   },
   mcp: {
-    summary: 'Serve catalog, describe, validate, render and themes as MCP tools over stdio.',
+    summary:
+      'Serve catalog, search-catalog, describe, recipes, recipe, validate, render and themes as MCP tools over stdio.',
     usage: 'ak-render mcp',
     run: () => {
       // The server keeps the process alive until its client closes stdin.
@@ -301,8 +405,9 @@ function helpText(): string {
   const usage = Object.values(COMMANDS)
     .map((command) => `  ${command.usage}`)
     .join('\n');
+  const width = Math.max(...Object.keys(COMMANDS).map((name) => name.length));
   const summaries = Object.entries(COMMANDS)
-    .map(([name, command]) => `  ${name.padEnd(10)} ${command.summary}`)
+    .map(([name, command]) => `  ${name.padEnd(width)} ${command.summary}`)
     .join('\n');
   return `${PACKAGE_NAME} ${VERSION}
 
@@ -324,7 +429,7 @@ command prompts, and every command except mcp accepts --json.
 `;
 }
 
-const VALUE_FLAGS = ['--out', '--theme', '--theme-file'] as const;
+const VALUE_FLAGS = ['--out', '--theme', '--theme-file', '--category'] as const;
 
 /** Build the preset catalog for this invocation from flags and discovery. */
 function themeCatalogFor(flags: Flags, io: CliIo): ThemeCatalog {
@@ -341,13 +446,17 @@ function themeCatalogFor(flags: Flags, io: CliIo): ThemeCatalog {
 }
 
 function parseArgs(args: string[]): ParsedArgs | { error: string } {
-  const flags: Flags = { json: false, themeDiscovery: true };
+  const flags: Flags = { json: false, compact: false, themeDiscovery: true };
   const positional: string[] = [];
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
     if (arg === undefined) continue;
     if (arg === '--json') {
       flags.json = true;
+      continue;
+    }
+    if (arg === '--compact') {
+      flags.compact = true;
       continue;
     }
     if (arg === '--no-theme-discovery') {
@@ -360,6 +469,7 @@ function parseArgs(args: string[]): ParsedArgs | { error: string } {
       if (value === undefined) return { error: `${valueFlag} requires a value` };
       if (valueFlag === '--out') flags.out = value;
       else if (valueFlag === '--theme') flags.theme = value;
+      else if (valueFlag === '--category') flags.category = value;
       else flags.themeFile = value;
       index += 1;
       continue;

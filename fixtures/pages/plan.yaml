@@ -51,7 +51,7 @@ blocks:
         text: Page Spec v1 accepted with migration policy.
       - when: Week 2
         title: Compiler and themes
-        text: Deterministic output with six built-in presets.
+        text: Deterministic output under every built-in preset.
       - when: Week 3
         title: Runtime
         text: Browser-tested interactions across input methods.

@@ -1,0 +1,54 @@
+# summary: Goal, scope, phased roadmap, step-by-step work, a task board, risks and the definition of done.
+# use-cases: feature implementation plan; migration plan; project kickoff brief
+version: 1
+meta:
+  title: Replace with the project name — implementation plan
+  description: Replace with the goal in one line.
+theme:
+  preset: swiss-clean
+datasets:
+  tasks:
+    - { title: Replace with a task, column: todo, owner: Backend, status: phase 2 }
+    - { title: Replace with a task, column: todo, owner: Frontend, status: phase 3 }
+    - { title: Replace with a task, column: doing, owner: Backend, status: phase 1 }
+    - { title: Replace with a task, column: done, owner: QA, status: phase 1 }
+blocks:
+  - type: hero
+    eyebrow: Implementation plan
+    title: Replace with the outcome this plan delivers
+    description: Replace with the problem, the constraint and the deadline.
+  - type: comparison
+    title: Scope
+    left: { label: In scope, items: [Replace with a deliverable, Replace with a deliverable] }
+    right: { label: Out of scope, items: [Replace with a non-goal, Replace with a non-goal] }
+  - type: roadmap
+    title: Phases
+    periods: [Week 1, Week 2, Week 3, Week 4, Week 5, Week 6]
+    items:
+      - { title: Replace with phase 1, start: Week 1, end: Week 2, status: active }
+      - { title: Replace with phase 2, start: Week 3, end: Week 4, status: planned }
+      - { title: Replace with phase 3, start: Week 5, end: Week 6, status: planned }
+  - type: steps
+    title: Phase 1 steps
+    items:
+      - { title: Replace with the first step, text: Replace with the files or systems it touches. }
+      - { title: Replace with the second step, text: Replace with how it is verified. }
+      - { title: Replace with the third step, text: Replace with the rollback if it fails. }
+  - type: kanban
+    title: Tasks
+    dataRef: tasks
+    columns:
+      - { id: todo, title: To do }
+      - { id: doing, title: In progress }
+      - { id: done, title: Done }
+  - type: risk-matrix
+    title: Risks
+    items:
+      - { area: Replace with a risk, impact: high, likelihood: low, note: Replace with the mitigation. }
+      - { area: Replace with a risk, impact: medium, likelihood: medium, note: Replace with the mitigation. }
+  - type: checklist
+    title: Definition of done
+    items:
+      - { text: Replace with an acceptance criterion }
+      - { text: Replace with an acceptance criterion }
+      - { text: Tests and docs updated }

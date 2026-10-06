@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { run } from '../../src/cli.js';
+import { describe as describeBlock } from '../../src/registry/registry.js';
 
 function capture(): {
   io: { stdout: (text: string) => void; stderr: (text: string) => void };
@@ -59,7 +60,15 @@ describe('ak-render CLI', () => {
   });
 
   it('prints one command usage on <command> --help instead of reading a file', () => {
-    for (const command of ['compile', 'validate', 'describe', 'themes']) {
+    for (const command of [
+      'compile',
+      'validate',
+      'describe',
+      'search-catalog',
+      'recipes',
+      'recipe',
+      'themes',
+    ]) {
       const c = capture();
       expect(run([command, '--help'], c.io), command).toBe(0);
       expect(c.out()).toContain(`Usage:\n  ak-render`);
@@ -106,6 +115,9 @@ describe('ak-render CLI', () => {
     expect(c.out()).toContain('describe');
     expect(c.out()).toContain('--out');
     expect(c.out()).toContain('themes');
+    expect(c.out()).toContain('ak-render search-catalog <terms...>');
+    expect(c.out()).toContain('ak-render describe <type...> [--compact] [--json]');
+    expect(c.out()).toContain('ak-render catalog [--category <layout|content|');
   });
 
   it('validates a good spec with exit code 0', () => {
@@ -139,15 +151,97 @@ describe('ak-render CLI', () => {
     expect(c.err()).toContain('cannot read');
   });
 
-  it('lists the catalog', () => {
+  it('lists the catalog grouped by category', () => {
     const c = capture();
     expect(run(['catalog'], c.io)).toBe(0);
-    expect(c.out()).toContain('carousel');
+    expect(c.out()).toContain('\n## interaction\n');
+    expect(c.out()).toContain(
+      '\ncarousel — Carousel: prev/next, keyboard, and swipe across slides.\n',
+    );
+    expect(c.out().indexOf('## layout')).toBeLessThan(c.out().indexOf('## content'));
+    expect(c.out()).toMatch(/\nActions: copy, /u);
 
     const json = capture();
     expect(run(['catalog', '--json'], json.io)).toBe(0);
     const payload = JSON.parse(json.out()) as { blockCount: number };
     expect(payload.blockCount).toBeGreaterThan(30);
+  });
+
+  it('lists one category and rejects an unknown one', () => {
+    const c = capture();
+    expect(run(['catalog', '--category', 'media'], c.io)).toBe(0);
+    expect(c.out()).toContain('## media\n');
+    expect(c.out()).not.toContain('## layout');
+
+    const json = capture();
+    expect(run(['catalog', '--category', 'media', '--json'], json.io)).toBe(0);
+    const payload = JSON.parse(json.out()) as { category: string; blocks: { category: string }[] };
+    expect(payload.category).toBe('media');
+    expect(payload.blocks.every((entry) => entry.category === 'media')).toBe(true);
+
+    const unknown = capture();
+    expect(run(['catalog', '--category', 'widgets'], unknown.io)).toBe(1);
+    expect(unknown.err()).toContain('unknown category "widgets"; expected one of: layout');
+
+    const missing = capture();
+    expect(run(['catalog', '--category'], missing.io)).toBe(2);
+    expect(missing.err()).toContain('--category requires a value');
+  });
+
+  it('searches the catalog by intent', () => {
+    const c = capture();
+    expect(run(['search-catalog', 'architecture', 'diagram'], c.io)).toBe(0);
+    expect(c.out().split('\n')[0]).toMatch(/^diagram-panel \(engineering\) — /u);
+
+    const json = capture();
+    expect(run(['search-catalog', 'keyboard shortcut', '--json'], json.io)).toBe(0);
+    const hits = JSON.parse(json.out()) as { type: string; score: number }[];
+    expect(hits[0]?.type).toBe('kbd');
+
+    const none = capture();
+    expect(run(['search-catalog', 'zzzqqq'], none.io)).toBe(0);
+    expect(none.out()).toBe('no blocks match "zzzqqq"\n');
+
+    const empty = capture();
+    expect(run(['search-catalog'], empty.io)).toBe(2);
+    expect(empty.err()).toContain('requires search terms');
+  });
+
+  it('describes several blocks, in full or compact form', () => {
+    const many = capture();
+    expect(run(['describe', 'tabs', 'kpi', '--json'], many.io)).toBe(0);
+    const contracts = JSON.parse(many.out()) as { type: string; purpose: string }[];
+    expect(contracts.map((contract) => contract.type)).toEqual(['tabs', 'kpi']);
+    expect(contracts[0]?.purpose.length).toBeGreaterThan(10);
+
+    const text = capture();
+    expect(run(['describe', 'tabs', 'kpi'], text.io)).toBe(0);
+    expect(text.out()).toContain('tabs (primitive, v1)\n');
+    expect(text.out()).toContain('\n\nkpi (semantic, v1)\n');
+
+    const compact = capture();
+    expect(run(['describe', 'kpi', '--compact', '--json'], compact.io)).toBe(0);
+    const one = JSON.parse(compact.out()) as { type: string; props: string[] };
+    expect(one.type).toBe('kpi');
+    expect(one.props).toContain('items: list<object>, required');
+
+    const compactText = capture();
+    expect(run(['describe', 'kpi', 'card', '--compact'], compactText.io)).toBe(0);
+    expect(compactText.out()).toContain('kpi (semantic, data, v1) — KPI:');
+    expect(compactText.out()).toContain('\n    items[].trend: string, enum up|down|flat\n');
+    expect(compactText.out()).toContain('\n  slots:\n');
+
+    const unknown = capture();
+    expect(run(['describe', 'kpi', 'diagram-chart'], unknown.io)).toBe(1);
+    expect(unknown.err()).toContain('unknown block type "diagram-chart"; closest: ');
+  });
+
+  it('keeps the single-type describe JSON byte-identical to the full contract', () => {
+    for (const type of ['tabs', 'chart', 'kpi']) {
+      const c = capture();
+      expect(run(['describe', type, '--json'], c.io)).toBe(0);
+      expect(c.out()).toBe(`${JSON.stringify(describeBlock(type), null, 2)}\n`);
+    }
   });
 
   it('describes a block and fails cleanly for an unknown one', () => {

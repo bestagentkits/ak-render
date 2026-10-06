@@ -13,7 +13,9 @@
  *   - every fixture in fixtures/pages: spec characters, visible text in the
  *     compiled page, compiled characters, and the CLI's --json summary;
  *   - the discovery an agent reads on this path: the agent skill, `catalog`,
- *     and `describe --json` for each block type the fixture uses.
+ *     and `describe <type> --json` for each block type the fixture uses; and,
+ *     reported separately, the compact workflow that reads
+ *     `describe <types...> --compact` instead (batches of 12).
  *
  * Estimated (labelled as such in the artifact):
  *   - tokens, at 4 characters per token, matching the legacy baseline;
@@ -47,6 +49,8 @@ import { blockTypes } from './fixture-block-types.mjs';
 const REPO_ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const CLI = join(REPO_ROOT, 'dist/cli.js');
 const CHARS_PER_TOKEN = 4;
+/** The CLI's describe-many limit. */
+const DESCRIBE_BATCH = 12;
 const tokens = (chars) => Math.ceil(chars / CHARS_PER_TOKEN);
 
 function parseArgs(argv) {
@@ -145,6 +149,14 @@ function measureFixtures(compile) {
     if (!describeCache.has(type)) describeCache.set(type, cli(['describe', type, '--json']).length);
     return describeCache.get(type);
   };
+  // The compact workflow reads every contract in one describe call per batch.
+  const describeCompact = (types) => {
+    let chars = 0;
+    for (let start = 0; start < types.length; start += DESCRIBE_BATCH) {
+      chars += cli(['describe', ...types.slice(start, start + DESCRIBE_BATCH), '--compact']).length;
+    }
+    return chars;
+  };
   const scratch = mkdtempSync(join(tmpdir(), 'ak-render-token-cost-'));
   try {
     return readdirSync(directory)
@@ -168,6 +180,7 @@ function measureFixtures(compile) {
           summaryChars: summary,
           blockTypes: types.length,
           discoveryChars: discovery,
+          compactDiscoveryChars: skill + catalog + describeCompact(types),
         };
       });
   } finally {
@@ -208,6 +221,10 @@ function build(options, compile) {
   const returned = tokens(median(fixtures.map((row) => row.summaryChars)));
   const before = guidanceBefore + outputBefore;
   const after = guidanceAfter + outputAfter + returned;
+  const guidanceCompact = tokens(
+    sharedContract.chars + median(fixtures.map((row) => row.compactDiscoveryChars)),
+  );
+  const afterCompact = guidanceCompact + outputAfter + returned;
 
   return {
     artifact: 'agent-token-cost',
@@ -241,6 +258,11 @@ function build(options, compile) {
       reduction: 1 - after / before,
       excludes: 'task context and narrative reasoning (equal on both paths), repairs and retries',
     },
+    typicalTaskCompact: {
+      describe: 'describe <types...> --compact (batches of 12), as the agent guide recommends',
+      after: { guidance: guidanceCompact, output: outputAfter, returned, total: afterCompact },
+      reduction: 1 - afterCompact / before,
+    },
     contextReduction: {
       source: 'docs/artifacts/benchmark-render.md',
       note: 'presentation guidance only: the AgentKit legacy HTML references against the shared contract plus the ak-render plugin skill route',
@@ -258,7 +280,7 @@ const pct = (value) => `${Math.round(value * 100)}%`;
 const k = (value) => `${(value / 1000).toFixed(1)}k`;
 
 function markdown(result) {
-  const { typicalTask: task } = result;
+  const { typicalTask: task, typicalTaskCompact: compact } = result;
   const lines = [
     '# Agent token cost: hand-written HTML against a Page Spec',
     '',
@@ -281,6 +303,10 @@ function markdown(result) {
     '',
     `Estimated reduction: **${pct(task.reduction)}**. Excludes ${task.excludes}.`,
     '',
+    'With the compact workflow (`describe <types...> --compact`, which the agent',
+    `guide recommends) the guidance read is ${k(compact.after.guidance)}, the total ${k(compact.after.total)}, and the`,
+    `estimated reduction **${pct(compact.reduction)}**. Output and returned context are the same on both rows.`,
+    '',
     '## Legacy corpus (measured)',
     '',
     `${result.legacy.artifacts.length} agent-written HTML artifacts. Median size`,
@@ -300,11 +326,11 @@ function markdown(result) {
     '',
     '## Fixtures (measured)',
     '',
-    '| Fixture | Spec | Visible text | Spec / text | Page | Summary | Discovery |',
-    '| --- | ---: | ---: | ---: | ---: | ---: | ---: |',
+    '| Fixture | Spec | Visible text | Spec / text | Page | Summary | Discovery | Compact discovery |',
+    '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |',
     ...result.fixtures.rows.map(
       (row) =>
-        `| \`${row.fixture}\` | ${row.specChars} | ${row.textChars} | ${row.specToText.toFixed(2)} | ${row.pageChars} | ${row.summaryChars} | ${row.discoveryChars} |`,
+        `| \`${row.fixture}\` | ${row.specChars} | ${row.textChars} | ${row.specToText.toFixed(2)} | ${row.pageChars} | ${row.summaryChars} | ${row.discoveryChars} | ${row.compactDiscoveryChars} |`,
     ),
     '',
     `Median spec-to-text ratio ${result.fixtures.medianSpecToText.toFixed(2)}; a compiled page is a median`,
@@ -327,5 +353,5 @@ writeFileSync(
 );
 writeFileSync(join(options.outDir, 'agent-token-cost.md'), markdown(result));
 console.log(
-  `agent-token-cost: typical ${k(result.typicalTask.before.total)} -> ${k(result.typicalTask.after.total)} tokens (${pct(result.typicalTask.reduction)}), median output saving ${pct(result.projected.medianOutputReduction)}`,
+  `agent-token-cost: typical ${k(result.typicalTask.before.total)} -> ${k(result.typicalTask.after.total)} tokens (${pct(result.typicalTask.reduction)}; compact describe ${k(result.typicalTaskCompact.after.total)}, ${pct(result.typicalTaskCompact.reduction)}), median output saving ${pct(result.projected.medianOutputReduction)}`,
 );

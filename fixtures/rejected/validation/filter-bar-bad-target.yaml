@@ -1,0 +1,15 @@
+# A filter-bar may only target a filterable block (data-table, kanban,
+# log-viewer). This one names a plain text block, so validation fails at
+# $.blocks[1].target and lists the filterable ids in details.allowed.
+version: 1
+meta:
+  title: Filter bar with a bad target
+blocks:
+  - type: text
+    id: summary
+    text: Run summary.
+  - type: filter-bar
+    target: summary
+    blocks:
+      - type: search
+        label: Search runs

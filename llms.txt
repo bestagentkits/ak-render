@@ -2,21 +2,25 @@
 
 > Declarative page compiler for coding agents: a short YAML or JSON Page Spec in, one deterministic, offline, self-contained HTML file out. The agent describes meaning; the compiler owns layout, colour, typography, motion, accessibility and security. npm package: `@bestagentkits/render`, CLI: `ak-render`.
 
-Agent loop: `ak-render catalog` once, `ak-render describe <type> --json` for each block you use, `ak-render validate <spec|-> --json` and fix every diagnostic by its JSON path, then `ak-render <spec|-> --out page.html`. Pass `-` to read the spec from stdin. `ak-render mcp` exposes the same loop as MCP tools over stdio (`catalog`, `describe`, `validate`, `render`, `themes`); `render` writes the file and returns only a summary.
+Agent loop: find blocks with `ak-render search-catalog <intent words>` or `ak-render catalog [--category <c>]` (83 block types in 8 categories), optionally start from `ak-render recipe <name>` (list them with `ak-render recipes`), read contracts with `ak-render describe <type...> --compact` (full contract: `describe <type> --json`), `ak-render validate <spec|-> --json` and fix every diagnostic by its JSON path, then `ak-render <spec|-> --out page.html`. Pass `-` to read the spec from stdin. `ak-render mcp` exposes the same loop as MCP tools over stdio (`catalog`, `search-catalog`, `describe`, `recipes`, `recipe`, `validate`, `render`, `themes`); `render` writes the file and returns only a summary.
 
-Do not write HTML, CSS or inline scripts: the spec has no field for them. Output makes no network request unless the spec opts in under `policy.network`.
+Remote MCP over Streamable HTTP: `https://render.agentkit.best/mcp` serves `catalog`, `search-catalog`, `describe`, `recipes`, `recipe`, `validate`, `render` and `themes` for agents without Node. `render` there takes no `out`; it stores the page and returns the summary plus `artifactUrl` (one hour, or a 30-day share link with `share: true`), never the HTML. `catalog`, `search-catalog`, `describe`, `recipes`, `recipe` and `themes` need no token; `validate` and `render` need `Authorization: Bearer <AgentKit token>`. Local compilation stays canonical and needs no account.
+
+Do not write HTML, CSS or inline scripts: the spec has no field for them. In prose text props, a pair of backticks renders as inline code; nothing else is parsed as markup. Output makes no network request unless the spec opts in under `policy.network`. Shared numbers go in top-level `datasets` and blocks bind them with `dataRef`; page state, `visibleWhen`, native controls and `filter-bar` are declarative data too.
 
 ## Docs
 
 - [Agent guide](https://github.com/bestagentkits/ak-render/blob/main/docs/agent-guide.md): the loop, a minimal spec, MCP setup, and rules that save retries
-- [README](https://github.com/bestagentkits/ak-render/blob/main/README.md): install, library API and CLI
-- [Themes](https://github.com/bestagentkits/ak-render/blob/main/docs/themes.md): built-in presets, custom presets and embedded fonts
+- [README](https://github.com/bestagentkits/ak-render/blob/main/README.md): install, library API, CLI and the three agent modes
+- [Cloud renderer](https://github.com/bestagentkits/ak-render/blob/main/apps/cloud/README.md): remote MCP endpoint, REST routes, scopes and limits
+- [Data and state](https://github.com/bestagentkits/ak-render/blob/main/docs/data-and-state.md): datasets, transforms, value formats, state, visibleWhen, controls and filter-bar
+- [Themes](https://github.com/bestagentkits/ak-render/blob/main/docs/themes.md): the ten built-in presets, component recipes, custom presets and embedded fonts
 - [Media and network policy](https://github.com/bestagentkits/ak-render/blob/main/docs/media-policy.md): what loads offline and how to opt in
 
 ## Reference
 
 - [Page Spec JSON Schema](https://github.com/bestagentkits/ak-render/blob/main/schema/page-spec.v1.json): machine-readable schema for editors and validators
-- [Example specs](https://github.com/bestagentkits/ak-render/tree/main/fixtures/pages): plan, explain, recap, diff, dashboard, media, interactive and showcase pages
+- [Example specs](https://github.com/bestagentkits/ak-render/tree/main/fixtures/pages): plan, explain, recap, diff, dashboard, media, interactive and showcase pages, one page per widget family, layout, data and theme feature, and six composition pages
 
 ## Optional
 

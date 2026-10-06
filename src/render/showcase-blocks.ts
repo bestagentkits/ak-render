@@ -28,7 +28,13 @@ import {
   stringProp,
   titleHeader,
 } from './block-helpers.js';
-import { escapeAttribute, escapeText, escapeUrl, renderAttributes } from './escape.js';
+import {
+  escapeAttribute,
+  escapeInlineText,
+  escapeText,
+  escapeUrl,
+  renderAttributes,
+} from './escape.js';
 
 /** Minimal render context the showcase renderers need. */
 export interface ShowcaseContext {
@@ -38,7 +44,7 @@ export interface ShowcaseContext {
 type ShowcaseRenderer = (node: IrNode, context: ShowcaseContext) => string;
 
 /** An image allowed by the policy, or an honest note when it is not. */
-function framedImage(
+export function framedImage(
   source: string,
   alt: string,
   policy: NetworkPolicy,
@@ -69,39 +75,13 @@ export function browserShot(
   return `${bar}<div class="ak-frame-view">${framedImage(source, alt, policy, loading)}</div>`;
 }
 
-function paragraph(className: string, text: string): string {
+export function paragraph(className: string, text: string): string {
   return text === '' ? '' : `<p class="${className}">${escapeText(text)}</p>`;
 }
 
-// --- bento ------------------------------------------------------------------
-
-const TILE_SIZES = new Set(['small', 'wide', 'tall', 'large']);
-
-function bento(node: IrNode, context: ShowcaseContext): string {
-  const tiles = objectListProp(node, 'items').map((item) => {
-    const size = TILE_SIZES.has(str(item.size)) ? str(item.size) : 'small';
-    const source = str(item.src);
-    const media =
-      source === ''
-        ? ''
-        : `<div class="ak-tile-media">${framedImage(source, str(item.alt), context.ir.policy.network)}</div>`;
-    const body = [
-      paragraph('ak-eyebrow', str(item.eyebrow)),
-      paragraph('ak-tile-value', str(item.value)),
-      paragraph('ak-tile-title', str(item.title)),
-      paragraph('ak-tile-text', str(item.text)),
-    ].join('');
-    return `<li${renderAttributes({
-      class: 'ak-tile',
-      'data-size': size,
-      'data-media': source === '' ? undefined : 'true',
-    })}>${media}<div class="ak-tile-body">${body}</div></li>`;
-  });
-  return element(
-    'section',
-    nodeAttributes(node, { class: 'ak-block ak-bento-block' }),
-    `${titleHeader(node)}<ul class="ak-bento">${tiles.join('')}</ul>`,
-  );
+/** A paragraph of prose: backtick spans become inline code. */
+export function prose(className: string, text: string): string {
+  return text === '' ? '' : `<p class="${className}">${escapeInlineText(text)}</p>`;
 }
 
 // --- marquee ----------------------------------------------------------------
@@ -412,7 +392,7 @@ function showcase(node: IrNode, context: ShowcaseContext): string {
       '<div class="ak-showcase-copy">',
       paragraph('ak-eyebrow', stringProp(node, 'eyebrow')),
       `<h2>${escapeText(stringProp(node, 'title'))}</h2>`,
-      paragraph('ak-showcase-text', stringProp(node, 'text')),
+      prose('ak-showcase-text', stringProp(node, 'text')),
       bullets.length === 0
         ? ''
         : `<ul class="ak-showcase-points">${bullets.map((item) => `<li>${escapeText(item)}</li>`).join('')}</ul>`,
@@ -480,14 +460,13 @@ function cta(node: IrNode): string {
     [
       paragraph('ak-eyebrow', stringProp(node, 'eyebrow')),
       `<h2 class="ak-cta-title">${escapeText(stringProp(node, 'title'))}</h2>`,
-      paragraph('ak-cta-text', stringProp(node, 'text')),
+      prose('ak-cta-text', stringProp(node, 'text')),
       actions === '' ? '' : `<div class="ak-cta-actions">${actions}</div>`,
     ].join(''),
   );
 }
 
 export const SHOWCASE_RENDERERS: Record<string, ShowcaseRenderer> = {
-  bento,
   marquee,
   terminal,
   'file-tree': fileTree,

@@ -1,0 +1,166 @@
+{
+  "artifact": "spec-compression",
+  "producer": "benchmarks/spec-compression.mjs",
+  "compiler": "0.3.0",
+  "method": {
+    "bytes": "UTF-8 bytes",
+    "expandedSpec": "every dataRef replaced by its rows inline (data:), datasets removed, YAML",
+    "catalog": "ak-render catalog (text)",
+    "compactDescribe": "ak-render describe <types...> --compact, in batches of 12",
+    "readBytes": "catalog plus compact describe: what an agent reads to write the spec"
+  },
+  "rows": [
+    {
+      "fixture": "benchmark-report.yaml",
+      "datasets": 1,
+      "blockTypes": [
+        "benchmark-comparison",
+        "chart",
+        "data-table",
+        "hero",
+        "references",
+        "section",
+        "tabs",
+        "text"
+      ],
+      "specBytes": 5517,
+      "expandedSpecBytes": 7703,
+      "datasetSavingBytes": 2186,
+      "htmlBytes": 183479,
+      "catalogBytes": 7228,
+      "compactDescribeBytes": 4717,
+      "readBytes": 11945,
+      "htmlPerSpecByte": 33.3
+    },
+    {
+      "fixture": "complex-dashboard.yaml",
+      "datasets": 2,
+      "blockTypes": [
+        "callout",
+        "chart",
+        "data-table",
+        "grid",
+        "grid-item",
+        "hero",
+        "key-value",
+        "kpi",
+        "main-aside",
+        "section",
+        "stats"
+      ],
+      "specBytes": 5762,
+      "expandedSpecBytes": 7847,
+      "datasetSavingBytes": 2085,
+      "htmlBytes": 213722,
+      "catalogBytes": 7228,
+      "compactDescribeBytes": 4617,
+      "readBytes": 11845,
+      "htmlPerSpecByte": 37.1
+    },
+    {
+      "fixture": "incident-report.yaml",
+      "datasets": 0,
+      "blockTypes": [
+        "api-endpoint",
+        "callout",
+        "hero",
+        "kanban",
+        "log-viewer",
+        "roadmap",
+        "section",
+        "stats",
+        "test-results",
+        "timeline"
+      ],
+      "specBytes": 5845,
+      "expandedSpecBytes": 6519,
+      "datasetSavingBytes": 674,
+      "htmlBytes": 167873,
+      "catalogBytes": 7228,
+      "compactDescribeBytes": 4342,
+      "readBytes": 11570,
+      "htmlPerSpecByte": 28.7
+    },
+    {
+      "fixture": "interactive-data-explorer.yaml",
+      "datasets": 1,
+      "blockTypes": [
+        "chart",
+        "data-table",
+        "filter-bar",
+        "hero",
+        "number-input",
+        "radio-group",
+        "section",
+        "select",
+        "text-input"
+      ],
+      "specBytes": 4252,
+      "expandedSpecBytes": 5413,
+      "datasetSavingBytes": 1161,
+      "htmlBytes": 176587,
+      "catalogBytes": 7228,
+      "compactDescribeBytes": 4469,
+      "readBytes": 11697,
+      "htmlPerSpecByte": 41.5
+    },
+    {
+      "fixture": "product-case-study.yaml",
+      "datasets": 0,
+      "blockTypes": [
+        "feature-matrix",
+        "gallery",
+        "hero",
+        "logo-cloud",
+        "people",
+        "pricing",
+        "section",
+        "stats",
+        "testimonial"
+      ],
+      "specBytes": 5696,
+      "expandedSpecBytes": 6172,
+      "datasetSavingBytes": 476,
+      "htmlBytes": 135659,
+      "catalogBytes": 7228,
+      "compactDescribeBytes": 2970,
+      "readBytes": 10198,
+      "htmlPerSpecByte": 23.8
+    },
+    {
+      "fixture": "research-report.yaml",
+      "datasets": 0,
+      "blockTypes": [
+        "accordion",
+        "annotated-image",
+        "callout",
+        "hero",
+        "key-value",
+        "list",
+        "metric-breakdown",
+        "quote",
+        "references",
+        "section",
+        "sidebar-layout",
+        "stats",
+        "steps",
+        "text"
+      ],
+      "specBytes": 5655,
+      "expandedSpecBytes": 5908,
+      "datasetSavingBytes": 253,
+      "htmlBytes": 139346,
+      "catalogBytes": 7228,
+      "compactDescribeBytes": 4136,
+      "readBytes": 11364,
+      "htmlPerSpecByte": 24.6
+    }
+  ],
+  "totals": {
+    "specBytes": 32727,
+    "expandedSpecBytes": 39562,
+    "datasetSavingBytes": 6835,
+    "htmlBytes": 1016666,
+    "compactDescribeBytes": 25251
+  }
+}

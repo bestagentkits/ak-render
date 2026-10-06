@@ -1,0 +1,129 @@
+version: 1
+
+meta:
+  title: 'Incident Report: Checkout Latency, 2 October'
+  description: Executive incident review of a 47-minute checkout slowdown, with the timeline, logs, test evidence, the affected endpoint and follow-ups
+  locale: en
+
+theme:
+  preset: executive-report
+
+policy:
+  network: deny
+
+blocks:
+  - type: hero
+    eyebrow: Incident INC-2041 · Severity 2 · Resolved
+    title: Checkout slowed for 47 minutes after a pool change
+    description: A connection pool limit shipped in release 4.2 starved the payments service under peak load. No orders were lost; 3.1% of checkouts timed out and were retried.
+
+  - type: section
+    id: summary
+    title: Summary
+    blocks:
+      - type: stats
+        items:
+          - label: Customer impact
+            value: 47 min
+          - label: Checkouts retried
+            value: 3.1%
+          - label: Orders lost
+            value: '0'
+          - label: Time to mitigate
+            value: 22 min
+      - type: callout
+        tone: warning
+        title: Root cause
+        text: Release 4.2 lowered the payments database pool from 64 to 16 connections. At the 18:00 peak, requests queued for a connection and checkout p95 rose from 380 ms to 6.2 s.
+
+  - type: section
+    id: timeline
+    title: Timeline
+    blocks:
+      - type: timeline
+        items:
+          - when: '17:42'
+            title: Release 4.2 reaches 100%
+            text: The pool change ships with the rollout; canary traffic had been too light to show it.
+          - when: '18:03'
+            title: Latency alert fires
+            text: Checkout p95 passes the 1 s threshold and pages the on-call engineer.
+          - when: '18:11'
+            title: Pool exhaustion identified
+            text: The payments dashboard shows every connection in use and a growing wait queue.
+          - when: '18:25'
+            title: Pool limit restored
+            text: A config-only rollback returns the pool to 64 connections.
+          - when: '18:50'
+            title: Incident resolved
+            text: p95 is back under 400 ms for 20 minutes and the incident is closed.
+
+  - type: section
+    id: evidence
+    title: Evidence
+    blocks:
+      - type: log-viewer
+        title: payments-api, 18:02 to 18:26
+        lines:
+          - { time: '2026-10-02T18:02:41Z', level: info, source: pool, message: 'pool stats: in_use=16 idle=0 waiting=3' }
+          - { time: '2026-10-02T18:03:05Z', level: warn, source: pool, message: 'connection wait exceeded 500ms (waiting=41)' }
+          - { time: '2026-10-02T18:03:12Z', level: error, source: checkout, message: 'POST /v1/payments timed out after 5000ms' }
+          - { time: '2026-10-02T18:04:30Z', level: error, source: checkout, message: 'POST /v1/payments timed out after 5000ms' }
+          - { time: '2026-10-02T18:11:52Z', level: info, source: oncall, message: 'pool exhaustion confirmed on payments-db primary' }
+          - { time: '2026-10-02T18:25:09Z', level: info, source: deploy, message: 'config rollback applied: pool.max=64' }
+          - { time: '2026-10-02T18:26:40Z', level: info, source: pool, message: 'pool stats: in_use=22 idle=42 waiting=0' }
+      - type: test-results
+        title: Load test after the fix
+        suites:
+          - name: checkout under peak load
+            cases:
+              - { name: 'p95 under 500 ms at 1,200 rps', status: pass, duration: 182000 }
+              - { name: no pool wait over 100 ms, status: pass, duration: 182000 }
+              - { name: retry storm stays under 2%, status: flaky, duration: 95000, message: Passed on the second run; the first exceeded 2% for 40 seconds. }
+          - name: pool configuration guard
+            cases:
+              - { name: rejects pool.max below 32 in production, status: pass, duration: 120, file: config/pool.test.ts }
+              - { name: alerts when waiting exceeds 10, status: skip, message: Alert rule lands with the follow-up below. }
+      - type: api-endpoint
+        method: POST
+        path: /v1/payments
+        summary: The endpoint whose calls timed out. Clients retry a timed-out call with the same idempotency key, so no payment was taken twice.
+        params:
+          - name: Idempotency-Key
+            in: header
+            type: string
+            required: true
+            description: Makes retries safe; the same key never charges twice.
+        request:
+          language: json
+          code: |-
+            { "order_id": "ord_8812", "amount": 4200, "currency": "USD" }
+        responses:
+          - status: 201
+            description: Payment created
+          - status: 504
+            description: Timed out waiting for a database connection
+
+  - type: section
+    id: follow-ups
+    title: Follow-ups
+    blocks:
+      - type: kanban
+        columns:
+          - { id: todo, title: To do }
+          - { id: doing, title: In progress }
+          - { id: done, title: Done }
+        cards:
+          - { title: Restore pool.max to 64, column: done, owner: Payments, status: done }
+          - { title: Guard pool.max in production config, column: done, owner: Platform, status: done }
+          - { title: Alert on pool wait queue, column: doing, owner: SRE, status: active }
+          - { title: Peak-load stage in canary, column: todo, owner: Release, status: planned }
+          - { title: Runbook for pool exhaustion, column: todo, owner: SRE, status: planned }
+      - type: roadmap
+        title: Remediation plan
+        periods: [Week 41, Week 42, Week 43, Week 44]
+        items:
+          - { title: Pool wait alert, start: Week 41, status: active }
+          - { title: Canary peak-load stage, start: Week 42, end: Week 43, status: planned }
+          - { title: Pool exhaustion runbook, start: Week 42, status: planned }
+          - { title: Quarterly load test review, start: Week 44, status: planned }

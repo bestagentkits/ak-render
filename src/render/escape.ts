@@ -36,6 +36,35 @@ export function escapeText(value: string): string {
   return output;
 }
 
+/**
+ * A backtick pair on one line, with at least one character between. The class
+ * excludes the backtick itself, so each match scans only to the next backtick
+ * and matching stays linear in the input length.
+ */
+const INLINE_CODE = /`([^`\r\n]+)`/gu;
+
+/**
+ * Escape prose text and render each backtick pair as inline `<code>`.
+ *
+ * This is the only markup prose text can produce: no other Markdown is
+ * recognized. Every segment, inside or outside a code span, goes through
+ * `escapeText` before it is wrapped, so a span such as `` `<script>` `` stays
+ * inert text. Pairing runs left to right; an unpaired backtick, an empty pair,
+ * or a pair holding only whitespace stays literal.
+ */
+export function escapeInlineText(value: string): string {
+  let output = '';
+  let last = 0;
+  for (const match of value.matchAll(INLINE_CODE)) {
+    const content = match[1] ?? '';
+    if (content.trim() === '') continue;
+    output += escapeText(value.slice(last, match.index));
+    output += `<code>${escapeText(content)}</code>`;
+    last = match.index + match[0].length;
+  }
+  return output + escapeText(value.slice(last));
+}
+
 /** Escape a value for a double-quoted attribute. */
 export function escapeAttribute(value: string): string {
   let output = value;

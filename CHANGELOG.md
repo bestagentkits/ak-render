@@ -7,18 +7,106 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 Release mechanics and the compatibility contract live in
 [docs/release-policy.md](./docs/release-policy.md).
 
-## [Unreleased]
+## [0.3.0] - 2026-10-06
 
-### Changed
+The Page Spec stays `version: 1`, and every spec that was valid in 0.2.0 stays
+valid. These changes alter existing behaviour or output on purpose:
 
+- `--theme` (and the `theme` render option) now replaces the spec's
+  `theme.recipes` as well as its tokens. Before, spec recipes applied
+  regardless.
+- Every `gallery` thumbnail opens a full-size lightbox. There is no author
+  flag, so every page with a gallery emits new markup, CSS and runtime.
+- Tabs no longer fire `select` for the initial tab when the page loads, so page
+  state keeps its declared initial values.
+- A remote video `poster` that the network policy blocks is a `validate` error
+  (`POLICY_VIOLATION` at the `poster` path), not a compile failure at `$`.
+- Pages with tabs or a carousel change markup and CSS so every panel and slide
+  reads without scripts and in print.
+- `catalog` text is grouped by category, and `catalog --json` prints one block
+  per line with new `category` and `tags` fields.
 - The Claude Code and Codex plugin manifests link to https://render.agentkit.best, and the Codex plugin shows an icon, a logo and the brand colour in the plugin directory.
-- The benchmarks are rerun against 0.2.0 and AgentKit `9e322f928`. The legacy baseline no longer counts the slide guide for document tasks (AgentKit loads it for `--slides` only), so its per-task mean is ~25.0k tokens, not ~33.7k. `render-benchmark.mjs` measures the `ak-render` skill route per task: the AgentKit shared HTML contract, the skill, `catalog`, and `describe --json` for each block type the task's fixture compiles to. It fails when the AgentKit checkout is missing. Presentation context now drops 70–73% (previously reported as 87–88%), and the typical-task estimate is 64% (previously 73%). `agent-token-cost.mjs --reuse-legacy` reruns that estimate from recorded corpus measurements. The README and landing page use the new figures.
+- The benchmarks are measured against AgentKit `9e322f928`. The legacy baseline no longer counts the slide guide for document tasks (AgentKit loads it for `--slides` only), so its per-task mean is ~25.0k tokens, not ~33.7k. `render-benchmark.mjs` measures the `ak-render` skill route per task: the AgentKit shared HTML contract, the skill, `catalog`, and `describe --json` for each block type the task's fixture compiles to. It fails when the AgentKit checkout is missing. Presentation context now drops 64–68% (previously reported as 87–88%). The typical-task estimate is 54% with full contracts and 66% with `describe --compact`, which counts the shared contract too (previously 65% and 75%). `agent-token-cost.mjs --reuse-legacy` reruns that estimate from recorded corpus measurements. The README and landing page use the new figures.
 - The landing page shows what the compiler saves an agent (measured and estimated token figures, kept apart), each component crop beside the fixture YAML that produced it, and a gallery of every demo page. The README gains a token cost section.
 
 ### Added
 
-- `benchmarks/agent-token-cost.mjs` estimates the tokens of a page task end to end: guidance read, output written and what returns into context, against a corpus of hand-written HTML passed with `--legacy-html`. Results are in `docs/artifacts/agent-token-cost.md`, with the corpus recorded by anonymous label.
+- Rich composition: a tab panel, an accordion section, a carousel slide and a bento tile hold child blocks in `items[i].blocks` (up to 12, or 6 in a bento tile). Any block may nest except `page`, `section` and `hero`, and tabs may nest in tabs. An item's `text`, and a bento tile's `title`, are optional when the item has blocks; an item with neither is an error at its path.
+- Nested slots with `accepts` and `parents` rules. Diagnostics carry the nested JSON path, and nested blocks count toward the block limit.
+- `grid-item` places blocks on a 12-track grid with `span`, `tabletSpan`, `mobileSpan`, `rowSpan`, `start` and `align`. `grid.columns` takes 1–12 or `auto` (with `minItemWidth`), grids take `gap` and `align`, and `stack` takes `align`.
+- Semantic page layouts: `sidebar-layout` (a `sidebar` beside the main `blocks`, on either `side`), `main-aside` (an `aside` that stays in view on wide screens) and `rail-layout` (a compact `rail`, a labelled `<nav>` when it holds only links or toolbars).
+- Datasets: top-level `datasets`, and `dataRef`, inline `data` and a bounded `transform` (filter, groupBy, sort, select, limit) on blocks that take data. Values format through one locale-free formatter (`number`, `integer`, `compact`, `percent`, `currency`, `duration`, `bytes`, `date`); `percent` takes `87` for "87%". See [docs/data-and-state.md](./docs/data-and-state.md).
+- `visibleWhen` shows a block only while a state value matches (`equals`, `notEquals`, `in`, `notIn`, `truthy`, `falsy`). The compiler emits the initial view, so the page reads correctly without scripts and in print.
+- Native input controls `select`, `radio-group`, `checkbox`, `switch`, `text-input`, `number-input` and `date-input`. Each has a visible label, writes one value to `state.<key>` through `bind`, and fires `change` with its value.
+- `filter-bar` filters a `data-table`, `kanban` or `log-viewer` with 1–8 controls, each naming a row `field` and a `match`. It adds an announced result count and a Reset button; `select` and `radio-group` can list the target's values with `optionsFrom`. A `data-table` that a filter-bar targets renders no search box, row count or "no match" note of its own, so two filters never fight over the same rows; put free-text search in the bar as a `search` child.
+- `data-table`: a typed, sortable table bound to a dataset. Column types `text`, `number`, `percent` (alias `percentage`), `currency`, `date`, `badge`, `link`, `progress` and `sparkline`; search past 10 rows (unless a filter-bar targets the table), a sticky header past 12, labelled cards on phones, and the full table in authored order without scripts or in print.
+- Chart kinds `scatter`, `histogram`, `stacked-bar`, `stacked-bar-100`, `heatmap`, `waterfall`, `funnel`, `gauge` and `treemap`. A chart can bind rows and read them through the `x`, `y`, `series: { field }` and `value` encodings, and takes `markers`, `annotations`, `sort` and a gauge `target`. A bound chart's fallback table comes from the bound rows. Charts that use `labels` and `series` render the same markup as before.
+- Engineering widgets: `kanban`, `roadmap`, `test-results`, `log-viewer`, `api-endpoint` and `schema-viewer`.
+- Evidence widgets: `benchmark-comparison` (computed delta, change and verdict; `currency` is set once for the whole block, not per metric), `metric-breakdown`, `annotated-image` and `references` (stable `#ref-<id>` anchors).
+- Product widgets: `pricing`, `feature-matrix`, `testimonial` (two or more quotes form a grid), `logo-cloud`, `people` and `calendar` (weeks start on Monday; `weekStart: sunday` changes that).
+- Theme recipes restyle components through closed enums for cards, sections, tables, charts, hero, metrics, media and callouts. A preset, a preset file or the spec's `theme.recipes` selects them. See [docs/themes.md](./docs/themes.md#recipes).
+- Four built-in presets: `data-console`, `executive-report`, `product-studio` and `research-notebook`. They reuse the bundled faces. Every built-in preset is tested for WCAG 2.2 contrast in both schemes.
+- An inline spec theme accepts `theme.dark`, dark-scheme token overrides.
+- Catalog discovery: every block has a category and tags. `ak-render catalog --category <c>` lists one category, `ak-render search-catalog <terms...>` ranks block types by intent words, and `ak-render describe <type...> --compact` returns up to 12 contracts with one line per prop; a shape repeated within a contract reads `like <field>` and a repeated long enum `enum as <field>`. Row-filtering words rank `filter-bar` first. MCP gains `search-catalog`, `catalog{category}` and `describe{types, compact}`, on the stdio and the remote server; the remote `search-catalog` needs no token. The library exports `searchCatalog` and `describeMany`.
+- Page recipes: `ak-render recipes [--json]` lists ten starter specs (`architecture-review`, `benchmark-report`, `case-study`, `dashboard`, `decision-memo`, `implementation-plan`, `incident-report`, `product-showcase`, `release-recap`, `research-report`), and `ak-render recipe <name>` prints one as YAML, or the full record with `--json`. An unknown name exits 1 and lists the allowed names; a missing name exits 2. Each recipe validates with no errors or warnings, compiles deterministically, stays within 3,000 bytes of YAML and loads nothing remote. MCP serves them as `recipes` and `recipe{name}` on the stdio and the remote server, and the library as `recipes()`, `recipe(name)` and the `PageRecipe` and `PageRecipeSummary` types; an unknown name throws `SPEC_VALIDATION_ERROR` at path `name` with `details.allowed`.
+- `pnpm recipes:generate` embeds the recipe YAML in `src/recipes/recipes.generated.ts`, and `pnpm recipes:check`, part of `pnpm verify`, fails when that module is stale.
+- The library exports `BLOCK_CATEGORIES`, `THEME_RECIPE_SPECS`, `VALUE_FORMATS` and the `MaterializedData`, `DataRow` and `DataScalar` types.
+- Remote MCP over Streamable HTTP at `https://render.agentkit.best/mcp`, served by the cloud Worker. It lists the same tools as `ak-render mcp`: `catalog`, `search-catalog`, `describe`, `recipes`, `recipe`, `validate`, `render` and `themes`. A remote `render` takes no `out`: it compiles through the same path as `POST /v1/render` (byte-identical HTML), stores the page and returns the summary plus `artifactUrl` and `expiresAt`, never the HTML. The artifact lives one hour, or becomes an expiring share with `share: true` (needs the share scope). `catalog`, `search-catalog`, `describe`, `recipes`, `recipe` and `themes` answer without a token; `validate` and `render` need an AgentKit bearer and count against the same per-subject rate limits as REST.
+- The MCP server is split into transport-independent modules under `src/mcp/`: protocol vocabulary, one set of tool contracts, JSON-RPC routing, the stdio transport, and a Fetch-API Streamable HTTP transport the Worker imports. `ak-render mcp` answers byte for byte as before.
+- `GET /v1/artifact/:id` serves the short-lived artifact a remote MCP render stored.
+- `scripts/cloud-smoke.mjs` smoke-tests a deployed renderer (MCP and REST, share lifecycle, exports) with `BASE_URL` and an optional `TOKEN`; the manual cloud deploy workflow runs it after deploying.
+- `benchmarks/agent-token-cost.mjs` estimates the tokens of a page task end to end: guidance read, output written and what returns into context, against a corpus of hand-written HTML passed with `--legacy-html`. Results are in `docs/artifacts/agent-token-cost.md`, with the corpus recorded by anonymous label. `--legacy-from <artifact.json>` refreshes the artifact from the recorded legacy rows without the private corpus, and a second typical-task row measures the compact workflow (`describe <types...> --compact`). Block types are read from the compiler IR.
+- `pnpm bench:spec` (`benchmarks/spec-compression.mjs`) records, per composition fixture, the spec bytes, the bytes with every `dataRef` inlined, the HTML bytes, and the catalog and compact-describe bytes an agent reads, in `docs/artifacts/spec-compression.{json,md}`. The output is deterministic.
+- Six composition fixtures: `complex-dashboard`, `benchmark-report`, `research-report`, `product-case-study`, `interactive-data-explorer` and `incident-report`. Each validates with no warnings and compiles to identical bytes three times. `fixtures/rejected/validation/` holds well-formed but wrong specs that must fail validation at a located path, optionally pinned by a first line `# expect: CODE $.path`.
+- `tests/browser/composition-matrix.spec.ts` checks every fixture page for horizontal overflow at 320, 375, 768 and 1440 in light and dark, running animation under reduced motion, script-off readability, print, keyboard focus, network requests and critical axe violations. `@axe-core/playwright` is a new devDependency.
 - `scripts/capture-demo-media.mjs` captures five more page shots and four component crops (KPI, terminal, checklist, file tree), and `--only <names>` recaptures a subset without the walkthrough video.
+- A pair of backticks in prose text renders as inline code, so `` `ak-render catalog` `` in a `text`, a step, a list item, a description or a caption reads as a command. The text is escaped before the span is wrapped, nothing else is parsed as markup, and an unpaired backtick stays literal. Titles, `code` blocks, `terminal` lines and the chart summary are unchanged, and `describe` and the JSON Schema say which props do this.
+
+### Changed
+
+- `catalog` text is grouped by category under `## <category>` headers, one `type — summary` line per block, without the kind column. `catalog --json` and the MCP `catalog` add `category` and `tags` to each entry and print one block and one action per line; the parsed value is otherwise unchanged. A single-type `describe <type>` is byte-identical.
+- The MCP `describe` input no longer requires `type`: pass `type` or `types`, plus optional `compact`. Every local tool description is at most 200 characters.
+- URL props declare the network capability of the asset they load, so the CSP origins and the validation gate come from one schema walk at any depth.
+- When a `oneOf` value fails, diagnostics come from the option the author meant, chosen by JSON shape and then by `type`.
+- A tab's `select` event passes the tab id as its value, so `set-value` without its own `value` stores the selected tab.
+- Chart `labels` is optional in the schema; a chart without bound data still requires it, with the same message and path.
+- The cloud Worker is routed at `render.agentkit.best/mcp` and `render.agentkit.best/v1/*`, beside the site's Custom Domain on the same hostname.
+- The Claude Code and Codex plugin manifests link to https://render.agentkit.best, and the Codex plugin shows an icon, a logo and the brand colour in the plugin directory.
+- The landing page shows what the compiler saves an agent (measured and estimated token figures, kept apart), each component crop beside the fixture YAML that produced it, and a gallery of every demo page. The README gains a token cost section.
+
+### Fixed
+
+- Tab panels and carousel slides are readable without scripts and in print: every panel ships visible with its title until the runtime marks the container ready.
+- Accordion sections print open, nested blocks included.
+- Accordion and carousel styles apply only to their own sections and slides, so a nested block keeps its own look.
+- The runtime escapes embedded state, so a value such as `</script>` cannot close the script element.
+- An event stops at the nearest block, so it no longer reaches an enclosing block's bindings.
+- A `set-value` action without `value` takes the event's value, for example a slider's. With no event value it does nothing; before, it set `undefined`.
+- The cloud Worker validates bearers against the canonical AgentKit endpoint, `GET https://agentkit.best/api/agentkit/entitlements`, instead of an unreachable host, so authenticated render, share and export can succeed. It fails closed on a rejected token (401), an inactive account (403), and an upstream error, redirect, timeout or malformed body (502). An active app or kit entitlement grants the `render` and `share` scopes, which stay separate checks.
+- Screenshot and PDF export call the Browser Run binding's Quick Actions with the compiled HTML inline and caching off, and `wrangler.jsonc` attaches the `BROWSER` binding.
+- Remote MCP bounds its anonymous surface: a JSON-RPC batch carries at most 16 members, never `initialize`, and is refused (400) under protocol revision 2025-06-18 or later, which removed batching. `catalog`, `search-catalog`, `describe`, `recipes`, `recipe` and `themes` stay anonymous but count per client IP (`anon-ip`, 120/min).
+- A remote MCP request that presents a rejected bearer answers HTTP 401 with `WWW-Authenticate: Bearer`, whatever the method, instead of a tool error; REST 401s carry the same challenge. A request without a bearer is still served, and `validate`/`render` still answer a tool error with `UNAUTHENTICATED`.
+- Cloud rate limits use the Workers Rate Limiting binding, one per route class, instead of KV counters that could fail on rapid writes; a limiter fault refuses the call with `RATE_LIMITED`. An MCP `render` with `share: true` counts against `share` only, as `POST /v1/share` does, and a call refused by authorization consumes nothing.
+- The cloud Worker caches entitlements answers in memory under a SHA-256 digest of the bearer (60 s accepted, 10 s rejected), and limits uncached bearer checks per client IP (30/min) before contacting the entitlements endpoint.
+- Remote MCP reports a storage or runtime fault as a generic `INTERNAL_ERROR` tool error, and the REST routes answer such a fault with a generic 500, so no internal message reaches a caller.
+- Hosted shares and artifacts are served with `content-security-policy: sandbox …; frame-ancestors 'none'`: they run in an opaque origin and cannot be framed.
+- The expiry sweep pages through every listed object with the cursor, reads expiry from listing metadata instead of downloading bodies, and deletes in batches; R2 lifecycle rules (`apps/cloud/r2-lifecycle.json`, applied on deploy) delete artifacts after 1 day and shares after the retention period plus a day.
+- A remote video `poster` that the network policy blocks now fails `validate` with a `POLICY_VIOLATION` at the block's `poster` path, naming the reason. Before, validate passed and compile failed at `$` with "emitted a remote resource reference". A poster is gated by the `images` capability, an allowed remote poster's origin joins the CSP, and the renderer drops a blocked poster even for an IR that skipped validation.
+- Diagram adapter `<style>` elements now receive the page style nonce, so styled adapter SVG renders as drawn instead of in default black. The policy stays nonce-only: inline `style` attributes are removed from adapter output with a warning. Adapter CSS is scoped with `@scope` to its own diagram canvas, so it cannot restyle the page, and it cannot load anything: escapes, character references, `url()` other than a fragment reference such as `url(#grad)`, `image-set()`, every at-rule except `@media`, `@keyframes` and `@supports`, and `@keyframes` that redefine the page's own reject the output to the structured fallback. Comments and `!important` are removed. Adapter markup that writes a `nonce` or any `data-ak-*` attribute, or an `href`, `xlink:href`, `src`, `srcset`, `poster`, `action`, `formaction`, `background`, `data`, `codebase` or `ping` that is not a same-document `#fragment`, or SVG animation whose `attributeName` is one of those, is rejected too, and so is markup that is not a self-contained fragment: a stray or missing end tag, a raw-text element such as `plaintext` or `textarea`, an element that merges into the page document such as `body` or `meta`, an HTML element inside SVG, or a comment. Output from the `ak:diagram` compiler passes these checks. Adapter animation stops under reduced motion, `motion-policy: none` and print. `docs/diagram-adapter.md` lists what adapter CSS may use.
+- Checking adapter markup is linear in its size. An unterminated tag repeated to the 256 KB bound took minutes; it now takes milliseconds.
+- A long unbroken token, such as a path or an env var list, no longer widens the page on a phone. Key-value values, list items, text and callouts break the token inside their own line, so the reported key-value page no longer scrolls sideways at 375px.
+- A `diagram-panel` shows adapter SVG at its natural size. A wide diagram scrolls sideways inside its panel, a named region that scrolls from the keyboard, instead of shrinking its labels until they are unreadable. In print it is scaled to the page width.
+- A `diagram-panel` whose adapter rendered no longer shows the structured description beside the drawing. The description stays in the document behind a closed "Text description" disclosure, which opens in print, with or without script.
+- A long `terminal` session no longer leaves its last lines blank in a capture. Lines now stagger 80ms apart instead of 340ms, lines past the twelfth share its delay, and the whole session is drawn about 1.4s after it arrives.
+- A wide `table` or adapter diagram now shows a soft shade on each edge that has more content beyond it, so a frame that scrolls sideways no longer looks clipped. A frame that fits shows none.
+- A `data-table` row that a filter hides stays hidden at phone widths, where rows become cards.
+- Blocks inside or after a `visibleWhen` view keep the normal block gap and the section-break gaps.
+- A thinned category axis always labels the last category, so a series never reads as ending early.
+- Chart ticks finer than 0.01 keep the decimals the step needs instead of all printing the same value, and only floating-point noise is removed before a value is formatted.
+- A histogram over huge, close values (such as 1e16 and 1e16 + 4) keeps finite, increasing bin edges: when clean steps cannot separate the values it draws one bin.
+- The page outline skips a section behind `visibleWhen`, so it never links to a hidden section.
+- Dataset field names `__proto__`, `constructor` and `prototype` are refused at validation, and a `log-viewer` level named like an object property gets the neutral tone.
+- `date-input` accepts ISO dates in the years 0001–0099.
 
 ## [0.2.0] - 2026-10-05
 

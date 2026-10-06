@@ -1,25 +1,16 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { expect, type Page, test } from '@playwright/test';
 import { compile } from '../../src/render/render.js';
+import { browserWorkspace } from './browser-workspace.js';
 
 const pagesDir = fileURLToPath(new URL('../../fixtures/pages', import.meta.url));
-const workspace = mkdtempSync(join(tmpdir(), 'ak-render-actions-'));
+const workspace = browserWorkspace('actions');
 
 function artifact(name: string): string {
   const source = readFileSync(`${pagesDir}/${name}`, 'utf8');
-  const target = join(workspace, `${name.replace(/\.yaml$/u, '')}.html`);
-  // Recreated on demand so a retry or a parallel worker cannot see a stale path.
-  mkdirSync(workspace, { recursive: true });
-  writeFileSync(target, compile(source, { source: name }).html, 'utf8');
-  return target;
+  return workspace.write(name.replace(/\.yaml$/u, ''), compile(source, { source: name }).html);
 }
-
-test.afterAll(() => {
-  rmSync(workspace, { recursive: true, force: true });
-});
 
 async function open(page: Page): Promise<void> {
   // Rewritten per test so a retry or parallel worker never sees a stale path.

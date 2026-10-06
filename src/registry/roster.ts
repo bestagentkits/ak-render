@@ -14,31 +14,70 @@
 
 import { EMBED_PROVIDER_NAMES } from '../spec/providers.js';
 import type { ActionType } from './actions.js';
+import type { BlockCategory } from './block-module.js';
+import {
+  anchorProps,
+  bool,
+  define,
+  enumStr,
+  idProp,
+  itemsOf,
+  LABEL,
+  list,
+  num,
+  OPTIONAL_TITLE,
+  obj,
+  oneOf,
+  onProp,
+  semantic,
+  str,
+  TITLE,
+  txt,
+  urlProp,
+  VERBATIM_DESCRIPTION,
+} from './define-helpers.js';
 import type { PropSchema } from './prop-schema.js';
 
-export type RuntimeFeature =
-  | 'tabs'
-  | 'accordion'
-  | 'carousel'
-  | 'slider'
-  | 'copy'
-  | 'filter'
-  | 'theme'
-  | 'dialog'
-  | 'chart'
-  | 'diagram'
-  | 'media'
-  | 'outline'
-  | 'bento'
-  | 'marquee'
-  | 'terminal'
-  | 'tree'
-  | 'before-after'
-  | 'kpi'
-  | 'showcase'
-  | 'cta'
-  | 'frame'
-  | 'checklist';
+export { CHART_KINDS } from '../blocks/chart/chart-kinds.js';
+export * from './define-helpers.js';
+
+/**
+ * Features the core compiler emits. Block groups may add their own features
+ * (see `FeatureModule`); the registry rejects any name outside both lists.
+ */
+export const CORE_RUNTIME_FEATURES = [
+  'tabs',
+  'accordion',
+  'carousel',
+  'slider',
+  'copy',
+  'filter',
+  'theme',
+  'dialog',
+  'chart',
+  'diagram',
+  'media',
+  'outline',
+  'bento',
+  'marquee',
+  'terminal',
+  'tree',
+  'before-after',
+  'kpi',
+  'showcase',
+  'cta',
+  'frame',
+  'checklist',
+  'state',
+] as const;
+
+export type CoreRuntimeFeature = (typeof CORE_RUNTIME_FEATURES)[number];
+
+/**
+ * A runtime feature name: a core feature or one a block group registers. The
+ * open string arm is checked at registration rather than by the type system.
+ */
+export type RuntimeFeature = CoreRuntimeFeature | (string & {});
 
 export interface SlotSpec {
   /** Types accepted by the slot; `'*'` accepts any block. */
@@ -59,6 +98,18 @@ export interface BlockDefinition {
   type: string;
   version: number;
   kind: 'semantic' | 'primitive';
+  /** Catalog grouping for discovery. */
+  category: BlockCategory;
+  /** Up to 6 kebab-case search tags. */
+  tags: readonly string[];
+  /** Up to 4 short phrases (40 characters max) naming what the block is for. */
+  useCases: readonly string[];
+  /** Allowed direct parent types; absent means any parent, including the page. */
+  parents?: readonly string[];
+  /** Rows carry `data-ak-filter-item` and a `data-ak-row` JSON payload a filter can read. */
+  filterable?: boolean;
+  /** The block reads rows from `dataRef` or inline `data`, reshaped by an optional `transform`. */
+  data?: { required: boolean; description: string };
   purpose: string;
   /** One line, used by the compact `catalog()` surface. */
   summary: string;
@@ -75,135 +126,17 @@ export interface BlockDefinition {
   serializer: string;
 }
 
-const DEFAULT_MIGRATION =
-  'Props are additive; removed props are reported as diagnostics, never silently dropped.';
-const DEFAULT_SERIALIZER =
-  'Serializes back to the same Page Spec shape; child blocks keep their order and slots.';
-const DEFAULT_SIZING: SizingContract = {
-  sizes: ['medium', 'large'],
-  default: 'medium',
-  responsive: 'Fills its parent slot and reflows its content; never clips or scales by transform.',
-};
-
-const str = (o: Omit<PropSchema & { kind: 'string' }, 'kind'> = {}): PropSchema => ({
-  kind: 'string',
-  ...o,
-});
-const txt = (
-  o: { required?: boolean; default?: string; maxLength?: number; description?: string } = {},
-): PropSchema => ({
-  kind: 'text',
-  ...o,
-});
-const num = (
-  o: {
-    required?: boolean;
-    default?: number;
-    min?: number;
-    max?: number;
-    integer?: boolean;
-    description?: string;
-  } = {},
-): PropSchema => ({ kind: 'number', ...o });
-const bool = (
-  o: { required?: boolean; default?: boolean; description?: string } = {},
-): PropSchema => ({
-  kind: 'boolean',
-  ...o,
-});
-const urlProp = (
-  o: { required?: boolean; schemes?: readonly string[]; description?: string } = {},
-): PropSchema => ({
-  kind: 'url',
-  ...o,
-});
-const list = (
-  of: PropSchema,
-  o: { required?: boolean; minItems?: number; maxItems?: number; description?: string } = {},
-): PropSchema => ({ kind: 'list', of, ...o });
-const obj = (
-  fields: Record<string, PropSchema>,
-  o: { required?: boolean; description?: string } = {},
-): PropSchema => ({ kind: 'object', fields, ...o });
-const oneOf = (
-  options: readonly PropSchema[],
-  o: { required?: boolean; description?: string } = {},
-): PropSchema => ({ kind: 'oneOf', options, ...o });
-const enumStr = (
-  values: readonly string[],
-  o: { required?: boolean; default?: string; description?: string } = {},
-): PropSchema => ({
-  kind: 'string',
-  enum: values,
-  ...o,
-});
-const idProp = (description: string): PropSchema => ({ kind: 'string', id: true, description });
-const actionMap = (description: string): PropSchema => ({
-  kind: 'json',
-  description,
-  maxBytes: 8_000,
-  schemaRef: '#/$defs/actionMap',
-});
-
-/** Reusable prop fragments. */
-const onProp = (description = 'Declarative action bindings for this block.'): PropSchema =>
-  actionMap(description);
-
-const anchorProps: Record<string, PropSchema> = {
-  id: idProp('Stable node id. Author-provided ids are used verbatim and must be unique.'),
-};
-
-const itemsOf = (
-  fields: Record<string, PropSchema>,
-  o: { minItems?: number; maxItems?: number } = {},
-): PropSchema =>
-  list(obj(fields), { required: true, minItems: o.minItems ?? 1, maxItems: o.maxItems ?? 200 });
-
-const TITLE = str({ required: true, maxLength: 200 });
-const OPTIONAL_TITLE = str({ maxLength: 200 });
-const LABEL = str({ required: true, maxLength: 200 });
-
-/** Chart kinds, SVG-first and deterministic. */
-export const CHART_KINDS = [
-  'bar',
-  'line',
-  'area',
-  'pie',
-  'donut',
-  'sparkline',
-  'progress',
-] as const;
-
-function define(
-  specification: Partial<BlockDefinition> &
-    Pick<BlockDefinition, 'type' | 'purpose' | 'summary' | 'props'>,
-): BlockDefinition {
-  return {
-    version: 1,
-    kind: 'primitive',
-    sizing: DEFAULT_SIZING,
-    a11y: 'Renders semantic markup; text alternatives come from the authored content.',
-    actions: [],
-    runtimeFeatures: [],
-    assets: [],
-    network: 'none',
-    migration: DEFAULT_MIGRATION,
-    serializer: DEFAULT_SERIALIZER,
-    ...specification,
-  };
-}
-
-function semantic(
-  specification: Partial<BlockDefinition> &
-    Pick<BlockDefinition, 'type' | 'purpose' | 'summary' | 'props'>,
-): BlockDefinition {
-  return define({ kind: 'semantic', ...specification });
-}
-
-export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
+/**
+ * Core blocks: the roster entries that have not moved into a block module
+ * under `src/blocks/`. The registry appends every module's definition.
+ */
+export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   // --- root ---------------------------------------------------------------
   define({
     type: 'page',
+    category: 'layout',
+    tags: ['root', 'document'],
+    useCases: ['page shell'],
     kind: 'semantic',
     purpose: 'The document root. Synthesized by the normalizer from the spec envelope.',
     summary: 'Page root: title, description, locale, and top-level blocks.',
@@ -219,6 +152,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   // --- layout primitives --------------------------------------------------
   define({
     type: 'section',
+    category: 'layout',
+    tags: ['container', 'heading', 'band'],
+    useCases: ['group related blocks', 'dark feature band'],
     purpose: 'A titled group of blocks.',
     summary:
       'Section with an optional heading wrapping child blocks; an inverse surface sets it on a night band.',
@@ -234,34 +170,10 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
     slots: { children: { accepts: '*', min: 1, max: 200 } },
   }),
   define({
-    type: 'stack',
-    purpose: 'Vertical flow container.',
-    summary: 'Stack: children flow vertically with a controlled gap.',
-    props: { gap: enumStr(['tight', 'normal', 'loose'], { default: 'normal' }), ...anchorProps },
-    slots: { children: { accepts: '*', min: 1, max: 200 } },
-  }),
-  define({
-    type: 'grid',
-    purpose: 'Responsive grid container.',
-    summary: 'Grid: children in N columns that collapse on narrow viewports.',
-    props: {
-      columns: num({ integer: true, min: 1, max: 6, default: 3 }),
-      ...anchorProps,
-    },
-    slots: { children: { accepts: '*', min: 1, max: 200 } },
-  }),
-  define({
-    type: 'split',
-    purpose: 'Two-column split container.',
-    summary: 'Split: two child groups side by side, stacking when narrow.',
-    props: {
-      ratio: enumStr(['even', 'wide-left', 'wide-right'], { default: 'even' }),
-      ...anchorProps,
-    },
-    slots: { children: { accepts: '*', min: 2, max: 2 } },
-  }),
-  define({
     type: 'spacer',
+    category: 'layout',
+    tags: ['spacing'],
+    useCases: ['vertical breathing room'],
     purpose: 'Vertical rhythm spacer.',
     summary: 'Spacer: vertical space without content.',
     props: { size: enumStr(['small', 'medium', 'large'], { default: 'medium' }), ...anchorProps },
@@ -269,6 +181,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'divider',
+    category: 'layout',
+    tags: ['rule', 'separator'],
+    useCases: ['separate sections'],
     purpose: 'Horizontal rule with an optional label.',
     summary: 'Divider: semantic separator with an optional label.',
     props: { label: str({ maxLength: 120 }), ...anchorProps },
@@ -278,6 +193,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   // --- typography and content --------------------------------------------
   define({
     type: 'heading',
+    category: 'content',
+    tags: ['title', 'outline'],
+    useCases: ['section title'],
     purpose: 'Section heading at a chosen level.',
     summary: 'Heading: h1–h6 with the author-chosen level.',
     props: {
@@ -289,6 +207,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'text',
+    category: 'content',
+    tags: ['prose', 'paragraph'],
+    useCases: ['body copy'],
     purpose: 'A paragraph, lead sentence, or caption.',
     summary: 'Text: single paragraph with body, lead, or caption treatment.',
     props: {
@@ -299,24 +220,33 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'rich-text',
+    category: 'content',
+    tags: ['prose', 'inline-marks'],
+    useCases: ['formatted paragraphs'],
     purpose: 'Multi-paragraph prose.',
     summary: 'RichText: multiple paragraphs from line breaks.',
     props: { text: txt({ required: true }), ...anchorProps },
   }),
   define({
     type: 'quote',
+    category: 'content',
+    tags: ['testimonial', 'citation'],
+    useCases: ['customer quote', 'pull quote'],
     purpose: 'Pulled quotation.',
     summary: 'Quote: blockquote with an optional attribution.',
     props: { text: txt({ required: true }), cite: str({ maxLength: 200 }), ...anchorProps },
   }),
   define({
     type: 'code',
+    category: 'content',
+    tags: ['source', 'snippet', 'copy'],
+    useCases: ['code sample', 'command to copy'],
     purpose: 'Code or configuration sample.',
     summary: 'Code: preformatted block with optional language and copy target.',
     props: {
       language: str({ maxLength: 32, default: 'text' }),
       title: OPTIONAL_TITLE,
-      text: txt({ required: true, maxLength: 100_000 }),
+      text: txt({ required: true, maxLength: 100_000, description: VERBATIM_DESCRIPTION }),
       ...anchorProps,
     },
     assets: ['code'],
@@ -327,6 +257,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'badge',
+    category: 'content',
+    tags: ['label', 'status'],
+    useCases: ['status label'],
     purpose: 'Short status or category label.',
     summary: 'Badge: inline status chip.',
     props: {
@@ -337,6 +270,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'kbd',
+    category: 'content',
+    tags: ['keyboard', 'shortcut'],
+    useCases: ['keyboard shortcut'],
     purpose: 'Keyboard key sequence.',
     summary: 'Kbd: one or more keys rendered as <kbd> elements.',
     props: {
@@ -347,6 +283,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'key-value',
+    category: 'content',
+    tags: ['metadata', 'pairs'],
+    useCases: ['spec sheet', 'document metadata'],
     purpose: 'Compact definition list.',
     summary: 'KeyValue: label/value pairs rendered as a description list.',
     props: {
@@ -360,6 +299,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   // --- information --------------------------------------------------------
   define({
     type: 'card',
+    category: 'layout',
+    tags: ['surface', 'container'],
+    useCases: ['boxed summary', 'feature card'],
     purpose: 'Bounded content container.',
     summary: 'Card: titled container that holds child blocks.',
     props: { title: OPTIONAL_TITLE, text: txt(), ...anchorProps },
@@ -367,6 +309,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'alert',
+    category: 'content',
+    tags: ['notice', 'status'],
+    useCases: ['warning banner', 'status notice'],
     purpose: 'Inline notice.',
     summary: 'Alert: notice with tone and title.',
     props: {
@@ -379,6 +324,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   semantic({
     type: 'callout',
+    category: 'content',
+    tags: ['note', 'aside'],
+    useCases: ['tip or note', 'highlighted aside'],
     purpose: 'Emphasized aside for a key point or risk.',
     summary: 'Callout: highlighted aside with tone, title, and body.',
     props: {
@@ -390,6 +338,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   semantic({
     type: 'hero',
+    category: 'content',
+    tags: ['landing', 'headline', 'intro'],
+    useCases: ['landing page header', 'report title'],
     purpose: 'Page opener that states the artifact subject.',
     summary:
       'Hero: eyebrow, title, and one-line description, optionally over a framed product shot.',
@@ -399,6 +350,7 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
       description: txt(),
       align: enumStr(['start', 'center'], { default: 'start' }),
       src: urlProp({
+        asset: 'images',
         description: 'Optional product shot shown in a browser frame below the copy.',
       }),
       alt: str({ maxLength: 300, description: 'Required when src is set.' }),
@@ -419,6 +371,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   semantic({
     type: 'stats',
+    category: 'data',
+    tags: ['numbers', 'summary'],
+    useCases: ['headline numbers', 'report summary'],
     purpose: 'KPI or summary figures.',
     summary: 'Stats: labeled values as a figure list.',
     props: {
@@ -430,6 +385,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'progress',
+    category: 'data',
+    tags: ['completion', 'bars'],
+    useCases: ['completion status', 'goal tracking'],
     purpose: 'Single progress or completeness value.',
     summary: 'Progress: single bar with an accessible value range.',
     props: {
@@ -443,6 +401,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   semantic({
     type: 'steps',
+    category: 'content',
+    tags: ['process', 'ordered'],
+    useCases: ['how-to steps', 'onboarding flow'],
     purpose: 'Ordered procedure.',
     summary: 'Steps: numbered sequence of titled steps.',
     props: {
@@ -455,6 +416,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   semantic({
     type: 'timeline',
+    category: 'content',
+    tags: ['chronology', 'history'],
+    useCases: ['release history', 'project milestones'],
     purpose: 'Chronological or staged events.',
     summary: 'Timeline: ordered entries with a when/title/body shape.',
     props: {
@@ -468,6 +432,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   // --- collections --------------------------------------------------------
   define({
     type: 'list',
+    category: 'content',
+    tags: ['bullets', 'items'],
+    useCases: ['bullet list', 'checklist of points'],
     purpose: 'Short item list with optional badges.',
     summary: 'List: bulleted items with optional status badges.',
     props: {
@@ -481,6 +448,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   semantic({
     type: 'card-grid',
+    category: 'content',
+    tags: ['cards', 'overview'],
+    useCases: ['feature overview', 'link directory'],
     purpose: 'Grid of short cards.',
     summary: 'CardGrid: titled cards in a responsive grid.',
     props: {
@@ -491,6 +461,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'table',
+    category: 'data',
+    tags: ['tabular', 'rows', 'columns'],
+    useCases: ['tabular data', 'comparison rows'],
     purpose: 'Tabular data with a header row.',
     summary: 'Table: columns and rows with a real header row.',
     props: {
@@ -504,6 +477,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   semantic({
     type: 'comparison',
+    category: 'data',
+    tags: ['versus', 'options'],
+    useCases: ['compare options', 'plan comparison'],
     purpose: 'Side-by-side comparison of two alternatives.',
     summary: 'Comparison: two labeled columns of points.',
     props: {
@@ -522,6 +498,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   semantic({
     type: 'risk-matrix',
+    category: 'data',
+    tags: ['risk', 'impact', 'likelihood'],
+    useCases: ['risk register', 'threat assessment'],
     purpose: 'Impact/likelihood risk table.',
     summary: 'RiskMatrix: risks rated by impact and likelihood.',
     props: {
@@ -539,53 +518,11 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
 
   // --- interactive collections -------------------------------------------
-  define({
-    type: 'tabs',
-    purpose: 'Tabbed groups of related content.',
-    summary: 'Tabs: roving-tabindex tablist with tabpanels.',
-    props: {
-      title: OPTIONAL_TITLE,
-      items: itemsOf(
-        { id: idProp('Tab id.'), title: LABEL, text: txt({ required: true }) },
-        { minItems: 2 },
-      ),
-      on: onProp('Optional state binding fired when a tab is selected.'),
-      ...anchorProps,
-    },
-    runtimeFeatures: ['tabs'],
-    actions: ['select-tab'],
-    a11y: 'role="tablist" with arrow-key roving focus, aria-selected, aria-controls, and labelled tabpanels.',
-  }),
-  define({
-    type: 'accordion',
-    purpose: 'Collapsible sections.',
-    summary: 'Accordion: disclosure sections that expand and collapse.',
-    props: {
-      title: OPTIONAL_TITLE,
-      items: itemsOf({ title: LABEL, text: txt({ required: true }) }),
-      on: onProp('Optional state binding fired when a section toggles.'),
-      ...anchorProps,
-    },
-    runtimeFeatures: ['accordion'],
-    actions: ['toggle', 'expand', 'collapse'],
-    a11y: 'Native <details>/<summary> where possible; otherwise button + region with aria-expanded.',
-  }),
-  define({
-    type: 'carousel',
-    purpose: 'Sequenced slides with manual navigation.',
-    summary: 'Carousel: prev/next, keyboard, and swipe across slides.',
-    props: {
-      ariaLabel: str({ required: true, maxLength: 120 }),
-      items: itemsOf({ title: LABEL, text: txt({ required: true }) }, { minItems: 1 }),
-      on: onProp('Optional state binding fired when the active slide changes.'),
-      ...anchorProps,
-    },
-    runtimeFeatures: ['carousel'],
-    actions: ['next', 'previous'],
-    a11y: 'Labeled region with prev/next buttons, arrow-key support, a slide counter, and no autoplay.',
-  }),
   semantic({
     type: 'toolbar',
+    category: 'interaction',
+    tags: ['controls', 'actions'],
+    useCases: ['page actions', 'quick links'],
     purpose: 'Row of controls or chips.',
     summary: 'Toolbar: buttons, badges, and links in one accessible row.',
     props: {
@@ -623,30 +560,13 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
 
   // --- data visualization -------------------------------------------------
-  define({
-    type: 'chart',
-    purpose: 'Deterministic SVG chart with a text summary.',
-    summary: 'Chart: bar, line, area, pie, donut, sparkline, or progress from labeled series.',
-    props: {
-      kind: enumStr(CHART_KINDS, { required: true }),
-      title: OPTIONAL_TITLE,
-      description: txt(),
-      labels: list(str({ maxLength: 80 }), { required: true, minItems: 1, maxItems: 200 }),
-      series: itemsOf(
-        { label: LABEL, values: list(num(), { required: true, minItems: 1, maxItems: 200 }) },
-        { minItems: 1 },
-      ),
-      ...anchorProps,
-    },
-    runtimeFeatures: ['chart'],
-    assets: ['chart'],
-    a11y: 'SVG carries role="img" plus a generated text summary; the same values are available as a table for assistive technology.',
-    serializer: 'Serializes to the labels/series data, never to rendered SVG.',
-  }),
 
   // --- diagrams (adapter) -------------------------------------------------
   semantic({
     type: 'diagram-panel',
+    category: 'engineering',
+    tags: ['diagram', 'architecture'],
+    useCases: ['architecture diagram', 'flow chart'],
     purpose: 'Typed diagram rendered through an adapter.',
     summary:
       'DiagramPanel: embeds trusted output from a diagram adapter (ak:diagram when installed).',
@@ -671,44 +591,11 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
 
   // --- showcase -----------------------------------------------------------
-  semantic({
-    type: 'bento',
-    purpose: 'Feature mosaic: tiles of mixed size that each carry one idea, figure, or image.',
-    summary:
-      'Bento: asymmetric tile grid; a tile can hold an eyebrow, title, text, a large figure, and a local image.',
-    props: {
-      title: OPTIONAL_TITLE,
-      items: itemsOf(
-        {
-          title: LABEL,
-          text: txt(),
-          eyebrow: str({ maxLength: 60 }),
-          value: str({ maxLength: 40, description: 'A large figure shown above the title.' }),
-          size: enumStr(['small', 'wide', 'tall', 'large'], { default: 'small' }),
-          src: urlProp({
-            description: 'Optional image; remote sources follow the network policy.',
-          }),
-          alt: str({
-            maxLength: 300,
-            description: 'Required when src is set; use "" for a decorative image.',
-          }),
-        },
-        { minItems: 1, maxItems: 12 },
-      ),
-      ...anchorProps,
-    },
-    runtimeFeatures: ['bento'],
-    network: 'optional',
-    sizing: {
-      sizes: ['large'],
-      default: 'large',
-      responsive:
-        'Four columns on wide screens, two on tablets, one on phones; spans collapse with the grid.',
-    },
-    a11y: 'A list of tiles; each tile title is a heading-styled paragraph, images keep their alt text.',
-  }),
   define({
     type: 'marquee',
+    category: 'showcase',
+    tags: ['ticker', 'logos'],
+    useCases: ['customer logos', 'highlight ticker'],
     purpose: 'Continuously scrolling strip of short highlights.',
     summary:
       'Marquee: looping ticker of short items that pauses on hover and stops under reduced motion.',
@@ -727,9 +614,12 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'terminal',
+    category: 'engineering',
+    tags: ['shell', 'commands', 'output'],
+    useCases: ['install steps', 'cli session'],
     purpose: 'A command-line session: commands with their output.',
     summary:
-      'Terminal: window-framed session whose lines type in on load; commands, output, comments, success, and errors are styled apart.',
+      'Terminal: window-framed session that types in on load; commands, output and errors are styled apart.',
     props: {
       title: str({ maxLength: 120, default: 'Terminal' }),
       lines: itemsOf(
@@ -737,7 +627,7 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
           kind: enumStr(['command', 'output', 'comment', 'success', 'error'], {
             default: 'output',
           }),
-          text: txt({ required: true, maxLength: 2_000 }),
+          text: txt({ required: true, maxLength: 2_000, description: VERBATIM_DESCRIPTION }),
         },
         { minItems: 1, maxItems: 60 },
       ),
@@ -748,6 +638,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   semantic({
     type: 'file-tree',
+    category: 'engineering',
+    tags: ['files', 'paths', 'repository'],
+    useCases: ['project layout', 'changed files'],
     purpose: 'Files and folders, optionally with change status, derived from flat paths.',
     summary:
       'File tree: nested folders built from slash-separated paths, with per-file status and notes.',
@@ -770,6 +663,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   semantic({
     type: 'before-after',
+    category: 'media',
+    tags: ['comparison', 'slider', 'images'],
+    useCases: ['redesign comparison', 'visual diff'],
     purpose: 'Before and after: two images of the same frame, revealed by a draggable divider.',
     summary:
       'Compare: before/after image slider driven by a native range input; without script both images stay visible.',
@@ -777,7 +673,7 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
       title: OPTIONAL_TITLE,
       before: obj(
         {
-          src: urlProp({ required: true }),
+          src: urlProp({ required: true, asset: 'images' }),
           alt: str({ required: true, maxLength: 300 }),
           label: str({ maxLength: 40, default: 'Before' }),
         },
@@ -785,7 +681,7 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
       ),
       after: obj(
         {
-          src: urlProp({ required: true }),
+          src: urlProp({ required: true, asset: 'images' }),
           alt: str({ required: true, maxLength: 300 }),
           label: str({ maxLength: 40, default: 'After' }),
         },
@@ -801,6 +697,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   semantic({
     type: 'kpi',
+    category: 'data',
+    tags: ['metrics', 'sparkline', 'trend'],
+    useCases: ['dashboard metrics', 'performance summary'],
     purpose: 'Headline metrics with direction of change and a small trend line.',
     summary:
       'KPI: metric cards with value, signed delta, good/bad direction, and an optional sparkline series.',
@@ -828,6 +727,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   semantic({
     type: 'showcase',
+    category: 'showcase',
+    tags: ['spotlight', 'screenshot'],
+    useCases: ['feature spotlight', 'product tour'],
     purpose: 'Feature spotlight: copy beside a framed screenshot.',
     summary:
       'Showcase: eyebrow, title, text, and bullets beside an image in a browser frame; the image side can flip.',
@@ -836,7 +738,7 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
       title: TITLE,
       text: txt(),
       bullets: list(str({ required: true, maxLength: 200 }), { maxItems: 8 }),
-      src: urlProp({ required: true }),
+      src: urlProp({ required: true, asset: 'images' }),
       alt: str({ required: true, maxLength: 300 }),
       frame: enumStr(['browser', 'plain'], { default: 'browser' }),
       address: str({
@@ -858,6 +760,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'checklist',
+    category: 'data',
+    tags: ['tasks', 'status'],
+    useCases: ['launch checklist', 'review checklist'],
     purpose: 'Task list with done and open items and a completion count.',
     summary: 'Checklist: items marked done or open, with a visible completion count.',
     props: {
@@ -870,6 +775,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   semantic({
     type: 'cta',
+    category: 'showcase',
+    tags: ['conversion', 'action'],
+    useCases: ['sign-up prompt', 'closing call to action'],
     purpose: 'Closing call to action that sends the reader somewhere next.',
     summary: 'CTA: eyebrow, oversized title, text, and up to three link actions on a night band.',
     props: {
@@ -898,10 +806,13 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   // --- media --------------------------------------------------------------
   define({
     type: 'image',
+    category: 'media',
+    tags: ['picture', 'figure'],
+    useCases: ['screenshot', 'illustration'],
     purpose: 'Single image or picture.',
     summary: 'Image: local asset or allowlisted URL with required alt text.',
     props: {
-      src: urlProp({ required: true }),
+      src: urlProp({ required: true, asset: 'images' }),
       alt: str({ required: true, maxLength: 300 }),
       caption: txt(),
       ...anchorProps,
@@ -910,33 +821,18 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
     assets: ['media'],
     a11y: 'Alt text is required; decorative images must use an empty alt explicitly.',
   }),
-  semantic({
-    type: 'gallery',
-    purpose: 'Image grid.',
-    summary: 'Gallery: responsive image grid with captions.',
-    props: {
-      title: OPTIONAL_TITLE,
-      columns: num({ integer: true, min: 1, max: 6, default: 3 }),
-      items: itemsOf({
-        src: urlProp({ required: true }),
-        alt: str({ required: true, maxLength: 300 }),
-        caption: txt(),
-      }),
-      ...anchorProps,
-    },
-    network: 'optional',
-    assets: ['media'],
-    a11y: 'Every image keeps its alt text; captions are visible text, not tooltips.',
-  }),
   define({
     type: 'video',
+    category: 'media',
+    tags: ['player', 'poster'],
+    useCases: ['product demo', 'recorded talk'],
     purpose: 'Local video or a network-denied fallback.',
     summary:
-      'Video: plays local sources; a provider reference becomes a poster plus link; network sources degrade to poster plus link.',
+      'Video: plays local sources; a provider or network source degrades to a poster plus link.',
     props: {
       title: LABEL,
-      src: urlProp({ required: true }),
-      poster: urlProp(),
+      src: urlProp({ required: true, asset: 'media' }),
+      poster: urlProp({ asset: 'images', rejectBlocked: true }),
       provider: enumStr(EMBED_PROVIDER_NAMES, {
         description:
           'Network media provider. Requires the media capability and this provider in the page provider allowlist; the page still links out instead of embedding.',
@@ -956,12 +852,15 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'audio',
+    category: 'media',
+    tags: ['player', 'sound'],
+    useCases: ['podcast clip', 'voice note'],
     purpose: 'Local audio or a network-denied fallback.',
     summary:
-      'Audio: plays local sources; a provider reference becomes metadata plus link; network sources degrade to metadata plus link.',
+      'Audio: plays local sources; a provider or network source degrades to metadata plus link.',
     props: {
       title: LABEL,
-      src: urlProp({ required: true }),
+      src: urlProp({ required: true, asset: 'media' }),
       provider: enumStr(EMBED_PROVIDER_NAMES, {
         description:
           'Network media provider. Requires the media capability and this provider in the page provider allowlist; the page still links out instead of embedding.',
@@ -983,6 +882,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   // --- controls -----------------------------------------------------------
   define({
     type: 'button',
+    category: 'interaction',
+    tags: ['action', 'control'],
+    useCases: ['trigger an action', 'primary call'],
     purpose: 'Single actionable control.',
     summary: 'Button: clickable control with declarative action bindings.',
     props: {
@@ -997,6 +899,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'link',
+    category: 'interaction',
+    tags: ['navigation', 'anchor'],
+    useCases: ['external link', 'related page'],
     purpose: 'Navigational link.',
     summary: 'Link: allowlisted URL with descriptive text.',
     props: { label: LABEL, href: urlProp({ required: true }), ...anchorProps },
@@ -1005,6 +910,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'slider',
+    category: 'interaction',
+    tags: ['range', 'input', 'state'],
+    useCases: ['adjust a value', 'what-if input'],
     purpose: 'Bounded numeric input.',
     summary: 'Slider: range input with pointer drag and full keyboard support.',
     props: {
@@ -1022,6 +930,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'search',
+    category: 'interaction',
+    tags: ['filter', 'input'],
+    useCases: ['filter a list', 'find an item'],
     purpose: 'Filter input for a collection.',
     summary: 'Search: labeled filter input bound to a collection.',
     props: {
@@ -1036,6 +947,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   define({
     type: 'dialog',
+    category: 'interaction',
+    tags: ['modal', 'overlay'],
+    useCases: ['confirmation', 'detail popup'],
     purpose: 'Modal detail surface.',
     summary: 'Dialog: native <dialog> with labeled title and close controls.',
     props: {
@@ -1053,6 +967,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   // --- review-specific semantic blocks ------------------------------------
   semantic({
     type: 'diff-summary',
+    category: 'engineering',
+    tags: ['diff', 'changes'],
+    useCases: ['change summary', 'pull request files'],
     purpose: 'Changed-file summary from a diff.',
     summary: 'DiffSummary: file paths with change status and line counts.',
     props: {
@@ -1069,6 +986,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
   semantic({
     type: 'code-review',
+    category: 'engineering',
+    tags: ['review', 'findings'],
+    useCases: ['review findings', 'audit notes'],
     purpose: 'Structured review findings.',
     summary: 'CodeReview: good/bad/ugly/concern/question findings.',
     props: {
@@ -1083,7 +1003,3 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
     a11y: 'The finding kind is written as text; tone colour is decorative.',
   }),
 ];
-
-export const BLOCKS_BY_TYPE: ReadonlyMap<string, BlockDefinition> = new Map(
-  BLOCK_DEFINITIONS.map((definition) => [definition.type, definition]),
-);

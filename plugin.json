@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "ak-render",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Turn plans, reports, recaps, diff reviews, dashboards and explainers into one polished, offline, self-contained HTML page from a short YAML Page Spec, without hand-writing HTML.",
   "author": {
     "name": "bestagentkits",

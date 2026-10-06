@@ -11,10 +11,12 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, extname, join } from 'node:path';
+import { DiagnosticBag } from '../diagnostics.js';
 import { RenderError } from '../errors.js';
 import { isPlainObject } from '../json.js';
 import { parseSpec } from '../spec/parse.js';
 import { builtinPresetEntries, type PresetEntry } from './presets.js';
+import { validateThemeRecipes } from './recipes.js';
 import { TOKEN_SPECS, validateTokenValue } from './tokens.js';
 
 export const PRESET_NAME_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
@@ -27,6 +29,7 @@ const ALLOWED_PRESET_KEYS = [
   'extends',
   'tokens',
   'dark',
+  'recipes',
 ] as const;
 
 export interface PresetSource {
@@ -136,6 +139,18 @@ export function parsePresetDocument(
     return tokens;
   };
 
+  // Recipes are closed enums, so a preset file can choose a treatment but can
+  // never carry the CSS behind it.
+  let recipes: Record<string, string> | undefined;
+  if (value.recipes !== undefined) {
+    const bag = new DiagnosticBag();
+    recipes = validateThemeRecipes(value.recipes, 'recipes', bag);
+    const problem = bag.errors()[0];
+    if (problem !== undefined) {
+      fail(problem.message, `${path}#${problem.path}`, problem.details);
+    }
+  }
+
   const entry: PresetEntry = {
     name,
     version: typeof version === 'number' ? version : 1,
@@ -146,6 +161,7 @@ export function parsePresetDocument(
   };
   if (options.file !== undefined) entry.file = options.file;
   if (typeof extendsValue === 'string') entry.extends = extendsValue;
+  if (recipes !== undefined && Object.keys(recipes).length > 0) entry.recipes = recipes;
   return entry;
 }
 

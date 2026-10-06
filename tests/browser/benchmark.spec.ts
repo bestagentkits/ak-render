@@ -1,21 +1,12 @@
-import {
-  cpSync,
-  mkdirSync,
-  mkdtempSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, type Page, test } from '@playwright/test';
 import { compile, VERSION } from '../../src/index.js';
+import { browserWorkspace } from './browser-workspace.js';
 import { startNetworkAudit } from './network-audit.js';
 
 const pagesDir = fileURLToPath(new URL('../../fixtures/pages', import.meta.url));
-const assetsDir = fileURLToPath(new URL('../../fixtures/assets', import.meta.url));
 const artifactPath = fileURLToPath(
   new URL('../../docs/artifacts/benchmark-browser.json', import.meta.url),
 );
@@ -23,12 +14,13 @@ const fixtures = readdirSync(pagesDir)
   .filter((name) => name.endsWith('.yaml'))
   .sort();
 
-const workspace = mkdtempSync(join(tmpdir(), 'ak-render-benchmark-'));
-
 // Fixtures reference local assets by relative path, so an offline load is only
 // complete when they sit beside the emitted artifact. Without this the run
 // reports missing-asset console errors that belong to the harness, not the page.
-cpSync(assetsDir, join(workspace, 'assets'), { recursive: true, force: true });
+const workspace = browserWorkspace('benchmark', { assets: true });
+
+/** Chromium's console message for a view transition that outlived its update window. */
+const VIEW_TRANSITION_TIMEOUT = 'Transition was aborted because of timeout in DOM update';
 
 /** Widths the responsive contract names. */
 const WIDTHS = [375, 768, 1440] as const;
@@ -147,28 +139,28 @@ async function auditA11y(page: Page): Promise<A11yFailure[]> {
   });
 }
 
-test.afterAll(() => {
-  rmSync(workspace, { recursive: true, force: true });
-});
-
 /**
  * One serial test measures every fixture, because the artifact is the
  * deliverable: an aggregate written by whichever worker ran last would be a
  * partial measurement presented as a complete one.
  */
 test('measures every fixture for browser-side gates', async ({ page }) => {
+  // Every fixture runs in this one test, so the budget scales with the roster.
+  test.setTimeout(30_000 * Math.max(1, Math.ceil(fixtures.length / 3)));
   const measurements: FixtureMeasurement[] = [];
 
   for (const fixture of fixtures) {
-    mkdirSync(workspace, { recursive: true });
-    cpSync(assetsDir, join(workspace, 'assets'), { recursive: true, force: true });
-    const target = join(workspace, fixture.replace(/\.yaml$/u, '.html'));
     const result = compile(readFileSync(join(pagesDir, fixture), 'utf8'), { source: fixture });
-    writeFileSync(target, result.html, 'utf8');
+    const target = workspace.write(fixture.replace(/\.yaml$/u, ''), result.html);
 
     const consoleErrors: string[] = [];
     page.on('console', (message) => {
-      if (message.type() === 'error') consoleErrors.push(message.text());
+      if (message.type() !== 'error') return;
+      // Chromium reports this when a starved main thread lets a view
+      // transition's ~4s update window lapse; the switch itself still lands.
+      // It measures the machine's load, not the page.
+      if (message.text().startsWith(VIEW_TRANSITION_TIMEOUT)) return;
+      consoleErrors.push(message.text());
     });
     page.on('pageerror', (error) => consoleErrors.push(error.message));
 
@@ -242,7 +234,11 @@ test('measures every fixture for browser-side gates', async ({ page }) => {
     if ((await carouselNext.count()) > 0) {
       const statusBefore = await page.locator('[data-ak-carousel-status]').first().textContent();
       await carouselNext.first().click();
-      const statusAfter = await page.locator('[data-ak-carousel-status]').first().textContent();
+      const status = page.locator('[data-ak-carousel-status]').first();
+      await expect(status)
+        .not.toHaveText(String(statusBefore), { timeout: 2_000 })
+        .catch(() => undefined);
+      const statusAfter = await status.textContent();
       interactions.push({
         name: 'carousel-next',
         ok: statusAfter !== statusBefore,

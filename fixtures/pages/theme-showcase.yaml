@@ -14,15 +14,15 @@ policy:
 blocks:
   - type: hero
     eyebrow: Theme showcase
-    title: One spec, six presets
+    title: One spec, every preset
     description: The same content renders consistently under every built-in theme.
 
   - type: stats
     items:
       - label: Presets
-        value: '6'
+        value: '10'
       - label: Tokens
-        value: '24'
+        value: '30'
       - label: Schemes
         value: light + dark
 
@@ -97,8 +97,12 @@ blocks:
     title: Built-in presets
     items:
       - text: blueprint
+      - text: data-console
       - text: editorial
+      - text: executive-report
       - text: paper-ink
-      - text: terminal-mono
+      - text: product-studio
+      - text: research-notebook
       - text: swiss-clean
+      - text: terminal-mono
       - text: warm-signal

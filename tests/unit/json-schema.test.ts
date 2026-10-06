@@ -45,6 +45,7 @@ describe('published JSON Schema', () => {
       'theme',
       'policy',
       'state',
+      'datasets',
       'blocks',
     ]);
     expect(schema.required).toEqual(['version', 'meta', 'blocks']);
@@ -54,13 +55,16 @@ describe('published JSON Schema', () => {
     expect(ajv.validateSchema(schema)).toBe(true);
   });
 
-  it('accepts every fixture', () => {
-    for (const file of readdirSync(pagesDir).filter((name) => name.endsWith('.yaml'))) {
+  // One test per fixture, so the per-test timeout does not shrink as the roster grows.
+  it.each(readdirSync(pagesDir).filter((name) => name.endsWith('.yaml')))(
+    'accepts %s',
+    (file) => {
       const document = parseSpec(readFileSync(`${pagesDir}/${file}`, 'utf8'));
       const valid = validateAgainstSchema(document);
       expect(valid, `${file}: ${ajv.errorsText(validateAgainstSchema.errors)}`).toBe(true);
-    }
-  });
+    },
+    20_000,
+  );
 
   it('rejects a spec with an unknown block property', () => {
     const valid = validateAgainstSchema({
@@ -109,5 +113,37 @@ describe('published JSON Schema', () => {
     // The schema bounds the shape; scheme allowlisting is enforced by the
     // compiler at validation time (see security-forbidden.test.ts).
     expect(typeof valid).toBe('boolean');
+  });
+
+  it('accepts visibleWhen with exactly one operator', () => {
+    const page = (visibleWhen: unknown) => ({
+      version: 1,
+      meta: { title: 'X' },
+      state: { view: 'a' },
+      blocks: [{ type: 'text', text: 'a', visibleWhen }],
+    });
+    expect(validateAgainstSchema(page({ path: 'state.view', equals: 'a' }))).toBe(true);
+    expect(validateAgainstSchema(page({ path: 'state.view', in: ['a', 1, null] }))).toBe(true);
+    expect(validateAgainstSchema(page({ path: 'state.view' }))).toBe(false);
+    expect(validateAgainstSchema(page({ path: 'state.view', equals: 'a', truthy: true }))).toBe(
+      false,
+    );
+    expect(validateAgainstSchema(page({ path: 'view', equals: 'a' }))).toBe(false);
+  });
+
+  it('declares datasets and typed theme recipes', () => {
+    const page = (extra: Record<string, unknown>) => ({
+      version: 1,
+      meta: { title: 'X' },
+      blocks: [{ type: 'text', text: 'a' }],
+      ...extra,
+    });
+    expect(validateAgainstSchema(page({ datasets: { sales: [{ month: 'Jan', n: 1 }] } }))).toBe(
+      true,
+    );
+    expect(validateAgainstSchema(page({ datasets: { sales: [{ month: { x: 1 } }] } }))).toBe(false);
+    expect(validateAgainstSchema(page({ theme: { recipes: { cards: 'flat' } } }))).toBe(true);
+    expect(validateAgainstSchema(page({ theme: { recipes: { cards: 'glass' } } }))).toBe(false);
+    expect(validateAgainstSchema(page({ theme: { recipes: { css: 'flat' } } }))).toBe(false);
   });
 });

@@ -13,8 +13,10 @@
  * to be useful here (it only has to distinguish the compiler's own elements).
  */
 
+import { ADAPTER_STYLE_MARKER } from '../diagram/adapter.js';
 import { stableHash } from '../hash.js';
 import type { IrDocument, NetworkPolicy } from '../ir.js';
+import { nonDefaultRecipes } from '../theme/recipes.js';
 import { escapeAttribute, escapeText } from './escape.js';
 import { needsLiveRegion } from './runtime.js';
 
@@ -31,8 +33,19 @@ export interface DocumentInput {
   density: string;
   /** The theme turned motion off; the runtime reads this from the root element. */
   motionDisabled?: boolean;
+  /**
+   * Resolved component recipes. Each non-default choice becomes a
+   * `data-r-<surface>` attribute that scopes its recipe sheet; defaults emit
+   * nothing, so a page without recipes keeps its bytes.
+   */
+  recipes?: Readonly<Record<string, string>>;
   /** Rendered page outline; omitted or empty when the page has none. */
   outline?: string;
+  /**
+   * Emit the live region. Omitted: derived from the core features the page's
+   * blocks declare; the compiler passes it so registry features count too.
+   */
+  liveRegion?: boolean;
 }
 
 export interface AssembledDocument {
@@ -88,14 +101,29 @@ export function buildContentSecurityPolicy(input: DocumentInput): {
   };
 }
 
+/**
+ * Give accepted diagram adapter `<style>` elements the page style nonce.
+ *
+ * Adapter markup passed the trust check before it reached the body, and the
+ * renderer marked each of its style elements. Spec text cannot forge the
+ * marker, because every `<` in spec text is escaped. The policy stays
+ * nonce-only: no `'unsafe-inline'`, and inline `style` attributes stay refused.
+ */
+function nonceAdapterStyles(body: string, styleNonce: string): string {
+  return body.replaceAll(
+    `<style ${ADAPTER_STYLE_MARKER}`,
+    `<style nonce="${escapeAttribute(styleNonce)}" ${ADAPTER_STYLE_MARKER}`,
+  );
+}
+
 export function assembleDocument(input: DocumentInput): AssembledDocument {
   const { csp, styleNonce, scriptNonce } = buildContentSecurityPolicy(input);
   const { meta } = input.ir;
-  const liveRegion = needsLiveRegion(
-    new Set(input.ir.nodes.flatMap((node) => node.runtimeFeatures)),
-  )
-    ? `<div class="ak-sr" data-ak-live role="status" aria-live="polite"></div>`
-    : '';
+  const liveRegion =
+    (input.liveRegion ??
+    needsLiveRegion(new Set(input.ir.nodes.flatMap((node) => node.runtimeFeatures))))
+      ? `<div class="ak-sr" data-ak-live role="status" aria-live="polite"></div>`
+      : '';
   const themeToggle = input.themeToggle
     ? `<div class="ak-page-bar"><button type="button" class="ak-btn ak-theme-toggle" data-ak-theme-toggle aria-pressed="false" aria-label="Toggle dark theme">Dark</button></div>`
     : '';
@@ -125,9 +153,12 @@ export function assembleDocument(input: DocumentInput): AssembledDocument {
   ].join('');
 
   const outline = input.outline ?? '';
+  const recipeAttributes = nonDefaultRecipes(input.recipes)
+    .map(([surface, choice]) => ` data-r-${surface}="${escapeAttribute(choice)}"`)
+    .join('');
   const html = [
     '<!DOCTYPE html>',
-    `<html lang="${escapeAttribute(meta.locale)}" data-density="${escapeAttribute(input.density)}"${input.motionDisabled === true ? ' data-motion="none"' : ''}>`,
+    `<html lang="${escapeAttribute(meta.locale)}" data-density="${escapeAttribute(input.density)}"${input.motionDisabled === true ? ' data-motion="none"' : ''}${recipeAttributes}>`,
     '<head>',
     '<meta charset="utf-8" />',
     '<meta name="viewport" content="width=device-width, initial-scale=1" />',
@@ -144,7 +175,7 @@ export function assembleDocument(input: DocumentInput): AssembledDocument {
     '<div class="ak-progress-rail" aria-hidden="true"></div>',
     `<div class="ak-shell${outline === '' ? '' : ' ak-shell--outline'}">`,
     themeToggle,
-    input.body,
+    nonceAdapterStyles(input.body, styleNonce),
     outline,
     colophon,
     '</div>',

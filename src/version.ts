@@ -6,7 +6,7 @@
  * asserts that it stays equal to the `version` field in `package.json`, so a
  * release that forgets one of them fails fast.
  */
-export const VERSION = '0.2.0';
+export const VERSION = '0.3.0';
 
 /** Published package name, used by CLI output and release tooling. */
 export const PACKAGE_NAME = '@bestagentkits/render';

@@ -1,0 +1,154 @@
+version: 1
+
+meta:
+  title: Northwind Ships Reports in Minutes
+  description: How Northwind moved weekly reporting to compiled pages, with outcomes, customer quotes, plans and the team behind it
+  locale: en
+
+theme:
+  preset: product-studio
+
+policy:
+  network: deny
+
+blocks:
+  - type: hero
+    eyebrow: Case study · Northwind Logistics
+    title: Weekly reports in minutes, not afternoons
+    description: Northwind replaced hand-built HTML reports with compiled pages that agents write from a short spec.
+    src: assets/shot-dashboard.webp
+    alt: A compiled report page showing compiler health KPIs above a bar chart
+
+  - type: section
+    id: outcomes
+    title: Outcomes
+    blocks:
+      - type: stats
+        items:
+          - label: Time to publish
+            value: 6 min
+          - label: Reports per week
+            value: '42'
+          - label: Tokens per report
+            value: −68%
+          - label: Broken layouts since launch
+            value: '0'
+      - type: testimonial
+        items:
+          - quote: We stopped reviewing markup. Now we review what the report says, which is the part that matters.
+            name: Priya Raman
+            role: Head of Operations, Northwind
+
+  - type: section
+    id: product
+    title: What the team uses
+    blocks:
+      - type: gallery
+        title: Pages from the first month
+        items:
+          - src: assets/shot-dashboard.webp
+            alt: Compiler health report with four KPI cards and a bar chart
+            caption: A health dashboard with KPIs and a chart.
+          - src: assets/shot-plan.webp
+            alt: Implementation plan titled Ship the declarative page compiler
+            caption: A delivery plan shared with leadership.
+          - src: assets/shot-diff.webp
+            alt: Change summary for a deterministic encoding pass
+            caption: A change summary for a release.
+          - src: assets/shot-recap.webp
+            alt: Recap page titled Two weeks of compiler work
+            caption: The recap sent every other Friday.
+          - src: assets/shot-explain-light.webp
+            alt: Explainer page titled From Page Spec to standalone artifact, with a code sample
+            caption: An explainer for new team members.
+          - src: assets/shot-showcase.webp
+            alt: Showcase page with a large headline over a framed browser screenshot
+            caption: A launch page for an internal tool.
+      - type: feature-matrix
+        title: Plan comparison
+        plans: [Starter, Team, Enterprise]
+        rows:
+          - feature: Offline compiler and CLI
+            values: [true, true, true]
+          - feature: Theme presets
+            values: ['4', All, All]
+          - feature: Shared datasets and filters
+            values: [false, true, true]
+          - feature: Hosted share links
+            values: [false, true, true]
+          - feature: Single sign-on
+            values: [false, false, true]
+          - feature: Support
+            values: [Community, Email, Named engineer]
+      - type: pricing
+        plans:
+          - name: Starter
+            price: 0
+            currency: USD
+            period: month
+            summary: For one person writing reports locally.
+            features:
+              - Offline compiler and CLI
+              - Four theme presets
+            cta: { label: Download, href: '#outcomes' }
+          - name: Team
+            price: 24
+            currency: USD
+            period: month
+            summary: Per seat, for teams that share reports.
+            highlight: true
+            features:
+              - Every preset and recipe
+              - Shared datasets and filters
+              - Hosted share links
+            cta: { label: Start a trial, href: '#outcomes' }
+          - name: Enterprise
+            price: Custom
+            summary: For companies with compliance needs.
+            features:
+              - Single sign-on
+              - Audit log export
+              - A named support engineer
+            cta: { label: Talk to us, href: '#team' }
+
+  - type: section
+    id: customers
+    title: Teams that ship the same way
+    blocks:
+      - type: logo-cloud
+        items:
+          - { name: Northwind, src: assets/logo-northwind.svg }
+          - { name: Lumen, src: assets/logo-lumen.svg }
+          - { name: Orbit, src: assets/logo-orbit.svg }
+          - { name: Harbor, src: assets/logo-harbor.svg }
+          - { name: Quill, src: assets/logo-quill.svg }
+          - { name: Vertex, src: assets/logo-vertex.svg }
+      - type: testimonial
+        items:
+          - quote: Our agents produce a report on the first try, and it looks the same every week.
+            name: Marco Silva
+            role: Data lead, Lumen
+          - quote: Pages open from a file in an air-gapped network. That alone got us through security review.
+            name: Hana Kobayashi
+            role: Platform engineer, Orbit
+          - quote: The dark mode and the print view came for free. Nobody had to ask.
+            name: Daniel Okafor
+            role: Analyst, Harbor
+
+  - type: section
+    id: team
+    title: The project team
+    blocks:
+      - type: people
+        items:
+          - name: Priya Raman
+            role: Head of Operations
+            bio: Owns the weekly operations review and its 42 reports.
+          - name: Tomás Ortega
+            role: Staff engineer
+            bio: Wrote the spec templates and the dataset export from the warehouse.
+            links:
+              - { label: Talk notes, href: '#product' }
+          - name: Aiko Tanaka
+            role: Designer
+            bio: Picked the preset and reviewed every page in light and dark.

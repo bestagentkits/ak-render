@@ -1,6 +1,6 @@
 {
   "name": "@bestagentkits/render",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": false,
   "description": "Declarative Page Spec compiler: deterministic, offline, interactive standalone HTML from JSON/YAML.",
   "keywords": [
@@ -62,6 +62,7 @@
     "bench:render": "node benchmarks/render-benchmark.mjs",
     "bench:browser": "playwright test tests/browser/benchmark.spec.ts",
     "bench": "pnpm build && pnpm bench:render && pnpm bench:browser",
+    "bench:spec": "pnpm build && node benchmarks/spec-compression.mjs",
     "fonts:generate": "node scripts/generate-embedded-fonts.mjs",
     "fonts:check": "node scripts/generate-embedded-fonts.mjs --check",
     "schema:generate": "node scripts/generate-json-schema.mjs",
@@ -70,9 +71,12 @@
     "snapshots:check": "node scripts/generate-theme-snapshots.mjs --check",
     "site:build": "pnpm build && node scripts/build-site.mjs",
     "site:deploy": "pnpm site:build && wrangler deploy --config site/wrangler.jsonc",
-    "verify": "pnpm lint && pnpm typecheck && pnpm fonts:check && pnpm test && pnpm build"
+    "recipes:generate": "node scripts/generate-recipes-module.mjs",
+    "recipes:check": "node scripts/generate-recipes-module.mjs --check",
+    "verify": "pnpm lint && pnpm typecheck && pnpm fonts:check && pnpm recipes:check && pnpm test && pnpm build"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@biomejs/biome": "^2.4.12",
     "@playwright/test": "^1.56.0",
     "@types/node": "^22.15.0",

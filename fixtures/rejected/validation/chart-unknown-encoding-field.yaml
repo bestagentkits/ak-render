@@ -1,0 +1,16 @@
+version: 1
+meta:
+  title: Chart with an unknown encoding field
+  description: The y encoding names a field the dataset does not have.
+datasets:
+  usage:
+    - { month: Jan, model: Opus, tokens: 42000 }
+    - { month: Feb, model: Opus, tokens: 51000 }
+blocks:
+  - type: chart
+    kind: stacked-bar
+    title: Tokens per month
+    dataRef: usage
+    x: { field: month }
+    y: { field: token }
+    series: { field: model }

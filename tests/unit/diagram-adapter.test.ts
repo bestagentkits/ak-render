@@ -61,6 +61,29 @@ describe('diagram adapter: public contract', () => {
     expect(seen?.spec).toMatchObject({ meta: { title: 'Compiler pipeline' } });
   });
 
+  it('puts adapter output in a named, keyboard-scrollable region', () => {
+    const result = compile(SPEC, { diagramAdapter: adapter(() => VALID_SVG) });
+    expect(result.html).toContain(
+      '<div class="ak-diagram-rendered" data-ak-diagram-adapter="test-adapter" role="region" aria-label="Compiler pipeline" tabindex="0"><div class="ak-diagram-canvas" data-ak-diagram-scope="arch"><svg',
+    );
+  });
+
+  it('folds the text description behind a closed disclosure when the adapter rendered', () => {
+    const result = compile(SPEC, { diagramAdapter: adapter(() => VALID_SVG) });
+    expect(result.html).toMatch(
+      /<details class="ak-diagram-details" data-ak-diagram-fallback><summary>Text description<\/summary><div class="ak-diagram-fallback">/u,
+    );
+    expect(result.html).not.toMatch(/<details class="ak-diagram-details"[^>]*\sopen/u);
+    expect(result.html).not.toContain('no diagram adapter is configured');
+  });
+
+  it('shows the description openly when there is no drawing', () => {
+    const result = compile(SPEC);
+    expect(result.html).not.toContain('<details class="ak-diagram-details"');
+    expect(result.html).not.toContain('role="region"');
+    expect(result.html).toContain('<div class="ak-diagram-fallback" data-ak-diagram-fallback>');
+  });
+
   it('uses the structured fallback when no adapter is configured', () => {
     const result = compile(SPEC);
     expect(result.html).not.toContain('data-ak-diagram-adapter');
@@ -166,5 +189,128 @@ describe('diagram adapter: trust boundary', () => {
       { spec: null, title: 'T', nodeId: 'n' },
     );
     expect(result?.rejected).toBe('empty output');
+  });
+});
+
+describe('diagram adapter: page style policy', () => {
+  const STYLED_SVG =
+    '<svg viewBox="0 0 10 10" role="img" aria-label="Styled"><style>.n{fill:#fff}</style><rect class="n" x="1" y="1" width="8" height="8" /></svg>';
+
+  // The policy sits in a meta attribute, so its quotes are entity-escaped.
+  function policy(html: string): string {
+    const content = /http-equiv="Content-Security-Policy" content="([^"]+)"/u.exec(html)?.[1];
+    return (content ?? '').replaceAll('&#39;', "'");
+  }
+
+  function styleNonce(html: string): string {
+    const match = /style-src 'nonce-([^']+)'/u.exec(policy(html));
+    if (match?.[1] === undefined) throw new Error('page has no style nonce');
+    return match[1];
+  }
+
+  it('gives adapter style elements the page style nonce', () => {
+    const result = compile(SPEC, { diagramAdapter: adapter(() => STYLED_SVG) });
+    const nonce = styleNonce(result.html);
+    expect(result.html).toContain(
+      `<style nonce="${nonce}" data-ak-adapter-style>@scope (.ak-diagram-canvas[data-ak-diagram-scope="arch"]){.n{fill:#fff}}</style>`,
+    );
+    // Every style element on the page carries the one page nonce.
+    const styleTags = result.html.match(/<style\b[^>]*>/gu) ?? [];
+    expect(styleTags.length).toBe(2);
+    for (const tag of styleTags) expect(tag).toContain(`nonce="${nonce}"`);
+    expect(result.warnings).toEqual([]);
+  });
+
+  it('keeps the policy nonce-only', () => {
+    const result = compile(SPEC, { diagramAdapter: adapter(() => STYLED_SVG) });
+    expect(policy(result.html)).not.toMatch(/unsafe-inline/u);
+    expect(policy(result.html)).toMatch(/style-src 'nonce-[^']+';/u);
+  });
+
+  it('normalises the style tag and keeps its other attributes', () => {
+    const result = compile(SPEC, {
+      diagramAdapter: adapter(() => STYLED_SVG.replace('<style>', '<STYLE media="all">')),
+    });
+    const nonce = styleNonce(result.html);
+    expect(result.html).toContain(`<style nonce="${nonce}" data-ak-adapter-style media="all">`);
+  });
+
+  it('rejects markup that writes its own nonce', () => {
+    const result = compile(SPEC, {
+      diagramAdapter: adapter(() => STYLED_SVG.replace('<style>', '<style nonce="guessed">')),
+    });
+    expect(result.html).not.toContain('guessed');
+    expect(result.html).not.toContain('data-ak-diagram-adapter');
+    expect(result.warnings[0]?.message).toContain('nonce attribute');
+  });
+
+  it('cannot be tricked into writing the nonce inside an attribute value', () => {
+    // The style marker inside a quoted value would otherwise receive the nonce,
+    // and the quote the nonce brings would end the attribute early.
+    const markup =
+      '<svg viewBox="0 0 10 10"><g aria-label="<style data-ak-adapter-style">x</g></svg>';
+    const result = compile(SPEC, { diagramAdapter: adapter(() => markup) });
+    expect(result.html).not.toContain('aria-label="<style');
+    expect(result.html).not.toContain('data-ak-diagram-adapter');
+    expect(result.warnings[0]?.message).toContain('reserved page attribute');
+    const styleTags = result.html.match(/<style\b[^>]*>/gu) ?? [];
+    expect(styleTags).toHaveLength(1);
+  });
+
+  it('rejects markup that claims the canvas scope attribute', () => {
+    expect(
+      checkAdapterMarkup('<svg><g data-ak-diagram-scope="other"><rect /></g></svg>'),
+    ).toMatchObject({ ok: false, reason: 'reserved page attribute' });
+  });
+
+  it('scopes each panel to its own canvas', () => {
+    const twoPanels = `${SPEC}  - type: diagram-panel
+    id: second
+    title: Second
+    spec:
+      components:
+        - id: x
+          label: X
+`;
+    const result = compile(twoPanels, { diagramAdapter: adapter(() => STYLED_SVG) });
+    expect(result.html).toContain('@scope (.ak-diagram-canvas[data-ak-diagram-scope="arch"])');
+    expect(result.html).toContain('@scope (.ak-diagram-canvas[data-ak-diagram-scope="second"])');
+    expect(result.html).toContain('<div class="ak-diagram-canvas" data-ak-diagram-scope="second">');
+  });
+
+  it('removes inline style attributes and says so', () => {
+    const markup =
+      '<svg viewBox="0 0 10 10"><rect class="n" style="--step:1" x="1" /><rect style=\'fill:red\' y="2"/></svg>';
+    const result = compile(SPEC, { diagramAdapter: adapter(() => markup) });
+    expect(result.html).toContain('<rect class="n" x="1" />');
+    expect(result.html).toContain('<rect y="2" />');
+    expect(result.html).not.toContain('--step:1');
+    expect(result.warnings).toHaveLength(1);
+    expect(result.warnings[0]?.message).toMatch(/2 inline style attribute\(s\)/u);
+    expect(result.warnings[0]?.message).toContain('test-adapter');
+  });
+
+  it('leaves text that merely mentions a style attribute alone', () => {
+    const markup = '<svg viewBox="0 0 10 10"><text x="1">use style="x" sparingly</text></svg>';
+    const result = compile(SPEC, { diagramAdapter: adapter(() => markup) });
+    expect(result.html).toContain('<text x="1">use style="x" sparingly</text>');
+    expect(result.warnings).toEqual([]);
+  });
+
+  it('rejects adapter CSS that would load another stylesheet or a remote resource', () => {
+    expect(checkAdapterMarkup('<svg><style>@import "x.css";</style></svg>')).toMatchObject({
+      ok: false,
+      reason: 'CSS @import',
+    });
+    expect(
+      checkAdapterMarkup('<svg><style>.n{fill:url(https://evil.example/x)}</style></svg>'),
+    ).toMatchObject({ ok: false, reason: 'remote CSS url()' });
+    expect(checkAdapterMarkup('<svg><rect fill="url(#grad)" /></svg>')).toEqual({ ok: true });
+  });
+
+  it('is deterministic with styled output', () => {
+    const first = compile(SPEC, { diagramAdapter: adapter(() => STYLED_SVG) });
+    const second = compile(SPEC, { diagramAdapter: adapter(() => STYLED_SVG) });
+    expect(second.html).toBe(first.html);
   });
 });

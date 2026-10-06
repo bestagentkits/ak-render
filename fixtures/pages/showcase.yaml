@@ -29,7 +29,7 @@ blocks:
       - Opens from file://
       - Nonce-locked styles and script
       - No inline handlers
-      - Six built-in themes
+      - Built-in themes
       - Light and dark
       - Reduced-motion aware
       - Keyboard first

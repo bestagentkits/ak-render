@@ -1,0 +1,22 @@
+{
+  "rules": [
+    {
+      "id": "expire-render-artifacts",
+      "enabled": true,
+      "conditions": { "prefix": "artifact/" },
+      "deleteObjectsTransition": { "condition": { "type": "Age", "maxAge": 86400 } }
+    },
+    {
+      "id": "expire-shares",
+      "enabled": true,
+      "conditions": { "prefix": "share/" },
+      "deleteObjectsTransition": { "condition": { "type": "Age", "maxAge": 2678400 } }
+    },
+    {
+      "id": "abort-incomplete-multipart-uploads",
+      "enabled": true,
+      "conditions": {},
+      "abortMultipartUploadsTransition": { "condition": { "type": "Age", "maxAge": 604800 } }
+    }
+  ]
+}

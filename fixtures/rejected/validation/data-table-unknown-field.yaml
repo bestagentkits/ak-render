@@ -1,0 +1,17 @@
+version: 1
+meta:
+  title: Unknown data-table column
+  description: A data-table column names a field the dataset does not have.
+datasets:
+  runs:
+    - model: atlas
+      p95: 420
+    - model: beacon
+      p95: 310
+blocks:
+  - type: data-table
+    dataRef: runs
+    columns:
+      - key: model
+      - key: latency
+        type: number

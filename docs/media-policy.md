@@ -38,7 +38,7 @@ blocks:
 
 | Capability | Covers |
 | --- | --- |
-| `images` | `image`, `gallery` sources |
+| `images` | `image`, `gallery` sources and a `video` block's `poster` |
 | `media` | `video`, `audio` sources |
 | `fonts` | reserved; no fonts are fetched (bundled faces are inlined as `data:`) |
 
@@ -93,5 +93,10 @@ remote origin at all.
 | `policy.network.providers: []` | `SPEC_VALIDATION_ERROR` |
 | `policy.network.providers: [mytube]` | `POLICY_VIOLATION` with the known provider list |
 | `policy.network.frames: true` | `SPEC_VALIDATION_ERROR` |
+| A remote video `poster` the policy does not allow as an image | `POLICY_VIOLATION` at `$.blocks[…].poster`, naming the reason |
+
+A poster is the one remote reference that is rejected instead of degraded: the
+fallback it would sit in already links to the video, so a blocked poster has
+nothing left to show. Use a local poster file, or add `images` to `allow`.
 
 `fixtures/rejected/` holds the injection fixtures this is verified against.
