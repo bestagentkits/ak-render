@@ -1,0 +1,56 @@
+# summary: Customer story with context, approach, measured before/after results, a quote and the team.
+# use-cases: customer case study; internal project retrospective; migration success story
+version: 1
+meta:
+  title: Replace with the customer — case study
+  description: Replace with the one-line outcome.
+theme:
+  preset: product-studio
+datasets:
+  results:
+    - { month: Jan, hours: 42 }
+    - { month: Feb, hours: 39 }
+    - { month: Mar, hours: 24 }
+    - { month: Apr, hours: 15 }
+    - { month: May, hours: 11 }
+    - { month: Jun, hours: 9 }
+blocks:
+  - type: hero
+    eyebrow: Case study
+    title: Replace with the result in one line
+    description: Replace with who the customer is and what they needed.
+  - type: kpi
+    items:
+      - { label: Manual hours per week, value: '9', delta: '-79%', trend: down, good: down }
+      - { label: Release frequency, value: Daily, delta: was weekly, trend: up, good: up }
+      - { label: Payback, value: 4 months }
+  - type: split
+    blocks:
+      - type: card
+        title: Challenge
+        text: |-
+          Replace with the situation before: the problem, its cost and why it mattered.
+
+          Replace with what the team tried first and why it fell short.
+      - type: steps
+        title: Approach
+        items:
+          - { title: Replace with step one, text: Replace with what was done. }
+          - { title: Replace with step two, text: Replace with what was done. }
+          - { title: Replace with step three, text: Replace with what was done. }
+  - type: chart
+    kind: area
+    title: Manual hours per week
+    dataRef: results
+    x: { field: month }
+    y: { field: hours, label: Hours, min: 0 }
+    markers:
+      - { x: Mar, label: Rollout }
+  - type: testimonial
+    items:
+      - { quote: Replace with the customer quote that sums up the result., name: Replace with a name, role: Replace with role and company }
+  - type: people
+    title: Team
+    items:
+      - { name: Replace with a name, role: Replace with a role, bio: Replace with one line on their part. }
+      - { name: Replace with a name, role: Replace with a role, bio: Replace with one line on their part. }

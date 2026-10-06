@@ -1,0 +1,69 @@
+# summary: KPI strip, trend and mix charts, and a filterable service table over shared datasets.
+# use-cases: weekly metrics review; service health overview; product analytics snapshot
+version: 1
+meta:
+  title: Replace with the dashboard title
+  description: Replace with one line on what this dashboard tracks.
+theme:
+  preset: data-console
+datasets:
+  weekly:
+    - { week: W1, requests: 182000 }
+    - { week: W2, requests: 196000 }
+    - { week: W3, requests: 211000 }
+    - { week: W4, requests: 238000 }
+  services:
+    - { service: api, owner: Platform, p95: 182, uptime: 99.95, status: healthy }
+    - { service: auth, owner: Identity, p95: 96, uptime: 99.99, status: healthy }
+    - { service: search, owner: Discovery, p95: 410, uptime: 99.2, status: degraded }
+    - { service: billing, owner: Payments, p95: 240, uptime: 99.9, status: healthy }
+    - { service: export, owner: Platform, p95: 880, uptime: 98.7, status: down }
+blocks:
+  - type: hero
+    eyebrow: Replace with a team or product
+    title: Replace with the dashboard headline
+    description: Replace the sample rows in datasets with your own numbers.
+  - type: kpi
+    items:
+      - { label: Requests, value: 238k, delta: '+12.8%', trend: up, good: up, series: [182, 196, 211, 238] }
+      - { label: Error rate, value: '0.63%', delta: '-0.6 pt', trend: down, good: down, series: [1.15, 0.92, 1.23, 0.63] }
+      - { label: p95 latency, value: 182 ms, delta: '-14 ms', trend: down, good: down }
+      - { label: Uptime, value: '99.9%', delta: flat, trend: flat }
+  - type: grid
+    blocks:
+      - type: grid-item
+        span: 8
+        tabletSpan: 12
+        blocks:
+          - type: chart
+            kind: line
+            title: Replace with the trend title
+            dataRef: weekly
+            x: { field: week }
+            y: { field: requests, label: Requests, format: compact, min: 0 }
+      - type: grid-item
+        span: 4
+        tabletSpan: 12
+        blocks:
+          - type: metric-breakdown
+            title: Traffic by client
+            format: compact
+            parts:
+              - { label: Web, value: 128400 }
+              - { label: Mobile, value: 73500 }
+              - { label: Partner API, value: 36100 }
+  - type: filter-bar
+    target: services-table
+    blocks:
+      - { type: select, label: Status, field: status, optionsFrom: status }
+      - { type: text-input, label: Service, field: service, match: contains }
+  - type: data-table
+    id: services-table
+    title: Replace with the table title
+    dataRef: services
+    columns:
+      - { key: service, label: Service }
+      - { key: owner, label: Owner }
+      - { key: p95, label: p95, type: number, unit: ms }
+      - { key: uptime, label: Uptime, type: percent, decimals: 2 }
+      - { key: status, label: Status, type: badge, tones: { healthy: success, degraded: warning, down: danger } }

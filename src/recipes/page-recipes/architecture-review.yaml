@@ -1,0 +1,64 @@
+# summary: Context, components, flows, trade-offs, risks and review findings for a system design.
+# use-cases: design review before build; service architecture overview; RFC or ADR companion page
+version: 1
+meta:
+  title: Replace with the system name — architecture review
+  description: Replace with the scope of this review.
+theme:
+  preset: blueprint
+datasets:
+  components:
+    - { name: Gateway, layer: Edge, owner: Platform, tech: Envoy, status: stable }
+    - { name: Orders API, layer: Service, owner: Commerce, tech: Go, status: stable }
+    - { name: Pricing, layer: Service, owner: Commerce, tech: Kotlin, status: changing }
+    - { name: Event bus, layer: Data, owner: Platform, tech: Kafka, status: stable }
+    - { name: Ledger DB, layer: Data, owner: Finance, tech: Postgres, status: new }
+blocks:
+  - type: hero
+    eyebrow: Architecture review
+    title: Replace with the decision this design supports
+    description: Replace with the problem and the constraints.
+  - type: main-aside
+    blocks:
+      - type: data-table
+        title: Components
+        dataRef: components
+        columns:
+          - { key: name, label: Component }
+          - { key: layer, label: Layer }
+          - { key: owner, label: Owner }
+          - { key: tech, label: Tech }
+          - { key: status, label: Status, type: badge, tones: { stable: success, changing: warning, new: info } }
+      - type: steps
+        title: Request flow
+        items:
+          - { title: Gateway authenticates, text: Replace with what happens at the edge. }
+          - { title: Orders API validates, text: Replace with the synchronous work. }
+          - { title: Event bus fans out, text: Replace with the asynchronous work. }
+    aside:
+      - type: key-value
+        title: Review facts
+        items:
+          - { key: Status, value: Replace with draft or approved }
+          - { key: Reviewers, value: Replace with names }
+          - { key: Decision due, value: Replace with a date }
+      - type: callout
+        tone: info
+        title: Out of scope
+        text: Replace with what this review does not cover.
+  - type: comparison
+    title: Trade-offs
+    left: { label: Chosen — event-driven, items: [Replace with a benefit, Replace with a cost] }
+    right: { label: Rejected — synchronous calls, items: [Replace with a benefit, Replace with a cost] }
+  - type: risk-matrix
+    title: Risks
+    items:
+      - { area: Event ordering, impact: high, likelihood: medium, note: Replace with the mitigation. }
+      - { area: Ledger migration, impact: high, likelihood: low, note: Replace with the mitigation. }
+      - { area: Team load, impact: medium, likelihood: medium, note: Replace with the mitigation. }
+  - type: code-review
+    title: Findings
+    items:
+      - { kind: good, title: Replace with a strength, text: Replace with why it holds up. }
+      - { kind: concern, title: Replace with a concern, text: Replace with the evidence and the ask. }
+      - { kind: question, title: Replace with an open question, text: Replace with who should answer it. }
