@@ -157,6 +157,8 @@ test.afterAll(() => {
  * partial measurement presented as a complete one.
  */
 test('measures every fixture for browser-side gates', async ({ page }) => {
+  // Every fixture runs in this one test, so the budget scales with the roster.
+  test.setTimeout(30_000 * Math.max(1, Math.ceil(fixtures.length / 3)));
   const measurements: FixtureMeasurement[] = [];
 
   for (const fixture of fixtures) {
@@ -242,7 +244,11 @@ test('measures every fixture for browser-side gates', async ({ page }) => {
     if ((await carouselNext.count()) > 0) {
       const statusBefore = await page.locator('[data-ak-carousel-status]').first().textContent();
       await carouselNext.first().click();
-      const statusAfter = await page.locator('[data-ak-carousel-status]').first().textContent();
+      const status = page.locator('[data-ak-carousel-status]').first();
+      await expect(status)
+        .not.toHaveText(String(statusBefore), { timeout: 2_000 })
+        .catch(() => undefined);
+      const statusAfter = await status.textContent();
       interactions.push({
         name: 'carousel-next',
         ok: statusAfter !== statusBefore,
