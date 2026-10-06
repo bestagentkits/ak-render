@@ -19,10 +19,18 @@
  *   node benchmarks/render-benchmark.mjs [--agentkit <path>] [--repeat 5]
  *                                        [--out docs/artifacts/benchmark-render.json]
  *
+ * Guidance on the AK Render path is what an agent reads for one page task:
+ * the AgentKit shared HTML contract (also counted in the legacy baseline), the
+ * agent skill shipped in this repository, `catalog`, and `describe --json` for
+ * each block type the task's fixture uses. `--agentkit` (or AGENTKIT_ROOT)
+ * points at an AgentKit checkout; the run fails when the shared contract is
+ * missing rather than silently shrinking the after side.
+ *
  * Token counts for guidance are estimates with a stated method; exact counts
  * require a tokenizer run and are deliberately not claimed.
  */
 
+import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -37,31 +45,24 @@ function argValue(flag, fallback) {
 }
 
 const AGENTKIT_ROOT = resolve(
-  argValue(
-    '--agentkit',
-    process.env['AGENTKIT_ROOT'] ??
-      join(REPO_ROOT, '..', 'feat-render-ak-render-declarative-interactive-pa'),
-  ),
+  argValue('--agentkit', process.env['AGENTKIT_ROOT'] ?? join(REPO_ROOT, '..', 'agentkit')),
 );
 const REPEAT = Number(argValue('--repeat', '5'));
 const OUT_JSON = resolve(REPO_ROOT, argValue('--out', 'docs/artifacts/benchmark-render.json'));
 const OUT_MD = OUT_JSON.replace(/\.json$/u, '.md');
 
-/** Presentation guidance a skill must load now that presentation is compiled. */
-const RENDER_GUIDANCE = [
-  'kits/core/skills/ak-render/SKILL.md',
-  'kits/core/skills/ak-render/references/page-spec-authoring.md',
-  'kits/core/skills/ak-render/references/integration.md',
-  'kits/core/skills/ak-preview/references/html-skill-composition.md',
-];
+const CLI = join(REPO_ROOT, 'dist/cli.js');
+const AGENT_SKILL = 'skills/ak-render/SKILL.md';
+/** The AgentKit shared HTML contract a producer skill loads on either route. */
+const SHARED_CONTRACT = 'kits/core/skills/ak-preview/references/html-skill-composition.md';
 
-/** Legacy tasks the baseline measured, for a like-for-like comparison. */
+/** Legacy tasks the baseline measured, each paired with the fixture of the same kind. */
 const COMPARABLE_TASKS = [
-  'explain-html',
-  'brainstorm-html',
-  'plan-review-engineer',
-  'plan-review-marketing',
-  'preview-diff',
+  { task: 'explain-html', fixture: 'explain.yaml' },
+  { task: 'brainstorm-html', fixture: 'brainstorm.yaml' },
+  { task: 'plan-review-engineer', fixture: 'plan.yaml' },
+  { task: 'plan-review-marketing', fixture: 'plan.yaml' },
+  { task: 'preview-diff', fixture: 'diff.yaml' },
 ];
 
 function estimateTokens(chars) {
@@ -82,6 +83,26 @@ function measureFile(path) {
     lines: text.split('\n').length,
     estimatedTokens: estimateTokens(text.length),
   };
+}
+
+function cli(args) {
+  return execFileSync(process.execPath, [CLI, ...args], { encoding: 'utf8' });
+}
+
+/** Distinct block types a fixture uses, in first-use order. */
+function blockTypes(spec) {
+  return [...new Set([...spec.matchAll(/^\s*-?\s*type:\s*([a-z-]+)\s*$/gmu)].map((m) => m[1]))];
+}
+
+function gitRevision(root) {
+  try {
+    return execFileSync('git', ['-C', root, 'rev-parse', '--short=9', 'HEAD'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+  } catch {
+    return 'unknown';
+  }
 }
 
 function median(values) {
@@ -144,21 +165,55 @@ for (const fixture of fixtures) {
   });
 }
 
-const guidance = RENDER_GUIDANCE.map((rel) => {
-  const absolute = join(AGENTKIT_ROOT, rel);
-  return existsSync(absolute) ? measureFile(absolute) : { path: rel, missing: true };
+const sharedContractPath = join(AGENTKIT_ROOT, SHARED_CONTRACT);
+if (!existsSync(sharedContractPath)) {
+  console.error(
+    `render-benchmark: ${SHARED_CONTRACT} not found under ${AGENTKIT_ROOT}; pass --agentkit <AgentKit checkout>`,
+  );
+  process.exit(1);
+}
+
+const catalogText = cli(['catalog']);
+const guidance = [
+  { ...measureFile(sharedContractPath), path: `agentkit:${SHARED_CONTRACT}` },
+  { ...measureFile(join(REPO_ROOT, AGENT_SKILL)), path: AGENT_SKILL },
+  {
+    path: 'ak-render catalog',
+    bytes: Buffer.byteLength(catalogText),
+    chars: catalogText.length,
+    lines: catalogText.split('\n').length,
+    estimatedTokens: estimateTokens(catalogText.length),
+  },
+];
+const fixedChars = guidance.reduce((sum, entry) => sum + entry.chars, 0);
+
+const describeCache = new Map();
+function describeChars(type) {
+  if (!describeCache.has(type)) describeCache.set(type, cli(['describe', type, '--json']).length);
+  return describeCache.get(type);
+}
+
+const taskGuidance = COMPARABLE_TASKS.map(({ task, fixture }) => {
+  const types = blockTypes(readFileSync(join(FIXTURE_DIR, fixture), 'utf8'));
+  const describe = types.reduce((sum, type) => sum + describeChars(type), 0);
+  const chars = fixedChars + describe;
+  return {
+    task,
+    fixture,
+    blockTypes: types,
+    describeChars: describe,
+    chars,
+    estimatedTokens: estimateTokens(chars),
+  };
 });
 
-const guidanceTotals = guidance.reduce(
-  (accumulator, entry) => {
-    if (entry.missing === true) return accumulator;
-    accumulator.files += 1;
-    accumulator.chars += entry.chars;
-    return accumulator;
-  },
-  { files: 0, chars: 0 },
-);
-guidanceTotals.estimatedTokens = estimateTokens(guidanceTotals.chars);
+const afterPoints = taskGuidance.map((entry) => entry.estimatedTokens.point);
+const guidanceTotals = {
+  fixedChars,
+  fixedEstimatedTokens: estimateTokens(fixedChars),
+  minTaskTokens: Math.min(...afterPoints),
+  maxTaskTokens: Math.max(...afterPoints),
+};
 
 let baseline = null;
 if (existsSync(BASELINE_PATH)) {
@@ -167,13 +222,14 @@ if (existsSync(BASELINE_PATH)) {
 
 const comparison = [];
 if (baseline !== null) {
-  for (const taskId of COMPARABLE_TASKS) {
-    const task = baseline.tasks?.find((candidate) => candidate.id === taskId);
+  for (const entry of taskGuidance) {
+    const task = baseline.tasks?.find((candidate) => candidate.id === entry.task);
     if (task === undefined) continue;
     const before = task.estimatedTokens?.point ?? 0;
-    const after = guidanceTotals.estimatedTokens.point;
+    const after = entry.estimatedTokens.point;
     comparison.push({
-      task: taskId,
+      task: entry.task,
+      fixture: entry.fixture,
       skill: task.skill,
       mode: task.mode,
       beforeTokens: before,
@@ -196,11 +252,13 @@ const artifact = {
     tokenEstimate:
       'Estimated from character count at 4 chars/token (point), bounded by 4.5 and 3.5 chars/token. Exact tokenizer counts are not claimed.',
     guidanceScope:
-      'Presentation guidance a skill must load now that presentation is compiled. Excludes the invoking skill body, fixture content, model output, and retries.',
-    agentkitRoot: AGENTKIT_ROOT,
+      'Presentation guidance an agent loads for one page task on the AK Render path: the AgentKit shared HTML contract (also counted in the legacy baseline), the ak-render agent skill, `catalog`, and `describe --json` for each block type the matching fixture uses. Excludes the invoking skill body, fixture content, model output, and retries.',
+    agentkitRevision: gitRevision(AGENTKIT_ROOT),
+    renderRevision: gitRevision(REPO_ROOT),
   },
   guidance: {
     files: guidance,
+    tasks: taskGuidance,
     totals: guidanceTotals,
   },
   compile: compileResults,
@@ -267,7 +325,8 @@ const comparisonRows =
 const markdown = `# AK Render benchmark
 
 Generated by \`${artifact.producer}\` on ${artifact.measuredAt} against
-\`${artifact.compiler.name}@${artifact.compiler.version}\`.
+\`${artifact.compiler.name}@${artifact.compiler.version}\` (ak-render revision
+\`${artifact.method.renderRevision}\`, AgentKit revision \`${artifact.method.agentkitRevision}\`).
 
 Measured here: compiler time, emitted bytes, node counts, determinism, and the
 presentation guidance a skill must load. Browser-side metrics live in
@@ -288,17 +347,19 @@ Every fixture compiles to identical bytes and an identical hash across ${REPEAT}
 
 ${artifact.method.guidanceScope}
 
-| File | Chars | Estimated tokens (point) |
-|---|---|---|
-${guidance
-  .map((entry) =>
-    entry.missing === true
-      ? `| \`${entry.path}\` | _(missing)_ | |`
-      : `| \`${entry.path}\` | ${entry.chars} | ${entry.estimatedTokens.point} |`,
-  )
-  .join('\n')}
+Loaded on every task:
 
-**Total: ${guidanceTotals.chars} chars, ~${guidanceTotals.estimatedTokens.point} estimated tokens** across ${guidanceTotals.files} files.
+| Source | Chars | Estimated tokens (point) |
+|---|---|---|
+${guidance.map((entry) => `| \`${entry.path}\` | ${entry.chars} | ${entry.estimatedTokens.point} |`).join('\n')}
+
+Plus \`describe --json\` for each block type the task's fixture uses:
+
+| Task | Fixture | Block types | Describe chars | Total chars | Estimated tokens (point) |
+|---|---|---|---|---|---|
+${taskGuidance.map((entry) => `| \`${entry.task}\` | \`${entry.fixture}\` | ${entry.blockTypes.length} | ${entry.describeChars} | ${entry.chars} | ${entry.estimatedTokens.point} |`).join('\n')}
+
+**Per task: ~${guidanceTotals.minTaskTokens}–${guidanceTotals.maxTaskTokens} estimated tokens.**
 
 ## Baseline comparison
 
@@ -330,6 +391,6 @@ for (const entry of compileResults) {
   );
 }
 console.log(
-  `  guidance: ${guidanceTotals.chars} chars (~${guidanceTotals.estimatedTokens.point} tokens)`,
+  `  guidance per task: ~${guidanceTotals.minTaskTokens}-${guidanceTotals.maxTaskTokens} tokens`,
 );
 console.log(`  ${artifact.regressionAnalysis.verdict}`);

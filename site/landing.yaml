@@ -129,8 +129,8 @@ blocks:
       - type: kpi
         items:
           - label: Presentation context
-            value: −87%
-            caption: 'Benchmarked: 87–88%. 33.7k–36.6k tokens of legacy guidance against 4.4k for catalog and contracts'
+            value: −80%
+            caption: 'Benchmarked: 80–81%. 33.7k–36.6k tokens of legacy guidance against 6.3k–6.9k for skill, catalog and block contracts'
           - label: Typical task, estimated
             value: −73%
             caption: 47.5k → 12.7k tokens, summed from measured parts at 4 characters per token
@@ -179,7 +179,7 @@ blocks:
       - type: callout
         tone: info
         title: Measured, estimated, and not yet measured
-        text: 'Character counts are measured; tokens are estimated at 4 characters per token, with no tokenizer or live model run. The 87–88% figure comes from benchmarks/render-benchmark.mjs. The 73% task figure adds measured parts, and the spec size is projected from the legacy pages'' visible text. A page that is mostly prose saves little or nothing on output: one of the 12 grew by 29%. Live A/B runs, repair loops and wall time are not measured yet. Method and data: docs/artifacts/agent-token-cost.md.'
+        text: 'Character counts are measured; tokens are estimated at 4 characters per token, with no tokenizer or live model run. The 80–81% figure comes from benchmarks/render-benchmark.mjs. The 73% task figure adds measured parts, and the spec size is projected from the legacy pages'' visible text. A page that is mostly prose saves little or nothing on output: one of the 12 grew by 29%. Live A/B runs, repair loops and wall time are not measured yet. Method and data: docs/artifacts/agent-token-cost.md.'
 
   - type: section
     id: blocks

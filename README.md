@@ -200,8 +200,9 @@ is guidance it reads, the spec it writes, and a one-line summary it reads back.
 | Returned into context | the written page is already there | 0.1k (render summary) |
 | **Total, estimated** | **47.5k** | **12.7k (−73%)** |
 
-- **Benchmarked:** presentation context drops 87–88%, from 33.7k–36.6k tokens
-  of legacy guidance to 4.4k
+- **Benchmarked:** presentation context drops 80–81%, from 33.7k–36.6k tokens
+  of legacy guidance to 6.3k–6.9k for the shared contract, skill, catalog and
+  the `describe` output of the blocks a task uses
   ([render benchmark](./docs/artifacts/benchmark-render.md)).
 - **Measured on 12 HTML pages agents wrote in real projects:** a median of 26%
   of each page is visible text; the rest is markup, CSS and script. The
