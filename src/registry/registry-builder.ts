@@ -14,6 +14,7 @@ import {
   type BlockRegistry,
   type FeatureModule,
 } from './block-module.js';
+import type { PropSchema } from './prop-schema.js';
 import { type BlockDefinition, CORE_BLOCK_DEFINITIONS, CORE_RUNTIME_FEATURES } from './roster.js';
 
 const FEATURE_NAME_PATTERN = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
@@ -59,8 +60,67 @@ function checkMetadata(definition: BlockDefinition): void {
   }
 }
 
+function containsBlocks(schema: PropSchema): boolean {
+  switch (schema.kind) {
+    case 'blocks':
+      return true;
+    case 'list':
+    case 'record':
+      return containsBlocks(schema.of);
+    case 'object':
+      return Object.values(schema.fields).some(containsBlocks);
+    case 'oneOf':
+      return schema.options.some(containsBlocks);
+    default:
+      return false;
+  }
+}
+
+/**
+ * A `blocks` prop may sit at the top level of a block's props or as a field of
+ * a `list(obj(...))` prop, and nowhere deeper: the slot key and the IR path
+ * have exactly those two shapes. `blocks` itself is the child-slot key.
+ */
+function checkSlotPositions(definition: BlockDefinition): void {
+  const reject = (key: string): never => {
+    throw registrationError(
+      `block "${definition.type}" places a blocks prop at "${key}"; only a top-level prop or a field of a list of objects may hold blocks`,
+    );
+  };
+  for (const [key, prop] of Object.entries(definition.props)) {
+    if (prop.kind === 'blocks') {
+      if (key === 'blocks') reject(key);
+      continue;
+    }
+    if (prop.kind === 'list' && prop.of.kind === 'object') {
+      for (const [field, schema] of Object.entries(prop.of.fields)) {
+        if (schema.kind !== 'blocks' && containsBlocks(schema)) reject(`${key}[].${field}`);
+      }
+      continue;
+    }
+    if (containsBlocks(prop)) reject(key);
+  }
+}
+
+/** Every `accepts` list of a definition's `blocks` props, top-level and in list items. */
+function slotAccepts(definition: BlockDefinition): (readonly string[])[] {
+  const lists: (readonly string[])[] = [];
+  const add = (schema: PropSchema): void => {
+    if (schema.kind === 'blocks' && Array.isArray(schema.accepts)) lists.push(schema.accepts);
+  };
+  for (const prop of Object.values(definition.props)) {
+    add(prop);
+    if (prop.kind === 'list' && prop.of.kind === 'object')
+      Object.values(prop.of.fields).forEach(add);
+  }
+  const children = definition.slots?.children?.accepts;
+  if (Array.isArray(children)) lists.push(children);
+  return lists;
+}
+
 function checkDefinition(definition: BlockDefinition, features: Set<string>): void {
   checkMetadata(definition);
+  checkSlotPositions(definition);
   for (const feature of definition.runtimeFeatures) {
     if (!features.has(feature)) {
       throw registrationError(`block "${definition.type}" uses unknown feature "${feature}"`);
@@ -71,8 +131,8 @@ function checkDefinition(definition: BlockDefinition, features: Set<string>): vo
 /**
  * Assemble a registry from the core roster plus block groups, in order.
  * Throws on a duplicate block type or feature, a block that names an unknown
- * feature or parent, invalid catalog metadata, or a feature whose css lacks
- * its marker.
+ * feature, parent or accepted type, a `blocks` prop in an unsupported
+ * position, invalid catalog metadata, or a feature whose css lacks its marker.
  */
 export function buildRegistry(groups: readonly BlockGroup[]): BlockRegistry {
   const featureNames = new Set<string>(CORE_RUNTIME_FEATURES);
@@ -106,6 +166,11 @@ export function buildRegistry(groups: readonly BlockGroup[]): BlockRegistry {
     for (const parent of definition.parents ?? []) {
       if (parent !== 'page' && !byType.has(parent)) {
         throw registrationError(`block "${definition.type}" names unknown parent "${parent}"`);
+      }
+    }
+    for (const accepted of slotAccepts(definition).flat()) {
+      if (!byType.has(accepted)) {
+        throw registrationError(`block "${definition.type}" accepts unknown type "${accepted}"`);
       }
     }
   }

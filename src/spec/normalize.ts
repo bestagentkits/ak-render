@@ -18,9 +18,10 @@ import type { BlockRegistry, CheckContext } from '../registry/block-module.js';
 import { NODE_ID_PATTERN, validateProps } from '../registry/prop-schema.js';
 import { blockTypes, DEFAULT_REGISTRY, getBlockDefinition } from '../registry/registry.js';
 import type { BlockDefinition, RuntimeFeature } from '../registry/roster.js';
+import { slotKey } from '../render/render-context.js';
 import { VERSION } from '../version.js';
 import { type BindingMap, validateBindingsDeep } from './bindings.js';
-import { type BoundsReport, checkBounds } from './bounds.js';
+import { type BoundsReport, checkBounds, LIMITS } from './bounds.js';
 import { scanForbiddenKeys } from './forbidden.js';
 import { migrateSpec } from './migrate.js';
 import { blockedReason, imageReferenceAllowed } from './network-policy.js';
@@ -368,12 +369,101 @@ function resolveNodeId(
   return { id: candidate, authorSupplied: false };
 }
 
+/** Where a block is being built: its parent's type and the slot's accepted types. */
+interface Placement {
+  parentType: string;
+  accepts: readonly string[] | '*' | undefined;
+}
+
+/**
+ * Enforce a slot's `accepts` list and the child's own `parents` list. Both are
+ * reported at the child's `.type` path, with the allowed types.
+ */
+function checkPlacement(
+  definition: BlockDefinition,
+  placement: Placement,
+  path: string,
+  bag: DiagnosticBag,
+): void {
+  const { accepts, parentType } = placement;
+  if (Array.isArray(accepts) && !accepts.includes(definition.type)) {
+    bag.add({
+      code: 'SPEC_VALIDATION_ERROR',
+      path: pathKey(path, 'type'),
+      message: `"${parentType}" does not accept a "${definition.type}" block here`,
+      details: { type: definition.type, allowed: [...accepts] },
+    });
+  }
+  const parents = definition.parents;
+  if (parents !== undefined && !parents.includes(parentType)) {
+    bag.add({
+      code: 'SPEC_VALIDATION_ERROR',
+      path: pathKey(path, 'type'),
+      message: `a "${definition.type}" block must be placed directly inside ${parents
+        .map((parent) => `"${parent}"`)
+        .join(' or ')}`,
+      details: { type: definition.type, allowed: [...parents] },
+    });
+  }
+}
+
+interface SlotList {
+  key: string;
+  path: string;
+  entries: unknown[];
+  accepts: readonly string[] | '*' | undefined;
+}
+
+/**
+ * Nested slot lists in schema-key order, then item index. Only array values
+ * are collected: a wrong shape was already reported by prop validation.
+ */
+function collectSlotLists(
+  definition: BlockDefinition,
+  rawProps: Record<string, unknown>,
+  path: string,
+): SlotList[] {
+  const lists: SlotList[] = [];
+  for (const [key, schema] of Object.entries(definition.props)) {
+    const raw = rawProps[key];
+    if (schema.kind === 'blocks') {
+      if (Array.isArray(raw)) {
+        lists.push({
+          key: slotKey(key),
+          path: pathKey(path, key),
+          entries: raw,
+          accepts: schema.accepts,
+        });
+      }
+      continue;
+    }
+    if (schema.kind !== 'list' || schema.of.kind !== 'object' || !Array.isArray(raw)) continue;
+    const fields = Object.entries(schema.of.fields).filter(([, field]) => field.kind === 'blocks');
+    if (fields.length === 0) continue;
+    raw.forEach((item, index) => {
+      if (!isPlainObject(item)) return;
+      for (const [field, fieldSchema] of fields) {
+        const value = item[field];
+        if (!Array.isArray(value) || fieldSchema.kind !== 'blocks') continue;
+        lists.push({
+          key: slotKey(key, index, field),
+          path: pathKey(pathIndex(pathKey(path, key), index), field),
+          entries: value,
+          accepts: fieldSchema.accepts,
+        });
+      }
+    });
+  }
+  return lists;
+}
+
 function buildNode(
   entry: unknown,
   parentId: string | null,
   depth: number,
   path: string,
   context: BuildContext,
+  placement: Placement,
 ): string | undefined {
   if (!isPlainObject(entry)) {
     context.bag.add({ code: 'SPEC_VALIDATION_ERROR', path, message: 'expected a block object' });
@@ -400,6 +490,7 @@ function buildNode(
     });
     return undefined;
   }
+  checkPlacement(definition, placement, path, context.bag);
 
   const childSlot = definition.slots?.children;
   const rawProps: Record<string, unknown> = {};
@@ -448,6 +539,25 @@ function buildNode(
   };
   context.nodes.push(node);
 
+  const buildList = (entries: unknown[], listPath: string, accepts: Placement['accepts']) => {
+    const ids: string[] = [];
+    entries.forEach((child, index) => {
+      const childId = buildNode(
+        child,
+        resolved.id,
+        depth + 1,
+        pathIndex(listPath, index),
+        context,
+        {
+          parentType: definition.type,
+          accepts,
+        },
+      );
+      if (childId !== undefined) ids.push(childId);
+    });
+    return ids;
+  };
+
   if (childSlot !== undefined && childBlocks !== undefined) {
     if (!Array.isArray(childBlocks)) {
       context.bag.add({
@@ -465,17 +575,17 @@ function buildNode(
           message: `slot accepts ${min}-${max} child blocks, received ${childBlocks.length}`,
         });
       }
-      const childPath = pathKey(path, 'blocks');
-      for (let index = 0; index < childBlocks.length; index += 1) {
-        const childId = buildNode(
-          childBlocks[index],
-          resolved.id,
-          depth + 1,
-          pathIndex(childPath, index),
-          context,
-        );
-        if (childId !== undefined) node.children.push(childId);
-      }
+      node.children = buildList(childBlocks, pathKey(path, 'blocks'), childSlot.accepts);
+    }
+  }
+
+  // Nested slots are built after the children, so the IR stays depth-first
+  // pre-order with every slot list in schema-key order, then item index.
+  for (const list of collectSlotLists(definition, rawProps, path)) {
+    const ids = buildList(list.entries, list.path, list.accepts);
+    if (ids.length > 0) {
+      node.slots ??= {};
+      node.slots[list.key] = ids;
     }
   }
 
@@ -685,9 +795,20 @@ export function normalizeSpec(input: unknown, options: NormalizeOptions = {}): N
         1,
         pathIndex('$.blocks', index),
         context,
+        { parentType: 'page', accepts: '*' },
       );
       if (childId !== undefined) rootChildren.push(childId);
     }
+  }
+
+  // The raw-document walk counts only lists under a `blocks` key. A slot prop
+  // with another name is counted here, once its nodes exist.
+  if (context.nodes.length > LIMITS.maxBlocks && bounds.blocks <= LIMITS.maxBlocks) {
+    bag.add({
+      code: 'SPEC_BOUNDS_ERROR',
+      path: '$.blocks',
+      message: `document declares more than ${LIMITS.maxBlocks} blocks`,
+    });
   }
 
   const root: IrNode = {

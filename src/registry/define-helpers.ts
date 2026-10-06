@@ -90,6 +90,17 @@ export const actionMap = (description: string): PropSchema => ({
   schemaRef: '#/$defs/actionMap',
 });
 
+/** A nested list of child blocks, built into `IrNode.slots` rather than props. */
+export const blocks = (
+  o: {
+    required?: boolean;
+    minItems?: number;
+    maxItems?: number;
+    accepts?: readonly string[] | '*';
+    description?: string;
+  } = {},
+): PropSchema => ({ kind: 'blocks', ...o });
+
 /** Reusable prop fragments. */
 export const onProp = (description = 'Declarative action bindings for this block.'): PropSchema =>
   actionMap(description);

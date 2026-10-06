@@ -20,7 +20,8 @@ export type PropSchema =
   | ObjectPropSchema
   | RecordPropSchema
   | OneOfPropSchema
-  | JsonPropSchema;
+  | JsonPropSchema
+  | BlocksPropSchema;
 
 interface PropSchemaBase {
   /** Reject the document when the property is absent. */
@@ -103,6 +104,24 @@ export interface JsonPropSchema extends PropSchemaBase {
   /** JSON Schema `$ref` used when projecting this prop into the spec schema. */
   schemaRef?: string;
 }
+
+/**
+ * A nested list of child blocks. The list never enters `props`: the normalizer
+ * builds each entry as an IR node in `IrNode.slots`. Allowed as a top-level
+ * block prop or as a field of a `list(obj(...))` prop; registration rejects
+ * any deeper position.
+ */
+export interface BlocksPropSchema extends PropSchemaBase {
+  kind: 'blocks';
+  /** Default 1. */
+  minItems?: number;
+  /** Default 40. */
+  maxItems?: number;
+  /** Child block types the slot accepts; absent or `'*'` accepts any block. */
+  accepts?: readonly string[] | '*';
+}
+
+export const BLOCKS_PROP_DEFAULTS = { minItems: 1, maxItems: 40 } as const;
 
 export const DEFAULT_URL_SCHEMES = ['https', 'http', 'mailto'] as const;
 export const NODE_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
@@ -388,6 +407,24 @@ export function validateProp(
       });
       return undefined;
     }
+    case 'blocks': {
+      // Only the list shape is checked here; each entry is validated as a
+      // block when the normalizer builds the slot.
+      if (!Array.isArray(value)) {
+        bag.add({ code: 'SPEC_VALIDATION_ERROR', path, message: 'expected a list of blocks' });
+        return undefined;
+      }
+      const minItems = schema.minItems ?? BLOCKS_PROP_DEFAULTS.minItems;
+      const maxItems = schema.maxItems ?? BLOCKS_PROP_DEFAULTS.maxItems;
+      if (value.length < minItems || value.length > maxItems) {
+        bag.add({
+          code: value.length > maxItems ? 'SPEC_BOUNDS_ERROR' : 'SPEC_VALIDATION_ERROR',
+          path,
+          message: `slot accepts ${minItems}-${maxItems} blocks, received ${value.length}`,
+        });
+      }
+      return undefined;
+    }
     case 'json': {
       let serialized: string;
       try {
@@ -503,6 +540,13 @@ export function propSchemaToJsonSchema(schema: PropSchema): Record<string, unkno
       return { type: 'object', additionalProperties: propSchemaToJsonSchema(schema.of) };
     case 'oneOf':
       return { oneOf: schema.options.map((option) => propSchemaToJsonSchema(option)) };
+    case 'blocks':
+      return {
+        type: 'array',
+        minItems: schema.minItems ?? BLOCKS_PROP_DEFAULTS.minItems,
+        maxItems: schema.maxItems ?? BLOCKS_PROP_DEFAULTS.maxItems,
+        items: { $ref: '#/$defs/block' },
+      };
     case 'json': {
       const out: Record<string, unknown> = { description: schema.description };
       if (schema.schemaRef !== undefined) out.$ref = schema.schemaRef;

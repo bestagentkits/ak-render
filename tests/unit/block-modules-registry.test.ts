@@ -6,7 +6,15 @@ import {
   type BlockModule,
   type FeatureModule,
 } from '../../src/registry/block-module.js';
-import { define, OPTIONAL_TITLE } from '../../src/registry/define-helpers.js';
+import {
+  blocks,
+  define,
+  itemsOf,
+  list,
+  OPTIONAL_TITLE,
+  obj,
+} from '../../src/registry/define-helpers.js';
+import { propSchemaToJsonSchema } from '../../src/registry/prop-schema.js';
 import { BLOCK_DEFINITIONS, buildRegistry, DEFAULT_REGISTRY } from '../../src/registry/registry.js';
 
 function probe(type: string, overrides: Partial<BlockModule['definition']> = {}): BlockModule {
@@ -110,5 +118,27 @@ describe('block registry', () => {
         ]),
       ]),
     ).toThrow(/unknown category/);
+  });
+
+  it('allows blocks props only at the top level or as a list item field', () => {
+    const at = (props: BlockModule['definition']['props']) =>
+      buildRegistry([group([probe('probe', { props })])]);
+    expect(() => at({ aside: blocks() })).not.toThrow();
+    expect(() => at({ items: itemsOf({ blocks: blocks() }) })).not.toThrow();
+    expect(() => at({ blocks: blocks() })).toThrow(/blocks prop at "blocks"/);
+    expect(() => at({ box: obj({ inner: blocks() }) })).toThrow(/blocks prop at "box"/);
+    expect(() => at({ items: itemsOf({ deep: list(blocks()) }) })).toThrow(/"items\[\]\.deep"/);
+    expect(() => at({ aside: blocks({ accepts: ['nope'] }) })).toThrow(
+      /accepts unknown type "nope"/,
+    );
+  });
+
+  it('projects a blocks prop to a JSON Schema list of blocks', () => {
+    expect(propSchemaToJsonSchema(blocks({ maxItems: 6 }))).toEqual({
+      type: 'array',
+      minItems: 1,
+      maxItems: 6,
+      items: { $ref: '#/$defs/block' },
+    });
   });
 });
