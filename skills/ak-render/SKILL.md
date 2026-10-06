@@ -14,26 +14,38 @@ typography, motion, accessibility, and security.
 
 Use `ak-render` if it is on `PATH`. Otherwise prefix every command with
 `npx -y @bestagentkits/render`. Node.js 20.11 or later is required. Reading the
-spec from stdin (`-`) and the `mcp` command need version 0.2.0 or later, so
-check `npx -y @bestagentkits/render --version` first. Every command accepts
+spec from stdin (`-`) and the `mcp` command need version 0.2.0 or later, and
+`search-catalog`, `describe --compact`, `catalog --category` and recipes need
+0.3.0 or later, so check `npx -y @bestagentkits/render --version` first. Every command accepts
 `--json` and never prompts.
 
 ## The loop
 
-1. **Discover once.** List every block type and action (about 5 kB):
+1. **Find the blocks.** Search by intent, or list one category. The full
+   catalog of 83 block types and every action is about 7 kB:
 
    ```bash
+   npx -y @bestagentkits/render search-catalog sortable table
+   npx -y @bestagentkits/render catalog --category data
    npx -y @bestagentkits/render catalog
    ```
 
-2. **Describe only the blocks you use.** Get each block's props, defaults,
-   bounds, and slots. Use `--json` for the full prop contract:
+2. **Describe only the blocks you use.** `--compact` gives one line per prop
+   for up to 12 types. Use `--json` on one type for its full contract:
 
    ```bash
+   npx -y @bestagentkits/render describe steps data-table chart --compact
    npx -y @bestagentkits/render describe steps --json
    ```
 
-3. **Write the spec** to a `.yaml` file, or pipe it on stdin with `-`.
+3. **Write the spec** to a `.yaml` file, or pipe it on stdin with `-`. For a
+   common page, start from a recipe and replace every placeholder:
+
+   ```bash
+   npx -y @bestagentkits/render recipes
+   npx -y @bestagentkits/render recipe incident-report > page.yaml
+   ```
+
 4. **Validate and fix.** Exit code 1 means fix and retry:
 
    ```bash
@@ -101,12 +113,20 @@ block with `describe` before you use it.
 | Plan or roadmap | `hero`, `steps`, `timeline`, `risk-matrix`, `checklist`, `callout` |
 | Recap or status | `hero`, `stats`, `timeline`, `checklist`, `list` |
 | Diff or code review | `diff-summary`, `code-review`, `file-tree`, `code` |
-| Dashboard | `kpi`, `stats`, `chart`, `table`, `progress` |
+| Dashboard | `kpi`, `chart`, `data-table`, `filter-bar`, `grid-item`, `main-aside` |
+| Benchmark or evidence report | `benchmark-comparison`, `metric-breakdown`, `chart`, `references` |
+| Incident or engineering status | `timeline`, `log-viewer`, `test-results`, `api-endpoint`, `kanban`, `roadmap` |
+| Product page | `hero`, `pricing`, `feature-matrix`, `testimonial`, `logo-cloud`, `people` |
 | Explainer | `hero`, `card-grid`, `tabs`, `accordion`, `code`, `callout` |
 | Comparison or decision | `comparison`, `table`, `before-after`, `callout` |
 
-Group blocks with `section`. Use `grid`, `split`, and `stack` only when the
-semantic blocks can't express the structure.
+Group blocks with `section`. Tabs, accordion sections, carousel slides, and
+bento tiles can hold blocks in `items[i].blocks`. Use `grid`, `split`, and
+`stack` only when the semantic blocks can't express the structure.
+
+Put numbers that several blocks show in top-level `datasets` and bind each
+block with `dataRef`. Native controls write page `state`, and `visibleWhen`
+switches views from it. `percent` takes `87` for "87%".
 
 ## Themes
 
@@ -117,9 +137,10 @@ the compile command:
 npx -y @bestagentkits/render themes
 ```
 
-The built-in presets are `blueprint`, `editorial`, `paper-ink`, `swiss-clean`,
-`terminal-mono`, and `warm-signal`, and `themes` also lists any project or user
-presets it finds. Use only a name it lists. Don't try to restyle the page.
+The ten built-in presets are `blueprint`, `data-console`, `editorial`,
+`executive-report`, `paper-ink`, `product-studio`, `research-notebook`,
+`swiss-clean`, `terminal-mono`, and `warm-signal`, and `themes` also lists any
+project or user presets it finds. Use only a name it lists. Don't try to restyle the page.
 
 ## Rules
 
@@ -148,8 +169,9 @@ presets it finds. Use only a name it lists. Don't try to restyle the page.
 ## MCP alternative
 
 `npx -y @bestagentkits/render mcp` serves the same loop over stdio as the tools
-`catalog`, `describe` (`type`), `validate` (`spec`), `render` (`spec`, `out`,
-optional `theme`), and `themes`. `spec` may be YAML or JSON text, or the parsed
+`catalog` (optional `category`), `search-catalog` (`query`), `describe`
+(`type`, or `types` with optional `compact`), `recipes`, `recipe` (`name`),
+`validate` (`spec`), `render` (`spec`, `out`, optional `theme`), and `themes`. `spec` may be YAML or JSON text, or the parsed
 object. `render` writes the file to `out` and returns only the summary. When
 these tools are available, use them instead of the shell commands.
 
