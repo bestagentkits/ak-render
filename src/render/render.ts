@@ -15,6 +15,8 @@ import { RenderError } from '../errors.js';
 import { stableHash } from '../hash.js';
 import type { IrDocument, IrNode } from '../ir.js';
 import { isPlainObject } from '../json.js';
+import type { BlockRegistry } from '../registry/block-module.js';
+import { DEFAULT_REGISTRY } from '../registry/registry.js';
 import type { RuntimeFeature } from '../registry/roster.js';
 import { type NormalizeResult, normalizeSpec } from '../spec/normalize.js';
 import { loadTheme, type ResolvedTheme, resolveTheme } from '../theme/load-theme.js';
@@ -44,6 +46,12 @@ export interface RenderOptions {
    * structured semantic fallback.
    */
   diagramAdapter?: DiagramAdapter;
+  /**
+   * Blocks and features available to the spec. Defaults to the built-in
+   * registry. Internal: tests pass one from `buildRegistry()`; it is not a
+   * supported extension point.
+   */
+  registry?: BlockRegistry;
 }
 
 export interface CompileResult {
@@ -175,23 +183,31 @@ function renderBody(
   ir: IrDocument,
   theme: ResolvedTheme,
   features: Set<RuntimeFeature>,
-  renderOptions: { diagramAdapter?: DiagramAdapter; warnings: Diagnostic[] },
+  renderOptions: {
+    registry: BlockRegistry;
+    diagramAdapter?: DiagramAdapter;
+    warnings: Diagnostic[];
+  },
 ): string {
   const byId = nodeIndex(ir);
+  const renderList = (ids: readonly string[]): string =>
+    ids
+      .map((childId) => byId.get(childId))
+      .filter((child): child is IrNode => child !== undefined)
+      .map((child) => `<!-- ak:${child.id} -->${renderNode(child, context)}`)
+      .join('\n');
   const context: RenderContext = {
     ir,
     theme,
     features,
+    registry: renderOptions.registry,
     warnings: renderOptions.warnings,
     ...(renderOptions.diagramAdapter === undefined
       ? {}
       : { diagramAdapter: renderOptions.diagramAdapter }),
-    renderChildren: (node) =>
-      node.children
-        .map((childId) => byId.get(childId))
-        .filter((child): child is IrNode => child !== undefined)
-        .map((child) => `<!-- ak:${child.id} -->${renderNode(child, context)}`)
-        .join('\n'),
+    renderChildren: (node) => renderList(node.children),
+    renderSlot: (node, key) => renderList(node.slots?.[key] ?? []),
+    byId: (id) => byId.get(id),
   };
   const root = byId.get(ir.rootId);
   if (root === undefined) {
@@ -204,7 +220,9 @@ function renderBody(
 
 /** Run the full pipeline and return everything it produced. */
 export function compile(spec: unknown, options: RenderOptions = {}): CompileResult {
+  const registry = options.registry ?? DEFAULT_REGISTRY;
   const normalized: NormalizeResult = normalizeSpec(spec, {
+    registry,
     ...(options.source === undefined ? {} : { source: options.source }),
   });
   const errors = normalized.diagnostics.filter((diagnostic) => diagnostic.severity === 'error');
@@ -249,6 +267,7 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
 
   const renderWarnings: Diagnostic[] = [];
   const body = renderBody(ir, resolved, features, {
+    registry,
     warnings: renderWarnings,
     ...(options.diagramAdapter === undefined ? {} : { diagramAdapter: options.diagramAdapter }),
   });

@@ -8,13 +8,15 @@
  * schema cannot express.
  */
 
+import { checkSeriesLengths } from '../blocks/chart/chart.js';
 import { type Diagnostic, DiagnosticBag, pathIndex, pathKey } from '../diagnostics.js';
 import { isRenderError, RenderError } from '../errors.js';
 import { derivedNodeId } from '../hash.js';
 import type { IrDocument, IrNode, IrTheme, NetworkPolicy } from '../ir.js';
 import { isPlainObject, type JsonValue } from '../json.js';
+import type { BlockRegistry, CheckContext } from '../registry/block-module.js';
 import { NODE_ID_PATTERN, validateProps } from '../registry/prop-schema.js';
-import { blockTypes, getBlockDefinition } from '../registry/registry.js';
+import { blockTypes, DEFAULT_REGISTRY, getBlockDefinition } from '../registry/registry.js';
 import type { BlockDefinition, RuntimeFeature } from '../registry/roster.js';
 import { VERSION } from '../version.js';
 import { type BindingMap, validateBindingsDeep } from './bindings.js';
@@ -40,6 +42,12 @@ interface BuildContext {
   bag: DiagnosticBag;
   nodes: IrNode[];
   usedIds: Set<string>;
+  registry: BlockRegistry;
+}
+
+export interface NormalizeOptions extends ParseOptions {
+  /** Internal: the block registry to normalize against. Defaults to the built-in one. */
+  registry?: BlockRegistry;
 }
 
 function requireString(
@@ -382,13 +390,13 @@ function buildNode(
     return undefined;
   }
 
-  const definition = getBlockDefinition(typeValue);
+  const definition = getBlockDefinition(typeValue, context.registry);
   if (definition === undefined) {
     context.bag.add({
       code: 'SPEC_UNKNOWN_BLOCK',
       path: pathKey(path, 'type'),
       message: `unknown block type "${typeValue}"`,
-      details: { type: typeValue, known: blockTypes() },
+      details: { type: typeValue, known: blockTypes(context.registry) },
     });
     return undefined;
   }
@@ -485,7 +493,13 @@ function stringProp(node: IrNode, key: string): string | undefined {
 }
 
 /** Checks that need more than one field, or more than one node. */
-function postChecks(nodes: IrNode[], network: NetworkPolicy, bag: DiagnosticBag): void {
+function postChecks(
+  nodes: IrNode[],
+  network: NetworkPolicy,
+  bag: DiagnosticBag,
+  registry: BlockRegistry,
+  checks: CheckContext,
+): void {
   let previousHeadingLevel: number | undefined;
 
   for (const node of nodes) {
@@ -575,26 +589,8 @@ function postChecks(nodes: IrNode[], network: NetworkPolicy, bag: DiagnosticBag)
       }
     }
 
-    if (node.type === 'chart' || node.type === 'progress') {
-      const labels = node.props.labels;
-      const series = node.props.series;
-      if (Array.isArray(labels) && Array.isArray(series)) {
-        for (let index = 0; index < series.length; index += 1) {
-          const entry = series[index];
-          if (!isPlainObject(entry)) continue;
-          const values = entry.values;
-          if (Array.isArray(values) && values.length !== labels.length) {
-            bag.add({
-              code: 'SPEC_VALIDATION_ERROR',
-              severity: 'warning',
-              message: `series "${String(entry.label ?? index)}" has ${values.length} values for ${labels.length} labels`,
-              path: pathIndex(pathKey(node.path, 'series'), index),
-              nodeId: node.id,
-            });
-          }
-        }
-      }
-    }
+    // Progress shares the chart's labels/series shape; the chart module checks its own.
+    if (node.type === 'progress') checkSeriesLengths(node, bag);
 
     if (node.type === 'button' && Object.keys(node.bindings).length === 0) {
       bag.add({
@@ -630,21 +626,6 @@ function postChecks(nodes: IrNode[], network: NetworkPolicy, bag: DiagnosticBag)
       }
     }
 
-    // A tile image follows the image block's rule: alt must be present, and an
-    // explicitly empty alt marks the image as decorative.
-    if (node.type === 'bento' && Array.isArray(node.props.items)) {
-      node.props.items.forEach((item, index) => {
-        if (!isPlainObject(item) || typeof item.src !== 'string') return;
-        if (typeof item.alt === 'string') return;
-        bag.add({
-          code: 'SPEC_VALIDATION_ERROR',
-          message: 'a bento tile with src needs alt text (use "" for a decorative image)',
-          path: pathKey(pathIndex(pathKey(node.path, 'items'), index), 'alt'),
-          nodeId: node.id,
-        });
-      });
-    }
-
     if (node.type === 'diagram-panel') {
       const spec = node.props.spec;
       if (!isPlainObject(spec)) {
@@ -656,12 +637,15 @@ function postChecks(nodes: IrNode[], network: NetworkPolicy, bag: DiagnosticBag)
         });
       }
     }
+
+    registry.modules.get(node.type)?.check?.(node, checks);
   }
 }
 
 /** Build the IR without throwing: diagnostics are returned, not raised. */
-export function normalizeSpec(input: unknown, options: ParseOptions = {}): NormalizeResult {
+export function normalizeSpec(input: unknown, options: NormalizeOptions = {}): NormalizeResult {
   const bag = new DiagnosticBag();
+  const registry = options.registry ?? DEFAULT_REGISTRY;
 
   // The pipeline starts at the input boundary: a spec may arrive as JSON or
   // YAML text, or as an already-parsed object.
@@ -690,7 +674,7 @@ export function normalizeSpec(input: unknown, options: ParseOptions = {}): Norma
   }
 
   const envelope = normalizeEnvelope(migrated.document, bag);
-  const context: BuildContext = { bag, nodes: [], usedIds: new Set<string>() };
+  const context: BuildContext = { bag, nodes: [], usedIds: new Set<string>(), registry };
   const rootChildren: string[] = [];
 
   if (envelope !== undefined) {
@@ -705,8 +689,6 @@ export function normalizeSpec(input: unknown, options: ParseOptions = {}): Norma
       if (childId !== undefined) rootChildren.push(childId);
     }
   }
-
-  postChecks(context.nodes, envelope?.policy.network ?? 'deny', bag);
 
   const root: IrNode = {
     id: 'page',
@@ -724,6 +706,13 @@ export function normalizeSpec(input: unknown, options: ParseOptions = {}): Norma
     assets: [],
     network: 'none',
   };
+  const byId = new Map([root, ...context.nodes].map((node) => [node.id, node]));
+  postChecks(context.nodes, envelope?.policy.network ?? 'deny', bag, registry, {
+    bag,
+    byId,
+    state: envelope?.state ?? {},
+    datasets: {},
+  });
 
   const ir: IrDocument = {
     irVersion: 1,
@@ -766,7 +755,7 @@ function emptyIr(): IrDocument {
  * The thrown error carries the first error's code and path, and lists every
  * diagnostic in `details.diagnostics` so a caller can render a full report.
  */
-export function normalize(input: unknown, options: ParseOptions = {}): IrDocument {
+export function normalize(input: unknown, options: NormalizeOptions = {}): IrDocument {
   const result = normalizeSpec(input, options);
   const errors = result.diagnostics.filter((diagnostic) => diagnostic.severity === 'error');
   const first = errors[0];

@@ -11,12 +11,9 @@
  * been revealed by an observer, and switched off in print.
  */
 
+import { BENTO_CSS } from '../blocks/composition/composition-styles.js';
 import type { RuntimeFeature } from '../registry/roster.js';
-
-const EASE_OUT = 'cubic-bezier(.16,1,.3,1)';
-const SLOW = 'calc(var(--ak-motion-duration) * 4)';
-const MID = 'calc(var(--ak-motion-duration) * 1.6)';
-const UNIT = (n: number) => `calc(var(--ak-space-unit) * ${n})`;
+import { EASE_OUT, MID, SLOW, UNIT } from './style-units.js';
 
 /**
  * Stagger for terminal lines; lines past the last step share its delay.
@@ -41,31 +38,7 @@ const KPI_STEPS = [2, 3, 4]
   .join('');
 
 export const SHOWCASE_CSS: Readonly<Partial<Record<RuntimeFeature, string>>> = {
-  bento: `.ak-bento{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:minmax(190px,auto);grid-auto-flow:dense;gap:${UNIT(2)}}
-.ak-tile{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:.45em;min-width:0;padding:${UNIT(3)};border:var(--ak-border-width) solid var(--ak-color-border);border-radius:var(--ak-radius-large);background:var(--ak-fill);box-shadow:var(--ak-elevation-card);transition:translate ${MID} ${EASE_OUT},box-shadow ${MID} ${EASE_OUT},border-color var(--ak-motion-duration) var(--ak-motion-easing)}
-.ak-tile[data-size="wide"]{grid-column:span 2}
-.ak-tile[data-size="tall"]{grid-row:span 2}
-.ak-tile[data-size="large"]{grid-column:span 2;grid-row:span 2}
-.ak-tile:first-child{background:radial-gradient(120% 100% at 100% 0%,color-mix(in srgb,var(--ak-color-accent) 16%,transparent),transparent 62%),var(--ak-fill)}
-.ak-tile:hover{translate:0 -4px;border-color:color-mix(in srgb,var(--ak-color-accent) 40%,var(--ak-color-border));box-shadow:var(--ak-elevation-popover)}
-.ak-tile[data-media]{justify-content:flex-start;padding:0}
-.ak-tile-media{display:flex;flex:1 1 auto;min-height:170px;overflow:hidden;padding:${UNIT(3)} 0 0 ${UNIT(3)};border-bottom:var(--ak-border-width) solid var(--ak-color-border);background:radial-gradient(120% 140% at 0 0,color-mix(in srgb,var(--ak-color-accent) 16%,var(--ak-color-surface-raised)),var(--ak-color-surface-raised) 70%)}
-.ak-tile-media img{display:block;flex:1 1 auto;width:100%;min-width:0;min-height:146px;object-fit:cover;object-position:top left;border:var(--ak-border-width) solid var(--ak-color-border);border-width:var(--ak-border-width) 0 0 var(--ak-border-width);border-top-left-radius:var(--ak-radius-large);box-shadow:0 18px 48px -18px color-mix(in srgb,var(--ak-color-text) 34%,transparent);transform-origin:0 0;transition:transform ${SLOW} ${EASE_OUT}}
-.ak-tile:hover .ak-tile-media img{transform:translate(-4px,-4px) scale(1.02)}
-.ak-tile-media .ak-caption{padding:${UNIT(2)}}
-.ak-tile[data-media] .ak-tile-body{padding:${UNIT(2.25)} ${UNIT(2.5)} ${UNIT(2.5)}}
-.ak-tile-body{display:flex;flex-direction:column;gap:.4em}
-.ak-tile-body > p{margin:0}
-.ak-tile .ak-eyebrow{color:var(--ak-color-accent)}
-.ak-tile-value{font-family:var(--ak-font-heading);font-size:calc(var(--ak-font-size-base) * pow(var(--ak-font-scale),5));font-weight:700;line-height:.95;letter-spacing:-.05em;font-variant-numeric:tabular-nums;background:linear-gradient(140deg,var(--ak-color-text) 30%,var(--ak-color-accent));-webkit-background-clip:text;background-clip:text;color:transparent}
-.ak-tile-title{font-family:var(--ak-font-heading);font-size:calc(var(--ak-font-size-base) * pow(var(--ak-font-scale),1.4));font-weight:650;line-height:1.2;letter-spacing:-.02em}
-.ak-tile[data-size="large"] .ak-tile-title{font-size:calc(var(--ak-font-size-base) * pow(var(--ak-font-scale),2.4));letter-spacing:-.03em}
-.ak-tile-text{max-width:46ch;color:var(--ak-color-text-muted);font-size:.95rem}
-@media (max-width:900px){.ak-bento{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (max-width:560px){.ak-bento{grid-template-columns:1fr;grid-auto-rows:auto}.ak-tile[data-size]{grid-column:auto;grid-row:auto;min-height:0}.ak-tile-value{font-size:calc(var(--ak-font-size-base) * pow(var(--ak-font-scale),4))}}
-@keyframes ak-settle{from{scale:1.12}to{scale:1}}
-@supports (animation-timeline:view()){@media (prefers-reduced-motion:no-preference){.ak-tile-media img{animation:ak-settle linear both;animation-timeline:view();animation-range:entry 0% cover 40%}}}
-@media print{.ak-tile-media img{animation:none!important}}`,
+  bento: BENTO_CSS,
 
   marquee: `.ak-marquee{--ak-marquee-time:42s;padding:${UNIT(2.25)} 0;border-block:var(--ak-border-width) solid var(--ak-color-border)}
 .ak-marquee[data-speed="slow"]{--ak-marquee-time:70s}

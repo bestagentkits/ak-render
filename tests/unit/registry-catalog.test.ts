@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { isRenderError, type RenderError } from '../../src/index.js';
 import { getAction, listActionTypes } from '../../src/registry/actions.js';
-import { blockTypes, catalog, describe as describeBlock } from '../../src/registry/registry.js';
-import { BLOCK_DEFINITIONS } from '../../src/registry/roster.js';
+import {
+  BLOCK_DEFINITIONS,
+  blockTypes,
+  catalog,
+  describe as describeBlock,
+} from '../../src/registry/registry.js';
 
 describe('catalog and describe', () => {
   it('keeps the catalog compact: names, kinds, versions, and one-line summaries', () => {

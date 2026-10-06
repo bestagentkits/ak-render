@@ -28,6 +28,12 @@ export interface IrNode {
   bindings: BindingMap;
   /** Child node IDs, in authored order. */
   children: string[];
+  /**
+   * Nested slot lists, keyed by `slotKey()` (`aside`, `items[1].blocks`). Set
+   * only when non-empty, so a node without nested blocks has no `slots` key.
+   * `children` and `slots` never share a node.
+   */
+  slots?: Record<string, string[]>;
   /** Accessibility contract inherited from the block definition. */
   a11y: string;
   runtimeFeatures: RuntimeFeature[];

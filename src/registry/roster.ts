@@ -14,31 +14,69 @@
 
 import { EMBED_PROVIDER_NAMES } from '../spec/providers.js';
 import type { ActionType } from './actions.js';
+import {
+  anchorProps,
+  bool,
+  define,
+  enumStr,
+  idProp,
+  itemsOf,
+  LABEL,
+  list,
+  num,
+  OPTIONAL_TITLE,
+  obj,
+  oneOf,
+  onProp,
+  semantic,
+  str,
+  TITLE,
+  txt,
+  urlProp,
+  VERBATIM_DESCRIPTION,
+} from './define-helpers.js';
 import type { PropSchema } from './prop-schema.js';
 
-export type RuntimeFeature =
-  | 'tabs'
-  | 'accordion'
-  | 'carousel'
-  | 'slider'
-  | 'copy'
-  | 'filter'
-  | 'theme'
-  | 'dialog'
-  | 'chart'
-  | 'diagram'
-  | 'media'
-  | 'outline'
-  | 'bento'
-  | 'marquee'
-  | 'terminal'
-  | 'tree'
-  | 'before-after'
-  | 'kpi'
-  | 'showcase'
-  | 'cta'
-  | 'frame'
-  | 'checklist';
+export { CHART_KINDS } from '../blocks/chart/chart-kinds.js';
+export * from './define-helpers.js';
+
+/**
+ * Features the core compiler emits. Block groups may add their own features
+ * (see `FeatureModule`); the registry rejects any name outside both lists.
+ */
+export const CORE_RUNTIME_FEATURES = [
+  'tabs',
+  'accordion',
+  'carousel',
+  'slider',
+  'copy',
+  'filter',
+  'theme',
+  'dialog',
+  'chart',
+  'diagram',
+  'media',
+  'outline',
+  'bento',
+  'marquee',
+  'terminal',
+  'tree',
+  'before-after',
+  'kpi',
+  'showcase',
+  'cta',
+  'frame',
+  'checklist',
+  'state',
+] as const;
+
+export type CoreRuntimeFeature = (typeof CORE_RUNTIME_FEATURES)[number];
+
+/**
+ * A runtime feature name: a core feature or one a block group registers. The
+ * open string arm is checked at registration rather than by the type system.
+ */
+export type RuntimeFeature = CoreRuntimeFeature | (string & {});
 
 export interface SlotSpec {
   /** Types accepted by the slot; `'*'` accepts any block. */
@@ -75,140 +113,11 @@ export interface BlockDefinition {
   serializer: string;
 }
 
-const DEFAULT_MIGRATION =
-  'Props are additive; removed props are reported as diagnostics, never silently dropped.';
-const DEFAULT_SERIALIZER =
-  'Serializes back to the same Page Spec shape; child blocks keep their order and slots.';
-const DEFAULT_SIZING: SizingContract = {
-  sizes: ['medium', 'large'],
-  default: 'medium',
-  responsive: 'Fills its parent slot and reflows its content; never clips or scales by transform.',
-};
-
-const str = (o: Omit<PropSchema & { kind: 'string' }, 'kind'> = {}): PropSchema => ({
-  kind: 'string',
-  ...o,
-});
 /**
- * How text renders. `describe` and the JSON Schema both carry it, once per
- * prop, so it stays short.
+ * Core blocks: the roster entries that have not moved into a block module
+ * under `src/blocks/`. The registry appends every module's definition.
  */
-const PROSE_DESCRIPTION = 'Plain text; a `backtick` pair renders as inline code.';
-const VERBATIM_DESCRIPTION = 'Emitted verbatim; backticks stay literal.';
-
-const txt = (
-  o: { required?: boolean; default?: string; maxLength?: number; description?: string } = {},
-): PropSchema => ({
-  kind: 'text',
-  description: PROSE_DESCRIPTION,
-  ...o,
-});
-const num = (
-  o: {
-    required?: boolean;
-    default?: number;
-    min?: number;
-    max?: number;
-    integer?: boolean;
-    description?: string;
-  } = {},
-): PropSchema => ({ kind: 'number', ...o });
-const bool = (
-  o: { required?: boolean; default?: boolean; description?: string } = {},
-): PropSchema => ({
-  kind: 'boolean',
-  ...o,
-});
-const urlProp = (
-  o: { required?: boolean; schemes?: readonly string[]; description?: string } = {},
-): PropSchema => ({
-  kind: 'url',
-  ...o,
-});
-const list = (
-  of: PropSchema,
-  o: { required?: boolean; minItems?: number; maxItems?: number; description?: string } = {},
-): PropSchema => ({ kind: 'list', of, ...o });
-const obj = (
-  fields: Record<string, PropSchema>,
-  o: { required?: boolean; description?: string } = {},
-): PropSchema => ({ kind: 'object', fields, ...o });
-const oneOf = (
-  options: readonly PropSchema[],
-  o: { required?: boolean; description?: string } = {},
-): PropSchema => ({ kind: 'oneOf', options, ...o });
-const enumStr = (
-  values: readonly string[],
-  o: { required?: boolean; default?: string; description?: string } = {},
-): PropSchema => ({
-  kind: 'string',
-  enum: values,
-  ...o,
-});
-const idProp = (description: string): PropSchema => ({ kind: 'string', id: true, description });
-const actionMap = (description: string): PropSchema => ({
-  kind: 'json',
-  description,
-  maxBytes: 8_000,
-  schemaRef: '#/$defs/actionMap',
-});
-
-/** Reusable prop fragments. */
-const onProp = (description = 'Declarative action bindings for this block.'): PropSchema =>
-  actionMap(description);
-
-const anchorProps: Record<string, PropSchema> = {
-  id: idProp('Stable node id. Author-provided ids are used verbatim and must be unique.'),
-};
-
-const itemsOf = (
-  fields: Record<string, PropSchema>,
-  o: { minItems?: number; maxItems?: number } = {},
-): PropSchema =>
-  list(obj(fields), { required: true, minItems: o.minItems ?? 1, maxItems: o.maxItems ?? 200 });
-
-const TITLE = str({ required: true, maxLength: 200 });
-const OPTIONAL_TITLE = str({ maxLength: 200 });
-const LABEL = str({ required: true, maxLength: 200 });
-
-/** Chart kinds, SVG-first and deterministic. */
-export const CHART_KINDS = [
-  'bar',
-  'line',
-  'area',
-  'pie',
-  'donut',
-  'sparkline',
-  'progress',
-] as const;
-
-function define(
-  specification: Partial<BlockDefinition> &
-    Pick<BlockDefinition, 'type' | 'purpose' | 'summary' | 'props'>,
-): BlockDefinition {
-  return {
-    version: 1,
-    kind: 'primitive',
-    sizing: DEFAULT_SIZING,
-    a11y: 'Renders semantic markup; text alternatives come from the authored content.',
-    actions: [],
-    runtimeFeatures: [],
-    assets: [],
-    network: 'none',
-    migration: DEFAULT_MIGRATION,
-    serializer: DEFAULT_SERIALIZER,
-    ...specification,
-  };
-}
-
-function semantic(
-  specification: Partial<BlockDefinition> &
-    Pick<BlockDefinition, 'type' | 'purpose' | 'summary' | 'props'>,
-): BlockDefinition {
-  return define({ kind: 'semantic', ...specification });
-}
-
-export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
+export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   // --- root ---------------------------------------------------------------
   define({
     type: 'page',
@@ -240,33 +149,6 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
       ...anchorProps,
     },
     slots: { children: { accepts: '*', min: 1, max: 200 } },
-  }),
-  define({
-    type: 'stack',
-    purpose: 'Vertical flow container.',
-    summary: 'Stack: children flow vertically with a controlled gap.',
-    props: { gap: enumStr(['tight', 'normal', 'loose'], { default: 'normal' }), ...anchorProps },
-    slots: { children: { accepts: '*', min: 1, max: 200 } },
-  }),
-  define({
-    type: 'grid',
-    purpose: 'Responsive grid container.',
-    summary: 'Grid: children in N columns that collapse on narrow viewports.',
-    props: {
-      columns: num({ integer: true, min: 1, max: 6, default: 3 }),
-      ...anchorProps,
-    },
-    slots: { children: { accepts: '*', min: 1, max: 200 } },
-  }),
-  define({
-    type: 'split',
-    purpose: 'Two-column split container.',
-    summary: 'Split: two child groups side by side, stacking when narrow.',
-    props: {
-      ratio: enumStr(['even', 'wide-left', 'wide-right'], { default: 'even' }),
-      ...anchorProps,
-    },
-    slots: { children: { accepts: '*', min: 2, max: 2 } },
   }),
   define({
     type: 'spacer',
@@ -547,51 +429,6 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
 
   // --- interactive collections -------------------------------------------
-  define({
-    type: 'tabs',
-    purpose: 'Tabbed groups of related content.',
-    summary: 'Tabs: roving-tabindex tablist with tabpanels.',
-    props: {
-      title: OPTIONAL_TITLE,
-      items: itemsOf(
-        { id: idProp('Tab id.'), title: LABEL, text: txt({ required: true }) },
-        { minItems: 2 },
-      ),
-      on: onProp('Optional state binding fired when a tab is selected.'),
-      ...anchorProps,
-    },
-    runtimeFeatures: ['tabs'],
-    actions: ['select-tab'],
-    a11y: 'role="tablist" with arrow-key roving focus, aria-selected, aria-controls, and labelled tabpanels.',
-  }),
-  define({
-    type: 'accordion',
-    purpose: 'Collapsible sections.',
-    summary: 'Accordion: disclosure sections that expand and collapse.',
-    props: {
-      title: OPTIONAL_TITLE,
-      items: itemsOf({ title: LABEL, text: txt({ required: true }) }),
-      on: onProp('Optional state binding fired when a section toggles.'),
-      ...anchorProps,
-    },
-    runtimeFeatures: ['accordion'],
-    actions: ['toggle', 'expand', 'collapse'],
-    a11y: 'Native <details>/<summary> where possible; otherwise button + region with aria-expanded.',
-  }),
-  define({
-    type: 'carousel',
-    purpose: 'Sequenced slides with manual navigation.',
-    summary: 'Carousel: prev/next, keyboard, and swipe across slides.',
-    props: {
-      ariaLabel: str({ required: true, maxLength: 120 }),
-      items: itemsOf({ title: LABEL, text: txt({ required: true }) }, { minItems: 1 }),
-      on: onProp('Optional state binding fired when the active slide changes.'),
-      ...anchorProps,
-    },
-    runtimeFeatures: ['carousel'],
-    actions: ['next', 'previous'],
-    a11y: 'Labeled region with prev/next buttons, arrow-key support, a slide counter, and no autoplay.',
-  }),
   semantic({
     type: 'toolbar',
     purpose: 'Row of controls or chips.',
@@ -631,28 +468,6 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
 
   // --- data visualization -------------------------------------------------
-  define({
-    type: 'chart',
-    purpose: 'Deterministic SVG chart with a text summary.',
-    summary: 'Chart: bar, line, area, pie, donut, sparkline, or progress from labeled series.',
-    props: {
-      kind: enumStr(CHART_KINDS, { required: true }),
-      title: OPTIONAL_TITLE,
-      description: txt({
-        description: 'Text summary for assistive technology; backticks stay literal.',
-      }),
-      labels: list(str({ maxLength: 80 }), { required: true, minItems: 1, maxItems: 200 }),
-      series: itemsOf(
-        { label: LABEL, values: list(num(), { required: true, minItems: 1, maxItems: 200 }) },
-        { minItems: 1 },
-      ),
-      ...anchorProps,
-    },
-    runtimeFeatures: ['chart'],
-    assets: ['chart'],
-    a11y: 'SVG carries role="img" plus a generated text summary; the same values are available as a table for assistive technology.',
-    serializer: 'Serializes to the labels/series data, never to rendered SVG.',
-  }),
 
   // --- diagrams (adapter) -------------------------------------------------
   semantic({
@@ -681,42 +496,6 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
 
   // --- showcase -----------------------------------------------------------
-  semantic({
-    type: 'bento',
-    purpose: 'Feature mosaic: tiles of mixed size that each carry one idea, figure, or image.',
-    summary:
-      'Bento: asymmetric tile grid; a tile can hold an eyebrow, title, text, a large figure, and a local image.',
-    props: {
-      title: OPTIONAL_TITLE,
-      items: itemsOf(
-        {
-          title: LABEL,
-          text: txt(),
-          eyebrow: str({ maxLength: 60 }),
-          value: str({ maxLength: 40, description: 'A large figure shown above the title.' }),
-          size: enumStr(['small', 'wide', 'tall', 'large'], { default: 'small' }),
-          src: urlProp({
-            description: 'Optional image; remote sources follow the network policy.',
-          }),
-          alt: str({
-            maxLength: 300,
-            description: 'Required when src is set; use "" for a decorative image.',
-          }),
-        },
-        { minItems: 1, maxItems: 12 },
-      ),
-      ...anchorProps,
-    },
-    runtimeFeatures: ['bento'],
-    network: 'optional',
-    sizing: {
-      sizes: ['large'],
-      default: 'large',
-      responsive:
-        'Four columns on wide screens, two on tablets, one on phones; spans collapse with the grid.',
-    },
-    a11y: 'A list of tiles; each tile title is a heading-styled paragraph, images keep their alt text.',
-  }),
   define({
     type: 'marquee',
     purpose: 'Continuously scrolling strip of short highlights.',
@@ -920,24 +699,6 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
     assets: ['media'],
     a11y: 'Alt text is required; decorative images must use an empty alt explicitly.',
   }),
-  semantic({
-    type: 'gallery',
-    purpose: 'Image grid.',
-    summary: 'Gallery: responsive image grid with captions.',
-    props: {
-      title: OPTIONAL_TITLE,
-      columns: num({ integer: true, min: 1, max: 6, default: 3 }),
-      items: itemsOf({
-        src: urlProp({ required: true }),
-        alt: str({ required: true, maxLength: 300 }),
-        caption: txt(),
-      }),
-      ...anchorProps,
-    },
-    network: 'optional',
-    assets: ['media'],
-    a11y: 'Every image keeps its alt text; captions are visible text, not tooltips.',
-  }),
   define({
     type: 'video',
     purpose: 'Local video or a network-denied fallback.',
@@ -1093,7 +854,3 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
     a11y: 'The finding kind is written as text; tone colour is decorative.',
   }),
 ];
-
-export const BLOCKS_BY_TYPE: ReadonlyMap<string, BlockDefinition> = new Map(
-  BLOCK_DEFINITIONS.map((definition) => [definition.type, definition]),
-);
