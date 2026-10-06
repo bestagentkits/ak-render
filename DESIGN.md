@@ -29,10 +29,12 @@ Themes are typed data (`src/theme/tokens.ts`); the stylesheet consumes these tok
 
 - Each SVG is sized to its content: 800×300 for cartesian charts, 240 for radial charts, 72 for a sparkline, and 32px per progress row.
 - Cartesian charts sit in a `.ak-chart-canvas` with a 560px minimum width. On a phone the chart scrolls sideways instead of shrinking its labels.
+- Give a chart a column of about 610px or more on wide screens (the canvas minimum plus card padding); narrower, it scrolls inside its card. In a narrow grid column pair the chart with a non-chart block such as `metric-breakdown`, as the `dashboard` page recipe does.
+- A long category axis keeps about eight evenly spaced labels, always including the first and the last category.
 - Area fills are a per-chart vertical gradient (`ak-grad-<node id>-<series>`) that fades to transparent.
 - Every bar and point carries a value label that appears on hover or focus. Hovering a bar dims the other bars.
 - Bars use a per-series vertical gradient, full strength at the cap and 62% at the baseline.
-- Axes end on clean ticks (1, 2, 2.5 or 5 × 10ⁿ) with dashed gridlines and grouped numbers.
+- Axes end on clean ticks (1, 2, 2.5 or 5 × 10ⁿ) with dashed gridlines and grouped numbers. A step finer than 0.01 gets the decimals it needs, so ticks never repeat.
 - Series colors are classes `ak-chart-s0…s5`. s0 is the accent. Where `oklch(from …)` is supported, s1–s5 are hue rotations of the accent. Otherwise they fall back to the status tokens.
 - A legend appears whenever color carries meaning: more than one series, or any pie or donut chart.
 - Geometry is rounded to two decimals so output stays byte-deterministic.
@@ -43,7 +45,7 @@ Kinds that bind data, use an overlay, or arrived after the first seven (code in 
 - Encoded cartesian charts reserve room for axis titles in mono uppercase: the y title above the value ticks, the x title centred under the categories, on an 800×300 frame with a 68px left margin.
 - Author bounds (`y.min`/`y.max`) set the value ticks. Out-of-range marks clamp to the plot edge, and the check warns. Whole-number currency ticks drop their cents.
 - Stacked bars use flat series fills, not the bar gradient, so segments do not band. `stacked-bar-100` shows each segment's share, with the raw value in its title.
-- Histogram bins snap to a clean step whose count is closest to `bins`. Bins are [a, b) and the last is closed.
+- Histogram bins snap to a clean step whose count is closest to `bins`. Bins are [a, b) and the last is closed. Values that clean steps cannot separate fall into one bin.
 - Waterfall colours carry meaning, so the legend always shows Increase (success), Decrease (danger) and Total (ink), and dashed connectors join the running totals.
 - Heatmap intensity uses five quantized classes, `ak-chart-h0…h4`, which set `--ak-heat` as the accent's fill-opacity; there is no inline fill. Missing cells show the track colour, and the legend lists the five ranges.
 - Treemap is squarified in category order (descending by default). Cells are tinted 22% with their series colour and stroked with it; labels use text tokens so contrast never depends on the hue. Cells under 64×34 show no text, and there is no legend because colour only separates neighbours.
@@ -141,6 +143,8 @@ Interactive blocks ship in their readable form and never carry a static `hidden`
 - **Carousel.** All slides sit in a horizontal scroll-snap strip with the controls hidden; when ready, one slide shows at a time. Print stacks every slide.
 - **Accordion print.** Closed sections print open through `::details-content{content-visibility:visible}`, with no print script. Engines without `::details-content` print them closed.
 - **`visibleWhen`.** The compiler evaluates conditions against the initial `state` and wraps the block in `<div class="ak-when" data-ak-when="{json}" [hidden]>`. The wrapper is `display:contents`, so it never affects grid or flex layout. `.ak-when[hidden]{display:none!important}` lives in `FEATURE_CSS.state`, never in `BASE_CSS`. Layout and controls CSS match the wrapper as `[data-ak-when]`, because `.ak-when` is the `state` feature's verify marker.
+  - Because the wrapper is not a block, the base `.ak-block + .ak-block` gap skips it. `FEATURE_CSS.state` restores `--ak-gap`, and the 1.75× and 2.5× section breaks, for a block inside a wrapper and for a block after one whenever a visible block or wrapper comes earlier. The sibling part sits in `:where()`, so flex and grid container resets still win; the filter bar's control grid alone cancels the gap for a wrapped control.
+  - The page outline lists only always-visible sections, never one behind `visibleWhen`.
 - **Controls.** Without scripts a control renders `disabled` at its initial value with a muted note that it needs JavaScript; a filter bar carries one note for all its controls and shows the total count with Reset hidden. Print hides every control and filter bar, and the filter-bar runtime unhides every row on `beforeprint` and re-applies the filter on `afterprint`, so a printout is never silently partial.
 - **Sortable headers** become buttons only at runtime, so a page without scripts never shows a dead control.
 
@@ -179,8 +183,8 @@ Tabs, accordion sections, carousel slides and bento tiles hold blocks in `items[
 - The column `type` picks the format and alignment; numeric types align to the end and typed cells do not wrap. The first column is the row header and the card title on phones.
 - Badges take their tone from the authored `tones` map, then an outcome map (pass/fail/flaky/skipped), then the shared value tones. Progress is a native `<meter>` beside its value text. A sparkline is the KPI geometry over a 14% tint, with a visually hidden list of its values.
 - Sorting compares raw values, numeric when every value is a number; ties keep their order and empty cells sort last. The sorted column carries `aria-sort` and an accent arrow, and every change is announced. The compiler marks a column already sorted when the emitted rows run one way on it.
-- Search appears past 10 rows. A miss gets `data-ak-dt-miss`, not `hidden`, so a filter bar's `hidden` composes with it. The header sticks only above 560px, past 12 rows, and only when the table fits its frame.
-- At ≤560px each row becomes a card labelled through `td::before{content:attr(data-label)}`, and the header becomes a row of 44px sort chips once ready. Print hides search and arrows and shows every row.
+- Search appears past 10 rows, unless a filter bar targets the table: then the bar owns filtering and the table emits no search box, row count or "no match" note, decided at compile time from the IR. A miss gets `data-ak-dt-miss`, not `hidden`, so a filter bar's `hidden` composes with it. The header sticks only above 560px, past 12 rows, and only when the table fits its frame.
+- At ≤560px each row becomes a card labelled through `td::before{content:attr(data-label)}` (a `hidden` row stays hidden), and the header becomes a row of 44px sort chips once ready. Print hides search and arrows and shows every row.
 
 **Controls and filter bar** (`src/blocks/controls/`, features `controls` and `filter-bar`).
 
