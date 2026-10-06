@@ -32,14 +32,24 @@ describe('issue catalog coverage', () => {
   }
 
   it('covers every named chart kind', () => {
+    expect(CHART_KINDS).toHaveLength(16);
     expect([...CHART_KINDS].sort()).toEqual([
       'area',
       'bar',
       'donut',
+      'funnel',
+      'gauge',
+      'heatmap',
+      'histogram',
       'line',
       'pie',
       'progress',
+      'scatter',
       'sparkline',
+      'stacked-bar',
+      'stacked-bar-100',
+      'treemap',
+      'waterfall',
     ]);
   });
 

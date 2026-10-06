@@ -45,4 +45,33 @@ export const CHART_CSS = `.ak-chart{display:flex;flex-direction:column;gap:calc(
 ${disclosureSummary('.ak-details')}
 .ak-details table{font-size:.85rem;border:var(--ak-border-width) solid var(--ak-color-border)}
 .ak-details caption{font-size:.8rem}
-@media (max-width:768px){.ak-details summary{min-height:44px}}`;
+@media (max-width:768px){.ak-details summary{min-height:44px}}
+.ak-chart:is([data-ak-kind="scatter"],[data-ak-kind="histogram"],[data-ak-kind="stacked-bar"],[data-ak-kind="stacked-bar-100"],[data-ak-kind="waterfall"],[data-ak-kind="heatmap"],[data-ak-kind="funnel"],[data-ak-kind="treemap"]) .ak-chart-canvas svg{min-width:560px}
+.ak-chart[data-ak-kind="gauge"] svg{max-height:320px}
+.ak-chart .ak-chart-axis-title{fill:var(--ak-color-text-muted);font-family:var(--ak-font-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase}
+.ak-chart .ak-chart-value--halo{paint-order:stroke;stroke:var(--ak-color-surface);stroke-width:3px;stroke-linejoin:round}
+.ak-chart .ak-chart-up{--ak-series:var(--ak-color-success)}
+.ak-chart .ak-chart-down{--ak-series:var(--ak-color-danger)}
+.ak-chart .ak-chart-net{--ak-series:color-mix(in srgb,var(--ak-color-text) 72%,var(--ak-color-surface))}
+.ak-chart .ak-chart-connector{stroke:color-mix(in srgb,var(--ak-color-text) 40%,var(--ak-color-border));stroke-width:1;stroke-dasharray:3 3}
+.ak-chart .ak-chart-h0{--ak-heat:.16}
+.ak-chart .ak-chart-h1{--ak-heat:.34}
+.ak-chart .ak-chart-h2{--ak-heat:.52}
+.ak-chart .ak-chart-h3{--ak-heat:.74}
+.ak-chart .ak-chart-h4{--ak-heat:1}
+.ak-chart .ak-chart-heat{fill:var(--ak-c0);fill-opacity:var(--ak-heat,1);${TRANSITION}}
+.ak-chart .ak-chart-heat:is(:hover,:focus-visible){stroke:var(--ak-color-text);stroke-width:1.5}
+.ak-chart .ak-chart-heat-swatch{--ak-series:var(--ak-c0);opacity:var(--ak-heat,1)}
+.ak-chart .ak-chart-cell{fill:color-mix(in srgb,var(--ak-series,var(--ak-c0)) 22%,var(--ak-color-surface));stroke:var(--ak-series,var(--ak-c0));stroke-width:1.5;${TRANSITION}}
+.ak-chart .ak-chart-cell:is(:hover,:focus-visible){fill:color-mix(in srgb,var(--ak-series,var(--ak-c0)) 38%,var(--ak-color-surface))}
+.ak-chart .ak-chart-cell-label{fill:var(--ak-color-text);font-family:var(--ak-font-body);font-size:13px;font-weight:600;pointer-events:none}
+.ak-chart .ak-chart-cell-value{fill:var(--ak-color-text-muted);font-family:var(--ak-font-mono);font-size:11px;font-variant-numeric:tabular-nums;pointer-events:none}
+.ak-chart :is(.ak-chart-heat,.ak-chart-cell):is(:hover,:focus-visible) + .ak-chart-value{opacity:1}
+.ak-chart .ak-chart-target{stroke:var(--ak-color-text);stroke-width:2.5;stroke-linecap:round}
+.ak-chart .ak-chart-marker-rule{stroke:var(--ak-color-text-muted);stroke-width:1.25;stroke-dasharray:4 4}
+.ak-chart .ak-chart-marker-label{fill:var(--ak-color-text);font-family:var(--ak-font-mono);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase}
+.ak-chart .ak-chart-note-dot{fill:var(--ak-color-accent);stroke:var(--ak-color-surface);stroke-width:2}
+.ak-chart .ak-chart-note-number{fill:var(--ak-color-accent-contrast);font-family:var(--ak-font-mono);font-size:11px;font-weight:700;pointer-events:none}
+.ak-chart-notes{margin:0;padding-left:1.6em;font-size:.86rem;color:var(--ak-color-text);display:grid;gap:.25em}
+.ak-chart-notes li::marker{font-family:var(--ak-font-mono);font-weight:700;color:var(--ak-color-accent)}
+.ak-chart-note-at{color:var(--ak-color-text-muted);font-family:var(--ak-font-mono);font-size:.8em;font-variant-numeric:tabular-nums}`;
