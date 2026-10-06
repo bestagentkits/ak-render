@@ -338,10 +338,97 @@
           "$ref": "#/$defs/block-split"
         },
         {
+          "$ref": "#/$defs/block-grid-item"
+        },
+        {
+          "$ref": "#/$defs/block-sidebar-layout"
+        },
+        {
+          "$ref": "#/$defs/block-main-aside"
+        },
+        {
+          "$ref": "#/$defs/block-rail-layout"
+        },
+        {
+          "$ref": "#/$defs/block-data-table"
+        },
+        {
           "$ref": "#/$defs/block-chart"
         },
         {
+          "$ref": "#/$defs/block-kanban"
+        },
+        {
+          "$ref": "#/$defs/block-roadmap"
+        },
+        {
+          "$ref": "#/$defs/block-test-results"
+        },
+        {
+          "$ref": "#/$defs/block-log-viewer"
+        },
+        {
+          "$ref": "#/$defs/block-api-endpoint"
+        },
+        {
+          "$ref": "#/$defs/block-schema-viewer"
+        },
+        {
+          "$ref": "#/$defs/block-benchmark-comparison"
+        },
+        {
+          "$ref": "#/$defs/block-metric-breakdown"
+        },
+        {
+          "$ref": "#/$defs/block-annotated-image"
+        },
+        {
+          "$ref": "#/$defs/block-references"
+        },
+        {
           "$ref": "#/$defs/block-gallery"
+        },
+        {
+          "$ref": "#/$defs/block-pricing"
+        },
+        {
+          "$ref": "#/$defs/block-feature-matrix"
+        },
+        {
+          "$ref": "#/$defs/block-testimonial"
+        },
+        {
+          "$ref": "#/$defs/block-logo-cloud"
+        },
+        {
+          "$ref": "#/$defs/block-people"
+        },
+        {
+          "$ref": "#/$defs/block-calendar"
+        },
+        {
+          "$ref": "#/$defs/block-select"
+        },
+        {
+          "$ref": "#/$defs/block-radio-group"
+        },
+        {
+          "$ref": "#/$defs/block-checkbox"
+        },
+        {
+          "$ref": "#/$defs/block-switch"
+        },
+        {
+          "$ref": "#/$defs/block-text-input"
+        },
+        {
+          "$ref": "#/$defs/block-number-input"
+        },
+        {
+          "$ref": "#/$defs/block-date-input"
+        },
+        {
+          "$ref": "#/$defs/block-filter-bar"
         }
       ]
     },
@@ -3020,12 +3107,19 @@
                 "type": "string",
                 "maxLength": 50000,
                 "description": "Plain text; a `backtick` pair renders as inline code."
+              },
+              "blocks": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 12,
+                "items": {
+                  "$ref": "#/$defs/block"
+                }
               }
             },
             "additionalProperties": false,
             "required": [
-              "title",
-              "text"
+              "title"
             ]
           },
           "minItems": 2,
@@ -3074,12 +3168,19 @@
                 "type": "string",
                 "maxLength": 50000,
                 "description": "Plain text; a `backtick` pair renders as inline code."
+              },
+              "blocks": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 12,
+                "items": {
+                  "$ref": "#/$defs/block"
+                }
               }
             },
             "additionalProperties": false,
             "required": [
-              "title",
-              "text"
+              "title"
             ]
           },
           "minItems": 1,
@@ -3129,12 +3230,19 @@
                 "type": "string",
                 "maxLength": 50000,
                 "description": "Plain text; a `backtick` pair renders as inline code."
+              },
+              "blocks": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 12,
+                "items": {
+                  "$ref": "#/$defs/block"
+                }
               }
             },
             "additionalProperties": false,
             "required": [
-              "title",
-              "text"
+              "title"
             ]
           },
           "minItems": 1,
@@ -3209,12 +3317,17 @@
               "alt": {
                 "type": "string",
                 "maxLength": 300
+              },
+              "blocks": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 6,
+                "items": {
+                  "$ref": "#/$defs/block"
+                }
               }
             },
-            "additionalProperties": false,
-            "required": [
-              "title"
-            ]
+            "additionalProperties": false
           },
           "minItems": 1,
           "maxItems": 12
@@ -3249,6 +3362,16 @@
             "loose"
           ]
         },
+        "align": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "start",
+            "center",
+            "end",
+            "stretch"
+          ]
+        },
         "id": {
           "type": "string",
           "maxLength": 2000,
@@ -3274,9 +3397,48 @@
           "const": "grid"
         },
         "columns": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 6
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12
+            },
+            {
+              "type": "string",
+              "maxLength": 2000,
+              "enum": [
+                "auto"
+              ]
+            }
+          ]
+        },
+        "minItemWidth": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "narrow",
+            "medium",
+            "wide"
+          ]
+        },
+        "gap": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "tight",
+            "normal",
+            "loose"
+          ]
+        },
+        "align": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "start",
+            "center",
+            "end",
+            "stretch"
+          ]
         },
         "id": {
           "type": "string",
@@ -3325,14 +3487,485 @@
       },
       "description": "Split: two child groups side by side, stacking when narrow."
     },
+    "block-grid-item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "grid-item"
+        },
+        "span": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12
+        },
+        "tabletSpan": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12
+        },
+        "mobileSpan": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12
+        },
+        "rowSpan": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4
+        },
+        "start": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12
+        },
+        "align": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "start",
+            "center",
+            "end",
+            "stretch"
+          ]
+        },
+        "blocks": {
+          "$ref": "#/$defs/blockList"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Grid item: spans 1–12 tracks of its grid, with tablet and mobile spans."
+    },
+    "block-sidebar-layout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "sidebar"
+      ],
+      "properties": {
+        "type": {
+          "const": "sidebar-layout"
+        },
+        "sidebar": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/block"
+          }
+        },
+        "side": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "start",
+            "end"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "blocks": {
+          "$ref": "#/$defs/blockList"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Sidebar layout: `sidebar` blocks beside the main `blocks`; stacks when narrow."
+    },
+    "block-main-aside": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "aside"
+      ],
+      "properties": {
+        "type": {
+          "const": "main-aside"
+        },
+        "aside": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 6,
+          "items": {
+            "$ref": "#/$defs/block"
+          }
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "blocks": {
+          "$ref": "#/$defs/blockList"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Main/aside: main `blocks` with an `aside` column; stacks below it when narrow."
+    },
+    "block-rail-layout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "rail"
+      ],
+      "properties": {
+        "type": {
+          "const": "rail-layout"
+        },
+        "rail": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/block"
+          }
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "blocks": {
+          "$ref": "#/$defs/blockList"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Rail layout: compact `rail` beside the main `blocks`; a top strip when narrow."
+    },
+    "block-data-table": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "data-table"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "caption": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "type": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "text",
+                  "number",
+                  "percent",
+                  "currency",
+                  "date",
+                  "badge",
+                  "link",
+                  "progress",
+                  "sparkline",
+                  "percentage"
+                ]
+              },
+              "format": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "text",
+                  "number",
+                  "integer",
+                  "compact",
+                  "percent",
+                  "currency",
+                  "duration",
+                  "bytes",
+                  "date"
+                ]
+              },
+              "unit": {
+                "type": "string",
+                "maxLength": 12
+              },
+              "currency": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "USD",
+                  "EUR",
+                  "GBP",
+                  "JPY",
+                  "CNY",
+                  "INR",
+                  "VND",
+                  "AUD",
+                  "CAD",
+                  "CHF",
+                  "SGD",
+                  "KRW"
+                ]
+              },
+              "decimals": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4
+              },
+              "align": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "start",
+                  "end",
+                  "center"
+                ]
+              },
+              "hrefField": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "max": {
+                "type": "number",
+                "minimum": 0
+              },
+              "fields": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                "minItems": 2,
+                "maxItems": 24
+              },
+              "tones": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string",
+                  "maxLength": 2000,
+                  "enum": [
+                    "success",
+                    "danger",
+                    "warning",
+                    "info",
+                    "neutral"
+                  ]
+                }
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "key"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 12
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "dataRef": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+          "description": "Name of a dataset declared in `datasets`. Do not combine with `data`."
+        },
+        "data": {
+          "$ref": "#/$defs/dataRows"
+        },
+        "transform": {
+          "type": "object",
+          "properties": {
+            "filter": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "field": {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  "equals": {
+                    "description": "A string, number, boolean, or null.",
+                    "$ref": "#/$defs/dataScalar"
+                  },
+                  "notEquals": {
+                    "description": "A string, number, boolean, or null.",
+                    "$ref": "#/$defs/dataScalar"
+                  },
+                  "in": {
+                    "type": "array",
+                    "items": {
+                      "description": "A string, number, boolean, or null.",
+                      "$ref": "#/$defs/dataScalar"
+                    },
+                    "minItems": 1,
+                    "maxItems": 20
+                  },
+                  "gt": {
+                    "type": "number"
+                  },
+                  "gte": {
+                    "type": "number"
+                  },
+                  "lt": {
+                    "type": "number"
+                  },
+                  "lte": {
+                    "type": "number"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "field"
+                ]
+              },
+              "minItems": 1,
+              "maxItems": 8
+            },
+            "groupBy": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                "aggregate": {
+                  "type": "string",
+                  "maxLength": 2000,
+                  "enum": [
+                    "count",
+                    "sum",
+                    "mean",
+                    "min",
+                    "max"
+                  ]
+                },
+                "value": {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                "as": {
+                  "type": "string",
+                  "maxLength": 64
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "field",
+                "aggregate"
+              ]
+            },
+            "sort": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "by": {
+                      "type": "string",
+                      "maxLength": 64
+                    },
+                    "direction": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "enum": [
+                        "asc",
+                        "desc"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "by"
+                  ]
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "by": {
+                        "type": "string",
+                        "maxLength": 64
+                      },
+                      "direction": {
+                        "type": "string",
+                        "maxLength": 2000,
+                        "enum": [
+                          "asc",
+                          "desc"
+                        ]
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "by"
+                    ]
+                  },
+                  "minItems": 1,
+                  "maxItems": 3
+                }
+              ]
+            },
+            "select": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "minItems": 1,
+              "maxItems": 24
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          },
+          "additionalProperties": false
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Data table: typed columns (number, percent, badge, link, progress, sparkline), sort, search."
+    },
     "block-chart": {
       "type": "object",
       "additionalProperties": false,
       "required": [
         "type",
-        "kind",
-        "labels",
-        "series"
+        "kind"
       ],
       "properties": {
         "type": {
@@ -3348,7 +3981,16 @@
             "pie",
             "donut",
             "sparkline",
-            "progress"
+            "progress",
+            "scatter",
+            "histogram",
+            "stacked-bar",
+            "stacked-bar-100",
+            "heatmap",
+            "waterfall",
+            "funnel",
+            "gauge",
+            "treemap"
           ]
         },
         "title": {
@@ -3370,31 +4012,850 @@
           "maxItems": 200
         },
         "series": {
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "values": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    },
+                    "minItems": 1,
+                    "maxItems": 200
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "label",
+                  "values"
+                ]
+              },
+              "minItems": 1,
+              "maxItems": 200
+            },
+            {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "maxLength": 64
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "field"
+              ]
+            }
+          ]
+        },
+        "x": {
+          "type": "object",
+          "properties": {
+            "field": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "label": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "format": {
+              "type": "string",
+              "maxLength": 2000,
+              "enum": [
+                "text",
+                "number",
+                "integer",
+                "compact",
+                "percent",
+                "currency",
+                "duration",
+                "bytes",
+                "date"
+              ]
+            },
+            "unit": {
+              "type": "string",
+              "maxLength": 12
+            },
+            "currency": {
+              "type": "string",
+              "maxLength": 2000,
+              "enum": [
+                "USD",
+                "EUR",
+                "GBP",
+                "JPY",
+                "CNY",
+                "INR",
+                "VND",
+                "AUD",
+                "CAD",
+                "CHF",
+                "SGD",
+                "KRW"
+              ]
+            },
+            "decimals": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4
+            },
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        },
+        "y": {
+          "type": "object",
+          "properties": {
+            "field": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "label": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "format": {
+              "type": "string",
+              "maxLength": 2000,
+              "enum": [
+                "text",
+                "number",
+                "integer",
+                "compact",
+                "percent",
+                "currency",
+                "duration",
+                "bytes",
+                "date"
+              ]
+            },
+            "unit": {
+              "type": "string",
+              "maxLength": 12
+            },
+            "currency": {
+              "type": "string",
+              "maxLength": 2000,
+              "enum": [
+                "USD",
+                "EUR",
+                "GBP",
+                "JPY",
+                "CNY",
+                "INR",
+                "VND",
+                "AUD",
+                "CAD",
+                "CHF",
+                "SGD",
+                "KRW"
+              ]
+            },
+            "decimals": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4
+            },
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        },
+        "value": {
+          "type": "object",
+          "properties": {
+            "field": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "label": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "format": {
+              "type": "string",
+              "maxLength": 2000,
+              "enum": [
+                "text",
+                "number",
+                "integer",
+                "compact",
+                "percent",
+                "currency",
+                "duration",
+                "bytes",
+                "date"
+              ]
+            },
+            "unit": {
+              "type": "string",
+              "maxLength": 12
+            },
+            "currency": {
+              "type": "string",
+              "maxLength": 2000,
+              "enum": [
+                "USD",
+                "EUR",
+                "GBP",
+                "JPY",
+                "CNY",
+                "INR",
+                "VND",
+                "AUD",
+                "CAD",
+                "CHF",
+                "SGD",
+                "KRW"
+              ]
+            },
+            "decimals": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4
+            },
+            "min": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        },
+        "bins": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 30
+        },
+        "markers": {
           "type": "array",
           "items": {
             "type": "object",
             "properties": {
+              "x": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              },
               "label": {
                 "type": "string",
-                "maxLength": 200
-              },
-              "values": {
-                "type": "array",
-                "items": {
-                  "type": "number"
-                },
-                "minItems": 1,
-                "maxItems": 200
+                "maxLength": 80
               }
             },
             "additionalProperties": false,
             "required": [
-              "label",
-              "values"
+              "x",
+              "label"
+            ]
+          },
+          "maxItems": 6
+        },
+        "annotations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              },
+              "y": {
+                "type": "number"
+              },
+              "text": {
+                "type": "string",
+                "maxLength": 160
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "x",
+              "y",
+              "text"
+            ]
+          },
+          "maxItems": 8
+        },
+        "sort": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "none",
+            "ascending",
+            "descending"
+          ]
+        },
+        "target": {
+          "type": "number"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "dataRef": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+          "description": "Name of a dataset declared in `datasets`. Do not combine with `data`."
+        },
+        "data": {
+          "$ref": "#/$defs/dataRows"
+        },
+        "transform": {
+          "type": "object",
+          "properties": {
+            "filter": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "field": {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  "equals": {
+                    "description": "A string, number, boolean, or null.",
+                    "$ref": "#/$defs/dataScalar"
+                  },
+                  "notEquals": {
+                    "description": "A string, number, boolean, or null.",
+                    "$ref": "#/$defs/dataScalar"
+                  },
+                  "in": {
+                    "type": "array",
+                    "items": {
+                      "description": "A string, number, boolean, or null.",
+                      "$ref": "#/$defs/dataScalar"
+                    },
+                    "minItems": 1,
+                    "maxItems": 20
+                  },
+                  "gt": {
+                    "type": "number"
+                  },
+                  "gte": {
+                    "type": "number"
+                  },
+                  "lt": {
+                    "type": "number"
+                  },
+                  "lte": {
+                    "type": "number"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "field"
+                ]
+              },
+              "minItems": 1,
+              "maxItems": 8
+            },
+            "groupBy": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                "aggregate": {
+                  "type": "string",
+                  "maxLength": 2000,
+                  "enum": [
+                    "count",
+                    "sum",
+                    "mean",
+                    "min",
+                    "max"
+                  ]
+                },
+                "value": {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                "as": {
+                  "type": "string",
+                  "maxLength": 64
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "field",
+                "aggregate"
+              ]
+            },
+            "sort": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "by": {
+                      "type": "string",
+                      "maxLength": 64
+                    },
+                    "direction": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "enum": [
+                        "asc",
+                        "desc"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "by"
+                  ]
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "by": {
+                        "type": "string",
+                        "maxLength": 64
+                      },
+                      "direction": {
+                        "type": "string",
+                        "maxLength": 2000,
+                        "enum": [
+                          "asc",
+                          "desc"
+                        ]
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "by"
+                    ]
+                  },
+                  "minItems": 1,
+                  "maxItems": 3
+                }
+              ]
+            },
+            "select": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "minItems": 1,
+              "maxItems": 24
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          },
+          "additionalProperties": false
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Chart: bar, line, area, pie, scatter and 11 more kinds, from labels/series or bound rows (x, y, value)."
+    },
+    "block-kanban": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "columns"
+      ],
+      "properties": {
+        "type": {
+          "const": "kanban"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 2000,
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title"
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 8
+        },
+        "cards": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "column": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "text": {
+                "type": "string",
+                "maxLength": 600,
+                "description": "Plain text; a `backtick` pair renders as inline code."
+              },
+              "owner": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 40
+                },
+                "maxItems": 4
+              },
+              "status": {
+                "type": "string",
+                "maxLength": 40
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "title",
+              "column"
+            ]
+          },
+          "maxItems": 60
+        },
+        "fields": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "column": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "text": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "owner": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "status": {
+              "type": "string",
+              "maxLength": 64
+            }
+          },
+          "additionalProperties": false
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "dataRef": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+          "description": "Name of a dataset declared in `datasets`. Do not combine with `data`."
+        },
+        "data": {
+          "$ref": "#/$defs/dataRows"
+        },
+        "transform": {
+          "type": "object",
+          "properties": {
+            "filter": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "field": {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  "equals": {
+                    "description": "A string, number, boolean, or null.",
+                    "$ref": "#/$defs/dataScalar"
+                  },
+                  "notEquals": {
+                    "description": "A string, number, boolean, or null.",
+                    "$ref": "#/$defs/dataScalar"
+                  },
+                  "in": {
+                    "type": "array",
+                    "items": {
+                      "description": "A string, number, boolean, or null.",
+                      "$ref": "#/$defs/dataScalar"
+                    },
+                    "minItems": 1,
+                    "maxItems": 20
+                  },
+                  "gt": {
+                    "type": "number"
+                  },
+                  "gte": {
+                    "type": "number"
+                  },
+                  "lt": {
+                    "type": "number"
+                  },
+                  "lte": {
+                    "type": "number"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "field"
+                ]
+              },
+              "minItems": 1,
+              "maxItems": 8
+            },
+            "groupBy": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                "aggregate": {
+                  "type": "string",
+                  "maxLength": 2000,
+                  "enum": [
+                    "count",
+                    "sum",
+                    "mean",
+                    "min",
+                    "max"
+                  ]
+                },
+                "value": {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                "as": {
+                  "type": "string",
+                  "maxLength": 64
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "field",
+                "aggregate"
+              ]
+            },
+            "sort": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "by": {
+                      "type": "string",
+                      "maxLength": 64
+                    },
+                    "direction": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "enum": [
+                        "asc",
+                        "desc"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "by"
+                  ]
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "by": {
+                        "type": "string",
+                        "maxLength": 64
+                      },
+                      "direction": {
+                        "type": "string",
+                        "maxLength": 2000,
+                        "enum": [
+                          "asc",
+                          "desc"
+                        ]
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "by"
+                    ]
+                  },
+                  "minItems": 1,
+                  "maxItems": 3
+                }
+              ]
+            },
+            "select": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "minItems": 1,
+              "maxItems": 24
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          },
+          "additionalProperties": false
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Kanban: 2-8 columns of cards with owner, tags and status; cards may come from a dataset."
+    },
+    "block-roadmap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "periods",
+        "items"
+      ],
+      "properties": {
+        "type": {
+          "const": "roadmap"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "periods": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "minItems": 2,
+          "maxItems": 24
+        },
+        "lanes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 2000,
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title"
+            ]
+          },
+          "maxItems": 8
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "lane": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "start": {
+                "type": "string",
+                "maxLength": 40
+              },
+              "end": {
+                "type": "string",
+                "maxLength": 40
+              },
+              "status": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "planned",
+                  "active",
+                  "done",
+                  "at-risk"
+                ]
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "title",
+              "start"
             ]
           },
           "minItems": 1,
-          "maxItems": 200
+          "maxItems": 40
         },
         "id": {
           "type": "string",
@@ -3405,7 +4866,1334 @@
           "$ref": "#/$defs/condition"
         }
       },
-      "description": "Chart: bar, line, area, pie, donut, sparkline, or progress from labeled series."
+      "description": "Roadmap: items spanning 2-24 ordered periods in up to 8 lanes, with planned/active/done/at-risk status."
+    },
+    "block-test-results": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "suites"
+      ],
+      "properties": {
+        "type": {
+          "const": "test-results"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "coverage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "suites": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "cases": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "maxLength": 300
+                    },
+                    "status": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "enum": [
+                        "fail",
+                        "flaky",
+                        "skip",
+                        "pass"
+                      ]
+                    },
+                    "duration": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "message": {
+                      "type": "string",
+                      "maxLength": 400,
+                      "description": "Failure output; emitted verbatim."
+                    },
+                    "file": {
+                      "type": "string",
+                      "maxLength": 200
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "name",
+                    "status"
+                  ]
+                },
+                "minItems": 1,
+                "maxItems": 200
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "cases"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 20
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Test results: suites of pass/fail/skip/flaky cases; the summary is computed and failures come first."
+    },
+    "block-log-viewer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "log-viewer"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "lines": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "time": {
+                "type": "string",
+                "maxLength": 40
+              },
+              "level": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "debug",
+                  "info",
+                  "warn",
+                  "error"
+                ]
+              },
+              "source": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "message": {
+                "type": "string",
+                "maxLength": 400,
+                "description": "Emitted verbatim."
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "level",
+              "message"
+            ]
+          },
+          "maxItems": 200
+        },
+        "fields": {
+          "type": "object",
+          "properties": {
+            "time": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "level": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "source": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "message": {
+              "type": "string",
+              "maxLength": 64
+            }
+          },
+          "additionalProperties": false
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "dataRef": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+          "description": "Name of a dataset declared in `datasets`. Do not combine with `data`."
+        },
+        "data": {
+          "$ref": "#/$defs/dataRows"
+        },
+        "transform": {
+          "type": "object",
+          "properties": {
+            "filter": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "field": {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  "equals": {
+                    "description": "A string, number, boolean, or null.",
+                    "$ref": "#/$defs/dataScalar"
+                  },
+                  "notEquals": {
+                    "description": "A string, number, boolean, or null.",
+                    "$ref": "#/$defs/dataScalar"
+                  },
+                  "in": {
+                    "type": "array",
+                    "items": {
+                      "description": "A string, number, boolean, or null.",
+                      "$ref": "#/$defs/dataScalar"
+                    },
+                    "minItems": 1,
+                    "maxItems": 20
+                  },
+                  "gt": {
+                    "type": "number"
+                  },
+                  "gte": {
+                    "type": "number"
+                  },
+                  "lt": {
+                    "type": "number"
+                  },
+                  "lte": {
+                    "type": "number"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "field"
+                ]
+              },
+              "minItems": 1,
+              "maxItems": 8
+            },
+            "groupBy": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                "aggregate": {
+                  "type": "string",
+                  "maxLength": 2000,
+                  "enum": [
+                    "count",
+                    "sum",
+                    "mean",
+                    "min",
+                    "max"
+                  ]
+                },
+                "value": {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                "as": {
+                  "type": "string",
+                  "maxLength": 64
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "field",
+                "aggregate"
+              ]
+            },
+            "sort": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "by": {
+                      "type": "string",
+                      "maxLength": 64
+                    },
+                    "direction": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "enum": [
+                        "asc",
+                        "desc"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "by"
+                  ]
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "by": {
+                        "type": "string",
+                        "maxLength": 64
+                      },
+                      "direction": {
+                        "type": "string",
+                        "maxLength": 2000,
+                        "enum": [
+                          "asc",
+                          "desc"
+                        ]
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "by"
+                    ]
+                  },
+                  "minItems": 1,
+                  "maxItems": 3
+                }
+              ]
+            },
+            "select": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "minItems": 1,
+              "maxItems": 24
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          },
+          "additionalProperties": false
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Log viewer: up to 200 leveled log lines with time and source; searchable and filterable by level."
+    },
+    "block-api-endpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "method",
+        "path"
+      ],
+      "properties": {
+        "type": {
+          "const": "api-endpoint"
+        },
+        "method": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "GET",
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 600,
+          "description": "Plain text; a `backtick` pair renders as inline code."
+        },
+        "params": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "in": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "path",
+                  "query",
+                  "header"
+                ]
+              },
+              "type": {
+                "type": "string",
+                "maxLength": 40
+              },
+              "required": {
+                "type": "boolean"
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 300,
+                "description": "Plain text; a `backtick` pair renders as inline code."
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "in",
+              "type"
+            ]
+          },
+          "maxItems": 20
+        },
+        "request": {
+          "type": "object",
+          "properties": {
+            "language": {
+              "type": "string",
+              "maxLength": 20
+            },
+            "code": {
+              "type": "string",
+              "maxLength": 8000,
+              "description": "Emitted verbatim."
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "code"
+          ]
+        },
+        "responses": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "integer",
+                "minimum": 100,
+                "maximum": 599
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "language": {
+                "type": "string",
+                "maxLength": 20
+              },
+              "code": {
+                "type": "string",
+                "maxLength": 8000,
+                "description": "Emitted verbatim."
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "status",
+              "description"
+            ]
+          },
+          "maxItems": 8
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "API endpoint: method and path with copy, a parameters table, a request body and status responses."
+    },
+    "block-schema-viewer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "fields"
+      ],
+      "properties": {
+        "type": {
+          "const": "schema-viewer"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "type": {
+                "type": "string",
+                "maxLength": 60
+              },
+              "required": {
+                "type": "boolean"
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 400,
+                "description": "Plain text; a `backtick` pair renders as inline code."
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "type"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 120
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Schema viewer: up to 120 typed fields from dotted paths as a tree; missing parents become objects."
+    },
+    "block-benchmark-comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "baseline",
+        "candidate"
+      ],
+      "properties": {
+        "type": {
+          "const": "benchmark-comparison"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "baseline": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "label"
+          ]
+        },
+        "candidate": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "label"
+          ]
+        },
+        "metrics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "baseline": {
+                "type": "number"
+              },
+              "candidate": {
+                "type": "number"
+              },
+              "better": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "lower",
+                  "higher"
+                ]
+              },
+              "format": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "text",
+                  "number",
+                  "integer",
+                  "compact",
+                  "percent",
+                  "currency",
+                  "duration",
+                  "bytes",
+                  "date"
+                ]
+              },
+              "unit": {
+                "type": "string",
+                "maxLength": 12
+              },
+              "decimals": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "label",
+              "baseline",
+              "candidate",
+              "better"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 20
+        },
+        "fields": {
+          "type": "object",
+          "properties": {
+            "metric": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "baseline": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "candidate": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "better": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "unit": {
+              "type": "string",
+              "maxLength": 64
+            }
+          },
+          "additionalProperties": false
+        },
+        "format": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "text",
+            "number",
+            "integer",
+            "compact",
+            "percent",
+            "currency",
+            "duration",
+            "bytes",
+            "date"
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "maxLength": 12
+        },
+        "currency": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "USD",
+            "EUR",
+            "GBP",
+            "JPY",
+            "CNY",
+            "INR",
+            "VND",
+            "AUD",
+            "CAD",
+            "CHF",
+            "SGD",
+            "KRW"
+          ]
+        },
+        "decimals": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4
+        },
+        "method": {
+          "type": "string",
+          "maxLength": 600,
+          "description": "How the numbers were measured."
+        },
+        "limitations": {
+          "type": "string",
+          "maxLength": 600,
+          "description": "What the numbers do not show."
+        },
+        "source": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "href": {
+              "type": "string",
+              "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "label"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "dataRef": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+          "description": "Name of a dataset declared in `datasets`. Do not combine with `data`."
+        },
+        "data": {
+          "$ref": "#/$defs/dataRows"
+        },
+        "transform": {
+          "type": "object",
+          "properties": {
+            "filter": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "field": {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  "equals": {
+                    "description": "A string, number, boolean, or null.",
+                    "$ref": "#/$defs/dataScalar"
+                  },
+                  "notEquals": {
+                    "description": "A string, number, boolean, or null.",
+                    "$ref": "#/$defs/dataScalar"
+                  },
+                  "in": {
+                    "type": "array",
+                    "items": {
+                      "description": "A string, number, boolean, or null.",
+                      "$ref": "#/$defs/dataScalar"
+                    },
+                    "minItems": 1,
+                    "maxItems": 20
+                  },
+                  "gt": {
+                    "type": "number"
+                  },
+                  "gte": {
+                    "type": "number"
+                  },
+                  "lt": {
+                    "type": "number"
+                  },
+                  "lte": {
+                    "type": "number"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "field"
+                ]
+              },
+              "minItems": 1,
+              "maxItems": 8
+            },
+            "groupBy": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                "aggregate": {
+                  "type": "string",
+                  "maxLength": 2000,
+                  "enum": [
+                    "count",
+                    "sum",
+                    "mean",
+                    "min",
+                    "max"
+                  ]
+                },
+                "value": {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                "as": {
+                  "type": "string",
+                  "maxLength": 64
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "field",
+                "aggregate"
+              ]
+            },
+            "sort": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "by": {
+                      "type": "string",
+                      "maxLength": 64
+                    },
+                    "direction": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "enum": [
+                        "asc",
+                        "desc"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "by"
+                  ]
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "by": {
+                        "type": "string",
+                        "maxLength": 64
+                      },
+                      "direction": {
+                        "type": "string",
+                        "maxLength": 2000,
+                        "enum": [
+                          "asc",
+                          "desc"
+                        ]
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "by"
+                    ]
+                  },
+                  "minItems": 1,
+                  "maxItems": 3
+                }
+              ]
+            },
+            "select": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "minItems": 1,
+              "maxItems": 24
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          },
+          "additionalProperties": false
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Benchmark comparison: baseline vs candidate metrics; computes delta, % change, verdict and a summary."
+    },
+    "block-metric-breakdown": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "metric-breakdown"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "total": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "value": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "label",
+            "value"
+          ]
+        },
+        "parts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "value": {
+                "type": "number",
+                "minimum": 0
+              },
+              "tone": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "neutral",
+                  "info",
+                  "success",
+                  "warning",
+                  "danger"
+                ]
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "label",
+              "value"
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 12
+        },
+        "fields": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "value": {
+              "type": "string",
+              "maxLength": 64
+            }
+          },
+          "additionalProperties": false
+        },
+        "format": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "text",
+            "number",
+            "integer",
+            "compact",
+            "percent",
+            "currency",
+            "duration",
+            "bytes",
+            "date"
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "maxLength": 12
+        },
+        "currency": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "USD",
+            "EUR",
+            "GBP",
+            "JPY",
+            "CNY",
+            "INR",
+            "VND",
+            "AUD",
+            "CAD",
+            "CHF",
+            "SGD",
+            "KRW"
+          ]
+        },
+        "decimals": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "dataRef": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+          "description": "Name of a dataset declared in `datasets`. Do not combine with `data`."
+        },
+        "data": {
+          "$ref": "#/$defs/dataRows"
+        },
+        "transform": {
+          "type": "object",
+          "properties": {
+            "filter": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "field": {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  "equals": {
+                    "description": "A string, number, boolean, or null.",
+                    "$ref": "#/$defs/dataScalar"
+                  },
+                  "notEquals": {
+                    "description": "A string, number, boolean, or null.",
+                    "$ref": "#/$defs/dataScalar"
+                  },
+                  "in": {
+                    "type": "array",
+                    "items": {
+                      "description": "A string, number, boolean, or null.",
+                      "$ref": "#/$defs/dataScalar"
+                    },
+                    "minItems": 1,
+                    "maxItems": 20
+                  },
+                  "gt": {
+                    "type": "number"
+                  },
+                  "gte": {
+                    "type": "number"
+                  },
+                  "lt": {
+                    "type": "number"
+                  },
+                  "lte": {
+                    "type": "number"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "field"
+                ]
+              },
+              "minItems": 1,
+              "maxItems": 8
+            },
+            "groupBy": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                "aggregate": {
+                  "type": "string",
+                  "maxLength": 2000,
+                  "enum": [
+                    "count",
+                    "sum",
+                    "mean",
+                    "min",
+                    "max"
+                  ]
+                },
+                "value": {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                "as": {
+                  "type": "string",
+                  "maxLength": 64
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "field",
+                "aggregate"
+              ]
+            },
+            "sort": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "by": {
+                      "type": "string",
+                      "maxLength": 64
+                    },
+                    "direction": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "enum": [
+                        "asc",
+                        "desc"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "by"
+                  ]
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "by": {
+                        "type": "string",
+                        "maxLength": 64
+                      },
+                      "direction": {
+                        "type": "string",
+                        "maxLength": 2000,
+                        "enum": [
+                          "asc",
+                          "desc"
+                        ]
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "by"
+                    ]
+                  },
+                  "minItems": 1,
+                  "maxItems": 3
+                }
+              ]
+            },
+            "select": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "minItems": 1,
+              "maxItems": 24
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          },
+          "additionalProperties": false
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Metric breakdown: parts of a total as a stacked bar and a list with value and share %."
+    },
+    "block-annotated-image": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "src",
+        "alt",
+        "notes"
+      ],
+      "properties": {
+        "type": {
+          "const": "annotated-image"
+        },
+        "src": {
+          "type": "string",
+          "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+        },
+        "alt": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "caption": {
+          "type": "string",
+          "maxLength": 50000,
+          "description": "Plain text; a `backtick` pair renders as inline code."
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "y": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "text": {
+                "type": "string",
+                "maxLength": 600,
+                "description": "Plain text; a `backtick` pair renders as inline code."
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "x",
+              "y",
+              "label"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 12
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Annotated image: numbered pins at x/y percent over an image, plus the notes as a list."
+    },
+    "block-references": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "items"
+      ],
+      "properties": {
+        "type": {
+          "const": "references"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 2000,
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "href": {
+                "type": "string",
+                "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+              },
+              "authors": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "source": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "year": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9999
+              },
+              "note": {
+                "type": "string",
+                "maxLength": 600,
+                "description": "Plain text; a `backtick` pair renders as inline code."
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 60
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "References: numbered citations with title, authors, source, year, link and note; anchor #ref-<id>."
     },
     "block-gallery": {
       "type": "object",
@@ -3464,7 +6252,923 @@
           "$ref": "#/$defs/condition"
         }
       },
-      "description": "Gallery: responsive image grid with captions."
+      "description": "Gallery: responsive image grid with captions; thumbnails open full size."
+    },
+    "block-pricing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "plans"
+      ],
+      "properties": {
+        "type": {
+          "const": "pricing"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "plans": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "price": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 40
+                  },
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                ]
+              },
+              "currency": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "USD",
+                  "EUR",
+                  "GBP",
+                  "JPY",
+                  "CNY",
+                  "INR",
+                  "VND",
+                  "AUD",
+                  "CAD",
+                  "CHF",
+                  "SGD",
+                  "KRW"
+                ]
+              },
+              "period": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "month",
+                  "year",
+                  "once"
+                ]
+              },
+              "summary": {
+                "type": "string",
+                "maxLength": 280,
+                "description": "Plain text; a `backtick` pair renders as inline code."
+              },
+              "features": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 200,
+                  "description": "Plain text; a `backtick` pair renders as inline code."
+                },
+                "maxItems": 12
+              },
+              "cta": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "href": {
+                    "type": "string",
+                    "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "label",
+                  "href"
+                ]
+              },
+              "highlight": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "price"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 4
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Pricing: 1-4 plan cards with price, features and a call to action."
+    },
+    "block-feature-matrix": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "plans",
+        "rows"
+      ],
+      "properties": {
+        "type": {
+          "const": "feature-matrix"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "plans": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "minItems": 2,
+          "maxItems": 5
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "feature": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "values": {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "string",
+                      "maxLength": 80
+                    }
+                  ]
+                },
+                "minItems": 1,
+                "maxItems": 5
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "feature",
+              "values"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 40
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Feature matrix: rows of features against 2-5 plans; true/false render as marks."
+    },
+    "block-testimonial": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "items"
+      ],
+      "properties": {
+        "type": {
+          "const": "testimonial"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "quote": {
+                "type": "string",
+                "maxLength": 600,
+                "description": "Plain text; a `backtick` pair renders as inline code."
+              },
+              "name": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "role": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "avatar": {
+                "type": "string",
+                "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+              },
+              "logo": {
+                "type": "string",
+                "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "quote",
+              "name"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 9
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Testimonial: 1 featured quote, or 2-9 quotes in a grid."
+    },
+    "block-logo-cloud": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "items"
+      ],
+      "properties": {
+        "type": {
+          "const": "logo-cloud"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "src": {
+                "type": "string",
+                "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+              },
+              "href": {
+                "type": "string",
+                "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "src"
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 24
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Logo cloud: 2-24 logos; the name is the alt text and the blocked fallback."
+    },
+    "block-people": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "items"
+      ],
+      "properties": {
+        "type": {
+          "const": "people"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "role": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "avatar": {
+                "type": "string",
+                "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+              },
+              "bio": {
+                "type": "string",
+                "maxLength": 280,
+                "description": "Plain text; a `backtick` pair renders as inline code."
+              },
+              "links": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "label": {
+                      "type": "string",
+                      "maxLength": 200
+                    },
+                    "href": {
+                      "type": "string",
+                      "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "label",
+                    "href"
+                  ]
+                },
+                "maxItems": 3
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "name"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 24
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "People: up to 24 profiles with avatar, role, short bio and links."
+    },
+    "block-calendar": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "month"
+      ],
+      "properties": {
+        "type": {
+          "const": "calendar"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "month": {
+          "type": "string",
+          "maxLength": 7
+        },
+        "weekStart": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "monday",
+            "sunday"
+          ]
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "date": {
+                "type": "string",
+                "maxLength": 10
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "time": {
+                "type": "string",
+                "maxLength": 5
+              },
+              "tone": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "neutral",
+                  "info",
+                  "success",
+                  "warning",
+                  "danger"
+                ]
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "date",
+              "title"
+            ]
+          },
+          "maxItems": 60
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Calendar: one YYYY-MM month grid with dated events; an agenda on phones."
+    },
+    "block-select": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "label"
+      ],
+      "properties": {
+        "type": {
+          "const": "select"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "bind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "value": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 120
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "value"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 50
+        },
+        "optionsFrom": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "field": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "hint": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "on": {
+          "description": "Bindings fired with `{ value }` when the value changes.",
+          "$ref": "#/$defs/actionMap"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Select: labeled native <select> that writes state or filters in a filter-bar."
+    },
+    "block-radio-group": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "label"
+      ],
+      "properties": {
+        "type": {
+          "const": "radio-group"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "bind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "value": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 120
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "value"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 8
+        },
+        "optionsFrom": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "field": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "hint": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "on": {
+          "description": "Bindings fired with `{ value }` when the value changes.",
+          "$ref": "#/$defs/actionMap"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Radio group: native radios in a fieldset; writes state or filters in a filter-bar."
+    },
+    "block-checkbox": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "label"
+      ],
+      "properties": {
+        "type": {
+          "const": "checkbox"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "bind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "value": {
+          "type": "boolean"
+        },
+        "field": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "hint": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "on": {
+          "description": "Bindings fired with `{ value }` when the value changes.",
+          "$ref": "#/$defs/actionMap"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Checkbox: labeled native checkbox; writes a boolean or filters to truthy rows."
+    },
+    "block-switch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "label"
+      ],
+      "properties": {
+        "type": {
+          "const": "switch"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "bind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "value": {
+          "type": "boolean"
+        },
+        "field": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "hint": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "on": {
+          "description": "Bindings fired with `{ value }` when the value changes.",
+          "$ref": "#/$defs/actionMap"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Switch: native checkbox with role=\"switch\"; writes a boolean or filters to truthy rows."
+    },
+    "block-text-input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "label"
+      ],
+      "properties": {
+        "type": {
+          "const": "text-input"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "bind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "value": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "placeholder": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "maxLength": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "field": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "match": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "contains",
+            "equals"
+          ]
+        },
+        "hint": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "on": {
+          "description": "Bindings fired with `{ value }` when the value changes.",
+          "$ref": "#/$defs/actionMap"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Text input: labeled native text field; writes state or filters rows by substring."
+    },
+    "block-number-input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "label"
+      ],
+      "properties": {
+        "type": {
+          "const": "number-input"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "bind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "value": {
+          "type": "number",
+          "minimum": -1000000000,
+          "maximum": 1000000000
+        },
+        "min": {
+          "type": "number",
+          "minimum": -1000000000,
+          "maximum": 1000000000
+        },
+        "max": {
+          "type": "number",
+          "minimum": -1000000000,
+          "maximum": 1000000000
+        },
+        "step": {
+          "type": "number",
+          "minimum": 0.0001,
+          "maximum": 1000000000
+        },
+        "field": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "match": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "min",
+            "max",
+            "equals"
+          ]
+        },
+        "hint": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "on": {
+          "description": "Bindings fired with `{ value }` when the value changes.",
+          "$ref": "#/$defs/actionMap"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Number input: labeled native number field; writes state or filters by min/max."
+    },
+    "block-date-input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "label"
+      ],
+      "properties": {
+        "type": {
+          "const": "date-input"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "bind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "value": {
+          "type": "string",
+          "maxLength": 10
+        },
+        "field": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "match": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "min",
+            "max",
+            "equals"
+          ]
+        },
+        "hint": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "on": {
+          "description": "Bindings fired with `{ value }` when the value changes.",
+          "$ref": "#/$defs/actionMap"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Date input: labeled native date field (YYYY-MM-DD); writes state or filters by range."
+    },
+    "block-filter-bar": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "target"
+      ],
+      "properties": {
+        "type": {
+          "const": "filter-bar"
+        },
+        "target": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "blocks": {
+          "$ref": "#/$defs/blockList"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Filter bar: 1-8 controls (field + match) filtering a target; adds a live count and Reset."
     }
   }
 }
