@@ -1,0 +1,479 @@
+version: 1
+
+meta:
+  title: Benchmark Runs
+  description: Typed, sortable and searchable data tables bound to a shared dataset
+  locale: en
+
+theme:
+  preset: swiss-clean
+
+policy:
+  network: deny
+
+datasets:
+  runs:
+    - model: atlas-large
+      provider: Northwind
+      url: https://example.com/models/atlas-large
+      tokens: 1800
+      reduction: 35
+      cost: 0.12
+      p95: 180
+      status: pass
+      coverage: 48
+      released: '2026-01-01'
+      w1: 30
+      w2: 47
+      w3: 64
+      w4: 81
+      w5: 38
+      w6: 55
+    - model: atlas-mini
+      provider: Northwind
+      url: https://example.com/models/atlas-mini
+      tokens: 9719
+      reduction: 72
+      cost: 0.65
+      p95: 277
+      status: pass
+      coverage: 77
+      released: '2026-06-12'
+      w1: 43
+      w2: 60
+      w3: 77
+      w4: 34
+      w5: 51
+      w6: 68
+    - model: beacon-7b
+      provider: Harbor Labs
+      url: https://example.com/models/beacon-7b
+      tokens: 17638
+      reduction: 49
+      cost: 1.18
+      p95: 374
+      status: fail
+      coverage: 54
+      released: '2026-02-23'
+      w1: 56
+      w2: 73
+      w3: 30
+      w4: 47
+      w5: 64
+      w6: 81
+    - model: beacon-13b
+      provider: Harbor Labs
+      url: https://example.com/models/beacon-13b
+      tokens: 25557
+      reduction: 86
+      cost: 1.71
+      p95: 471
+      status: pass
+      coverage: 83
+      released: '2026-07-06'
+      w1: 69
+      w2: 86
+      w3: 43
+      w4: 60
+      w5: 77
+      w6: 34
+    - model: cedar-pro
+      provider: Cedar AI
+      url: https://example.com/models/cedar-pro
+      tokens: 33476
+      reduction: 63
+      cost: 2.24
+      p95: 568
+      status: flaky
+      coverage: 60
+      released: '2026-03-17'
+      w1: 82
+      w2: 39
+      w3: 56
+      w4: 73
+      w5: 30
+      w6: 47
+    - model: cedar-lite
+      provider: Cedar AI
+      url: null
+      tokens: 41395
+      reduction: 40
+      cost: 2.77
+      p95: 665
+      status: pass
+      coverage: 89
+      released: '2026-08-28'
+      w1: 35
+      w2: 52
+      w3: 69
+      w4: 86
+      w5: 43
+      w6: 60
+    - model: delta-coder
+      provider: Delta
+      url: https://example.com/models/delta-coder
+      tokens: 49314
+      reduction: 77
+      cost: 3.3
+      p95: 762
+      status: pass
+      coverage: 66
+      released: '2026-04-11'
+      w1: 48
+      w2: 65
+      w3: 82
+      w4: 39
+      w5: 56
+      w6: 73
+    - model: delta-chat
+      provider: Delta
+      url: https://example.com/models/delta-chat
+      tokens: 57233
+      reduction: 54
+      cost: 3.83
+      p95: 859
+      status: fail
+      coverage: 95
+      released: '2026-09-22'
+      w1: 61
+      w2: 78
+      w3: 35
+      w4: 52
+      w5: 69
+      w6: 86
+    - model: ember-xl
+      provider: Ember
+      url: https://example.com/models/ember-xl
+      tokens: 65152
+      reduction: 91
+      cost: 0.36
+      p95: 956
+      status: pass
+      coverage: 72
+      released: '2026-05-05'
+      w1: 74
+      w2: 31
+      w3: 48
+      w4: 65
+      w5: 82
+      w6: 39
+    - model: ember-s
+      provider: Ember
+      url: https://example.com/models/ember-s
+      tokens: 73071
+      reduction: 68
+      cost: 0.89
+      p95: 1053
+      status: pass
+      coverage: 49
+      released: '2026-01-16'
+      w1: 87
+      w2: 44
+      w3: 61
+      w4: 78
+      w5: 35
+      w6: 52
+    - model: fjord-base
+      provider: Fjord
+      url: https://example.com/models/fjord-base
+      tokens: 80990
+      reduction: 45
+      cost: 1.42
+      p95: 1150
+      status: flaky
+      coverage: 78
+      released: '2026-06-27'
+      w1: 40
+      w2: 57
+      w3: 74
+      w4: 31
+      w5: 48
+      w6: 65
+    - model: fjord-instruct
+      provider: Fjord
+      url: https://example.com/models/fjord-instruct
+      tokens: 88909
+      reduction: 82
+      cost: 1.95
+      p95: 1247
+      status: pass
+      coverage: 55
+      released: '2026-02-10'
+      w1: 53
+      w2: 70
+      w3: 87
+      w4: 44
+      w5: 61
+      w6: 78
+    - model: granite-v2
+      provider: Quarry
+      url: https://example.com/models/granite-v2
+      tokens: 96828
+      reduction: 59
+      cost: 2.48
+      p95: 1344
+      status: pass
+      coverage: 84
+      released: '2026-07-21'
+      w1: 66
+      w2: 83
+      w3: 40
+      w4: 57
+      w5: 74
+      w6: 31
+    - model: granite-v3
+      provider: Quarry
+      url: https://example.com/models/granite-v3
+      tokens: 104747
+      reduction: 36
+      cost: 3.01
+      p95: 1441
+      status: pass
+      coverage: 61
+      released: '2026-03-04'
+      w1: 79
+      w2: 36
+      w3: 53
+      w4: 70
+      w5: 87
+      w6: 44
+    - model: helix-fast
+      provider: Helix
+      url: https://example.com/models/helix-fast
+      tokens: 112666
+      reduction: 73
+      cost: 3.54
+      p95: 1538
+      status: fail
+      coverage: 90
+      released: '2026-08-15'
+      w1: 32
+      w2: 49
+      w3: 66
+      w4: 83
+      w5: 40
+      w6: 57
+    - model: helix-deep
+      provider: Helix
+      url: https://example.com/models/helix-deep
+      tokens: 120585
+      reduction: 50
+      cost: 4.07
+      p95: 235
+      status: pass
+      coverage: 67
+      released: '2026-04-26'
+      w1: 45
+      w2: 62
+      w3: 79
+      w4: 36
+      w5: 53
+      w6: 70
+    - model: iris-vision
+      provider: Iris
+      url: https://example.com/models/iris-vision
+      tokens: 128504
+      reduction: 87
+      cost: 0.6
+      p95: 332
+      status: pass
+      coverage: 96
+      released: '2026-09-09'
+      w1: 58
+      w2: 75
+      w3: 32
+      w4: 49
+      w5: 66
+      w6: 83
+    - model: iris-text
+      provider: Iris
+      url: https://example.com/models/iris-text
+      tokens: 136423
+      reduction: 64
+      cost: 1.13
+      p95: 429
+      status: flaky
+      coverage: 73
+      released: '2026-05-20'
+      w1: 71
+      w2: 88
+      w3: 45
+      w4: 62
+      w5: 79
+      w6: 36
+    - model: juniper-1
+      provider: Juniper
+      url: https://example.com/models/juniper-1
+      tokens: 144342
+      reduction: 41
+      cost: 1.66
+      p95: 526
+      status: pass
+      coverage: 50
+      released: '2026-01-03'
+      w1: 84
+      w2: 41
+      w3: 58
+      w4: 75
+      w5: 32
+      w6: 49
+    - model: juniper-2
+      provider: Juniper
+      url: https://example.com/models/juniper-2
+      tokens: 152261
+      reduction: 78
+      cost: 2.19
+      p95: 623
+      status: pass
+      coverage: 79
+      released: '2026-06-14'
+      w1: 37
+      w2: 54
+      w3: 71
+      w4: 88
+      w5: 45
+      w6: 62
+    - model: kestrel-edge
+      provider: Kestrel
+      url: https://example.com/models/kestrel-edge
+      tokens: 160180
+      reduction: 55
+      cost: 2.72
+      p95: 720
+      status: pass
+      coverage: 56
+      released: '2026-02-25'
+      w1: 50
+      w2: 67
+      w3: 84
+      w4: 41
+      w5: 58
+      w6: 75
+    - model: kestrel-cloud
+      provider: Kestrel
+      url: https://example.com/models/kestrel-cloud
+      tokens: 168099
+      reduction: 92
+      cost: 3.25
+      p95: 817
+      status: fail
+      coverage: 85
+      released: '2026-07-08'
+      w1: 63
+      w2: 80
+      w3: 37
+      w4: 54
+      w5: 71
+      w6: 88
+    - model: lumen-r
+      provider: Lumen
+      url: https://example.com/models/lumen-r
+      tokens: 176018
+      reduction: 69
+      cost: 3.78
+      p95: 914
+      status: pass
+      coverage: 62
+      released: '2026-03-19'
+      w1: 76
+      w2: 33
+      w3: 50
+      w4: 67
+      w5: 84
+      w6: 41
+    - model: lumen-q
+      provider: Lumen
+      url: https://example.com/models/lumen-q
+      tokens: 183937
+      reduction: 46
+      cost: 0.31
+      p95: 1011
+      status: pass
+      coverage: 91
+      released: '2026-08-02'
+      w1: 89
+      w2: 46
+      w3: 63
+      w4: 80
+      w5: 37
+      w6: 54
+
+blocks:
+  - type: hero
+    eyebrow: Data tables
+    title: Benchmark runs
+    description: One dataset, typed columns, sorting on every header and search past ten rows.
+
+  - type: data-table
+    title: All runs by p95 latency
+    dataRef: runs
+    transform:
+      sort: { by: p95, direction: asc }
+    columns:
+      - key: model
+        label: Model
+        type: link
+        hrefField: url
+      - key: provider
+        label: Provider
+      - key: tokens
+        label: Tokens
+        type: number
+        format: compact
+      - key: reduction
+        label: Saving
+        type: percent
+      - key: cost
+        label: Cost / 1M
+        type: currency
+        currency: USD
+      - key: p95
+        label: p95
+        type: number
+        format: duration
+      - key: status
+        label: Status
+        type: badge
+        tones: { pass: success, fail: danger, flaky: warning }
+      - key: coverage
+        label: Coverage
+        type: progress
+        format: percent
+      - key: released
+        label: Released
+        type: date
+      - key: w6
+        label: Six-week trend
+        type: sparkline
+        fields: [w1, w2, w3, w4, w5, w6]
+
+  - type: data-table
+    title: Top five savings
+    caption: The five models with the largest token savings.
+    dataRef: runs
+    transform:
+      sort: { by: reduction, direction: desc }
+      limit: 5
+      select: [model, reduction, status]
+    columns:
+      - key: model
+        label: Model
+      - key: reduction
+        label: Saving
+        type: percentage
+      - key: status
+        label: Status
+        type: badge
+
+  - type: data-table
+    title: Release checklist
+    data:
+      - step: Freeze the dataset
+        owner: data
+        hours: 3
+      - step: Re-run the suite
+        owner: eval
+        hours: 6.5
+      - step: Publish the report
+        owner: docs
+        hours: 1.25
