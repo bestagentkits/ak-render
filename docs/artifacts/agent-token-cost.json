@@ -114,194 +114,370 @@
     "rows": [
       {
         "fixture": "all-components.yaml",
-        "specChars": 17991,
-        "pageChars": 226989,
-        "textChars": 8615,
-        "specToText": 2.0883343006384214,
-        "summaryChars": 738,
+        "specChars": 18120,
+        "pageChars": 245539,
+        "textChars": 8990,
+        "specToText": 2.0155728587319244,
+        "summaryChars": 762,
         "blockTypes": 53,
-        "discoveryChars": 92561
+        "discoveryChars": 113522,
+        "compactDiscoveryChars": 27931
+      },
+      {
+        "fixture": "benchmark-report.yaml",
+        "specChars": 5515,
+        "pageChars": 183416,
+        "textChars": 4047,
+        "specToText": 1.3627378304917224,
+        "summaryChars": 540,
+        "blockTypes": 8,
+        "discoveryChars": 42551,
+        "compactDiscoveryChars": 17986
       },
       {
         "fixture": "brainstorm.yaml",
         "specChars": 2355,
-        "pageChars": 117222,
+        "pageChars": 120893,
         "textChars": 1497,
         "specToText": 1.5731462925851702,
-        "summaryChars": 468,
+        "summaryChars": 476,
         "blockTypes": 6,
-        "discoveryChars": 20627
+        "discoveryChars": 24137,
+        "compactDiscoveryChars": 14936
+      },
+      {
+        "fixture": "charts-v2.yaml",
+        "specChars": 5452,
+        "pageChars": 186192,
+        "textChars": 9222,
+        "specToText": 0.5911949685534591,
+        "summaryChars": 481,
+        "blockTypes": 3,
+        "discoveryChars": 25957,
+        "compactDiscoveryChars": 15033
+      },
+      {
+        "fixture": "complex-dashboard.yaml",
+        "specChars": 5761,
+        "pageChars": 213667,
+        "textChars": 3376,
+        "specToText": 1.706457345971564,
+        "summaryChars": 557,
+        "blockTypes": 11,
+        "discoveryChars": 43744,
+        "compactDiscoveryChars": 17880
+      },
+      {
+        "fixture": "controls.yaml",
+        "specChars": 3745,
+        "pageChars": 130089,
+        "textChars": 1315,
+        "specToText": 2.8479087452471483,
+        "summaryChars": 485,
+        "blockTypes": 12,
+        "discoveryChars": 38631,
+        "compactDiscoveryChars": 17240
       },
       {
         "fixture": "dashboard.yaml",
         "specChars": 2109,
-        "pageChars": 142647,
+        "pageChars": 146898,
         "textChars": 2749,
         "specToText": 0.767188068388505,
-        "summaryChars": 444,
+        "summaryChars": 452,
         "blockTypes": 5,
-        "discoveryChars": 18903
+        "discoveryChars": 28847,
+        "compactDiscoveryChars": 15378
+      },
+      {
+        "fixture": "data-tables.yaml",
+        "specChars": 9576,
+        "pageChars": 181282,
+        "textChars": 2795,
+        "specToText": 3.4261180679785332,
+        "summaryChars": 458,
+        "blockTypes": 2,
+        "discoveryChars": 20251,
+        "compactDiscoveryChars": 14462
       },
       {
         "fixture": "diff.yaml",
         "specChars": 2614,
-        "pageChars": 117026,
+        "pageChars": 118138,
         "textChars": 1472,
         "specToText": 1.7758152173913044,
-        "summaryChars": 423,
+        "summaryChars": 431,
         "blockTypes": 7,
-        "discoveryChars": 22725
+        "discoveryChars": 26287,
+        "compactDiscoveryChars": 15336
+      },
+      {
+        "fixture": "engineering-widgets.yaml",
+        "specChars": 13450,
+        "pageChars": 188880,
+        "textChars": 6625,
+        "specToText": 2.030188679245283,
+        "summaryChars": 631,
+        "blockTypes": 8,
+        "discoveryChars": 34916,
+        "compactDiscoveryChars": 17266
+      },
+      {
+        "fixture": "evidence-widgets.yaml",
+        "specChars": 3615,
+        "pageChars": 135706,
+        "textChars": 1744,
+        "specToText": 2.072821100917431,
+        "summaryChars": 508,
+        "blockTypes": 6,
+        "discoveryChars": 31241,
+        "compactDiscoveryChars": 16566
       },
       {
         "fixture": "explain.yaml",
         "specChars": 2623,
-        "pageChars": 121596,
-        "textChars": 1537,
-        "specToText": 1.7065712426805466,
-        "summaryChars": 475,
+        "pageChars": 126975,
+        "textChars": 1578,
+        "specToText": 1.662230671736375,
+        "summaryChars": 483,
         "blockTypes": 8,
-        "discoveryChars": 21959
+        "discoveryChars": 26060,
+        "compactDiscoveryChars": 15086
+      },
+      {
+        "fixture": "incident-report.yaml",
+        "specChars": 5843,
+        "pageChars": 167866,
+        "textChars": 3437,
+        "specToText": 1.7000290951411114,
+        "summaryChars": 622,
+        "blockTypes": 10,
+        "discoveryChars": 37565,
+        "compactDiscoveryChars": 17609
+      },
+      {
+        "fixture": "interactive-data-explorer.yaml",
+        "specChars": 4251,
+        "pageChars": 176540,
+        "textChars": 2349,
+        "specToText": 1.8097062579821201,
+        "summaryChars": 558,
+        "blockTypes": 9,
+        "discoveryChars": 42390,
+        "compactDiscoveryChars": 17738
       },
       {
         "fixture": "interactive.yaml",
         "specChars": 4282,
-        "pageChars": 131414,
-        "textChars": 1378,
-        "specToText": 3.107402031930334,
-        "summaryChars": 532,
-        "blockTypes": 12,
-        "discoveryChars": 31721
+        "pageChars": 135784,
+        "textChars": 1397,
+        "specToText": 3.065139584824624,
+        "summaryChars": 540,
+        "blockTypes": 11,
+        "discoveryChars": 35467,
+        "compactDiscoveryChars": 16223
       },
       {
         "fixture": "media.yaml",
         "specChars": 3403,
-        "pageChars": 115586,
-        "textChars": 1407,
-        "specToText": 2.4186211798152097,
-        "summaryChars": 498,
+        "pageChars": 129917,
+        "textChars": 1885,
+        "specToText": 1.8053050397877983,
+        "summaryChars": 522,
         "blockTypes": 9,
-        "discoveryChars": 26424
+        "discoveryChars": 31318,
+        "compactDiscoveryChars": 16180
       },
       {
         "fixture": "plan.yaml",
         "specChars": 2935,
-        "pageChars": 107535,
+        "pageChars": 111477,
         "textChars": 1531,
         "specToText": 1.9170476812540822,
-        "summaryChars": 454,
+        "summaryChars": 462,
         "blockTypes": 8,
-        "discoveryChars": 22651
+        "discoveryChars": 26704,
+        "compactDiscoveryChars": 15247
+      },
+      {
+        "fixture": "product-case-study.yaml",
+        "specChars": 5692,
+        "pageChars": 135655,
+        "textChars": 2961,
+        "specToText": 1.922323539344816,
+        "summaryChars": 616,
+        "blockTypes": 9,
+        "discoveryChars": 32615,
+        "compactDiscoveryChars": 16243
+      },
+      {
+        "fixture": "product-widgets.yaml",
+        "specChars": 5765,
+        "pageChars": 162200,
+        "textChars": 2532,
+        "specToText": 2.2768562401263823,
+        "summaryChars": 585,
+        "blockTypes": 9,
+        "discoveryChars": 33542,
+        "compactDiscoveryChars": 16435
       },
       {
         "fixture": "recap.yaml",
         "specChars": 1923,
-        "pageChars": 128127,
+        "pageChars": 132378,
         "textChars": 1431,
         "specToText": 1.3438155136268344,
-        "summaryChars": 439,
+        "summaryChars": 447,
         "blockTypes": 6,
-        "discoveryChars": 20552
+        "discoveryChars": 30885,
+        "compactDiscoveryChars": 15714
+      },
+      {
+        "fixture": "research-report.yaml",
+        "specChars": 5654,
+        "pageChars": 139334,
+        "textChars": 2472,
+        "specToText": 2.2872168284789645,
+        "summaryChars": 580,
+        "blockTypes": 14,
+        "discoveryChars": 39527,
+        "compactDiscoveryChars": 17397
+      },
+      {
+        "fixture": "responsive-layouts.yaml",
+        "specChars": 5394,
+        "pageChars": 156904,
+        "textChars": 2113,
+        "specToText": 2.5527685754850924,
+        "summaryChars": 578,
+        "blockTypes": 20,
+        "discoveryChars": 53329,
+        "compactDiscoveryChars": 19056
+      },
+      {
+        "fixture": "rich-composition.yaml",
+        "specChars": 4256,
+        "pageChars": 153621,
+        "textChars": 1954,
+        "specToText": 2.178096212896622,
+        "summaryChars": 558,
+        "blockTypes": 14,
+        "discoveryChars": 46317,
+        "compactDiscoveryChars": 17987
       },
       {
         "fixture": "showcase.yaml",
         "specChars": 8771,
-        "pageChars": 154158,
+        "pageChars": 154457,
         "textChars": 4032,
         "specToText": 2.1753472222222223,
-        "summaryChars": 609,
+        "summaryChars": 617,
         "blockTypes": 13,
-        "discoveryChars": 34369
+        "discoveryChars": 39465,
+        "compactDiscoveryChars": 17628
+      },
+      {
+        "fixture": "theme-dialects.yaml",
+        "specChars": 2471,
+        "pageChars": 178828,
+        "textChars": 1555,
+        "specToText": 1.5890675241157557,
+        "summaryChars": 489,
+        "blockTypes": 8,
+        "discoveryChars": 35004,
+        "compactDiscoveryChars": 16391
       },
       {
         "fixture": "theme-showcase.yaml",
         "specChars": 2510,
-        "pageChars": 127173,
+        "pageChars": 132777,
         "textChars": 1599,
         "specToText": 1.5697310819262038,
-        "summaryChars": 488,
+        "summaryChars": 496,
         "blockTypes": 10,
-        "discoveryChars": 26423
+        "discoveryChars": 37611,
+        "compactDiscoveryChars": 16615
       }
     ],
-    "medianSpecToText": 1.7758152173913044,
-    "medianPageToSpec": 44.76893649579189
+    "medianSpecToText": 1.863376969618101,
+    "medianPageToSpec": 35.41593769763193
   },
   "projected": {
     "artifacts": [
       {
         "label": "legacy-01",
         "legacyOutputTokens": 42098,
-        "specTokens": 9696,
-        "outputReduction": 0.7696919774537466
+        "specTokens": 10174,
+        "outputReduction": 0.7583359682200478
       },
       {
         "label": "legacy-02",
         "legacyOutputTokens": 9867,
-        "specTokens": 6513,
-        "outputReduction": 0.339912714932027
+        "specTokens": 6834,
+        "outputReduction": 0.30736518479649444
       },
       {
         "label": "legacy-03",
         "legacyOutputTokens": 17875,
-        "specTokens": 7404,
-        "outputReduction": 0.5858062071798327
+        "specTokens": 7769,
+        "outputReduction": 0.5653831733497283
       },
       {
         "label": "legacy-04",
         "legacyOutputTokens": 3719,
-        "specTokens": 3488,
-        "outputReduction": 0.06213080014614536
+        "specTokens": 3660,
+        "outputReduction": 0.015886421961693986
       },
       {
         "label": "legacy-05",
         "legacyOutputTokens": 24251,
-        "specTokens": 7268,
-        "outputReduction": 0.7003175663773733
+        "specTokens": 7626,
+        "outputReduction": 0.6855408493278732
       },
       {
         "label": "legacy-06",
         "legacyOutputTokens": 23405,
-        "specTokens": 19089,
-        "outputReduction": 0.18442735174614755
+        "specTokens": 20030,
+        "outputReduction": 0.1442131619757373
       },
       {
         "label": "legacy-07",
         "legacyOutputTokens": 3798,
-        "specTokens": 2829,
-        "outputReduction": 0.25495257534991544
+        "specTokens": 2969,
+        "outputReduction": 0.21821583756575658
       },
       {
         "label": "legacy-08",
         "legacyOutputTokens": 8625,
-        "specTokens": 1935,
-        "outputReduction": 0.7756166000171403
+        "specTokens": 2031,
+        "outputReduction": 0.7645527215906631
       },
       {
         "label": "legacy-09",
         "legacyOutputTokens": 7816,
-        "specTokens": 3729,
-        "outputReduction": 0.5229314223749499
+        "specTokens": 3913,
+        "outputReduction": 0.49940816377231223
       },
       {
         "label": "legacy-10",
         "legacyOutputTokens": 19204,
-        "specTokens": 24804,
-        "outputReduction": -0.29164699157535834
+        "specTokens": 26027,
+        "outputReduction": -0.3553354163242757
       },
       {
         "label": "legacy-11",
         "legacyOutputTokens": 91627,
-        "specTokens": 23841,
-        "outputReduction": 0.7398000883905098
+        "specTokens": 25017,
+        "outputReduction": 0.7269701723234238
       },
       {
         "label": "legacy-12",
         "legacyOutputTokens": 4339,
-        "specTokens": 1883,
-        "outputReduction": 0.5660732693618045
+        "specTokens": 1976,
+        "outputReduction": 0.5446772454395963
       }
     ],
-    "medianOutputReduction": 0.5445023458683772
+    "medianOutputReduction": 0.5220427046059543
   },
   "typicalTask": {
     "before": {
@@ -310,13 +486,24 @@
       "total": 47540
     },
     "after": {
-      "guidance": 5681,
-      "output": 6890,
-      "returned": 119,
-      "total": 12690
+      "guidance": 8740,
+      "output": 7230,
+      "returned": 133,
+      "total": 16103
     },
-    "reduction": 0.7330668910391249,
-    "excludes": "task context and narrative reasoning (equal on both paths), repairs and retries"
+    "reduction": 0.6612747160286074,
+    "excludes": "task context and narrative reasoning (equal on both paths), repairs and retries",
+    "describe": "describe <type> --json for each block type (full contracts)"
+  },
+  "typicalTaskCompact": {
+    "describe": "describe <types...> --compact (batches of 12), as the agent guide recommends",
+    "after": {
+      "guidance": 4125,
+      "output": 7230,
+      "returned": 133,
+      "total": 11488
+    },
+    "reduction": 0.7583508624316365
   },
   "contextReduction": {
     "source": "docs/artifacts/benchmark-render.md",
