@@ -6,6 +6,9 @@
  * yet are not exported — the package never advertises a scaffold.
  */
 
+export type { DataRow, DataScalar, MaterializedData } from './data/dataset-types.js';
+export type { ValueFormat } from './data/format-value.js';
+export { VALUE_FORMATS } from './data/format-value.js';
 export type { Diagnostic, DiagnosticSeverity } from './diagnostics.js';
 export type {
   AdapterMarkupCheck,
@@ -25,6 +28,8 @@ export type { IrDocument, IrNode, IrTheme, NetworkPolicy } from './ir.js';
 export type { JsonValue } from './json.js';
 export type { ActionDefinition, ActionType } from './registry/actions.js';
 export { ACTION_DEFINITIONS, ALLOWED_EVENTS, listActionTypes } from './registry/actions.js';
+export type { BlockCategory } from './registry/block-module.js';
+export { BLOCK_CATEGORIES } from './registry/block-module.js';
 export type { Catalog, CatalogEntry } from './registry/registry.js';
 export {
   blockTypes,
@@ -59,6 +64,8 @@ export { validate, validateOrThrow } from './spec/validate.js';
 export type { LoadThemeOptions, ResolvedTheme, ThemeInput } from './theme/load-theme.js';
 export { loadTheme, resolveTheme, themeDiagnostics, themePresetNames } from './theme/load-theme.js';
 export type { PresetEntry } from './theme/presets.js';
+export type { ThemeRecipeSurface } from './theme/recipes.js';
+export { THEME_RECIPE_SPECS } from './theme/recipes.js';
 export type { PresetSource, ThemeCatalog, ThemeCatalogOptions } from './theme/theme-catalog.js';
 export {
   buildThemeCatalog,

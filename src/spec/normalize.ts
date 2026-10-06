@@ -8,20 +8,29 @@
  * schema cannot express.
  */
 
+import { checkSeriesLengths } from '../blocks/chart/chart.js';
+import type { DataRow } from '../data/dataset-types.js';
+import { type BlockDataInput, resolveBlockData } from '../data/resolve-block-data.js';
+import { validateDatasets } from '../data/validate-datasets.js';
 import { type Diagnostic, DiagnosticBag, pathIndex, pathKey } from '../diagnostics.js';
 import { isRenderError, RenderError } from '../errors.js';
 import { derivedNodeId } from '../hash.js';
 import type { IrDocument, IrNode, IrTheme, NetworkPolicy } from '../ir.js';
 import { isPlainObject, type JsonValue } from '../json.js';
+import type { BlockRegistry, CheckContext } from '../registry/block-module.js';
 import { NODE_ID_PATTERN, validateProps } from '../registry/prop-schema.js';
-import { blockTypes, getBlockDefinition } from '../registry/registry.js';
+import { blockTypes, DEFAULT_REGISTRY, getBlockDefinition } from '../registry/registry.js';
 import type { BlockDefinition, RuntimeFeature } from '../registry/roster.js';
+import { slotKey } from '../render/render-context.js';
+import { validateThemeRecipes } from '../theme/recipes.js';
 import { VERSION } from '../version.js';
+import { assetAllowed, assetReferences } from './asset-references.js';
 import { type BindingMap, validateBindingsDeep } from './bindings.js';
-import { type BoundsReport, checkBounds } from './bounds.js';
+import { type BoundsReport, checkBounds, LIMITS } from './bounds.js';
+import { validateCondition } from './conditions.js';
 import { scanForbiddenKeys } from './forbidden.js';
 import { migrateSpec } from './migrate.js';
-import { blockedReason, imageReferenceAllowed } from './network-policy.js';
+import { blockedReason } from './network-policy.js';
 import { type ParseOptions, parseSpec } from './parse.js';
 import { EMBED_PROVIDER_NAMES, isEmbedProvider } from './providers.js';
 
@@ -34,12 +43,21 @@ export interface NormalizeResult {
 const THEME_PRESET_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const LOCALE_PATTERN = /^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/;
 const DEFAULT_THEME_PRESET = 'editorial';
+const THEME_FIELDS: readonly string[] = ['preset', 'extends', 'tokens', 'dark', 'recipes'];
 export const NETWORK_CAPABILITIES = ['media', 'fonts', 'images'] as const;
 
 interface BuildContext {
   bag: DiagnosticBag;
   nodes: IrNode[];
   usedIds: Set<string>;
+  registry: BlockRegistry;
+  state: Record<string, JsonValue>;
+  datasets: Record<string, DataRow[]>;
+}
+
+export interface NormalizeOptions extends ParseOptions {
+  /** Internal: the block registry to normalize against. Defaults to the built-in one. */
+  registry?: BlockRegistry;
 }
 
 function requireString(
@@ -82,6 +100,7 @@ interface Envelope {
   theme: IrTheme;
   policy: IrDocument['policy'];
   state: Record<string, JsonValue>;
+  datasets: Record<string, DataRow[]>;
   blocks: unknown[];
 }
 
@@ -143,25 +162,31 @@ function normalizeEnvelope(
       });
       theme = { preset: preset ?? DEFAULT_THEME_PRESET };
       if (extendsName !== undefined) theme.extends = extendsName;
-      const tokens = themeValue.tokens;
-      if (tokens !== undefined) {
+      for (const key of ['tokens', 'dark'] as const) {
+        const tokens = themeValue[key];
+        if (tokens === undefined) continue;
         if (!isPlainObject(tokens)) {
           bag.add({
             code: 'SPEC_VALIDATION_ERROR',
-            path: '$.theme.tokens',
+            path: pathKey('$.theme', key),
             message: 'expected a token object',
           });
         } else {
-          theme.tokens = tokens as JsonValue;
+          // Token names and values are checked when the theme resolves.
+          theme[key] = tokens as JsonValue;
         }
       }
+      if (themeValue.recipes !== undefined) {
+        const recipes = validateThemeRecipes(themeValue.recipes, '$.theme.recipes', bag);
+        if (Object.keys(recipes).length > 0) theme.recipes = recipes;
+      }
       for (const key of Object.keys(themeValue)) {
-        if (!['preset', 'extends', 'tokens'].includes(key)) {
+        if (!THEME_FIELDS.includes(key)) {
           bag.add({
             code: 'SPEC_VALIDATION_ERROR',
             path: pathKey('$.theme', key),
             message: `unknown theme field "${key}"`,
-            details: { allowed: ['preset', 'extends', 'tokens'] },
+            details: { allowed: [...THEME_FIELDS] },
           });
         }
       }
@@ -295,6 +320,8 @@ function normalizeEnvelope(
     }
   }
 
+  const datasets = validateDatasets(document.datasets, '$.datasets', bag);
+
   const blocks = document.blocks;
   if (!Array.isArray(blocks) || blocks.length === 0) {
     bag.add({
@@ -315,6 +342,7 @@ function normalizeEnvelope(
     theme,
     policy,
     state,
+    datasets,
     blocks,
   };
 }
@@ -360,12 +388,104 @@ function resolveNodeId(
   return { id: candidate, authorSupplied: false };
 }
 
+/** Envelope keys a data-bound block reads instead of props. */
+const DATA_KEYS: readonly string[] = ['dataRef', 'data', 'transform'];
+
+/** Where a block is being built: its parent's type and the slot's accepted types. */
+interface Placement {
+  parentType: string;
+  accepts: readonly string[] | '*' | undefined;
+}
+
+/**
+ * Enforce a slot's `accepts` list and the child's own `parents` list. Both are
+ * reported at the child's `.type` path, with the allowed types.
+ */
+function checkPlacement(
+  definition: BlockDefinition,
+  placement: Placement,
+  path: string,
+  bag: DiagnosticBag,
+): void {
+  const { accepts, parentType } = placement;
+  if (Array.isArray(accepts) && !accepts.includes(definition.type)) {
+    bag.add({
+      code: 'SPEC_VALIDATION_ERROR',
+      path: pathKey(path, 'type'),
+      message: `"${parentType}" does not accept a "${definition.type}" block here`,
+      details: { type: definition.type, allowed: [...accepts] },
+    });
+  }
+  const parents = definition.parents;
+  if (parents !== undefined && !parents.includes(parentType)) {
+    bag.add({
+      code: 'SPEC_VALIDATION_ERROR',
+      path: pathKey(path, 'type'),
+      message: `a "${definition.type}" block must be placed directly inside ${parents
+        .map((parent) => `"${parent}"`)
+        .join(' or ')}`,
+      details: { type: definition.type, allowed: [...parents] },
+    });
+  }
+}
+
+interface SlotList {
+  key: string;
+  path: string;
+  entries: unknown[];
+  accepts: readonly string[] | '*' | undefined;
+}
+
+/**
+ * Nested slot lists in schema-key order, then item index. Only array values
+ * are collected: a wrong shape was already reported by prop validation.
+ */
+function collectSlotLists(
+  definition: BlockDefinition,
+  rawProps: Record<string, unknown>,
+  path: string,
+): SlotList[] {
+  const lists: SlotList[] = [];
+  for (const [key, schema] of Object.entries(definition.props)) {
+    const raw = rawProps[key];
+    if (schema.kind === 'blocks') {
+      if (Array.isArray(raw)) {
+        lists.push({
+          key: slotKey(key),
+          path: pathKey(path, key),
+          entries: raw,
+          accepts: schema.accepts,
+        });
+      }
+      continue;
+    }
+    if (schema.kind !== 'list' || schema.of.kind !== 'object' || !Array.isArray(raw)) continue;
+    const fields = Object.entries(schema.of.fields).filter(([, field]) => field.kind === 'blocks');
+    if (fields.length === 0) continue;
+    raw.forEach((item, index) => {
+      if (!isPlainObject(item)) return;
+      for (const [field, fieldSchema] of fields) {
+        const value = item[field];
+        if (!Array.isArray(value) || fieldSchema.kind !== 'blocks') continue;
+        lists.push({
+          key: slotKey(key, index, field),
+          path: pathKey(pathIndex(pathKey(path, key), index), field),
+          entries: value,
+          accepts: fieldSchema.accepts,
+        });
+      }
+    });
+  }
+  return lists;
+}
+
 function buildNode(
   entry: unknown,
   parentId: string | null,
   depth: number,
   path: string,
   context: BuildContext,
+  placement: Placement,
 ): string | undefined {
   if (!isPlainObject(entry)) {
     context.bag.add({ code: 'SPEC_VALIDATION_ERROR', path, message: 'expected a block object' });
@@ -382,24 +502,35 @@ function buildNode(
     return undefined;
   }
 
-  const definition = getBlockDefinition(typeValue);
+  const definition = getBlockDefinition(typeValue, context.registry);
   if (definition === undefined) {
     context.bag.add({
       code: 'SPEC_UNKNOWN_BLOCK',
       path: pathKey(path, 'type'),
       message: `unknown block type "${typeValue}"`,
-      details: { type: typeValue, known: blockTypes() },
+      details: { type: typeValue, known: blockTypes(context.registry) },
     });
     return undefined;
   }
+  checkPlacement(definition, placement, path, context.bag);
 
   const childSlot = definition.slots?.children;
   const rawProps: Record<string, unknown> = {};
+  const dataInput: BlockDataInput = {};
   let childBlocks: unknown;
+  let visibleWhen: unknown;
   for (const [key, value] of Object.entries(entry)) {
     if (key === 'type') continue;
     if (key === 'blocks') {
       childBlocks = value;
+      continue;
+    }
+    if (key === 'visibleWhen') {
+      visibleWhen = value;
+      continue;
+    }
+    if (definition.data !== undefined && DATA_KEYS.includes(key)) {
+      dataInput[key as keyof BlockDataInput] = value;
       continue;
     }
     rawProps[key] = value;
@@ -438,7 +569,54 @@ function buildNode(
     assets: [...definition.assets],
     network: definition.network,
   };
+  if (visibleWhen !== undefined) {
+    const condition = validateCondition(
+      visibleWhen,
+      pathKey(path, 'visibleWhen'),
+      context.bag,
+      context.state,
+    );
+    if (condition !== undefined) {
+      node.when = condition;
+      node.runtimeFeatures.push('state');
+    }
+  }
+  if (definition.data !== undefined) {
+    const data = resolveBlockData(dataInput, context.datasets, path, context.bag);
+    if (data !== undefined) node.data = data;
+    else if (
+      definition.data.required &&
+      dataInput.dataRef === undefined &&
+      dataInput.data === undefined
+    ) {
+      context.bag.add({
+        code: 'SPEC_VALIDATION_ERROR',
+        path: pathKey(path, 'dataRef'),
+        message: `block type "${definition.type}" needs "dataRef" or "data"`,
+        details: { known: Object.keys(context.datasets) },
+      });
+    }
+  }
   context.nodes.push(node);
+
+  const buildList = (entries: unknown[], listPath: string, accepts: Placement['accepts']) => {
+    const ids: string[] = [];
+    entries.forEach((child, index) => {
+      const childId = buildNode(
+        child,
+        resolved.id,
+        depth + 1,
+        pathIndex(listPath, index),
+        context,
+        {
+          parentType: definition.type,
+          accepts,
+        },
+      );
+      if (childId !== undefined) ids.push(childId);
+    });
+    return ids;
+  };
 
   if (childSlot !== undefined && childBlocks !== undefined) {
     if (!Array.isArray(childBlocks)) {
@@ -457,17 +635,17 @@ function buildNode(
           message: `slot accepts ${min}-${max} child blocks, received ${childBlocks.length}`,
         });
       }
-      const childPath = pathKey(path, 'blocks');
-      for (let index = 0; index < childBlocks.length; index += 1) {
-        const childId = buildNode(
-          childBlocks[index],
-          resolved.id,
-          depth + 1,
-          pathIndex(childPath, index),
-          context,
-        );
-        if (childId !== undefined) node.children.push(childId);
-      }
+      node.children = buildList(childBlocks, pathKey(path, 'blocks'), childSlot.accepts);
+    }
+  }
+
+  // Nested slots are built after the children, so the IR stays depth-first
+  // pre-order with every slot list in schema-key order, then item index.
+  for (const list of collectSlotLists(definition, rawProps, path)) {
+    const ids = buildList(list.entries, list.path, list.accepts);
+    if (ids.length > 0) {
+      node.slots ??= {};
+      node.slots[list.key] = ids;
     }
   }
 
@@ -485,7 +663,13 @@ function stringProp(node: IrNode, key: string): string | undefined {
 }
 
 /** Checks that need more than one field, or more than one node. */
-function postChecks(nodes: IrNode[], network: NetworkPolicy, bag: DiagnosticBag): void {
+function postChecks(
+  nodes: IrNode[],
+  network: NetworkPolicy,
+  bag: DiagnosticBag,
+  registry: BlockRegistry,
+  checks: CheckContext,
+): void {
   let previousHeadingLevel: number | undefined;
 
   for (const node of nodes) {
@@ -560,41 +744,24 @@ function postChecks(nodes: IrNode[], network: NetworkPolicy, bag: DiagnosticBag)
       }
     }
 
-    // A poster is a still image the page would load on open. A remote one the
-    // policy blocks is reported here, at its own path, rather than surfacing
-    // only after rendering as a page-level emitted-reference failure.
-    if (node.type === 'video') {
-      const poster = node.props.poster;
-      if (typeof poster === 'string' && !imageReferenceAllowed(network, poster)) {
-        bag.add({
-          code: 'POLICY_VIOLATION',
-          message: `remote poster is not allowed because ${blockedReason(network, 'images')}; use a local poster file or allow remote images in policy.network`,
-          path: pathKey(node.path, 'poster'),
-          nodeId: node.id,
-        });
-      }
+    // An asset with no visible fallback (a video poster) that the policy blocks
+    // is reported here, at its own path, nested slots included, rather than
+    // surfacing only after rendering as a page-level emitted-reference failure.
+    const definition = registry.byType.get(node.type);
+    const assets =
+      definition === undefined ? [] : assetReferences(definition.props, node.props, node.path);
+    for (const asset of assets) {
+      if (!asset.rejectBlocked || assetAllowed(network, asset)) continue;
+      bag.add({
+        code: 'POLICY_VIOLATION',
+        message: `remote ${asset.field} is not allowed because ${blockedReason(network, asset.capability)}; use a local ${asset.field} file or allow remote ${asset.capability} in policy.network`,
+        path: asset.path,
+        nodeId: node.id,
+      });
     }
 
-    if (node.type === 'chart' || node.type === 'progress') {
-      const labels = node.props.labels;
-      const series = node.props.series;
-      if (Array.isArray(labels) && Array.isArray(series)) {
-        for (let index = 0; index < series.length; index += 1) {
-          const entry = series[index];
-          if (!isPlainObject(entry)) continue;
-          const values = entry.values;
-          if (Array.isArray(values) && values.length !== labels.length) {
-            bag.add({
-              code: 'SPEC_VALIDATION_ERROR',
-              severity: 'warning',
-              message: `series "${String(entry.label ?? index)}" has ${values.length} values for ${labels.length} labels`,
-              path: pathIndex(pathKey(node.path, 'series'), index),
-              nodeId: node.id,
-            });
-          }
-        }
-      }
-    }
+    // Progress shares the chart's labels/series shape; the chart module checks its own.
+    if (node.type === 'progress') checkSeriesLengths(node, bag);
 
     if (node.type === 'button' && Object.keys(node.bindings).length === 0) {
       bag.add({
@@ -630,21 +797,6 @@ function postChecks(nodes: IrNode[], network: NetworkPolicy, bag: DiagnosticBag)
       }
     }
 
-    // A tile image follows the image block's rule: alt must be present, and an
-    // explicitly empty alt marks the image as decorative.
-    if (node.type === 'bento' && Array.isArray(node.props.items)) {
-      node.props.items.forEach((item, index) => {
-        if (!isPlainObject(item) || typeof item.src !== 'string') return;
-        if (typeof item.alt === 'string') return;
-        bag.add({
-          code: 'SPEC_VALIDATION_ERROR',
-          message: 'a bento tile with src needs alt text (use "" for a decorative image)',
-          path: pathKey(pathIndex(pathKey(node.path, 'items'), index), 'alt'),
-          nodeId: node.id,
-        });
-      });
-    }
-
     if (node.type === 'diagram-panel') {
       const spec = node.props.spec;
       if (!isPlainObject(spec)) {
@@ -656,12 +808,15 @@ function postChecks(nodes: IrNode[], network: NetworkPolicy, bag: DiagnosticBag)
         });
       }
     }
+
+    registry.modules.get(node.type)?.check?.(node, checks);
   }
 }
 
 /** Build the IR without throwing: diagnostics are returned, not raised. */
-export function normalizeSpec(input: unknown, options: ParseOptions = {}): NormalizeResult {
+export function normalizeSpec(input: unknown, options: NormalizeOptions = {}): NormalizeResult {
   const bag = new DiagnosticBag();
+  const registry = options.registry ?? DEFAULT_REGISTRY;
 
   // The pipeline starts at the input boundary: a spec may arrive as JSON or
   // YAML text, or as an already-parsed object.
@@ -690,7 +845,14 @@ export function normalizeSpec(input: unknown, options: ParseOptions = {}): Norma
   }
 
   const envelope = normalizeEnvelope(migrated.document, bag);
-  const context: BuildContext = { bag, nodes: [], usedIds: new Set<string>() };
+  const context: BuildContext = {
+    bag,
+    nodes: [],
+    usedIds: new Set<string>(),
+    registry,
+    state: envelope?.state ?? {},
+    datasets: envelope?.datasets ?? {},
+  };
   const rootChildren: string[] = [];
 
   if (envelope !== undefined) {
@@ -701,12 +863,21 @@ export function normalizeSpec(input: unknown, options: ParseOptions = {}): Norma
         1,
         pathIndex('$.blocks', index),
         context,
+        { parentType: 'page', accepts: '*' },
       );
       if (childId !== undefined) rootChildren.push(childId);
     }
   }
 
-  postChecks(context.nodes, envelope?.policy.network ?? 'deny', bag);
+  // The raw-document walk counts only lists under a `blocks` key. A slot prop
+  // with another name is counted here, once its nodes exist.
+  if (context.nodes.length > LIMITS.maxBlocks && bounds.blocks <= LIMITS.maxBlocks) {
+    bag.add({
+      code: 'SPEC_BOUNDS_ERROR',
+      path: '$.blocks',
+      message: `document declares more than ${LIMITS.maxBlocks} blocks`,
+    });
+  }
 
   const root: IrNode = {
     id: 'page',
@@ -724,6 +895,13 @@ export function normalizeSpec(input: unknown, options: ParseOptions = {}): Norma
     assets: [],
     network: 'none',
   };
+  const byId = new Map([root, ...context.nodes].map((node) => [node.id, node]));
+  postChecks(context.nodes, envelope?.policy.network ?? 'deny', bag, registry, {
+    bag,
+    byId,
+    state: context.state,
+    datasets: context.datasets,
+  });
 
   const ir: IrDocument = {
     irVersion: 1,
@@ -733,6 +911,7 @@ export function normalizeSpec(input: unknown, options: ParseOptions = {}): Norma
     theme: envelope?.theme ?? { preset: DEFAULT_THEME_PRESET },
     policy: envelope?.policy ?? { network: 'deny' },
     state: envelope?.state ?? {},
+    datasets: context.datasets,
     rootId: root.id,
     nodes: [root, ...context.nodes],
     warnings: bag.warnings(),
@@ -754,6 +933,7 @@ function emptyIr(): IrDocument {
     theme: { preset: DEFAULT_THEME_PRESET },
     policy: { network: 'deny' },
     state: {},
+    datasets: {},
     rootId: 'page',
     nodes: [],
     warnings: [],
@@ -766,7 +946,7 @@ function emptyIr(): IrDocument {
  * The thrown error carries the first error's code and path, and lists every
  * diagnostic in `details.diagnostics` so a caller can render a full report.
  */
-export function normalize(input: unknown, options: ParseOptions = {}): IrDocument {
+export function normalize(input: unknown, options: NormalizeOptions = {}): IrDocument {
   const result = normalizeSpec(input, options);
   const errors = result.diagnostics.filter((diagnostic) => diagnostic.severity === 'error');
   const first = errors[0];

@@ -1,24 +1,9 @@
-/**
- * Block renderers.
- *
- * One renderer per registry type. Renderers are pure functions of a node, the
- * IR, and the resolved theme: no clock, no randomness, no module-level mutable
- * state, because the emitted bytes must be reproducible.
- *
- * Two conventions apply to every renderer:
- *   1. Exactly one element in the emitted markup carries `data-ak-id`, so a
- *      `copy`/`download`/`toggle` target resolves to the content a reader means.
- *   2. Action bindings become `data-ak-on-*` attributes; the runtime owns what
- *      they do. No renderer emits a handler, a style attribute, or a script.
- */
-
-import type { Diagnostic } from '../diagnostics.js';
-import { type DiagramAdapter, runDiagramAdapter } from '../diagram/adapter.js';
-import type { IrDocument, IrNode } from '../ir.js';
+import { runDiagramAdapter } from '../diagram/adapter.js';
+import type { IrNode } from '../ir.js';
 import { isPlainObject, type JsonValue } from '../json.js';
-import type { RuntimeFeature } from '../registry/roster.js';
+import type { BlockRegistry } from '../registry/block-module.js';
+import { DEFAULT_REGISTRY } from '../registry/registry.js';
 import { EMBED_PROVIDERS } from '../spec/providers.js';
-import type { ResolvedTheme } from '../theme/load-theme.js';
 import {
   blockedReason,
   element,
@@ -35,7 +20,6 @@ import {
   stringProp,
   titleHeader,
 } from './block-helpers.js';
-import { type ChartSeries, renderChart } from './charts.js';
 import { renderDiagramFallback } from './diagram-fallback.js';
 import {
   type AttributeValue,
@@ -45,21 +29,11 @@ import {
   escapeUrl,
   renderAttributes,
 } from './escape.js';
+import type { RenderContext } from './render-context.js';
 import { browserShot, SHOWCASE_RENDERERS } from './showcase-blocks.js';
+import { toneBadge, valueTone } from './tone.js';
 
-export interface RenderContext {
-  ir: IrDocument;
-  theme: ResolvedTheme;
-  features: Set<RuntimeFeature>;
-  /**
-   * Optional diagram adapter. Without one, every diagram-panel emits the
-   * structured semantic fallback, which is the Core and Marketing behavior.
-   */
-  diagramAdapter?: DiagramAdapter;
-  /** Diagnostics raised while rendering, such as a rejected adapter output. */
-  warnings?: Diagnostic[];
-  renderChildren(node: IrNode): string;
-}
+export type { RenderContext } from './render-context.js';
 
 type Renderer = (node: IrNode, context: RenderContext) => string;
 
@@ -79,43 +53,6 @@ function clickAttribute(bindings: Record<string, unknown>): AttributeValue {
 
 function toneAttribute(node: IrNode, fallback = 'info'): AttributeValue {
   return { 'data-tone': stringProp(node, 'tone', fallback) };
-}
-
-/**
- * Tone for a value a reader scans for severity or outcome. Only exact, known
- * words map to a tone; anything else stays neutral, so a label is never
- * coloured by guesswork.
- */
-const VALUE_TONES: Readonly<Record<string, string>> = {
-  high: 'danger',
-  critical: 'danger',
-  blocker: 'danger',
-  bug: 'danger',
-  issue: 'danger',
-  deleted: 'danger',
-  removed: 'danger',
-  medium: 'warning',
-  concern: 'warning',
-  warning: 'warning',
-  renamed: 'warning',
-  modified: 'info',
-  changed: 'info',
-  question: 'info',
-  note: 'info',
-  low: 'success',
-  good: 'success',
-  praise: 'success',
-  added: 'success',
-  new: 'success',
-};
-
-function valueTone(value: string): string {
-  return VALUE_TONES[value.trim().toLowerCase()] ?? 'neutral';
-}
-
-/** A status word rendered as a toned badge. */
-function toneBadge(value: string): string {
-  return `<span class="ak-badge" data-tone="${valueTone(value)}">${escapeText(value)}</span>`;
 }
 
 /** A cell reads as a number when it is digits with optional sign, grouping, decimals, percent or a short unit. */
@@ -220,36 +157,6 @@ const RENDERERS: Record<string, Renderer> = {
         'data-surface': stringProp(node, 'surface') === 'inverse' ? 'inverse' : undefined,
       }),
       `${titleHeader(node)}${context.renderChildren(node)}`,
-    ),
-
-  stack: (node, context) =>
-    element(
-      'div',
-      nodeAttributes(node, {
-        class: 'ak-block ak-stack',
-        'data-gap': stringProp(node, 'gap', 'normal'),
-      }),
-      context.renderChildren(node),
-    ),
-
-  grid: (node, context) =>
-    element(
-      'div',
-      nodeAttributes(node, {
-        class: 'ak-block ak-grid',
-        'data-ak-columns': String(Math.min(Math.max(numberProp(node, 'columns', 3), 1), 6)),
-      }),
-      context.renderChildren(node),
-    ),
-
-  split: (node, context) =>
-    element(
-      'div',
-      nodeAttributes(node, {
-        class: 'ak-block ak-split',
-        'data-ratio': stringProp(node, 'ratio', 'even'),
-      }),
-      context.renderChildren(node),
     ),
 
   spacer: (node) =>
@@ -669,98 +576,6 @@ const RENDERERS: Record<string, Renderer> = {
     );
   },
 
-  tabs: (node) => {
-    const items = objectListProp(node, 'items');
-    const base = node.id;
-    const tabs = items
-      .map((item, index) => {
-        const tabId = str(item.id, `${base}-tab-${index}`);
-        return `<button type="button" role="tab" id="${escapeAttribute(
-          tabId,
-        )}" data-ak-tab-id="${escapeAttribute(tabId)}" aria-controls="${escapeAttribute(
-          `${base}-panel-${index}`,
-        )}" aria-selected="${index === 0 ? 'true' : 'false'}" tabindex="${index === 0 ? '0' : '-1'}">${escapeText(
-          str(item.title),
-        )}</button>`;
-      })
-      .join('');
-    const panels = items
-      .map(
-        (item, index) =>
-          `<div role="tabpanel" id="${escapeAttribute(`${base}-panel-${index}`)}" aria-labelledby="${escapeAttribute(
-            str(item.id, `${base}-tab-${index}`),
-          )}" tabindex="${index === 0 ? '0' : '-1'}"${index === 0 ? '' : ' hidden'}>${escapeInlineText(
-            str(item.text),
-          )}</div>`,
-      )
-      .join('');
-    return element(
-      'section',
-      nodeAttributes(node, { class: 'ak-block ak-tabs', 'data-ak-tabs': 'true' }),
-      [
-        titleHeader(node),
-        `<div role="tablist" aria-label="${escapeAttribute(stringProp(node, 'title', 'Tabs'))}">${tabs}</div>${panels}`,
-      ].join(''),
-    );
-  },
-
-  accordion: (node) => {
-    const items = objectListProp(node, 'items');
-    return element(
-      'section',
-      nodeAttributes(node, { class: 'ak-block ak-accordion' }),
-      [
-        titleHeader(node),
-        items
-          .map(
-            (item, index) =>
-              // Each disclosure carries its own id so a declarative expand or
-              // collapse action can address one section. Native <details> remains
-              // the behavior; the action only drives it.
-              `<details${index === 0 ? ' open' : ''}${renderAttributes({
-                'data-ak-id': `${node.id}-item-${index}`,
-              })}><summary>${escapeText(str(item.title))}</summary><p>${escapeInlineText(
-                str(item.text),
-              )}</p></details>`,
-          )
-          .join(''),
-      ].join(''),
-    );
-  },
-
-  carousel: (node) => {
-    const items = objectListProp(node, 'items');
-    const label = stringProp(node, 'ariaLabel', 'Carousel');
-    const slides = items
-      .map(
-        (item, index) =>
-          `<div class="ak-carousel-slide" data-ak-slide tabindex="-1" aria-hidden="${
-            index === 0 ? 'false' : 'true'
-          }"${index === 0 ? '' : ' hidden'}><h3>${escapeText(str(item.title))}</h3><p>${escapeInlineText(
-            str(item.text),
-          )}</p></div>`,
-      )
-      .join('');
-    return element(
-      'section',
-      nodeAttributes(node, {
-        class: 'ak-block ak-carousel',
-        'data-ak-carousel-root': 'true',
-        role: 'group',
-        'aria-roledescription': 'carousel',
-        'aria-label': label,
-      }),
-      [
-        `<div class="ak-carousel-slides">${slides}</div>`,
-        `<div class="ak-carousel-controls">
-<button type="button" class="ak-btn" data-ak-carousel="prev" aria-label="Previous slide">Previous</button>
-<button type="button" class="ak-btn" data-ak-carousel="next" aria-label="Next slide">Next</button>
-<span class="ak-carousel-status" data-ak-carousel-status aria-live="polite">1 / ${Math.max(items.length, 1)}</span>
-</div>`,
-      ].join(''),
-    );
-  },
-
   toolbar: (node) => {
     const items = objectListProp(node, 'items');
     return element(
@@ -795,23 +610,6 @@ const RENDERERS: Record<string, Renderer> = {
         }),
       ].join(''),
     );
-  },
-
-  chart: (node) => {
-    const series: ChartSeries[] = objectListProp(node, 'series').map((entry) => ({
-      label: str(entry.label),
-      values: (Array.isArray(entry.values) ? entry.values : []).map((value) => numProp(value, 0)),
-    }));
-    const description = stringProp(node, 'description');
-    const title = stringProp(node, 'title');
-    return `<div${renderAttributes(nodeAttributes(node, { class: 'ak-block' }))}>${renderChart({
-      kind: stringProp(node, 'kind', 'bar'),
-      id: node.id,
-      labels: listProp(node, 'labels').map((label) => str(label)),
-      series,
-      ...(title === '' ? {} : { title }),
-      ...(description === '' ? {} : { description }),
-    })}</div>`;
   },
 
   'diagram-panel': (node, context) => {
@@ -900,34 +698,6 @@ const RENDERERS: Record<string, Renderer> = {
       figureCaption(captionText),
       '</figure>',
     ].join('');
-  },
-
-  gallery: (node, context) => {
-    const columns = Math.min(Math.max(numberProp(node, 'columns', 3), 1), 6);
-    const items = objectListProp(node, 'items');
-    return element(
-      'section',
-      nodeAttributes(node, { class: 'ak-block' }),
-      [
-        titleHeader(node),
-        `<ul class="ak-gallery" data-ak-columns="${columns}">${items
-          .map((item) => {
-            const resolved = resolveMedia(str(item.src), context.ir.policy.network, 'images');
-            const captionText = str(item.caption);
-            const body = resolved.allowed
-              ? `<img src="${escapeAttribute(resolved.src)}" alt="${escapeAttribute(
-                  str(item.alt),
-                )}" loading="lazy" decoding="async" />`
-              : `<a href="${escapeAttribute(resolved.src)}" rel="noreferrer noopener">${escapeText(
-                  str(item.alt),
-                )}</a>`;
-            return `<li><figure>${body}${
-              captionText === '' ? '' : `<figcaption>${escapeInlineText(captionText)}</figcaption>`
-            }</figure></li>`;
-          })
-          .join('')}</ul>`,
-      ].join(''),
-    );
   },
 
   video: (node, context) => {
@@ -1137,15 +907,20 @@ function searchMatch(node: IrNode): string {
   return 'text';
 }
 
-/** Render one node, falling back to an empty string for an unregistered type. */
+/**
+ * Render one node: a block module's renderer first, then the core renderer,
+ * falling back to an empty string for an unregistered type.
+ */
 export function renderNode(node: IrNode, context: RenderContext): string {
+  const module = context.registry.modules.get(node.type);
+  if (module !== undefined) return module.render(node, context);
   const renderer = RENDERERS[node.type] ?? NO_OP_RENDERER;
   return renderer(node, context);
 }
 
 /** True when a renderer exists for the type. */
-export function hasRenderer(type: string): boolean {
-  return RENDERERS[type] !== undefined;
+export function hasRenderer(type: string, registry: BlockRegistry = DEFAULT_REGISTRY): boolean {
+  return registry.modules.has(type) || RENDERERS[type] !== undefined;
 }
 
 export { element, nodeAttributes };

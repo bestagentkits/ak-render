@@ -7,6 +7,7 @@ import {
   type RenderError,
   validate,
 } from '../../src/index.js';
+import { DEFAULT_REGISTRY } from '../../src/registry/registry.js';
 import { renderNode } from '../../src/render/blocks.js';
 
 const REMOTE_VIDEO = 'https://cdn.example.test/clip.mp4';
@@ -290,7 +291,10 @@ describe('media policy: video poster', () => {
       ir,
       theme: loadTheme(),
       features: new Set(),
+      registry: DEFAULT_REGISTRY,
       renderChildren: () => '',
+      renderSlot: () => '',
+      byId: () => undefined,
     });
     expect(markup).toContain('ak-media-fallback');
     expect(markup).not.toContain(REMOTE_POSTER);

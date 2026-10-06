@@ -7,11 +7,29 @@
  * same definitions, so a documented prop and a validated prop cannot disagree.
  */
 
+import { BLOCK_GROUPS } from '../blocks/index.js';
+import {
+  BLOCK_DATA_JSON_SCHEMA_PROPERTIES,
+  DATA_JSON_SCHEMA_DEFS,
+} from '../data/data-json-schema.js';
 import { RenderError } from '../errors.js';
 import { LIMITS } from '../spec/bounds.js';
+import { CONDITION_JSON_SCHEMA } from '../spec/conditions.js';
+import { THEME_RECIPES_JSON_SCHEMA } from '../theme/recipes.js';
 import { ACTION_DEFINITIONS, type ActionType, ALLOWED_EVENTS, actionsCatalog } from './actions.js';
+import type { BlockRegistry } from './block-module.js';
 import { propSchemaToJsonSchema } from './prop-schema.js';
-import { BLOCK_DEFINITIONS, BLOCKS_BY_TYPE, type BlockDefinition } from './roster.js';
+import { buildRegistry } from './registry-builder.js';
+import type { BlockDefinition } from './roster.js';
+
+export { buildRegistry } from './registry-builder.js';
+
+/** The registry every compile uses unless a caller passes its own. */
+export const DEFAULT_REGISTRY: BlockRegistry = buildRegistry(BLOCK_GROUPS);
+
+/** Every block definition: core roster entries, then each group's blocks. */
+export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = DEFAULT_REGISTRY.definitions;
+const BLOCKS_BY_TYPE = DEFAULT_REGISTRY.byType;
 
 /** Page Spec schema version implemented by this compiler. */
 export const SPEC_SCHEMA_VERSION = 1;
@@ -30,12 +48,15 @@ export interface Catalog {
   actions: { type: ActionType; summary: string }[];
 }
 
-export function getBlockDefinition(type: string): BlockDefinition | undefined {
-  return BLOCKS_BY_TYPE.get(type);
+export function getBlockDefinition(
+  type: string,
+  registry: BlockRegistry = DEFAULT_REGISTRY,
+): BlockDefinition | undefined {
+  return registry.byType.get(type);
 }
 
-export function blockTypes(): string[] {
-  return BLOCK_DEFINITIONS.map((definition) => definition.type);
+export function blockTypes(registry: BlockRegistry = DEFAULT_REGISTRY): string[] {
+  return registry.definitions.map((definition) => definition.type);
 }
 
 /** Compact discovery surface: names, kinds, and one-line summaries. */
@@ -93,6 +114,10 @@ function blockSchema(definition: BlockDefinition): Record<string, unknown> {
   if (definition.slots?.children !== undefined) {
     properties.blocks = { $ref: '#/$defs/blockList' };
   }
+  if (definition.data !== undefined) {
+    Object.assign(properties, BLOCK_DATA_JSON_SCHEMA_PROPERTIES);
+  }
+  properties.visibleWhen = { $ref: '#/$defs/condition' };
 
   return {
     type: 'object',
@@ -154,6 +179,8 @@ export function buildPageSpecJsonSchema(): Record<string, unknown> {
     blockList: blockListSchema(),
     actionMap: actionMapSchema(),
     action: actionSchema(),
+    condition: CONDITION_JSON_SCHEMA,
+    ...DATA_JSON_SCHEMA_DEFS,
   };
   for (const definition of BLOCK_DEFINITIONS) {
     defs[`block-${definition.type}`] = blockSchema(definition);
@@ -188,6 +215,8 @@ export function buildPageSpecJsonSchema(): Record<string, unknown> {
           preset: { type: 'string', maxLength: 120 },
           extends: { type: 'string', maxLength: 120 },
           tokens: { type: 'object' },
+          dark: { type: 'object', description: 'Token overrides for the dark scheme.' },
+          recipes: THEME_RECIPES_JSON_SCHEMA,
         },
       },
       policy: {
@@ -221,6 +250,7 @@ export function buildPageSpecJsonSchema(): Record<string, unknown> {
           type: ['string', 'number', 'boolean', 'null'],
         },
       },
+      datasets: { $ref: '#/$defs/datasets' },
       blocks: blockListSchema(),
     },
     $defs: defs,

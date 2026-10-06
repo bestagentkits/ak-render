@@ -5,6 +5,7 @@
  * live here so every renderer module applies them identically.
  */
 
+import type { DataRow } from '../data/dataset-types.js';
 import type { IrNode, NetworkPolicy } from '../ir.js';
 import { isPlainObject, type JsonValue } from '../json.js';
 import { isRemote, type MediaCapability, networkAllows } from '../spec/network-policy.js';
@@ -101,4 +102,13 @@ export function resolveMedia(
     allowed: networkAllows(policy, capability, reference, provider),
     src: escapeUrl(reference),
   };
+}
+
+/**
+ * Attributes for one row of a filterable block: the filter runtime finds rows
+ * by `data-ak-filter-item` and reads their raw values from the `data-ak-row`
+ * JSON, which `renderAttributes` escapes.
+ */
+export function filterRowAttributes(row: DataRow): AttributeValue {
+  return { 'data-ak-filter-item': true, 'data-ak-row': JSON.stringify(row) };
 }

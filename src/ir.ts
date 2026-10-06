@@ -7,10 +7,12 @@
  * spec migration.
  */
 
+import type { DataRow, MaterializedData } from './data/dataset-types.js';
 import type { Diagnostic } from './diagnostics.js';
 import type { JsonValue } from './json.js';
 import type { RuntimeFeature } from './registry/roster.js';
 import type { BindingMap } from './spec/bindings.js';
+import type { Condition } from './spec/conditions.js';
 
 export interface IrNode {
   /** Stable node ID: author-provided when present, otherwise content-derived. */
@@ -28,6 +30,16 @@ export interface IrNode {
   bindings: BindingMap;
   /** Child node IDs, in authored order. */
   children: string[];
+  /**
+   * Nested slot lists, keyed by `slotKey()` (`aside`, `items[1].blocks`). Set
+   * only when non-empty, so a node without nested blocks has no `slots` key.
+   * `children` and `slots` never share a node.
+   */
+  slots?: Record<string, string[]>;
+  /** `visibleWhen`: the block shows only while this state condition holds. */
+  when?: Condition;
+  /** Rows the block resolved from `dataRef` or `data`, after its transform. */
+  data?: MaterializedData;
   /** Accessibility contract inherited from the block definition. */
   a11y: string;
   runtimeFeatures: RuntimeFeature[];
@@ -52,6 +64,10 @@ export interface IrTheme {
   preset: string;
   extends?: string;
   tokens?: JsonValue;
+  /** Dark-scheme token overrides, resolved by the theme loader. */
+  dark?: JsonValue;
+  /** Presentation recipe per surface, e.g. `{ cards: 'flat' }`. */
+  recipes?: Record<string, string>;
 }
 
 export interface IrDocument {
@@ -65,6 +81,8 @@ export interface IrDocument {
   theme: IrTheme;
   policy: { network: NetworkPolicy };
   state: Record<string, JsonValue>;
+  /** Named datasets declared in the spec envelope. */
+  datasets: Record<string, DataRow[]>;
   rootId: string;
   /** All nodes in deterministic depth-first pre-order, root first. */
   nodes: IrNode[];

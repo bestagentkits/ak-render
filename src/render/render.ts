@@ -14,15 +14,20 @@ import type { DiagramAdapter } from '../diagram/adapter.js';
 import { RenderError } from '../errors.js';
 import { stableHash } from '../hash.js';
 import type { IrDocument, IrNode } from '../ir.js';
-import { isPlainObject } from '../json.js';
+import type { BlockRegistry, FeatureModule } from '../registry/block-module.js';
+import { DEFAULT_REGISTRY } from '../registry/registry.js';
 import type { RuntimeFeature } from '../registry/roster.js';
+import { assetOrigins, assetReferences } from '../spec/asset-references.js';
+import { evaluateCondition } from '../spec/conditions.js';
 import { type NormalizeResult, normalizeSpec } from '../spec/normalize.js';
 import { loadTheme, type ResolvedTheme, resolveTheme } from '../theme/load-theme.js';
 import { builtinThemeCatalog, type ThemeCatalog } from '../theme/theme-catalog.js';
 import { type RenderContext, renderNode } from './blocks.js';
 import { assembleDocument } from './document.js';
+import { renderAttributes } from './escape.js';
 import { embeddedFontCss } from './font-faces.js';
 import { hasOutline, renderOutline } from './outline.js';
+import { recipeCss } from './recipe-styles.js';
 import { buildRuntime, needsLiveRegion } from './runtime.js';
 import { BASE_CSS, FEATURE_CSS } from './styles.js';
 import { inverseSurfaceCss, usesInverseSurface } from './surface-styles.js';
@@ -44,6 +49,12 @@ export interface RenderOptions {
    * structured semantic fallback.
    */
   diagramAdapter?: DiagramAdapter;
+  /**
+   * Blocks and features available to the spec. Defaults to the built-in
+   * registry. Internal: tests pass one from `buildRegistry()`; it is not a
+   * supported extension point.
+   */
+  registry?: BlockRegistry;
 }
 
 export interface CompileResult {
@@ -81,6 +92,7 @@ const FEATURE_ORDER: readonly RuntimeFeature[] = [
   'checklist',
   'showcase',
   'cta',
+  'state',
 ];
 
 function collectFeatures(ir: IrDocument, includeTheme: boolean): Set<RuntimeFeature> {
@@ -99,43 +111,21 @@ function collectFeatures(ir: IrDocument, includeTheme: boolean): Set<RuntimeFeat
   return features;
 }
 
-function collectOrigins(ir: IrDocument): string[] {
-  const policy = ir.policy.network;
-  if (policy === 'deny') return [];
-  const origins: string[] = [];
-  const add = (reference: string, capability: string): void => {
-    if (policy.allow.includes(capability) && /^https?:/iu.test(reference)) {
-      try {
-        origins.push(new URL(reference).origin);
-      } catch {
-        // A reference that is not a URL is handled by the block renderer, not here.
-      }
-    }
-  };
-
-  for (const node of ir.nodes) {
-    // Only players load through the media capability; every other block that
-    // carries a source shows a still image.
-    const capability = node.type === 'video' || node.type === 'audio' ? 'media' : 'images';
-    const src = node.props.src;
-    if (typeof src === 'string') add(src, capability);
-    // A video poster is a still image, gated by `images` whatever the player uses.
-    const poster = node.props.poster;
-    if (typeof poster === 'string') add(poster, 'images');
-    const nested = [
-      ...(Array.isArray(node.props.items) ? node.props.items : []),
-      node.props.before,
-      node.props.after,
-    ];
-    for (const item of nested) {
-      if (isPlainObject(item) && typeof item.src === 'string') add(item.src, capability);
-    }
-  }
-  return origins;
+/** Origins of the allowed remote assets, found through each block's `asset` props. */
+function collectOrigins(ir: IrDocument, registry: BlockRegistry): string[] {
+  return ir.nodes.flatMap((node) => {
+    const definition = registry.byType.get(node.type);
+    if (definition === undefined) return [];
+    return assetOrigins(
+      ir.policy.network,
+      assetReferences(definition.props, node.props, node.path),
+    );
+  });
 }
 
 function buildCss(
   features: ReadonlySet<RuntimeFeature>,
+  moduleFeatures: readonly FeatureModule[],
   theme: ResolvedTheme,
   ir: IrDocument,
 ): string {
@@ -145,6 +135,10 @@ function buildCss(
     const sheet = FEATURE_CSS[feature];
     if (sheet !== undefined) sheets.push(sheet);
   }
+  for (const feature of moduleFeatures) sheets.push(feature.css);
+  // Recipes restyle feature surfaces, so they follow every feature sheet.
+  const recipes = recipeCss(ir.theme.recipes, features);
+  if (recipes !== '') sheets.push(recipes);
   sheets.push(theme.css);
   // The night band redeclares colour tokens, so it must follow the theme sheet.
   if (usesInverseSurface(ir.nodes)) sheets.push(inverseSurfaceCss(theme));
@@ -171,27 +165,51 @@ function nodeIndex(ir: IrDocument): Map<string, IrNode> {
   return new Map(ir.nodes.map((node) => [node.id, node]));
 }
 
+/**
+ * Render a node, wrapped when it carries `visibleWhen`. The wrapper starts
+ * hidden exactly when the condition is false for the initial state, so the page
+ * reads correctly without scripts; the runtime toggles it afterwards.
+ */
+function renderVisible(node: IrNode, context: RenderContext): string {
+  const html = renderNode(node, context);
+  if (node.when === undefined) return html;
+  const attributes = renderAttributes({
+    class: 'ak-when',
+    'data-ak-when': JSON.stringify(node.when),
+    hidden: !evaluateCondition(node.when, context.ir.state),
+  });
+  return `<div${attributes}>${html}</div>`;
+}
+
 function renderBody(
   ir: IrDocument,
   theme: ResolvedTheme,
   features: Set<RuntimeFeature>,
-  renderOptions: { diagramAdapter?: DiagramAdapter; warnings: Diagnostic[] },
+  renderOptions: {
+    registry: BlockRegistry;
+    diagramAdapter?: DiagramAdapter;
+    warnings: Diagnostic[];
+  },
 ): string {
   const byId = nodeIndex(ir);
+  const renderList = (ids: readonly string[]): string =>
+    ids
+      .map((childId) => byId.get(childId))
+      .filter((child): child is IrNode => child !== undefined)
+      .map((child) => `<!-- ak:${child.id} -->${renderVisible(child, context)}`)
+      .join('\n');
   const context: RenderContext = {
     ir,
     theme,
     features,
+    registry: renderOptions.registry,
     warnings: renderOptions.warnings,
     ...(renderOptions.diagramAdapter === undefined
       ? {}
       : { diagramAdapter: renderOptions.diagramAdapter }),
-    renderChildren: (node) =>
-      node.children
-        .map((childId) => byId.get(childId))
-        .filter((child): child is IrNode => child !== undefined)
-        .map((child) => `<!-- ak:${child.id} -->${renderNode(child, context)}`)
-        .join('\n'),
+    renderChildren: (node) => renderList(node.children),
+    renderSlot: (node, key) => renderList(node.slots?.[key] ?? []),
+    byId: (id) => byId.get(id),
   };
   const root = byId.get(ir.rootId);
   if (root === undefined) {
@@ -204,7 +222,9 @@ function renderBody(
 
 /** Run the full pipeline and return everything it produced. */
 export function compile(spec: unknown, options: RenderOptions = {}): CompileResult {
+  const registry = options.registry ?? DEFAULT_REGISTRY;
   const normalized: NormalizeResult = normalizeSpec(spec, {
+    registry,
     ...(options.source === undefined ? {} : { source: options.source }),
   });
   const errors = normalized.diagnostics.filter((diagnostic) => diagnostic.severity === 'error');
@@ -238,6 +258,7 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
 
   const includeThemeToggle = options.themeToggle !== false;
   const features = collectFeatures(ir, includeThemeToggle);
+  const moduleFeatures = registry.features.filter((feature) => features.has(feature.name));
 
   const irDiagnostics = verifyIr(ir, features);
   if (irDiagnostics.some((diagnostic) => diagnostic.severity === 'error')) {
@@ -249,15 +270,23 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
 
   const renderWarnings: Diagnostic[] = [];
   const body = renderBody(ir, resolved, features, {
+    registry,
     warnings: renderWarnings,
     ...(options.diagramAdapter === undefined ? {} : { diagramAdapter: options.diagramAdapter }),
   });
   // Faces come first and need the rendered text, which decides their subsets.
   const fonts = embeddedFontCss(resolved, `${ir.meta.title}\n${body}`);
-  const css = [fonts, buildCss(features, resolved, ir)].filter((sheet) => sheet !== '').join('\n');
+  const css = [fonts, buildCss(features, moduleFeatures, resolved, ir)]
+    .filter((sheet) => sheet !== '')
+    .join('\n');
   const runtimeNeeded = features.size > 0 || bodyNeedsRuntime(body);
   const js = runtimeNeeded
-    ? buildRuntime({ features, state: ir.state, hasBindings: bodyNeedsRuntime(body) })
+    ? buildRuntime({
+        features,
+        state: ir.state,
+        hasBindings: bodyNeedsRuntime(body),
+        moduleFeatures,
+      })
     : '';
 
   const assembled = assembleDocument({
@@ -266,11 +295,16 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
     css,
     js,
     body,
-    allowedOrigins: collectOrigins(ir),
+    allowedOrigins: collectOrigins(ir, registry),
     themeToggle: includeThemeToggle,
     density: resolved.density,
     motionDisabled: resolved.motionPolicy === 'none',
     outline: renderOutline(ir),
+    // Declared by the blocks themselves: the theme toggle alone announces nothing.
+    liveRegion: needsLiveRegion(
+      new Set(ir.nodes.flatMap((node) => node.runtimeFeatures)),
+      moduleFeatures,
+    ),
   });
 
   const verification = verifyDocument({
@@ -282,6 +316,7 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
     features,
     css,
     js,
+    moduleFeatures,
   });
   const verificationErrors = verification.filter((diagnostic) => diagnostic.severity === 'error');
   if (verificationErrors.length > 0) {
@@ -297,7 +332,10 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
     bytes: assembled.html.length,
     ir,
     theme: resolved,
-    features: FEATURE_ORDER.filter((feature) => features.has(feature)),
+    features: [
+      ...FEATURE_ORDER.filter((feature) => features.has(feature)),
+      ...moduleFeatures.map((feature) => feature.name),
+    ],
     warnings: [
       ...normalized.diagnostics.filter((diagnostic) => diagnostic.severity === 'warning'),
       ...themeBag.warnings(),

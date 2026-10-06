@@ -20,7 +20,8 @@ export type PropSchema =
   | ObjectPropSchema
   | RecordPropSchema
   | OneOfPropSchema
-  | JsonPropSchema;
+  | JsonPropSchema
+  | BlocksPropSchema;
 
 interface PropSchemaBase {
   /** Reject the document when the property is absent. */
@@ -65,6 +66,18 @@ export interface UrlPropSchema extends PropSchemaBase {
   kind: 'url';
   default?: string;
   schemes?: readonly string[];
+  /**
+   * The value is an asset the page loads, gated by this network capability. The
+   * compiler adds an allowed remote origin to the page's policy, wherever the
+   * prop sits (list items and nested slots included).
+   */
+  asset?: 'images' | 'media';
+  /**
+   * A blocked remote reference fails validation at its own path instead of
+   * leaving the renderer to drop it. For assets with no visible fallback, such
+   * as a video poster.
+   */
+  rejectBlocked?: boolean;
 }
 
 export interface ListPropSchema extends PropSchemaBase {
@@ -103,6 +116,24 @@ export interface JsonPropSchema extends PropSchemaBase {
   /** JSON Schema `$ref` used when projecting this prop into the spec schema. */
   schemaRef?: string;
 }
+
+/**
+ * A nested list of child blocks. The list never enters `props`: the normalizer
+ * builds each entry as an IR node in `IrNode.slots`. Allowed as a top-level
+ * block prop or as a field of a `list(obj(...))` prop; registration rejects
+ * any deeper position.
+ */
+export interface BlocksPropSchema extends PropSchemaBase {
+  kind: 'blocks';
+  /** Default 1. */
+  minItems?: number;
+  /** Default 40. */
+  maxItems?: number;
+  /** Child block types the slot accepts; absent or `'*'` accepts any block. */
+  accepts?: readonly string[] | '*';
+}
+
+export const BLOCKS_PROP_DEFAULTS = { minItems: 1, maxItems: 40 } as const;
 
 export const DEFAULT_URL_SCHEMES = ['https', 'http', 'mailto'] as const;
 export const NODE_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
@@ -171,6 +202,73 @@ function defaultFor(schema: PropSchema): JsonValue | undefined {
     default:
       return undefined;
   }
+}
+
+type JsonShape = 'string' | 'number' | 'boolean' | 'array' | 'object' | 'null';
+
+function valueShape(value: unknown): JsonShape | undefined {
+  if (value === null) return 'null';
+  if (Array.isArray(value)) return 'array';
+  if (isPlainObject(value)) return 'object';
+  const type = typeof value;
+  return type === 'string' || type === 'number' || type === 'boolean' ? type : undefined;
+}
+
+/** The JSON shapes a schema accepts; undefined means any shape. */
+function schemaShapes(schema: PropSchema): readonly JsonShape[] | undefined {
+  switch (schema.kind) {
+    case 'string':
+    case 'text':
+    case 'url':
+      return ['string'];
+    case 'number':
+      return ['number'];
+    case 'boolean':
+      return ['boolean'];
+    case 'list':
+    case 'blocks':
+      return ['array'];
+    case 'object':
+    case 'record':
+      return ['object'];
+    case 'oneOf': {
+      const shapes: JsonShape[] = [];
+      for (const option of schema.options) {
+        const nested = schemaShapes(option);
+        if (nested === undefined) return undefined;
+        shapes.push(...nested);
+      }
+      return shapes;
+    }
+    case 'json':
+      return undefined;
+  }
+}
+
+/**
+ * The one option a value that matched none was meant for: the only option of
+ * its JSON shape, or, among object options, the only one whose required
+ * `type` enum names the value's `type`. Undefined when that is ambiguous.
+ */
+function intendedOption(options: readonly PropSchema[], value: unknown): PropSchema | undefined {
+  const shape = valueShape(value);
+  if (shape === undefined) return undefined;
+  const byShape = options.filter((option) => schemaShapes(option)?.includes(shape) ?? false);
+  if (byShape.length === 1) return byShape[0];
+  if (shape !== 'object' || !isPlainObject(value) || typeof value.type !== 'string') {
+    return undefined;
+  }
+  const discriminator = value.type;
+  const byType = byShape.filter((option) => {
+    if (option.kind !== 'object') return false;
+    const field = option.fields.type;
+    return (
+      field?.kind === 'string' &&
+      field.required === true &&
+      field.enum?.includes(discriminator) === true
+    );
+  });
+  return byType.length === 1 ? byType[0] : undefined;
 }
 
 /**
@@ -381,11 +479,33 @@ export function validateProp(
         const candidate = validateProp(option, value, path, attempt);
         if (!attempt.hasErrors) return candidate;
       }
+      // No option fits. When the value's shape, or an object's `type`, singles
+      // out the option the author meant, report that option's own diagnostics.
+      const intended = intendedOption(schema.options, value);
+      if (intended !== undefined) return validateProp(intended, value, path, bag);
       bag.add({
         code: 'SPEC_VALIDATION_ERROR',
         path,
         message: `value does not match any allowed shape (${schema.options.length} options)`,
       });
+      return undefined;
+    }
+    case 'blocks': {
+      // Only the list shape is checked here; each entry is validated as a
+      // block when the normalizer builds the slot.
+      if (!Array.isArray(value)) {
+        bag.add({ code: 'SPEC_VALIDATION_ERROR', path, message: 'expected a list of blocks' });
+        return undefined;
+      }
+      const minItems = schema.minItems ?? BLOCKS_PROP_DEFAULTS.minItems;
+      const maxItems = schema.maxItems ?? BLOCKS_PROP_DEFAULTS.maxItems;
+      if (value.length < minItems || value.length > maxItems) {
+        bag.add({
+          code: value.length > maxItems ? 'SPEC_BOUNDS_ERROR' : 'SPEC_VALIDATION_ERROR',
+          path,
+          message: `slot accepts ${minItems}-${maxItems} blocks, received ${value.length}`,
+        });
+      }
       return undefined;
     }
     case 'json': {
@@ -503,6 +623,13 @@ export function propSchemaToJsonSchema(schema: PropSchema): Record<string, unkno
       return { type: 'object', additionalProperties: propSchemaToJsonSchema(schema.of) };
     case 'oneOf':
       return { oneOf: schema.options.map((option) => propSchemaToJsonSchema(option)) };
+    case 'blocks':
+      return {
+        type: 'array',
+        minItems: schema.minItems ?? BLOCKS_PROP_DEFAULTS.minItems,
+        maxItems: schema.maxItems ?? BLOCKS_PROP_DEFAULTS.maxItems,
+        items: { $ref: '#/$defs/block' },
+      };
     case 'json': {
       const out: Record<string, unknown> = { description: schema.description };
       if (schema.schemaRef !== undefined) out.$ref = schema.schemaRef;
