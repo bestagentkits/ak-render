@@ -16,7 +16,7 @@ import type { CompileResult } from '../render/render.js';
 import { validate } from '../spec/validate.js';
 import { builtinPresetEntries } from '../theme/presets.js';
 import type { ThemeCatalog } from '../theme/theme-catalog.js';
-import { failure, type ToolResult, text } from './mcp-protocol.js';
+import { failure, ToolArgumentError, type ToolResult, text } from './mcp-protocol.js';
 
 /** What `tools/list` announces for one tool. */
 export interface McpToolDefinition {
@@ -49,7 +49,7 @@ const NO_INPUT = { type: 'object', properties: {}, additionalProperties: false }
 export function requireString(args: Record<string, unknown>, key: string): string {
   const value = args[key];
   if (typeof value !== 'string' || value === '') {
-    throw new TypeError(`"${key}" must be a non-empty string`);
+    throw new ToolArgumentError(`"${key}" must be a non-empty string`);
   }
   return value;
 }

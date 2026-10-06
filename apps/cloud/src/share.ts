@@ -132,18 +132,45 @@ export async function revokeShare(
   return { ok: true, status: 200 };
 }
 
-/** Delete expired shares and render artifacts. Wired to the scheduled handler. */
+/**
+ * Most listing pages one sweep reads per prefix. A page holds up to 1,000
+ * objects, so this bounds one run's subrequests while still covering far more
+ * objects than the rate limits can create between two hourly runs. R2
+ * lifecycle rules (r2-lifecycle.json) are the backstop that deletes the bytes
+ * even if a sweep never reaches them.
+ */
+export const MAX_SWEEP_PAGES = 100;
+
+/**
+ * Delete expired shares and render artifacts. Wired to the scheduled handler.
+ *
+ * It walks each prefix with the listing cursor and reads expiry from the
+ * metadata the listing returns, so it never downloads an object body, and it
+ * deletes each page's expired keys in one call.
+ */
 export async function purgeExpiredShares(env: Env, now: Date = new Date()): Promise<number> {
   let removed = 0;
   for (const { prefix } of Object.values(KINDS)) {
-    const listed = await env.RENDER_SHARES.list({ prefix, limit: 1000 });
-    for (const entry of listed.objects) {
-      const object = await env.RENDER_SHARES.get(entry.key);
-      if (object === null) continue;
-      const expiresAt = object.customMetadata?.['expiresAt'] ?? '';
-      if (expiresAt === '' || Date.parse(expiresAt) > now.getTime()) continue;
-      await env.RENDER_SHARES.delete(entry.key);
-      removed += 1;
+    let cursor: string | undefined;
+    for (let page = 0; page < MAX_SWEEP_PAGES; page += 1) {
+      const listed = await env.RENDER_SHARES.list({
+        prefix,
+        limit: 1000,
+        include: ['customMetadata'],
+        ...(cursor === undefined ? {} : { cursor }),
+      });
+      const expired = listed.objects
+        .filter((entry) => {
+          const expiresAt = entry.customMetadata?.['expiresAt'] ?? '';
+          return expiresAt !== '' && Date.parse(expiresAt) <= now.getTime();
+        })
+        .map((entry) => entry.key);
+      if (expired.length > 0) {
+        await env.RENDER_SHARES.delete(expired);
+        removed += expired.length;
+      }
+      if (!listed.truncated || listed.cursor === undefined) break;
+      cursor = listed.cursor;
     }
   }
   return removed;

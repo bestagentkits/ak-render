@@ -15,9 +15,12 @@
 
 import { routeMcpMessage } from './mcp-json-rpc-dispatch.js';
 import {
+  DEFAULT_HTTP_PROTOCOL,
   isSupportedProtocol,
   JSON_RPC_ERRORS,
   type JsonRpcResponse,
+  type ProtocolVersion,
+  protocolAllowsBatching,
   rpcError,
   type ToolResult,
   toolErrorResult,
@@ -26,6 +29,12 @@ import type { McpTool } from './mcp-tool-definitions.js';
 
 /** Request body ceiling used when the host does not set one: 1 MiB. */
 export const DEFAULT_MCP_MAX_REQUEST_BYTES = 1024 * 1024;
+
+/**
+ * Most members one batch may carry. A batch is answered member by member in one
+ * request, so without a ceiling a small body buys unbounded work and output.
+ */
+export const DEFAULT_MCP_MAX_BATCH_SIZE = 16;
 
 export interface McpHttpOptions<C> {
   /** The tools this endpoint serves, in the order `tools/list` announces them. */
@@ -43,6 +52,19 @@ export interface McpHttpOptions<C> {
   allowedOrigins?: readonly string[];
   /** Request body ceiling in bytes. */
   maxRequestBytes?: number;
+  /** Most members a JSON-RPC batch may carry. */
+  maxBatchSize?: number;
+  /**
+   * Runs once per request after every transport check passed and before any
+   * message is dispatched. A returned `Response` is sent as is (for example a
+   * 401 for a rejected bearer); `undefined` lets the request through.
+   */
+  preflight?: () => Promise<Response | undefined>;
+  /**
+   * Turns an error a tool threw into a tool result. Defaults to reporting the
+   * error's message; a hosted server passes a mapper that hides internals.
+   */
+  toolError?: (error: unknown) => ToolResult;
 }
 
 const JSON_HEADERS = { 'content-type': 'application/json', 'cache-control': 'no-store' };
@@ -61,6 +83,26 @@ function originAllowed(request: Request, allowed: readonly string[]): boolean {
   return origin === new URL(request.url).origin || allowed.includes(origin);
 }
 
+/** Why a batch cannot be served, or `undefined` when it can. */
+function batchRefusal(
+  batch: unknown[],
+  version: ProtocolVersion,
+  maxBatchSize = DEFAULT_MCP_MAX_BATCH_SIZE,
+): string | undefined {
+  if (batch.length === 0) return 'invalid request';
+  if (!protocolAllowsBatching(version)) {
+    return `protocol revision ${version} does not support JSON-RPC batches`;
+  }
+  if (batch.length > maxBatchSize) return `a batch may carry at most ${maxBatchSize} messages`;
+  const initializes = batch.some(
+    (member) =>
+      typeof member === 'object' &&
+      member !== null &&
+      (member as { method?: unknown }).method === 'initialize',
+  );
+  return initializes ? 'initialize must not be part of a batch' : undefined;
+}
+
 /** Run one routed message to completion. Tool errors become tool results. */
 async function answer<C>(
   message: unknown,
@@ -73,7 +115,7 @@ async function answer<C>(
   try {
     result = await route.tool.run(route.args, options.context);
   } catch (error) {
-    result = toolErrorResult(error);
+    result = (options.toolError ?? toolErrorResult)(error);
   }
   return { jsonrpc: '2.0', id: route.id, result };
 }
@@ -84,6 +126,9 @@ async function answer<C>(
  * - POST with one JSON-RPC message (or a batch, for 2025-03-26 clients) answers
  *   200 with the JSON response, or 202 with no body when every message was a
  *   notification or a response.
+ * - A batch answers 400 when the request's protocol revision has no batching
+ *   (2025-06-18 and later), when it is larger than `maxBatchSize`, or when it
+ *   carries `initialize`, which must be sent alone.
  * - Any other method answers 405: this server has no server-initiated stream
  *   and no session to delete.
  * - An unsupported `MCP-Protocol-Version` header answers 400.
@@ -102,14 +147,17 @@ export async function handleMcpHttpRequest<C>(
       { allow: 'POST' },
     );
   }
-  const version = request.headers.get('mcp-protocol-version');
-  if (version !== null && !isSupportedProtocol(version)) {
+  const header = request.headers.get('mcp-protocol-version');
+  if (header !== null && !isSupportedProtocol(header)) {
     return transportError(
       400,
       JSON_RPC_ERRORS.invalidRequest,
-      `unsupported MCP-Protocol-Version: ${version}`,
+      `unsupported MCP-Protocol-Version: ${header}`,
     );
   }
+  // A client that omits the header is assumed to speak the revision the
+  // transport specification names for that case.
+  const version = header ?? DEFAULT_HTTP_PROTOCOL;
   const contentType = request.headers.get('content-type') ?? '';
   if (!contentType.toLowerCase().includes('application/json')) {
     return transportError(
@@ -145,9 +193,14 @@ export async function handleMcpHttpRequest<C>(
   }
 
   if (Array.isArray(message)) {
-    if (message.length === 0) {
-      return transportError(400, JSON_RPC_ERRORS.invalidRequest, 'invalid request');
-    }
+    const refused = batchRefusal(message, version, options.maxBatchSize);
+    if (refused !== undefined) return transportError(400, JSON_RPC_ERRORS.invalidRequest, refused);
+  }
+
+  const gated = await options.preflight?.();
+  if (gated !== undefined) return gated;
+
+  if (Array.isArray(message)) {
     // Members run in order so per-subject rate limits count deterministically.
     const responses: JsonRpcResponse[] = [];
     for (const member of message) {

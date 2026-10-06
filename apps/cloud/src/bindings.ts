@@ -15,6 +15,13 @@ export interface R2ObjectBody {
   readonly customMetadata?: Record<string, string>;
 }
 
+/** One page of an R2 listing. `cursor` is present only when `truncated`. */
+export interface R2Listing {
+  objects: { key: string; customMetadata?: Record<string, string> }[];
+  truncated: boolean;
+  cursor?: string;
+}
+
 export interface R2Bucket {
   get(key: string): Promise<R2ObjectBody | null>;
   put(
@@ -22,14 +29,24 @@ export interface R2Bucket {
     value: string,
     options?: { customMetadata?: Record<string, string>; httpMetadata?: { contentType?: string } },
   ): Promise<unknown>;
-  delete(key: string): Promise<void>;
+  /** One key, or up to 1,000 keys in one call. */
+  delete(keys: string | string[]): Promise<void>;
   /** Used only by the expiry sweep. */
-  list(options?: { prefix?: string; limit?: number }): Promise<{ objects: { key: string }[] }>;
+  list(options?: {
+    prefix?: string;
+    limit?: number;
+    cursor?: string;
+    include?: ('customMetadata' | 'httpMetadata')[];
+  }): Promise<R2Listing>;
 }
 
-export interface KVNamespace {
-  get(key: string): Promise<string | null>;
-  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+/**
+ * Workers Rate Limiting binding (`ratelimits` in wrangler.jsonc). `limit`
+ * counts one call against `key` and answers whether it is still within the
+ * binding's limit for the current period.
+ */
+export interface RateLimitBinding {
+  limit(options: { key: string }): Promise<{ success: boolean }>;
 }
 
 /**
@@ -49,8 +66,15 @@ export interface Env {
   ENTITLEMENTS_URL: string;
   /** Private bucket holding shared artifacts. Never public. */
   RENDER_SHARES: R2Bucket;
-  /** Rate-limit counters, keyed by subject and route. */
-  RATE_LIMIT: KVNamespace;
+  /** Per-subject limits, one binding per route class (see config.ts). */
+  RATE_LIMIT_RENDER: RateLimitBinding;
+  RATE_LIMIT_SHARE: RateLimitBinding;
+  RATE_LIMIT_EXPORT: RateLimitBinding;
+  RATE_LIMIT_VALIDATE: RateLimitBinding;
+  /** Per-IP limit on the remote MCP tools that answer without a bearer. */
+  RATE_LIMIT_ANON_IP: RateLimitBinding;
+  /** Per-IP limit on bearer checks the principal cache could not answer. */
+  RATE_LIMIT_AUTH_IP: RateLimitBinding;
   /** Browser Run binding. Present only where screenshot/PDF is deployed. */
   BROWSER?: BrowserRun;
   /** Share retention in days. Defaults to the conservative value in config.ts. */

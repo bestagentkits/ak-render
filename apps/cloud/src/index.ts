@@ -23,6 +23,7 @@ import {
   type AuthFailure,
   authenticate,
   authorizeAll,
+  bearerChallenge,
   type Principal,
   type Scope,
 } from './auth.js';
@@ -43,7 +44,19 @@ function json(status: number, body: unknown): Response {
   });
 }
 
-function htmlResponse(html: string, cacheControl: string): Response {
+/**
+ * Response CSP for a stored share or artifact. The page carries its own meta
+ * CSP for fetch directives; this header adds what a meta CSP cannot: the page
+ * runs in an opaque origin (no `allow-same-origin`), so untrusted-spec output
+ * can never read or act as `render.agentkit.best`, and it cannot be framed.
+ * Scripts, popups, popups that leave the sandbox (an `open-url` action) and
+ * downloads (a `download` action) stay allowed so the page works as compiled;
+ * the runtime already tolerates the storage errors an opaque origin raises.
+ */
+export const STORED_PAGE_CSP =
+  "sandbox allow-scripts allow-popups allow-popups-to-escape-sandbox allow-downloads; frame-ancestors 'none'";
+
+function htmlResponse(html: string, cacheControl: string, stored = false): Response {
   return new Response(html, {
     status: 200,
     headers: {
@@ -51,12 +64,17 @@ function htmlResponse(html: string, cacheControl: string): Response {
       'cache-control': cacheControl,
       'x-content-type-options': 'nosniff',
       'referrer-policy': 'no-referrer',
+      ...(stored ? { 'content-security-policy': STORED_PAGE_CSP } : {}),
     },
   });
 }
 
-function denied(outcome: AuthFailure): Response {
-  return json(outcome.status, { code: outcome.code, message: outcome.message });
+function denied(request: Request, outcome: AuthFailure): Response {
+  const response = json(outcome.status, { code: outcome.code, message: outcome.message });
+  if (outcome.status === 401) {
+    response.headers.set('www-authenticate', bearerChallenge(request));
+  }
+  return response;
 }
 
 async function readPayload(
@@ -99,9 +117,10 @@ async function requireScope(
   request: Request,
   env: Env,
   scope: Scope,
+  now: Date,
 ): Promise<{ ok: true; principal: Principal } | { ok: false; response: Response }> {
-  const outcome = authorizeAll(await authenticate(request, env), [scope]);
-  if (!outcome.ok) return { ok: false, response: denied(outcome) };
+  const outcome = authorizeAll(await authenticate(request, env, now.getTime()), [scope]);
+  if (!outcome.ok) return { ok: false, response: denied(request, outcome) };
   return { ok: true, principal: outcome.principal };
 }
 
@@ -122,7 +141,7 @@ export async function handleRequest(
     const id = path.slice('/v1/share/'.length);
     const found = await readStored(env, 'share', id, now);
     if (!found.ok) return json(found.status, { code: found.code, message: found.message });
-    return htmlResponse(found.html, 'public, max-age=60');
+    return htmlResponse(found.html, 'public, max-age=60', true);
   }
 
   // --- artifact: the short-lived page a remote MCP render points at --------
@@ -130,12 +149,12 @@ export async function handleRequest(
     const id = path.slice('/v1/artifact/'.length);
     const found = await readStored(env, 'artifact', id, now);
     if (!found.ok) return json(found.status, { code: found.code, message: found.message });
-    return htmlResponse(found.html, 'private, max-age=60');
+    return htmlResponse(found.html, 'private, max-age=60', true);
   }
 
   // --- revoke: share scope, owner only -------------------------------------
   if (method === 'DELETE' && path.startsWith('/v1/share/')) {
-    const scoped = await requireScope(request, env, 'share');
+    const scoped = await requireScope(request, env, 'share', now);
     if (!scoped.ok) return scoped.response;
     const id = path.slice('/v1/share/'.length);
     const revoked = await revokeShare(env, scoped.principal, id);
@@ -160,12 +179,12 @@ export async function handleRequest(
     return json(404, { code: 'NOT_FOUND', message: 'no such route' });
   }
 
-  const scoped = await requireScope(request, env, scope);
+  const scoped = await requireScope(request, env, scope, now);
   if (!scoped.ok) return scoped.response;
 
   const rateKey: RateLimitKey =
     path === '/v1/share' ? 'share' : path === '/v1/render' ? 'render' : 'export';
-  if (!(await withinRateLimit(env, scoped.principal.subject, rateKey, now))) {
+  if (!(await withinRateLimit(env, rateKey, scoped.principal.subject))) {
     return json(429, { code: 'RATE_LIMITED', message: `too many ${rateKey} requests` });
   }
 
@@ -204,7 +223,13 @@ export async function handleRequest(
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    return handleRequest(request, env);
+    try {
+      return await handleRequest(request, env);
+    } catch {
+      // A storage or binding fault must not surface as a platform error page
+      // or leak its message; the caller gets a generic, retryable answer.
+      return json(500, { code: 'INTERNAL_ERROR', message: 'the request failed; try again later' });
+    }
   },
   async scheduled(_event: unknown, env: Env): Promise<void> {
     await purgeExpiredShares(env);

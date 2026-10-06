@@ -7,7 +7,8 @@
  *   BASE_URL=... TOKEN=... EXPECT_EXPORT=1 node scripts/cloud-smoke.mjs
  *
  * Without TOKEN only the unauthenticated surface is checked: MCP initialize,
- * tools/list and catalog, and that render is refused without a bearer. With
+ * tools/list and catalog, that render is refused without a bearer, and that a
+ * rejected bearer answers 401 with a Bearer challenge. With
  * TOKEN it also renders through MCP and REST, checks the artifact is the same
  * HTML from both, and runs a share through create, read, revoke and gone.
  * Screenshot and PDF are checked when the deployment answers them; a 501
@@ -142,6 +143,23 @@ async function unauthenticatedSurface() {
     render.isError && render.payload.code === 'UNAUTHENTICATED',
     'mcp render refused without a bearer',
     JSON.stringify(render.payload),
+  );
+
+  // A presented bearer the entitlements endpoint rejects is an HTTP 401 with
+  // a Bearer challenge, so an MCP client knows to re-authenticate.
+  const rejected = await fetch(`${BASE_URL}/mcp`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'mcp-protocol-version': '2025-11-25',
+      authorization: 'Bearer ak-render-smoke-invalid-token',
+    },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 'rejected', method: 'tools/list' }),
+  });
+  check(
+    rejected.status === 401 && /^Bearer /u.test(rejected.headers.get('www-authenticate') ?? ''),
+    'mcp rejected bearer answers 401 with a Bearer challenge',
+    `status ${rejected.status}`,
   );
 
   const restRender = await rest('POST', '/v1/render', { spec: SPEC }, false);

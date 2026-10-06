@@ -13,6 +13,13 @@ Release mechanics and the compatibility contract live in
 
 - The cloud Worker validates bearers against the canonical AgentKit endpoint, `GET https://agentkit.best/api/agentkit/entitlements`, instead of an unreachable host, so authenticated render, share and export can succeed. It fails closed on a rejected token (401), an inactive account (403), and an upstream error, redirect, timeout or malformed body (502). An active app or kit entitlement grants the `render` and `share` scopes, which stay separate checks.
 - Screenshot and PDF export call the Browser Run binding's Quick Actions with the compiled HTML inline and caching off, and `wrangler.jsonc` attaches the `BROWSER` binding.
+- Remote MCP bounds its anonymous surface: a JSON-RPC batch carries at most 16 members, never `initialize`, and is refused (400) under protocol revision 2025-06-18 or later, which removed batching. `catalog`, `describe` and `themes` stay anonymous but count per client IP (120/min).
+- A remote MCP request that presents a rejected bearer answers HTTP 401 with `WWW-Authenticate: Bearer`, whatever the method, instead of a tool error; REST 401s carry the same challenge. A request without a bearer is still served, and `validate`/`render` still answer a tool error with `UNAUTHENTICATED`.
+- Cloud rate limits use the Workers Rate Limiting binding, one per route class, instead of KV counters that could fail on rapid writes; a limiter fault refuses the call with `RATE_LIMITED`. An MCP `render` with `share: true` counts against `share` only, as `POST /v1/share` does, and a call refused by authorization consumes nothing.
+- The cloud Worker caches entitlements answers in memory under a SHA-256 digest of the bearer (60 s accepted, 10 s rejected), and limits uncached bearer checks per client IP (30/min) before contacting the entitlements endpoint.
+- Remote MCP reports a storage or runtime fault as a generic `INTERNAL_ERROR` tool error, and the REST routes answer such a fault with a generic 500, so no internal message reaches a caller.
+- Hosted shares and artifacts are served with `content-security-policy: sandbox …; frame-ancestors 'none'`: they run in an opaque origin and cannot be framed.
+- The expiry sweep pages through every listed object with the cursor, reads expiry from listing metadata instead of downloading bodies, and deletes in batches; R2 lifecycle rules (`apps/cloud/r2-lifecycle.json`, applied on deploy) delete artifacts after 1 day and shares after the retention period plus a day.
 
 ### Changed
 

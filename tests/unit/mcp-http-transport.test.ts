@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { handleMcpHttpRequest, type McpHttpOptions } from '../../src/mcp/mcp-http-transport.js';
-import { type ToolResult, text } from '../../src/mcp/mcp-protocol.js';
+import {
+  DEFAULT_MCP_MAX_BATCH_SIZE,
+  handleMcpHttpRequest,
+  type McpHttpOptions,
+} from '../../src/mcp/mcp-http-transport.js';
+import {
+  protocolAllowsBatching,
+  publicToolErrorResult,
+  type ToolResult,
+  text,
+} from '../../src/mcp/mcp-protocol.js';
 import {
   BUILTIN_THEMES_TOOL,
   CATALOG_TOOL,
@@ -251,5 +260,111 @@ describe('MCP Streamable HTTP: transport errors', () => {
       { maxRequestBytes: 1024 },
     );
     expect(big.response.status).toBe(413);
+  });
+});
+
+describe('MCP Streamable HTTP: batch limits', () => {
+  const echo = (id: number) => ({
+    jsonrpc: '2.0',
+    id,
+    method: 'tools/call',
+    params: { name: 'echo' },
+  });
+  const batchOf = (size: number) => Array.from({ length: size }, (_, index) => echo(index + 1));
+
+  it('serves a batch up to the ceiling and refuses a larger one before running any member', async () => {
+    expect(DEFAULT_MCP_MAX_BATCH_SIZE).toBe(16);
+    const full = await call(batchOf(16), { 'mcp-protocol-version': '2025-03-26' });
+    expect(full.response.status).toBe(200);
+    expect((full.body as unknown as unknown[]).length).toBe(16);
+
+    const context: Context = { calls: [] };
+    const over = await call(batchOf(17), { 'mcp-protocol-version': '2025-03-26' }, { context });
+    expect(over.response.status).toBe(400);
+    expect(over.body?.error.message).toContain('at most 16');
+    expect(context.calls).toEqual([]);
+
+    const custom = await call(batchOf(3), {}, { maxBatchSize: 2 });
+    expect(custom.response.status).toBe(400);
+  });
+
+  it('refuses a batch under a revision that removed batching', async () => {
+    for (const version of ['2025-06-18', '2025-11-25']) {
+      const { response, body } = await call(batchOf(1), { 'mcp-protocol-version': version });
+      expect(response.status).toBe(400);
+      expect(body?.error.message).toContain('does not support JSON-RPC batches');
+    }
+    // Without the header the transport assumes 2025-03-26, which batches.
+    expect((await call(batchOf(2))).response.status).toBe(200);
+    expect((await call(batchOf(2), { 'mcp-protocol-version': '2024-11-05' })).response.status).toBe(
+      200,
+    );
+    expect(protocolAllowsBatching('2025-03-26')).toBe(true);
+    expect(protocolAllowsBatching('2025-06-18')).toBe(false);
+  });
+
+  it('refuses initialize inside a batch', async () => {
+    const { response, body } = await call([
+      { jsonrpc: '2.0', id: 1, method: 'initialize', params: {} },
+      { jsonrpc: '2.0', id: 2, method: 'ping' },
+    ]);
+    expect(response.status).toBe(400);
+    expect(body?.error.message).toBe('initialize must not be part of a batch');
+  });
+});
+
+describe('MCP Streamable HTTP: host hooks', () => {
+  it('runs the preflight after transport checks and sends its response as is', async () => {
+    let preflights = 0;
+    const preflight = async () => {
+      preflights += 1;
+      return new Response('denied', { status: 401 });
+    };
+    const ping = { jsonrpc: '2.0', id: 1, method: 'ping' };
+    const foreign = await handleMcpHttpRequest(
+      rpc(ping, { origin: 'https://evil.example' }),
+      options({ preflight }),
+    );
+    expect(foreign.status).toBe(403);
+    expect(preflights).toBe(0);
+
+    const context: Context = { calls: [] };
+    const gated = await handleMcpHttpRequest(
+      rpc({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'echo' } }),
+      options({ preflight, context }),
+    );
+    expect(gated.status).toBe(401);
+    expect(preflights).toBe(1);
+    expect(context.calls).toEqual([]);
+
+    const open = await call(ping, {}, { preflight: async () => undefined });
+    expect(open.response.status).toBe(200);
+  });
+
+  it('lets a host map thrown errors so internals stay private', async () => {
+    const boom = { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'boom' } };
+    const hidden = await call(boom, {}, { toolError: publicToolErrorResult });
+    expect(hidden.body?.result.isError).toBe(true);
+    expect(JSON.parse(hidden.body?.result.content[0].text)).toEqual({
+      code: 'INTERNAL_ERROR',
+      message: 'the tool failed; try again later',
+    });
+    const describeMissing = await call(
+      { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'describe', arguments: {} } },
+      {},
+      { toolError: publicToolErrorResult },
+    );
+    expect(describeMissing.body?.result.content[0].text).toContain('"type" must be a non-empty');
+    const unknownType = await call(
+      {
+        jsonrpc: '2.0',
+        id: 3,
+        method: 'tools/call',
+        params: { name: 'describe', arguments: { type: 'nope' } },
+      },
+      {},
+      { toolError: publicToolErrorResult },
+    );
+    expect(unknownType.body?.result.content[0].text).not.toContain('INTERNAL_ERROR');
   });
 });
