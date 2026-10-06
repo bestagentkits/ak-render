@@ -73,6 +73,7 @@
     "verify": "pnpm lint && pnpm typecheck && pnpm fonts:check && pnpm test && pnpm build"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@biomejs/biome": "^2.4.12",
     "@playwright/test": "^1.56.0",
     "@types/node": "^22.15.0",
