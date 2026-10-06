@@ -26,11 +26,11 @@
       "specBytes": 5517,
       "expandedSpecBytes": 7703,
       "datasetSavingBytes": 2186,
-      "htmlBytes": 183433,
+      "htmlBytes": 183479,
       "catalogBytes": 7228,
       "compactDescribeBytes": 4717,
       "readBytes": 11945,
-      "htmlPerSpecByte": 33.2
+      "htmlPerSpecByte": 33.3
     },
     {
       "fixture": "complex-dashboard.yaml",
@@ -51,7 +51,7 @@
       "specBytes": 5762,
       "expandedSpecBytes": 7847,
       "datasetSavingBytes": 2085,
-      "htmlBytes": 213676,
+      "htmlBytes": 213722,
       "catalogBytes": 7228,
       "compactDescribeBytes": 4617,
       "readBytes": 11845,
@@ -98,7 +98,7 @@
       "specBytes": 4252,
       "expandedSpecBytes": 5413,
       "datasetSavingBytes": 1161,
-      "htmlBytes": 176541,
+      "htmlBytes": 176587,
       "catalogBytes": 7228,
       "compactDescribeBytes": 4469,
       "readBytes": 11697,
@@ -160,7 +160,7 @@
     "specBytes": 32727,
     "expandedSpecBytes": 39562,
     "datasetSavingBytes": 6835,
-    "htmlBytes": 1016528,
+    "htmlBytes": 1016666,
     "compactDescribeBytes": 25251
   }
 }

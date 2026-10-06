@@ -12,16 +12,16 @@ baseline. No tokenizer or live model run is involved.
 
 | Part | Hand-written HTML | AK Render |
 | --- | ---: | ---: |
-| Presentation guidance read | 33.7k (baseline mean) | 8.7k (skill, catalog, describe --json) |
+| Presentation guidance read | 33.7k (baseline mean) | 9.1k (skill, catalog, describe --json) |
 | Written by the agent | 13.9k (median legacy page) | 7.2k (projected spec) |
 | Returned into context | written page stays in context | 0.1k (render summary) |
-| **Total** | **47.5k** | **16.1k** |
+| **Total** | **47.5k** | **16.5k** |
 
-Estimated reduction: **66%**. Excludes task context and narrative reasoning (equal on both paths), repairs and retries.
+Estimated reduction: **65%**. Excludes task context and narrative reasoning (equal on both paths), repairs and retries.
 
 With the compact workflow (`describe <types...> --compact`, which the agent
-guide recommends) the guidance read is 4.1k, the total 11.5k, and the
-estimated reduction **76%**. Output and returned context are the same on both rows.
+guide recommends) the guidance read is 4.5k, the total 11.8k, and the
+estimated reduction **75%**. Output and returned context are the same on both rows.
 
 ## Legacy corpus (measured)
 
@@ -40,7 +40,7 @@ estimated reduction **76%**. Output and returned context are the same on both ro
 | legacy-07 | 15190 | 42% | 3731 | 329 | 22% |
 | legacy-08 | 34498 | 13% | 6509 | 10831 | 76% |
 | legacy-09 | 31264 | 27% | 7263 | 353 | 50% |
-| legacy-10 | 76814 | 73% | 6145 | 1985 | -36% |
+| legacy-10 | 76814 | 73% | 6145 | 1985 | -35% |
 | legacy-11 | 366506 | 15% | 8064 | 1535 | 73% |
 | legacy-12 | 17356 | 24% | 5167 | 0 | 54% |
 
@@ -52,32 +52,32 @@ presentation code the agent no longer writes.
 
 | Fixture | Spec | Visible text | Spec / text | Page | Summary | Discovery | Compact discovery |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `all-components.yaml` | 18120 | 8990 | 2.02 | 245539 | 762 | 113522 | 27931 |
-| `benchmark-report.yaml` | 5515 | 4047 | 1.36 | 183416 | 540 | 42551 | 17986 |
-| `brainstorm.yaml` | 2355 | 1497 | 1.57 | 120893 | 476 | 24137 | 14936 |
-| `charts-v2.yaml` | 5452 | 9222 | 0.59 | 186192 | 481 | 25957 | 15033 |
-| `complex-dashboard.yaml` | 5761 | 3376 | 1.71 | 213667 | 557 | 43744 | 17880 |
-| `controls.yaml` | 3745 | 1315 | 2.85 | 130089 | 485 | 38631 | 17240 |
-| `dashboard.yaml` | 2109 | 2749 | 0.77 | 146898 | 452 | 28847 | 15378 |
-| `data-tables.yaml` | 9576 | 2795 | 3.43 | 181282 | 458 | 20251 | 14462 |
-| `diff.yaml` | 2614 | 1472 | 1.78 | 118138 | 431 | 26287 | 15336 |
-| `engineering-widgets.yaml` | 13450 | 6625 | 2.03 | 188880 | 631 | 34916 | 17266 |
-| `evidence-widgets.yaml` | 3615 | 1744 | 2.07 | 135706 | 508 | 31241 | 16566 |
-| `explain.yaml` | 2623 | 1578 | 1.66 | 126975 | 483 | 26060 | 15086 |
-| `incident-report.yaml` | 5843 | 3437 | 1.70 | 167866 | 622 | 37565 | 17609 |
-| `interactive-data-explorer.yaml` | 4251 | 2349 | 1.81 | 176540 | 558 | 42390 | 17738 |
-| `interactive.yaml` | 4282 | 1397 | 3.07 | 135784 | 540 | 35467 | 16223 |
-| `media.yaml` | 3403 | 1885 | 1.81 | 129917 | 522 | 31318 | 16180 |
-| `plan.yaml` | 2935 | 1531 | 1.92 | 111477 | 462 | 26704 | 15247 |
-| `product-case-study.yaml` | 5692 | 2961 | 1.92 | 135655 | 616 | 32615 | 16243 |
-| `product-widgets.yaml` | 5765 | 2532 | 2.28 | 162200 | 585 | 33542 | 16435 |
-| `recap.yaml` | 1923 | 1431 | 1.34 | 132378 | 447 | 30885 | 15714 |
-| `research-report.yaml` | 5654 | 2472 | 2.29 | 139334 | 580 | 39527 | 17397 |
-| `responsive-layouts.yaml` | 5394 | 2113 | 2.55 | 156904 | 578 | 53329 | 19056 |
-| `rich-composition.yaml` | 4256 | 1954 | 2.18 | 153621 | 558 | 46317 | 17987 |
-| `showcase.yaml` | 8771 | 4032 | 2.18 | 154457 | 617 | 39465 | 17628 |
-| `theme-dialects.yaml` | 2471 | 1555 | 1.59 | 178828 | 489 | 35004 | 16391 |
-| `theme-showcase.yaml` | 2510 | 1599 | 1.57 | 132777 | 496 | 37611 | 16615 |
+| `all-components.yaml` | 18120 | 8990 | 2.02 | 245539 | 765 | 114922 | 29331 |
+| `benchmark-report.yaml` | 5515 | 4047 | 1.36 | 183462 | 543 | 43951 | 19386 |
+| `brainstorm.yaml` | 2355 | 1497 | 1.57 | 120893 | 479 | 25537 | 16336 |
+| `charts-v2.yaml` | 5452 | 9222 | 0.59 | 186192 | 484 | 27357 | 16433 |
+| `complex-dashboard.yaml` | 5761 | 3376 | 1.71 | 213713 | 560 | 45144 | 19280 |
+| `controls.yaml` | 3745 | 1315 | 2.85 | 130089 | 488 | 40031 | 18640 |
+| `dashboard.yaml` | 2109 | 2749 | 0.77 | 146898 | 455 | 30247 | 16778 |
+| `data-tables.yaml` | 9576 | 2795 | 3.43 | 181328 | 461 | 21651 | 15862 |
+| `diff.yaml` | 2614 | 1472 | 1.78 | 118138 | 434 | 27687 | 16736 |
+| `engineering-widgets.yaml` | 13450 | 6625 | 2.03 | 188880 | 634 | 36316 | 18666 |
+| `evidence-widgets.yaml` | 3615 | 1744 | 2.07 | 135706 | 511 | 32641 | 17966 |
+| `explain.yaml` | 2623 | 1578 | 1.66 | 126975 | 486 | 27460 | 16486 |
+| `incident-report.yaml` | 5843 | 3437 | 1.70 | 167866 | 625 | 38965 | 19009 |
+| `interactive-data-explorer.yaml` | 4251 | 2349 | 1.81 | 176586 | 561 | 43790 | 19138 |
+| `interactive.yaml` | 4282 | 1397 | 3.07 | 135784 | 543 | 36867 | 17623 |
+| `media.yaml` | 3403 | 1885 | 1.81 | 129917 | 525 | 32718 | 17580 |
+| `plan.yaml` | 2937 | 1533 | 1.92 | 111479 | 465 | 28104 | 16647 |
+| `product-case-study.yaml` | 5692 | 2961 | 1.92 | 135655 | 619 | 34015 | 17643 |
+| `product-widgets.yaml` | 5765 | 2532 | 2.28 | 162200 | 588 | 34942 | 17835 |
+| `recap.yaml` | 1923 | 1431 | 1.34 | 132378 | 450 | 32285 | 17114 |
+| `research-report.yaml` | 5654 | 2472 | 2.29 | 139334 | 583 | 40927 | 18797 |
+| `responsive-layouts.yaml` | 5394 | 2113 | 2.55 | 156904 | 581 | 54729 | 20456 |
+| `rich-composition.yaml` | 4256 | 1954 | 2.18 | 153621 | 561 | 47717 | 19387 |
+| `showcase.yaml` | 8767 | 4024 | 2.18 | 154449 | 620 | 40865 | 19028 |
+| `theme-dialects.yaml` | 2471 | 1555 | 1.59 | 178828 | 492 | 36404 | 17791 |
+| `theme-showcase.yaml` | 2631 | 1664 | 1.58 | 133133 | 499 | 39011 | 18015 |
 
 Median spec-to-text ratio 1.86; a compiled page is a median
 35× its spec, and none of it enters the agent's context.
