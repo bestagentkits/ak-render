@@ -1,0 +1,145 @@
+version: 1
+
+meta:
+  title: Rich Composition
+  description: Tabs, accordion, carousel and bento items that hold charts, tables, code and other blocks
+  locale: en
+
+policy:
+  network: deny
+
+blocks:
+  - type: hero
+    eyebrow: Composition
+    title: Panels that hold real content
+    description: Each tab, section, slide and tile nests typed blocks. Every panel reads without scripts and in print.
+
+  - type: tabs
+    id: release-tabs
+    title: Release review
+    items:
+      - id: tab-latency
+        title: Latency
+        text: Median compile time per release, in milliseconds.
+        blocks:
+          - type: chart
+            kind: line
+            title: Compile time
+            labels: [v0.1, v0.2, v0.3, v0.4]
+            series:
+              - label: p50
+                values: [58, 47, 41, 36]
+              - label: p95
+                values: [91, 74, 66, 58]
+      - id: tab-coverage
+        title: Coverage
+        blocks:
+          - type: table
+            title: Tests by suite
+            columns: [Suite, Tests, Status]
+            rows:
+              - [Unit, '412', Passing]
+              - [Browser, '58', Passing]
+              - [Package, '12', Passing]
+      - id: tab-migration
+        title: Migration
+        text: Existing text-only items stay valid; panels may add blocks.
+        blocks:
+          - type: code
+            language: yaml
+            title: A panel with blocks
+            text: |
+              items:
+                - title: Latency
+                  blocks:
+                    - type: chart
+                      kind: line
+          - type: callout
+            tone: info
+            title: Additive
+            text: The Page Spec stays version 1. Older specs validate unchanged.
+
+  - type: accordion
+    id: release-details
+    title: Release details
+    items:
+      - title: Health at a glance
+        text: Figures from the latest nightly build.
+        blocks:
+          - type: kpi
+            items:
+              - label: Pass rate
+                value: 99.6%
+                delta: '+0.4'
+                trend: up
+              - label: Bundle
+                value: 61 kB
+                delta: '-3 kB'
+                trend: down
+                good: down
+      - title: Ship checklist
+        blocks:
+          - type: checklist
+            items:
+              - text: Snapshots regenerated
+                done: true
+              - text: Gallery reviewed at three widths
+                done: true
+              - text: Release notes drafted
+                done: false
+      - title: Platform notes
+        text: Per-platform notes, as nested tabs.
+        blocks:
+          - type: tabs
+            id: platform-tabs
+            title: Platforms
+            items:
+              - id: tab-macos
+                title: macOS
+                text: Builds with the system Node and needs no extra setup.
+              - id: tab-linux
+                title: Linux
+                text: Builds in the CI container image.
+              - id: tab-windows
+                title: Windows
+                text: Path handling uses forward slashes throughout.
+
+  - type: carousel
+    id: release-tour
+    ariaLabel: Release tour
+    items:
+      - title: The compiler pipeline
+        blocks:
+          - type: image
+            src: assets/compiler-pipeline.svg
+            alt: Diagram of the compile pipeline from spec to HTML
+      - title: What reviewers said
+        blocks:
+          - type: quote
+            text: Panels finally carry the evidence instead of pointing at it.
+            cite: Release review
+      - title: Plain slide
+        text: A slide may still carry text alone.
+
+  - type: bento
+    id: release-bento
+    title: Release in numbers
+    items:
+      - title: Throughput
+        size: wide
+        text: Pages compiled per second on one core.
+        blocks:
+          - type: stats
+            items:
+              - label: Small page
+                value: '310'
+              - label: Large page
+                value: '42'
+      - eyebrow: Offline
+        title: Zero requests
+        text: Every page opens from disk.
+      - size: small
+        blocks:
+          - type: quote
+            text: Deterministic bytes, every time.
+            cite: Build log
