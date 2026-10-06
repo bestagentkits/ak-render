@@ -241,13 +241,13 @@ and returns only a summary, so the page never enters the agent's context.
 ```
 
 **Remote MCP over Streamable HTTP.** `https://render.agentkit.best/mcp` serves
-`catalog`, `search-catalog`, `describe`, `validate`, `render` and `themes` with
-the same contracts. A remote server cannot write into your filesystem, so
+`catalog`, `search-catalog`, `describe`, `recipes`, `recipe`, `validate`,
+`render` and `themes` with the same contracts. A remote server cannot write into your filesystem, so
 `render` takes no `out`: it stores the page and returns the same summary plus an
 `artifactUrl` that lives for one hour, or a share link that lives for 30 days
 with `share: true`. The HTML still never enters the agent's context.
-`catalog`, `search-catalog`, `describe` and `themes` answer without a token;
-`validate` and `render` need an AgentKit bearer token.
+`catalog`, `search-catalog`, `describe`, `recipes`, `recipe` and `themes`
+answer without a token; `validate` and `render` need an AgentKit bearer token.
 
 ```json
 {
@@ -271,18 +271,22 @@ is guidance it reads, the spec it writes, and a one-line summary it reads back.
 
 | Part of a page task | Hand-written HTML | AK Render |
 | --- | ---: | ---: |
-| Presentation guidance read | 33.7k (baseline mean) | 5.7k (skill, catalog, describe) |
-| Written by the agent | 13.9k (median legacy page) | 6.9k (projected spec) |
+| Presentation guidance read | 33.7k (baseline mean) | 9.1k (skill, catalog, `describe --json`) |
+| Written by the agent | 13.9k (median legacy page) | 7.2k (projected spec) |
 | Returned into context | the written page is already there | 0.1k (render summary) |
-| **Total, estimated** | **47.5k** | **12.7k (−73%)** |
+| **Total, estimated** | **47.5k** | **16.5k (−65%)** |
+
+With the compact workflow the agent guide recommends,
+`describe <types...> --compact`, the guidance read is 4.5k and the total
+11.8k (−75%). The spec written and the summary returned are the same.
 
 - **Benchmarked:** presentation context drops 87–88%, from 33.7k–36.6k tokens
-  of legacy guidance to 4.4k
+  of legacy guidance to 4.4k of AgentKit skill files, measured with 0.1.1
   ([render benchmark](./docs/artifacts/benchmark-render.md)).
 - **Measured on 12 HTML pages agents wrote in real projects:** a median of 26%
   of each page is visible text; the rest is markup, CSS and script. The
-  projected median output saving is 54%. A page that is mostly prose saves
-  little or nothing: one of the twelve grew by 29%.
+  projected median output saving is 52%. A page that is mostly prose saves
+  little or nothing: one of the twelve grew by 35%.
 - **Not measured yet:** live model token counts, repair loops, wall time and
   output quality.
 
@@ -384,8 +388,9 @@ Every command accepts `--json` and never prompts.
 
 `fixtures/pages/` holds the representative corpus the compiler is built
 against: plan, explain, recap, diff, dashboard, media, interactive and theme
-showcase pages, plus one page per widget family, layout, data and theme
-feature. `fixtures/snapshots/` holds one committed artifact per built-in
+showcase pages, one page per widget family, layout, data and theme feature,
+and six composition pages (a dashboard, a benchmark report, a research report,
+a product case study, a data explorer and an incident report). `fixtures/snapshots/` holds one committed artifact per built-in
 preset. See [fixtures/README.md](./fixtures/README.md) and
 [docs/themes.md](./docs/themes.md). Fixtures are the specification: a new
 capability is not done until a fixture exercises it.
@@ -411,10 +416,11 @@ capability is not done until a fixture exercises it.
 
 ```bash
 pnpm install
-pnpm verify          # lint + typecheck + unit tests + build
+pnpm verify          # lint, typecheck, font and recipe checks, unit tests, build
 pnpm test:browser    # Playwright, after: pnpm exec playwright install chromium
 pnpm test:package    # pack, install into a temp project, exercise API and bin
 pnpm bench:baseline  # re-run the legacy presentation-context measurement
+pnpm bench:spec      # spec compression for the composition fixtures
 pnpm site:build      # compile the landing page and gallery into site/dist
 pnpm site:deploy     # build, then deploy site/dist with wrangler
 ```

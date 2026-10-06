@@ -130,10 +130,10 @@ blocks:
         items:
           - label: Presentation context
             value: −87%
-            caption: 'Benchmarked: 87–88%. 33.7k–36.6k tokens of legacy guidance against 4.4k for catalog and contracts'
+            caption: 'Benchmarked with 0.1.1: 33.7k–36.6k tokens of legacy guidance against 4.4k of skill files'
           - label: Typical task, estimated
-            value: −66%
-            caption: 47.5k → 16.1k tokens with full contracts, 11.5k (−76%) with compact ones; 4 characters per token
+            value: −65%
+            caption: 47.5k → 16.5k tokens with full contracts, 11.8k (−75%) with compact ones; 4 characters per token
           - label: Output on real pages
             value: −52%
             caption: Median projected saving over 12 HTML pages agents wrote in real projects
@@ -151,9 +151,9 @@ blocks:
               - label: Hand-written HTML
                 values: [33.7, 13.9, 0]
               - label: AK Render, full contracts
-                values: [8.7, 7.2, 0.1]
+                values: [9.1, 7.2, 0.1]
               - label: AK Render, compact contracts
-                values: [4.1, 7.2, 0.1]
+                values: [4.5, 7.2, 0.1]
           - type: steps
             title: Where the HTML goes
             items:
@@ -181,7 +181,7 @@ blocks:
       - type: callout
         tone: info
         title: Measured, estimated, and not yet measured
-        text: 'Character counts are measured; tokens are estimated at 4 characters per token, with no tokenizer or live model run. The 87–88% figure comes from benchmarks/render-benchmark.mjs. The 66% task figure (76% with compact contracts) adds measured parts, and the spec size is projected from the legacy pages'' visible text. A page that is mostly prose saves little or nothing on output: one of the 12 grew by 36%. Live A/B runs, repair loops and wall time are not measured yet. Method and data: docs/artifacts/agent-token-cost.md.'
+        text: 'Character counts are measured; tokens are estimated at 4 characters per token, with no tokenizer or live model run. The 87–88% figure comes from benchmarks/render-benchmark.mjs. The 65% task figure (75% with compact contracts) adds measured parts, and the spec size is projected from the legacy pages'' visible text. A page that is mostly prose saves little or nothing on output: one of the 12 grew by 35%. Live A/B runs, repair loops and wall time are not measured yet. Method and data: docs/artifacts/agent-token-cost.md.'
 
   - type: section
     id: blocks
