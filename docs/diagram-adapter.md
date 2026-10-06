@@ -50,12 +50,29 @@ Adapter output is verified before it is embedded. `checkAdapterMarkup` rejects
 script, iframe, object, embed, `foreignObject`, `base`, and `form` elements, any
 `on*` handler, `javascript:` URLs, `data:text/html` URLs, `srcdoc`, CSS
 `@import`, remote CSS `url()` references, empty output, and output over 256 KB.
-It also rejects markup that writes a `nonce` attribute or one of the page's own
-adapter attributes (`data-ak-adapter-style`, `data-ak-diagram-scope`), and any
-`<style>` element whose stylesheet breaks the rules in
-[Styling adapter output](#styling-adapter-output). A rejection emits the
-semantic fallback and a warning naming the adapter and the reason. The check is
-linear in the size of the markup.
+It also rejects markup that writes a `nonce` attribute or any `data-ak-*`
+attribute (the page and its runtime use those as hooks), and any `<style>`
+element whose stylesheet breaks the rules in
+[Styling adapter output](#styling-adapter-output).
+
+The markup must also be a self-contained fragment, read the same way a browser
+would read it:
+
+- every element is closed, in order, inside the fragment, and no end tag closes
+  an element the fragment did not open, so the drawing can neither close the
+  page's own elements nor swallow what follows it;
+- no element that switches the parser into raw text or merges into the page
+  document: `plaintext`, `textarea`, `xmp`, `noembed`, `noframes`, `noscript`,
+  `template`, `html`, `head`, `body`, `frameset`, `frame`, `meta`, `link` and
+  `math`, and `title` outside SVG;
+- no HTML element that would break out of SVG (`div`, `p`, `span`, `table`
+  and the rest of the parser's list) inside an `<svg>`, and no self-closing
+  HTML element such as `<div/>`, which HTML leaves open;
+- no comment, CDATA section, doctype or XML declaration (`<!` or `<?`), and no
+  tag the check cannot parse.
+
+A rejection emits the semantic fallback and a warning naming the adapter and
+the reason. The check is linear in the size of the markup.
 
 This is the same posture the page itself takes, and it is the reason an adapter
 cannot become an escape hatch around the "no raw script, no inline handler, no
@@ -76,8 +93,9 @@ fitted to that policy before it is embedded:
   `body` match nothing. `:scope` is the canvas itself. The panel around it
   contains paint, so even a `position: fixed` element stays inside the panel.
   Browsers without `@scope` (Firefox before 146) drop the stylesheet and draw
-  the SVG with its presentation attributes, so prefer `fill` and `stroke`
-  attributes for anything the drawing needs to read.
+  the SVG with its presentation attributes only; this is an accepted
+  degradation, so prefer `fill` and `stroke` attributes for anything the
+  drawing needs to read.
 - **Inline `style="…"` attributes do not.** The policy refuses them, and a
   nonce cannot be attached to an attribute. They are removed before embedding,
   and the compile returns a warning naming the adapter and how many were
@@ -92,11 +110,17 @@ fitted to that policy before it is embedded:
     `@layer`, `@property` and a nested `@scope`;
   - `url()` with anything but a `#fragment`, or `image-set()`, `image()`,
     `src()`, `cross-fade()`, `element()`, `paint()` or `expression()`;
-  - a backslash escape, a comment (`/*`), an HTML character reference such as
-    `&#64;`, or markup (`<`, including CDATA and `<!--`);
-  - `!important`, which would outrank the page's motion and print guards;
-  - unbalanced brackets or an unterminated string;
-  - a `@keyframes` name starting with `ak-`, which the page reserves.
+  - a backslash escape, an HTML character reference such as `&#64;` (also
+    inside a comment), or markup (`<`, including CDATA and `<!--`);
+  - a `!` other than `!important`;
+  - unbalanced brackets, or an unterminated string or comment;
+  - a `@keyframes` name the page itself defines, such as `ak-rise` or
+    `ak-fade`. Other names, including other `ak-` names, are fine.
+
+  Two things are removed rather than rejected, because diagram compilers emit
+  them and removing them only takes power away: comments (each becomes a
+  space) and `!important`, which would otherwise outrank the page's motion and
+  print guards.
 
   A `<style>` element must be plain text that runs straight to its `</style>`
   end tag; a self-closing `<style/>` is rejected.
