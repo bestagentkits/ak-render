@@ -62,6 +62,7 @@
     "bench:render": "node benchmarks/render-benchmark.mjs",
     "bench:browser": "playwright test tests/browser/benchmark.spec.ts",
     "bench": "pnpm build && pnpm bench:render && pnpm bench:browser",
+    "bench:spec": "pnpm build && node benchmarks/spec-compression.mjs",
     "fonts:generate": "node scripts/generate-embedded-fonts.mjs",
     "fonts:check": "node scripts/generate-embedded-fonts.mjs --check",
     "schema:generate": "node scripts/generate-json-schema.mjs",
