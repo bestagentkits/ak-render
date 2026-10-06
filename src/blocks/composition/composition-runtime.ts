@@ -7,6 +7,7 @@
  * visible, and the runtime marks a container ready (`data-ak-tabs-ready`,
  * `data-ak-carousel-ready`) before it hides the inactive ones. Queries only
  * match a container's own tabs and slides, never those of a nested container.
+ * A tab's `select` event carries the tab id as its `value`.
  */
 
 export const TABS = `
@@ -42,12 +43,16 @@ function activateTab(container, index, moveFocus, fireFn, announceChange) {
   // Only a user-driven change is worth announcing. Announcing the initial
   // selection would make every page with tabs talk on load.
   if (announceChange) announce('Tab ' + (index + 1) + ' of ' + tabs.length);
-  if (fireFn) fireFn(container, 'select', { index: index });
+  // The tab id is the event value, so a set-value binding without its own
+  // value stores which tab is selected.
+  if (fireFn && tabs[index]) fireFn(container, 'select', { index: index, value: tabs[index].getAttribute('data-ak-tab-id') });
 }
 function wireTabs() {
   qa('[data-ak-tabs]').forEach(function (container) {
     container.setAttribute('data-ak-tabs-ready', '');
-    activateTab(container, 0, false, fire, false);
+    // The initial selection is the authored view, not a user choice: it fires
+    // nothing, so page state keeps its declared initial values.
+    activateTab(container, 0, false, null, false);
     ownTabs(container, '[role="tab"]').forEach(function (tab, index) {
       tab.addEventListener('click', function () { selectTab(container, { index: index }, fire); }, false);
       tab.addEventListener('keydown', function (event) {

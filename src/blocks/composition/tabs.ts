@@ -19,7 +19,8 @@ import {
   stringProp,
   titleHeader,
 } from '../../render/block-helpers.js';
-import { escapeAttribute, escapeInlineText, escapeText } from '../../render/escape.js';
+import { escapeAttribute, escapeText } from '../../render/escape.js';
+import { checkItemContent, nestedBlocks, renderItemBody } from './nestable-blocks.js';
 
 export const tabsBlock: BlockModule = {
   definition: define({
@@ -32,7 +33,12 @@ export const tabsBlock: BlockModule = {
     props: {
       title: OPTIONAL_TITLE,
       items: itemsOf(
-        { id: idProp('Tab id.'), title: LABEL, text: txt({ required: true }) },
+        {
+          id: idProp('Tab id; a `select` binding receives it as the event value.'),
+          title: LABEL,
+          text: txt(),
+          blocks: nestedBlocks('text', 12),
+        },
         { minItems: 2 },
       ),
       on: onProp('Optional state binding fired when a tab is selected.'),
@@ -42,7 +48,7 @@ export const tabsBlock: BlockModule = {
     actions: ['select-tab'],
     a11y: 'role="tablist" with arrow-key roving focus, aria-selected, aria-controls, and labelled tabpanels.',
   }),
-  render: (node) => {
+  render: (node, context) => {
     const items = objectListProp(node, 'items');
     const base = node.id;
     const tabs = items
@@ -64,7 +70,7 @@ export const tabsBlock: BlockModule = {
             str(item.id, `${base}-tab-${index}`),
           )}" tabindex="${index === 0 ? '0' : '-1'}"><p class="ak-tab-panel-title">${escapeText(
             str(item.title),
-          )}</p>${escapeInlineText(str(item.text))}</div>`,
+          )}</p>${renderItemBody(node, index, context, str(item.text), false)}</div>`,
       )
       .join('');
     return element(
@@ -76,4 +82,5 @@ export const tabsBlock: BlockModule = {
       ].join(''),
     );
   },
+  check: (node, context) => checkItemContent(node, context, 'text', 'a tab needs text or blocks'),
 };

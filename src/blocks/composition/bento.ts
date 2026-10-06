@@ -8,7 +8,6 @@ import {
   anchorProps,
   enumStr,
   itemsOf,
-  LABEL,
   OPTIONAL_TITLE,
   semantic,
   str as strProp,
@@ -25,11 +24,12 @@ import {
 import { renderAttributes } from '../../render/escape.js';
 import type { RenderContext } from '../../render/render-context.js';
 import { framedImage, paragraph, prose } from '../../render/showcase-blocks.js';
+import { checkItemContent, nestedBlocks, renderItemBlocks } from './nestable-blocks.js';
 
 const TILE_SIZES = new Set(['small', 'wide', 'tall', 'large']);
 
 function renderBento(node: IrNode, context: RenderContext): string {
-  const tiles = objectListProp(node, 'items').map((item) => {
+  const tiles = objectListProp(node, 'items').map((item, index) => {
     const size = TILE_SIZES.has(str(item.size)) ? str(item.size) : 'small';
     const source = str(item.src);
     const media =
@@ -41,6 +41,7 @@ function renderBento(node: IrNode, context: RenderContext): string {
       paragraph('ak-tile-value', str(item.value)),
       paragraph('ak-tile-title', str(item.title)),
       prose('ak-tile-text', str(item.text)),
+      renderItemBlocks(node, index, context),
     ].join('');
     return `<li${renderAttributes({
       class: 'ak-tile',
@@ -68,7 +69,7 @@ export const bentoBlock: BlockModule = {
       title: OPTIONAL_TITLE,
       items: itemsOf(
         {
-          title: LABEL,
+          title: OPTIONAL_TITLE,
           text: txt(),
           eyebrow: strProp({ maxLength: 60 }),
           value: strProp({ maxLength: 40, description: 'A large figure shown above the title.' }),
@@ -81,6 +82,7 @@ export const bentoBlock: BlockModule = {
             maxLength: 300,
             description: 'Required when src is set; use "" for a decorative image.',
           }),
+          blocks: nestedBlocks('title', 6),
         },
         { minItems: 1, maxItems: 12 },
       ),
@@ -99,7 +101,9 @@ export const bentoBlock: BlockModule = {
   render: renderBento,
   // A tile image follows the image block's rule: alt must be present, and an
   // explicitly empty alt marks the image as decorative.
-  check(node, { bag }) {
+  check(node, context) {
+    checkItemContent(node, context, 'title', 'a bento tile needs a title or blocks');
+    const { bag } = context;
     if (!Array.isArray(node.props.items)) return;
     node.props.items.forEach((item, index) => {
       if (!isPlainObject(item) || typeof item.src !== 'string') return;

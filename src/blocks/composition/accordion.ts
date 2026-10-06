@@ -17,7 +17,8 @@ import {
   str,
   titleHeader,
 } from '../../render/block-helpers.js';
-import { escapeInlineText, escapeText, renderAttributes } from '../../render/escape.js';
+import { escapeText, renderAttributes } from '../../render/escape.js';
+import { checkItemContent, nestedBlocks, renderItemBody } from './nestable-blocks.js';
 
 export const accordionBlock: BlockModule = {
   definition: define({
@@ -29,7 +30,11 @@ export const accordionBlock: BlockModule = {
     summary: 'Accordion: disclosure sections that expand and collapse.',
     props: {
       title: OPTIONAL_TITLE,
-      items: itemsOf({ title: LABEL, text: txt({ required: true }) }),
+      items: itemsOf({
+        title: LABEL,
+        text: txt(),
+        blocks: nestedBlocks('text', 12),
+      }),
       on: onProp('Optional state binding fired when a section toggles.'),
       ...anchorProps,
     },
@@ -37,7 +42,7 @@ export const accordionBlock: BlockModule = {
     actions: ['toggle', 'expand', 'collapse'],
     a11y: 'Native <details>/<summary> where possible; otherwise button + region with aria-expanded.',
   }),
-  render: (node) => {
+  render: (node, context) => {
     const items = objectListProp(node, 'items');
     return element(
       'section',
@@ -52,12 +57,12 @@ export const accordionBlock: BlockModule = {
               // the behavior; the action only drives it.
               `<details${index === 0 ? ' open' : ''}${renderAttributes({
                 'data-ak-id': `${node.id}-item-${index}`,
-              })}><summary>${escapeText(str(item.title))}</summary><p>${escapeInlineText(
-                str(item.text),
-              )}</p></details>`,
+              })}><summary>${escapeText(str(item.title))}</summary>${renderItemBody(node, index, context, str(item.text), true)}</details>`,
           )
           .join(''),
       ].join(''),
     );
   },
+  check: (node, context) =>
+    checkItemContent(node, context, 'text', 'an accordion section needs text or blocks'),
 };

@@ -17,7 +17,8 @@ import {
   str,
   stringProp,
 } from '../../render/block-helpers.js';
-import { escapeInlineText, escapeText } from '../../render/escape.js';
+import { escapeText } from '../../render/escape.js';
+import { checkItemContent, nestedBlocks, renderItemBody } from './nestable-blocks.js';
 
 export const carouselBlock: BlockModule = {
   definition: define({
@@ -29,7 +30,14 @@ export const carouselBlock: BlockModule = {
     summary: 'Carousel: prev/next, keyboard, and swipe across slides.',
     props: {
       ariaLabel: strProp({ required: true, maxLength: 120 }),
-      items: itemsOf({ title: LABEL, text: txt({ required: true }) }, { minItems: 1 }),
+      items: itemsOf(
+        {
+          title: LABEL,
+          text: txt(),
+          blocks: nestedBlocks('text', 12),
+        },
+        { minItems: 1 },
+      ),
       on: onProp('Optional state binding fired when the active slide changes.'),
       ...anchorProps,
     },
@@ -37,15 +45,15 @@ export const carouselBlock: BlockModule = {
     actions: ['next', 'previous'],
     a11y: 'Labeled region with prev/next buttons, arrow-key support, a slide counter, and no autoplay.',
   }),
-  render: (node) => {
+  render: (node, context) => {
     const items = objectListProp(node, 'items');
     const label = stringProp(node, 'ariaLabel', 'Carousel');
     const slides = items
       .map(
-        (item) =>
+        (item, index) =>
           `<div class="ak-carousel-slide" data-ak-slide tabindex="-1"><h3>${escapeText(
             str(item.title),
-          )}</h3><p>${escapeInlineText(str(item.text))}</p></div>`,
+          )}</h3>${renderItemBody(node, index, context, str(item.text), true)}</div>`,
       )
       .join('');
     return element(
@@ -67,4 +75,6 @@ export const carouselBlock: BlockModule = {
       ].join(''),
     );
   },
+  check: (node, context) =>
+    checkItemContent(node, context, 'text', 'a carousel slide needs text or blocks'),
 };
