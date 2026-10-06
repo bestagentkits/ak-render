@@ -5,6 +5,7 @@ import {
   checkRequestBytes,
   DEFAULT_SHARE_RETENTION_DAYS,
   MAX_SHARE_RETENTION_DAYS,
+  RATE_LIMITS,
   retentionDays,
 } from '../../apps/cloud/src/config.js';
 import { handleRequest } from '../../apps/cloud/src/index.js';
@@ -157,13 +158,16 @@ describe('cloud renderer: budgets and rate limits', () => {
   });
 
   it('rate limits per subject and route', async () => {
-    const { env } = harness();
-    let last = 0;
-    for (let attempt = 0; attempt < 61; attempt += 1) {
-      const response = await handleRequest(post('/v1/render', { spec: SPEC }), env);
-      last = response.status;
-    }
-    expect(last).toBe(429);
+    const { env, kv } = harness();
+    const first = await handleRequest(post('/v1/render', { spec: SPEC }), env);
+    expect(first.status).toBe(200);
+    // Jump the counter to the limit instead of compiling 60 pages, which is
+    // slow enough to time out under a loaded parallel run.
+    const [key] = [...kv.entries.keys()].filter((entry) => entry.startsWith('rl:render:'));
+    expect(key).toBeDefined();
+    kv.entries.set(key as string, String(RATE_LIMITS.render));
+    const limited = await handleRequest(post('/v1/render', { spec: SPEC }), env);
+    expect(limited.status).toBe(429);
   });
 
   it('keeps app budgets well below the platform limits', () => {
