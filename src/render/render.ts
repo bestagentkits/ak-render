@@ -137,7 +137,7 @@ function buildCss(
   }
   for (const feature of moduleFeatures) sheets.push(feature.css);
   // Recipes restyle feature surfaces, so they follow every feature sheet.
-  const recipes = recipeCss(ir.theme.recipes, features);
+  const recipes = recipeCss(theme.recipes, features);
   if (recipes !== '') sheets.push(recipes);
   sheets.push(theme.css);
   // The night band redeclares colour tokens, so it must follow the theme sheet.
@@ -299,6 +299,7 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
     themeToggle: includeThemeToggle,
     density: resolved.density,
     motionDisabled: resolved.motionPolicy === 'none',
+    recipes: resolved.recipes,
     outline: renderOutline(ir),
     // Declared by the blocks themselves: the theme toggle alone announces nothing.
     liveRegion: needsLiveRegion(

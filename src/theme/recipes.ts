@@ -88,3 +88,32 @@ export const THEME_RECIPES_JSON_SCHEMA: Record<string, unknown> = {
     THEME_RECIPE_SURFACES.map((surface) => [surface, { enum: [...THEME_RECIPE_SPECS[surface]] }]),
   ),
 };
+
+/** A complete recipe choice: every surface mapped to one of its values. */
+export type ThemeRecipes = Record<ThemeRecipeSurface, string>;
+
+/** The default recipe for every surface. */
+export function defaultRecipes(): ThemeRecipes {
+  return Object.fromEntries(
+    THEME_RECIPE_SURFACES.map((surface) => [surface, THEME_RECIPE_SPECS[surface][0]]),
+  ) as ThemeRecipes;
+}
+
+/**
+ * The surfaces whose recipe differs from the default, in surface order. Only
+ * these reach the emitted page, so a page that keeps every default renders the
+ * same bytes as before recipes existed.
+ */
+export function nonDefaultRecipes(
+  recipes: Readonly<Record<string, string>> | undefined,
+): [ThemeRecipeSurface, string][] {
+  if (recipes === undefined) return [];
+  const chosen: [ThemeRecipeSurface, string][] = [];
+  for (const surface of THEME_RECIPE_SURFACES) {
+    const choice = recipes[surface];
+    if (choice !== undefined && choice !== THEME_RECIPE_SPECS[surface][0]) {
+      chosen.push([surface, choice]);
+    }
+  }
+  return chosen;
+}

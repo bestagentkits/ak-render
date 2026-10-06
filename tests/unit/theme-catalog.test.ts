@@ -172,8 +172,12 @@ describe('preset discovery and precedence', () => {
     const catalog = buildThemeCatalog({ cwd: project, home, discovery: false });
     expect(catalogPresetNames(catalog)).toEqual([
       'blueprint',
+      'data-console',
       'editorial',
+      'executive-report',
       'paper-ink',
+      'product-studio',
+      'research-notebook',
       'swiss-clean',
       'terminal-mono',
       'warm-signal',

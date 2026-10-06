@@ -1,0 +1,84 @@
+version: 1
+
+meta:
+  title: Theme Dialects
+  description: A console preset whose component recipes restyle tables, charts, sections and the hero, with one recipe overridden in the spec
+  locale: en
+
+theme:
+  preset: data-console
+  recipes:
+    cards: raised
+
+policy:
+  network: deny
+
+blocks:
+  - type: hero
+    eyebrow: Theme dialects
+    title: Same blocks, a different dialect
+    description: The data-console preset picks a compact hero, ledger tables, minimal charts and divided sections. This page keeps raised cards.
+
+  - type: section
+    title: Service health
+    blocks:
+      - type: kpi
+        items:
+          - label: Requests per second
+            value: '1,284'
+            delta: '+6.2%'
+            trend: up
+            good: up
+            series: [980, 1040, 1110, 1090, 1180, 1230, 1284]
+          - label: p95 latency
+            value: 212 ms
+            delta: '-18 ms'
+            trend: down
+            good: down
+            series: [262, 251, 244, 236, 228, 219, 212]
+          - label: Error rate
+            value: 0.4%
+            delta: unchanged
+            trend: flat
+
+      - type: chart
+        kind: line
+        title: Requests per second, last seven days
+        labels: [Mon, Tue, Wed, Thu, Fri, Sat, Sun]
+        series:
+          - label: Requests
+            values: [980, 1040, 1110, 1090, 1180, 1230, 1284]
+
+  - type: section
+    title: Deployments
+    blocks:
+      - type: table
+        title: Recent releases
+        columns: [Service, Version, Duration, Status]
+        rows:
+          - [api-gateway, 4.12.0, 3m 41s, healthy]
+          - [billing, 2.8.3, 5m 02s, healthy]
+          - [search, 1.19.0, 2m 17s, degraded]
+          - [notifications, 3.4.1, 1m 55s, healthy]
+          - [ledger, 6.0.0, 7m 30s, rolled back]
+
+      - type: callout
+        tone: warning
+        title: Search is degraded
+        text: Index rebuild is running on two of five shards; queries fall back to the previous index.
+
+  - type: section
+    title: Runbooks
+    blocks:
+      - type: grid
+        columns: 3
+        blocks:
+          - type: card
+            title: Roll back a release
+            text: Pin the previous version and drain traffic over five minutes.
+          - type: card
+            title: Rebuild an index
+            text: Rebuild one shard at a time so queries keep a warm fallback.
+          - type: card
+            title: Rotate a credential
+            text: Issue the new secret before revoking the old one.
