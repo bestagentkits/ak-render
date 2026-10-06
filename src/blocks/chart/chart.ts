@@ -54,7 +54,7 @@ export const chartBlock: BlockModule = {
     useCases: ['trend over time', 'category comparison', 'share of total', 'distribution'],
     purpose: 'Deterministic SVG chart with a text summary.',
     summary:
-      'Chart from labels/series or bound rows (x, y, series, value). Kinds: bar, line, area, pie, donut, sparkline, progress, scatter, histogram, stacked-bar, stacked-bar-100, heatmap, waterfall, funnel, gauge, treemap.',
+      'Chart: 16 kinds (see kind) from labels/series or bound rows via x, y, series, value encodings.',
     props: {
       kind: enumStr(CHART_KINDS, { required: true }),
       title: OPTIONAL_TITLE,

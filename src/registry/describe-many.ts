@@ -25,7 +25,9 @@ export interface CompactBlockDescription {
   summary: string;
   /**
    * `name: kind[, required][, enum a|b|c]`. Fields of list items read
-   * `items[].field`, fields of an object read `prop.field`.
+   * `items[].field`, fields of an object read `prop.field`. A long enum
+   * printed earlier reads `enum as <prop>`, and an object whose fields match
+   * one printed earlier reads `, like <prop>` with its fields left out.
    */
   props: string[];
   /** `name: accepts[, min..max]`, when the block takes child blocks. */
@@ -69,31 +71,81 @@ function enumValues(schema: PropSchema): readonly string[] | undefined {
   return undefined;
 }
 
-function propLine(name: string, schema: PropSchema): string {
+/**
+ * What a contract has already printed, so a repeat costs one short reference
+ * instead of the same lines again: `x`, `y` and `value` encodings share one
+ * shape, and format or currency enums recur across props.
+ */
+interface CompactSeen {
+  /** Rendered field lines of an object shape, to the prop that first printed it. */
+  shapes: Map<string, string>;
+  /** A long enum list, to the prop that first printed it. */
+  enums: Map<string, string>;
+}
+
+/** Enum lists shorter than this are cheaper to repeat than to reference. */
+const ENUM_REFERENCE_MIN = 24;
+
+function propLine(name: string, schema: PropSchema, seen: CompactSeen | undefined): string {
   const parts = [`${name}: ${kindLabel(schema)}`];
   if (schema.required === true) parts.push('required');
   const values = enumValues(schema);
-  if (values !== undefined && values.length > 0) parts.push(`enum ${values.join('|')}`);
+  if (values !== undefined && values.length > 0) {
+    const list = values.join('|');
+    const first = list.length >= ENUM_REFERENCE_MIN ? seen?.enums.get(list) : undefined;
+    if (first === undefined) {
+      parts.push(`enum ${list}`);
+      if (list.length >= ENUM_REFERENCE_MIN) seen?.enums.set(list, name);
+    } else {
+      parts.push(`enum as ${first}`);
+    }
+  }
   if (schema.kind === 'blocks' && Array.isArray(schema.accepts)) {
     parts.push(`accepts ${schema.accepts.join('|')}`);
   }
   return parts.join(', ');
 }
 
-/** One line for the prop, then one per nested field, depth first. */
-function propLines(name: string, schema: PropSchema, out: string[]): void {
-  out.push(propLine(name, schema));
-  const fields =
-    schema.kind === 'object'
-      ? { prefix: `${name}.`, fields: schema.fields }
-      : schema.kind === 'list' && schema.of.kind === 'object'
-        ? { prefix: `${name}[].`, fields: schema.of.fields }
-        : schema.kind === 'record' && schema.of.kind === 'object'
-          ? { prefix: `${name}{}.`, fields: schema.of.fields }
-          : undefined;
-  if (fields === undefined) return;
-  for (const [field, fieldSchema] of Object.entries(fields.fields)) {
-    propLines(`${fields.prefix}${field}`, fieldSchema, out);
+/** The nested fields a prop expands into, with the prefix their names take. */
+function nestedFields(
+  name: string,
+  schema: PropSchema,
+): { prefix: string; fields: Record<string, PropSchema> } | undefined {
+  if (schema.kind === 'object') return { prefix: `${name}.`, fields: schema.fields };
+  if (schema.kind === 'list' && schema.of.kind === 'object') {
+    return { prefix: `${name}[].`, fields: schema.of.fields };
+  }
+  if (schema.kind === 'record' && schema.of.kind === 'object') {
+    return { prefix: `${name}{}.`, fields: schema.of.fields };
+  }
+  return undefined;
+}
+
+/**
+ * One line for the prop, then one per nested field, depth first. A nested
+ * shape identical to one already printed reads `like <prop>` instead.
+ */
+function propLines(name: string, schema: PropSchema, out: string[], seen?: CompactSeen): void {
+  const nested = nestedFields(name, schema);
+  if (nested !== undefined && seen !== undefined) {
+    // The shape key renders the fields with no prefix and no references, so
+    // two props match only when every field line would read the same.
+    const shape: string[] = [];
+    for (const [field, fieldSchema] of Object.entries(nested.fields)) {
+      propLines(field, fieldSchema, shape);
+    }
+    const key = shape.join('\n');
+    const first = seen.shapes.get(key);
+    if (first !== undefined) {
+      out.push(`${propLine(name, schema, seen)}, like ${first}`);
+      return;
+    }
+    seen.shapes.set(key, name);
+  }
+  out.push(propLine(name, schema, seen));
+  if (nested === undefined) return;
+  for (const [field, fieldSchema] of Object.entries(nested.fields)) {
+    propLines(`${nested.prefix}${field}`, fieldSchema, out, seen);
   }
 }
 
@@ -109,7 +161,10 @@ function slotLine(name: string, slot: SlotSpec): string {
 /** The compact form of one full contract. */
 export function compactDescription(definition: BlockDefinition): CompactBlockDescription {
   const props: string[] = [];
-  for (const [name, schema] of Object.entries(definition.props)) propLines(name, schema, props);
+  const seen: CompactSeen = { shapes: new Map(), enums: new Map() };
+  for (const [name, schema] of Object.entries(definition.props)) {
+    propLines(name, schema, props, seen);
+  }
   const slots = Object.entries(definition.slots ?? {}).map(([name, slot]) => slotLine(name, slot));
   return {
     type: definition.type,

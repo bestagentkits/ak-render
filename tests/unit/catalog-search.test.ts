@@ -138,6 +138,18 @@ describe('describeMany', () => {
     expect(JSON.stringify(kpi)).not.toContain('description');
   });
 
+  it('prints a repeated shape or long enum once and references it after', () => {
+    const [chart] = describeMany(['chart'], { compact: true });
+    expect(chart?.props).toContain('y: object, like x');
+    expect(chart?.props).toContain('value: object, like x');
+    expect(chart?.props.some((line) => line.startsWith('y.'))).toBe(false);
+    expect(chart?.props.filter((line) => line.startsWith('x.')).length).toBeGreaterThan(0);
+
+    const [benchmark] = describeMany(['benchmark-comparison'], { compact: true });
+    const format = benchmark?.props.find((line) => line.startsWith('format:'));
+    expect(format).toBe('format: string, enum as metrics[].format');
+  });
+
   it('keeps slots and actions in the compact form', () => {
     const [card] = describeMany(['card'], { compact: true });
     expect(card?.slots?.length).toBeGreaterThan(0);
