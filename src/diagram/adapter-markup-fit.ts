@@ -47,8 +47,31 @@ const START_TAG = new RegExp(
 );
 /** An end tag at the current position. */
 const END_TAG = new RegExp(`</([A-Za-z][A-Za-z0-9:-]*)${WS}*>`, 'yu');
-/** One attribute inside a start tag's attribute list. */
-const ATTRIBUTE = new RegExp(`${WS}+(${ATTRIBUTE_NAME})${ATTRIBUTE_VALUE}`, 'gu');
+/** One attribute inside a start tag's attribute list: its name and raw value. */
+const ATTRIBUTE = new RegExp(
+  `${WS}+(${ATTRIBUTE_NAME})(?:${WS}*=${WS}*("[^"]*"|'[^']*'|[^\\t\\n\\f\\r "'=<>\`]+))?`,
+  'gu',
+);
+
+/**
+ * A same-document fragment reference, written literally. Character references
+ * are not decoded here, so a value that uses one is refused rather than read.
+ */
+const FRAGMENT_REFERENCE = /^#[A-Za-z0-9_.:-]+$/u;
+
+/** True for an attribute that makes the browser fetch or navigate to a URL. */
+function isUrlAttribute(lowered: string): boolean {
+  return (
+    lowered === 'href' || lowered.endsWith(':href') || lowered === 'src' || lowered === 'srcset'
+  );
+}
+
+/** An attribute value without its quotes; an attribute with no value is empty. */
+function unquote(value: string | undefined): string {
+  if (value === undefined) return '';
+  const first = value[0];
+  return first === '"' || first === "'" ? value.slice(1, -1) : value;
+}
 
 /**
  * Elements refused anywhere. Some execute, frame or submit; some switch the
@@ -211,16 +234,26 @@ export function fitAdapterMarkup(markup: string, scope: string): FittedMarkup {
     const isSvgElement = inSvg || name === 'svg';
 
     let reserved: string | undefined;
-    const kept = attributes.replace(ATTRIBUTE, (attribute: string, attributeName: string) => {
-      const lowered = attributeName.toLowerCase();
-      if (lowered.startsWith(RESERVED_ATTRIBUTE_PREFIX)) reserved = lowered;
-      if (lowered === 'style') {
-        removedInlineStyles += 1;
-        return '';
-      }
-      return lowered === 'nonce' ? '' : attribute;
-    });
+    let external: string | undefined;
+    const kept = attributes.replace(
+      ATTRIBUTE,
+      (attribute: string, attributeName: string, value?: string) => {
+        const lowered = attributeName.toLowerCase();
+        if (lowered.startsWith(RESERVED_ATTRIBUTE_PREFIX)) reserved = lowered;
+        // A drawing may point at its own gradients, markers and symbols, never
+        // at another document, a remote resource or a navigation target.
+        if (isUrlAttribute(lowered) && !FRAGMENT_REFERENCE.test(unquote(value))) external = lowered;
+        if (lowered === 'style') {
+          removedInlineStyles += 1;
+          return '';
+        }
+        return lowered === 'nonce' ? '' : attribute;
+      },
+    );
     if (reserved !== undefined) return refuse(`reserved attribute ${reserved}`);
+    if (external !== undefined) {
+      return refuse(`${external} attribute that is not a same-document #fragment`);
+    }
 
     fitted += markup.slice(copied, index);
     copied = index + tag.length;

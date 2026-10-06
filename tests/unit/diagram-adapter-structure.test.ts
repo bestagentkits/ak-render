@@ -50,6 +50,10 @@ describe('diagram adapter markup structure: accepted', () => {
     ['a less-than sign in an attribute value', '<svg><g aria-label="a<b"><rect /></g></svg>'],
     ['mixed-case SVG names', '<svg><linearGradient id="g"><stop /></linearGradient></svg>'],
     ['data attributes of its own', '<svg><g data-node-id="a" data-edge-id="b"></g></svg>'],
+    [
+      'fragment references',
+      `<svg><use href="#node" /><use xlink:href='#edge' /><a HREF=#legend><text>x</text></a></svg>`,
+    ],
   ];
   for (const [label, markup] of accepted) {
     it(`accepts ${label}`, () => {
@@ -97,6 +101,45 @@ describe('diagram adapter markup structure: refused', () => {
       else expect(why, label).toMatch(expected);
     });
   }
+
+  const urls: readonly [string, string, string][] = [
+    ['a remote href', '<svg><a href="https://evil.example/"><text>x</text></a></svg>', 'href'],
+    ['a scheme-relative href', '<svg><use href="//evil.example/s.svg#a" /></svg>', 'href'],
+    ['a relative href', '<svg><use href="sprite.svg#a" /></svg>', 'href'],
+    ['a fragment in another document', '<svg><use href="/x.svg#a" /></svg>', 'href'],
+    ['an empty href', '<svg><a href=""><text>x</text></a></svg>', 'href'],
+    ['an href with no value', '<svg><a href><text>x</text></a></svg>', 'href'],
+    ['an uppercase HREF', '<svg><image HREF="x.png" /></svg>', 'href'],
+    ['an xlink:href', '<svg><image xlink:href="x.png" /></svg>', 'xlink:href'],
+    ['an XLINK:HREF', '<svg><use XLINK:HREF="x.svg#a" /></svg>', 'xlink:href'],
+    ['a data URL', '<svg><image href="data:image/png;base64,AAAA" /></svg>', 'href'],
+    ['an entity-encoded fragment', '<svg><use href="&#35;a" /></svg>', 'href'],
+    ['an img src', '<div><img alt="" src="x.png"></div>', 'src'],
+    ['an img srcset', '<div><img alt="" src="#a" srcset="x.png 2x"></div>', 'srcset'],
+    ['an unquoted remote src', '<div><img alt="" SRC=https://evil.example/x.png></div>', 'src'],
+  ];
+  for (const [label, markup, attribute] of urls) {
+    it(`refuses ${label}`, () => {
+      expect(reasonFor(markup), label).toBe(
+        `${attribute} attribute that is not a same-document #fragment`,
+      );
+    });
+  }
+
+  it('falls back with a warning naming a URL attribute', () => {
+    const result = compile(SPEC, {
+      diagramAdapter: {
+        name: 'remote',
+        version: '1',
+        render: () => '<svg><image href="https://evil.example/x.png" /></svg>',
+      },
+    });
+    expect(result.html).not.toContain('data-ak-diagram-adapter');
+    expect(result.html).not.toContain('evil.example');
+    expect(result.warnings[0]?.message).toContain(
+      'href attribute that is not a same-document #fragment',
+    );
+  });
 
   it('falls back with a warning instead of embedding a stray end tag', () => {
     const result = compile(SPEC, {
