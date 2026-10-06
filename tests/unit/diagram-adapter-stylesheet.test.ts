@@ -1,4 +1,8 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { PAGE_KEYFRAMES_NAMES } from '../../src/diagram/adapter-stylesheet-filter.js';
 import {
   checkAdapterMarkup,
   MAX_DIAGRAM_MARKUP_BYTES,
@@ -33,6 +37,50 @@ describe('diagram adapter stylesheets: accepted CSS', () => {
       expect(checkAdapterMarkup(styled(css)), label).toEqual({ ok: true });
     });
   }
+
+  it('removes comments, keeping the tokens around them apart', () => {
+    const result = runDiagramAdapter(
+      { name: 'a', version: '1', render: () => styled('/* nodes */.n{fill:#fff}/* end */') },
+      { spec: null, title: 'T', nodeId: 'n' },
+    );
+    expect(result?.rejected).toBeUndefined();
+    expect(result?.markup).toContain('{ .n{fill:#fff} }</style>');
+  });
+
+  it('removes !important, so adapter CSS never outranks the page guards', () => {
+    const css =
+      '@media (prefers-reduced-motion:reduce){.n{animation:none !important;transition:none ! IMPORTANT}}';
+    const result = runDiagramAdapter(
+      { name: 'a', version: '1', render: () => styled(css) },
+      { spec: null, title: 'T', nodeId: 'n' },
+    );
+    expect(result?.rejected).toBeUndefined();
+    expect(result?.markup).toContain('{.n{animation:none ;transition:none }}');
+    expect(result?.markup).not.toMatch(/important/iu);
+  });
+
+  it('accepts adapter keyframes that do not reuse a page name', () => {
+    expect(checkAdapterMarkup(styled('@keyframes ak-node-pulse{to{opacity:.6}}'))).toEqual({
+      ok: true,
+    });
+  });
+
+  it('reserves exactly the keyframes names the compiler defines', () => {
+    const names = new Set<string>();
+    const visit = (directory: string): void => {
+      for (const entry of readdirSync(directory, { withFileTypes: true })) {
+        const path = join(directory, entry.name);
+        if (entry.isDirectory()) visit(path);
+        else if (entry.name.endsWith('.ts') && !path.includes('diagram')) {
+          for (const match of readFileSync(path, 'utf8').matchAll(/@keyframes ([\w-]+)/gu)) {
+            names.add(match[1] ?? '');
+          }
+        }
+      }
+    };
+    visit(fileURLToPath(new URL('../../src', import.meta.url)));
+    expect([...names].sort()).toEqual([...PAGE_KEYFRAMES_NAMES].sort());
+  });
 
   it('scopes the stylesheet to the panel canvas', () => {
     const result = runDiagramAdapter(
@@ -74,10 +122,14 @@ describe('diagram adapter stylesheets: refused CSS', () => {
     ['a nested @scope', '@scope (body){.n{fill:red}}', 'CSS @scope'],
     ['a bare at sign', '@ {}', 'CSS at-rule'],
     ['expression()', '.n{width:expression(alert(1))}', 'CSS expression()'],
-    ['a comment', '.n{fill:red}/* x */', 'CSS comment'],
-    ['a comment splitting a token', '@im/**/port "x.css";', /CSS (comment|@im)/u],
-    ['!important', '.n{fill:red!important}', 'CSS !important'],
-    ['a spaced ! important', '.n{animation:x 1s ! important}', 'CSS !important'],
+    ['a comment splitting a token', '@im/**/port "x.css";', 'CSS @im'],
+    ['an unterminated comment', '.n{fill:red}/* x', 'unterminated CSS comment'],
+    [
+      'a character reference that would end a comment early',
+      '/* &#42;/ .n{fill:red} /* */',
+      /character reference/u,
+    ],
+    ['a bang that is not !important', '.n{fill:red !ie}', 'CSS ! other than !important'],
     ['an extra closing brace', '.n{fill:red}} .ak-shell{display:none}', 'unbalanced CSS brackets'],
     ['an unclosed block', '.n{fill:red', 'unbalanced CSS brackets'],
     ['mismatched brackets', '.n{fill:red)', 'unbalanced CSS brackets'],

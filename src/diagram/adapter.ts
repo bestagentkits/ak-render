@@ -26,11 +26,8 @@
 
 import { stableHash } from '../hash.js';
 import type { JsonValue } from '../json.js';
-import {
-  ADAPTER_SCOPE_ATTRIBUTE,
-  checkAdapterStylesheet,
-  scopeAdapterStylesheet,
-} from './adapter-stylesheet-filter.js';
+import { ADAPTER_STYLE_MARKER, fitAdapterMarkup } from './adapter-markup-fit.js';
+import { ADAPTER_SCOPE_ATTRIBUTE } from './adapter-stylesheet-filter.js';
 
 export interface DiagramRenderRequest {
   /** The diagram spec exactly as authored, bounded by the Page Spec limits. */
@@ -79,16 +76,7 @@ export const DIAGRAM_ADAPTER_CONTRACT_VERSION = 1 as const;
 /** Bound on adapter output, so a runaway adapter cannot inflate the artifact. */
 export const MAX_DIAGRAM_MARKUP_BYTES = 256 * 1024;
 
-/**
- * Attribute that marks an adapter `<style>` element for the page style nonce.
- *
- * The nonce is a hash of the finished page stylesheet, which is only known
- * after every block has rendered, so the renderer marks the element and the
- * document assembler fills the nonce in (see `src/render/document.ts`). Adapter
- * markup that contains the marker itself is refused, so every marker on the
- * page is one this module wrote.
- */
-export const ADAPTER_STYLE_MARKER = 'data-ak-adapter-style';
+export { ADAPTER_STYLE_MARKER } from './adapter-markup-fit.js';
 
 /**
  * Vectors that must never appear in adapter output.
@@ -141,83 +129,8 @@ export function checkAdapterMarkup(markup: string): AdapterMarkupCheck {
   for (const { pattern, reason } of FORBIDDEN_ADAPTER_PATTERNS) {
     if (pattern.test(markup)) return { ok: false, reason };
   }
-  const fitted = fitAdapterMarkupToPolicy(markup, CHECK_SCOPE);
+  const fitted = fitAdapterMarkup(markup, CHECK_SCOPE);
   return fitted.ok ? { ok: true } : { ok: false, reason: fitted.reason };
-}
-
-/** HTML whitespace. JavaScript's `\s` also matches characters HTML does not. */
-const WS = '[\\t\\n\\f\\r ]';
-/**
- * An attribute name. It excludes `<`, so an unterminated tag fails at the next
- * `<` instead of rescanning the rest of the markup; matching stays linear.
- */
-const ATTRIBUTE_NAME = `[^\\t\\n\\f\\r "'<>/=]+`;
-/** An optional `=` and a quoted or unquoted attribute value. */
-const ATTRIBUTE_VALUE = `(?:${WS}*=${WS}*(?:"[^"]*"|'[^']*'|[^\\t\\n\\f\\r "'=<>\`]+))?`;
-/** A start tag: name, attribute list, optional self-closing slash. */
-const START_TAG = new RegExp(
-  `<([A-Za-z][A-Za-z0-9:-]*)((?:${WS}+${ATTRIBUTE_NAME}${ATTRIBUTE_VALUE})*)${WS}*(\\/?)>`,
-  'gu',
-);
-/** One attribute inside a start tag's attribute list. */
-const ATTRIBUTE = new RegExp(`${WS}+(${ATTRIBUTE_NAME})${ATTRIBUTE_VALUE}`, 'gu');
-/** The end tag that must directly follow an adapter stylesheet. */
-const STYLE_END_TAG = /^<\/style[\t\n\f\r />]/iu;
-
-/** Markup fitted to the page policy, or the reason it could not be. */
-type FittedMarkup =
-  | { readonly ok: true; readonly markup: string; readonly removedInlineStyles: number }
-  | { readonly ok: false; readonly reason: string };
-
-/**
- * Fit checked adapter markup to the page's Content Security Policy.
- *
- * The page allows styles only by nonce. A `<style>` element gets the marker the
- * assembler swaps for that nonce, and its stylesheet is filtered and scoped to
- * the diagram canvas (see `adapter-stylesheet-filter.ts`). A stylesheet must be
- * plain text that runs straight to its `</style>` end tag, so the text checked
- * here is exactly the text a browser applies. Inline `style` attributes can
- * never carry a nonce, so the browser would refuse them and log a violation on
- * open; they are removed here and counted instead. Removal changes nothing a
- * reader sees, because the policy already ignores those attributes.
- */
-function fitAdapterMarkupToPolicy(markup: string, scope: string): FittedMarkup {
-  let removedInlineStyles = 0;
-  let fitted = '';
-  let copied = 0;
-  const startTag = new RegExp(START_TAG);
-  for (let match = startTag.exec(markup); match !== null; match = startTag.exec(markup)) {
-    const [tag, name = '', attributes = '', selfClosing = ''] = match;
-    const kept = attributes.replace(ATTRIBUTE, (attribute: string, attributeName: string) => {
-      const lowered = attributeName.toLowerCase();
-      if (lowered === 'style') {
-        removedInlineStyles += 1;
-        return '';
-      }
-      return lowered === 'nonce' ? '' : attribute;
-    });
-    fitted += markup.slice(copied, match.index);
-    copied = match.index + tag.length;
-    if (name.toLowerCase() !== 'style') {
-      fitted += `<${name}${kept}${selfClosing === '' ? '' : ' /'}>`;
-      continue;
-    }
-    // In HTML a self-closing style tag still opens a stylesheet, while in SVG it
-    // does not; the two readings disagree, so neither is accepted.
-    if (selfClosing !== '') return { ok: false, reason: 'self-closing style element' };
-    const stylesheetEnd = markup.indexOf('<', copied);
-    if (stylesheetEnd < 0 || !STYLE_END_TAG.test(markup.slice(stylesheetEnd, stylesheetEnd + 8))) {
-      return { ok: false, reason: 'style element containing markup or missing its end tag' };
-    }
-    const stylesheet = markup.slice(copied, stylesheetEnd);
-    const problem = checkAdapterStylesheet(stylesheet);
-    if (problem !== undefined) return { ok: false, reason: problem };
-    fitted += `<style ${ADAPTER_STYLE_MARKER}${kept}>${scopeAdapterStylesheet(stylesheet, scope)}`;
-    copied = stylesheetEnd;
-    startTag.lastIndex = stylesheetEnd;
-  }
-  fitted += markup.slice(copied);
-  return { ok: true, markup: fitted, removedInlineStyles };
 }
 
 /**
@@ -256,7 +169,7 @@ export function runDiagramAdapter(
     return { markup: '', adapter: adapter.name, rejected: check.reason ?? 'rejected' };
   }
   const scope = adapterScope(request.nodeId);
-  const fitted = fitAdapterMarkupToPolicy(markup, scope);
+  const fitted = fitAdapterMarkup(markup, scope);
   if (!fitted.ok) return { markup: '', adapter: adapter.name, rejected: fitted.reason };
   return {
     markup: fitted.markup,
