@@ -1,0 +1,107 @@
+version: 1
+
+meta:
+  title: Model Evaluation Explorer
+  description: Filter evaluation runs by provider, cost and name, and switch the chart between latency and accuracy, all from one dataset
+  locale: en
+
+theme:
+  preset: swiss-clean
+
+policy:
+  network: deny
+
+state:
+  metric: latency
+
+datasets:
+  runs:
+    - { model: atlas-large, provider: Northwind, tier: large, cost: 2.4, latency: 1840, accuracy: 94, status: pass }
+    - { model: atlas-mini, provider: Northwind, tier: small, cost: 0.3, latency: 420, accuracy: 86, status: pass }
+    - { model: beacon-7b, provider: Harbor Labs, tier: small, cost: 0.2, latency: 380, accuracy: 81, status: fail }
+    - { model: beacon-13b, provider: Harbor Labs, tier: medium, cost: 0.6, latency: 760, accuracy: 88, status: pass }
+    - { model: beacon-70b, provider: Harbor Labs, tier: large, cost: 1.9, latency: 1620, accuracy: 92, status: flaky }
+    - { model: cedar-lite, provider: Cedar AI, tier: small, cost: 0.15, latency: 310, accuracy: 79, status: pass }
+    - { model: cedar-pro, provider: Cedar AI, tier: medium, cost: 0.9, latency: 980, accuracy: 90, status: pass }
+    - { model: cedar-max, provider: Cedar AI, tier: large, cost: 3.1, latency: 2210, accuracy: 96, status: pass }
+    - { model: delta-coder, provider: Delta, tier: medium, cost: 0.7, latency: 840, accuracy: 89, status: flaky }
+    - { model: delta-chat, provider: Delta, tier: small, cost: 0.25, latency: 450, accuracy: 83, status: pass }
+    - { model: ember-xl, provider: Ember, tier: large, cost: 2.8, latency: 2050, accuracy: 95, status: pass }
+    - { model: ember-s, provider: Ember, tier: small, cost: 0.18, latency: 290, accuracy: 77, status: fail }
+
+blocks:
+  - type: hero
+    eyebrow: Explorer · 12 models
+    title: Find the model that fits the budget
+    description: Narrow the runs with the filters, then switch the chart between latency and accuracy. Every view reads the same dataset.
+
+  - type: section
+    id: compare
+    title: Compare providers
+    blocks:
+      - type: radio-group
+        id: metric-switch
+        label: Chart metric
+        bind: state.metric
+        options:
+          - { value: latency, label: Latency }
+          - { value: accuracy, label: Accuracy }
+      - type: chart
+        id: latency-chart
+        kind: bar
+        title: Mean latency by provider
+        dataRef: runs
+        transform:
+          groupBy: { field: provider, aggregate: mean, value: latency }
+        x: { field: provider, label: Provider }
+        y: { field: latency, label: Latency, format: duration }
+        sort: ascending
+        visibleWhen: { path: state.metric, equals: latency }
+      - type: chart
+        id: accuracy-chart
+        kind: bar
+        title: Mean accuracy by provider
+        dataRef: runs
+        transform:
+          groupBy: { field: provider, aggregate: mean, value: accuracy }
+        x: { field: provider, label: Provider }
+        y: { field: accuracy, label: Accuracy, format: percent, min: 0, max: 100 }
+        sort: descending
+        visibleWhen: { path: state.metric, equals: accuracy }
+
+  - type: section
+    id: runs
+    title: Runs
+    blocks:
+      - type: filter-bar
+        title: Filter runs
+        target: runs-table
+        blocks:
+          - type: select
+            label: Provider
+            field: provider
+            optionsFrom: provider
+          - type: number-input
+            label: Max cost per 1M tokens
+            field: cost
+            match: max
+            min: 0
+            max: 5
+            step: 0.1
+          - type: text-input
+            label: Model name
+            field: model
+            match: contains
+            placeholder: e.g. coder
+      - type: data-table
+        id: runs-table
+        title: Evaluation runs
+        dataRef: runs
+        columns:
+          - { key: model, label: Model }
+          - { key: provider, label: Provider }
+          - { key: tier, label: Tier, type: badge, tones: { small: info, medium: neutral, large: warning } }
+          - { key: cost, label: Cost / 1M, type: currency, currency: USD }
+          - { key: latency, label: Latency, type: number, format: duration }
+          - { key: accuracy, label: Accuracy, type: percent }
+          - { key: status, label: Status, type: badge }

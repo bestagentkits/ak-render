@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { compile } from '../../src/render/render.js';
 import { normalize } from '../../src/spec/normalize.js';
 import { parseSpec } from '../../src/spec/parse.js';
 import { validate } from '../../src/spec/validate.js';
@@ -13,33 +14,45 @@ const fixtureFiles = readdirSync(pagesDir).filter((name) => name.endsWith('.yaml
  * validate, normalize deterministically, and keep stable node IDs across runs.
  */
 describe('fixture corpus', () => {
-  it('covers the page classes the epic requires', () => {
-    // Contains, not equals: a new block may add its own fixture without editing this list.
-    expect(fixtureFiles.sort()).toEqual(
-      expect.arrayContaining([
-        'all-components.yaml',
-        'brainstorm.yaml',
-        'dashboard.yaml',
-        'diff.yaml',
-        'explain.yaml',
-        'interactive.yaml',
-        'media.yaml',
-        'plan.yaml',
-        'recap.yaml',
-        'showcase.yaml',
-        'theme-showcase.yaml',
-      ]),
-    );
+  it('covers exactly the expected page classes', () => {
+    // Exact: adding or removing a fixture is a deliberate change to this list.
+    expect([...fixtureFiles].sort()).toEqual([
+      'all-components.yaml',
+      'benchmark-report.yaml',
+      'brainstorm.yaml',
+      'charts-v2.yaml',
+      'complex-dashboard.yaml',
+      'controls.yaml',
+      'dashboard.yaml',
+      'data-tables.yaml',
+      'diff.yaml',
+      'engineering-widgets.yaml',
+      'evidence-widgets.yaml',
+      'explain.yaml',
+      'incident-report.yaml',
+      'interactive-data-explorer.yaml',
+      'interactive.yaml',
+      'media.yaml',
+      'plan.yaml',
+      'product-case-study.yaml',
+      'product-widgets.yaml',
+      'recap.yaml',
+      'research-report.yaml',
+      'responsive-layouts.yaml',
+      'rich-composition.yaml',
+      'showcase.yaml',
+      'theme-dialects.yaml',
+      'theme-showcase.yaml',
+    ]);
   });
 
   for (const file of fixtureFiles) {
     describe(file, () => {
       const source = readFileSync(`${pagesDir}/${file}`, 'utf8');
 
-      it('validates with no errors', () => {
+      it('validates with no errors and no warnings', () => {
         const result = validate(source, { source: file });
-        const errors = result.diagnostics.filter((item) => item.severity === 'error');
-        expect(errors).toEqual([]);
+        expect(result.diagnostics).toEqual([]);
         expect(result.ok).toBe(true);
       });
 
@@ -48,6 +61,14 @@ describe('fixture corpus', () => {
         const second = normalize(source);
         expect(first.nodes.map((node) => node.id)).toEqual(second.nodes.map((node) => node.id));
         expect(JSON.stringify(first)).toBe(JSON.stringify(second));
+      });
+
+      it('compiles to identical bytes three times', () => {
+        const [first, ...rest] = [1, 2, 3].map(() => compile(source, { source: file }));
+        for (const run of rest) {
+          expect(run.hash).toBe(first?.hash);
+          expect(run.html).toBe(first?.html);
+        }
       });
 
       it('produces unique node IDs', () => {
