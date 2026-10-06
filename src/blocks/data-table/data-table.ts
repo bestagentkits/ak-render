@@ -2,7 +2,8 @@
  * Data table block: a typed, sortable and searchable table bound to a dataset.
  *
  * The compiler owns the behaviors: sorting is on every column, search appears
- * past 10 rows, the header sticks past 12, and phones get labelled cards. The
+ * past 10 rows (unless a filter-bar targets the table), the header sticks past
+ * 12, and phones get labelled cards. The
  * emitted table is complete without scripts, in the authored (and
  * transformed) row order.
  */
@@ -19,6 +20,8 @@ import {
   titleHeader,
 } from '../../render/block-helpers.js';
 import { escapeText, renderAttributes } from '../../render/escape.js';
+import type { RenderContext } from '../../render/render-context.js';
+import { FILTER_BAR_TYPE } from '../controls/control-shared.js';
 import { alignClass, renderCell, sortValue } from './data-table-cells.js';
 import { checkDataTable } from './data-table-check.js';
 import {
@@ -98,7 +101,19 @@ function tools(node: IrNode, rows: number): string {
   ].join('');
 }
 
-function render(node: IrNode): string {
+/**
+ * True when a filter-bar on the page targets this table. The bar then owns row
+ * filtering (it offers its own search child), so the table emits no search box
+ * of its own: two independent filters over the same rows would fight, the
+ * last one to run winning. Decided at compile time from the IR.
+ */
+function filteredByBar(node: IrNode, context: RenderContext): boolean {
+  return context.ir.nodes.some(
+    (other) => other.type === FILTER_BAR_TYPE && other.props.target === node.id,
+  );
+}
+
+function render(node: IrNode, context: RenderContext): string {
   const columns = resolveColumns(node);
   const rows = node.data?.rows ?? [];
   const sorted = initialSort(rows, columns);
@@ -120,7 +135,7 @@ function render(node: IrNode): string {
           .join('')}</tr>`,
     )
     .join('');
-  const searchable = rows.length > SEARCH_THRESHOLD;
+  const searchable = rows.length > SEARCH_THRESHOLD && !filteredByBar(node, context);
   const empty =
     rows.length === 0
       ? '<p class="ak-dt-empty">No rows.</p>'

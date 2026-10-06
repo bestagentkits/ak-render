@@ -1,0 +1,149 @@
+version: 1
+
+meta:
+  title: Where Dashboard Readers Look First
+  description: A research note on how readers scan an operations dashboard, with an annotated screen, a time breakdown, findings and cited sources
+  locale: en
+
+theme:
+  preset: research-notebook
+
+policy:
+  network: deny
+
+blocks:
+  - type: hero
+    eyebrow: Research note · 14 sessions
+    title: Where dashboard readers look first
+    description: Readers settle on the headline numbers within two seconds and treat the charts as confirmation, not discovery.
+
+  - type: sidebar-layout
+    sidebar:
+      - type: key-value
+        title: Study
+        items:
+          - key: Method
+            value: Moderated think-aloud
+          - key: Participants
+            value: 14 on-call engineers
+          - key: Sessions
+            value: 25 minutes each
+          - key: Period
+            value: August 2026
+      - type: list
+        title: Contents
+        items:
+          - text: Annotated screen
+          - text: Time on task
+          - text: Findings
+          - text: Sources
+    blocks:
+      - type: section
+        id: screen
+        title: Annotated screen
+        blocks:
+          - type: text
+            variant: lead
+            text: Pins mark the four regions that participants named most often when asked what they looked at first.
+          - type: annotated-image
+            src: assets/shot-dashboard.webp
+            alt: Compiler health dashboard with four KPI cards above a bar chart
+            caption: The dashboard used in every session, at 1440 pixels wide.
+            notes:
+              - x: 20
+                y: 45
+                label: KPI row
+                text: Read first by 12 of 14 participants, usually left to right.
+              - x: 55
+                y: 70
+                label: Chart
+                text: Used to confirm a number already seen in the KPI row.
+              - x: 25
+                y: 20
+                label: Page title
+                text: Skipped by most participants, who already knew which page they had opened.
+              - x: 90
+                y: 15
+                label: Header controls
+                text: Missed by half of the participants until prompted, including the date range.
+          - type: callout
+            tone: info
+            title: Coordinates are approximate
+            text: Pins snap to a five percent grid, so they mark a region rather than a pixel.
+
+      - type: section
+        id: time
+        title: Time on task
+        blocks:
+          - type: metric-breakdown
+            title: Where the first 60 seconds went
+            total: { label: Median session opening, value: 60 }
+            format: integer
+            unit: s
+            parts:
+              - { label: KPI row, value: 21 }
+              - { label: Charts, value: 17 }
+              - { label: Tables and lists, value: 12 }
+              - { label: Filters and date range, value: 6 }
+              - { label: Other, value: 4, tone: neutral }
+          - type: callout
+            tone: success
+            title: The headline row earns its place
+            text: More than a third of the opening minute goes to four numbers. Keep them few, labelled and signed.
+
+      - type: section
+        id: findings
+        title: Findings
+        blocks:
+          - type: accordion
+            items:
+              - title: 1. Numbers before charts
+                text: Participants read the KPI values first and returned to them after every chart.
+                blocks:
+                  - type: quote
+                    text: I look at the four numbers, and the chart just tells me whether to worry about them.
+                    cite: Participant 6, SRE
+                  - type: stats
+                    items:
+                      - label: Read KPI row first
+                        value: 12 of 14
+                      - label: Returned to it
+                        value: 3.1 times
+              - title: 2. Badges beat columns
+                text: In tables, participants scanned for a coloured status rather than reading numeric columns.
+                blocks:
+                  - type: callout
+                    tone: warning
+                    title: Colour alone is not enough
+                    text: Two participants with colour vision deficiency relied on the badge text, which the table already prints.
+              - title: 3. Date ranges go unnoticed
+                text: Half of the participants did not notice that the page showed the last seven days.
+                blocks:
+                  - type: steps
+                    items:
+                      - title: State the range in the title
+                        text: For example, "last 7 days" next to the page heading.
+                      - title: Repeat it in each chart caption
+                        text: A reader who scrolls past the header still sees it.
+
+      - type: section
+        id: sources
+        title: Sources
+        blocks:
+          - type: references
+            items:
+              - id: nielsen-f
+                title: F-shaped pattern of reading on the web
+                authors: Pernice, K.
+                source: Nielsen Norman Group
+                year: 2017
+              - id: few-dashboards
+                title: Information Dashboard Design
+                authors: Few, S.
+                source: Analytics Press
+                year: 2013
+                note: Chapter 4 on the placement of key metrics.
+              - id: session-notes
+                title: Session notes and coding sheet
+                source: Internal research repository
+                year: 2026

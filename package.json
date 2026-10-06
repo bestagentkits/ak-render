@@ -62,6 +62,7 @@
     "bench:render": "node benchmarks/render-benchmark.mjs",
     "bench:browser": "playwright test tests/browser/benchmark.spec.ts",
     "bench": "pnpm build && pnpm bench:render && pnpm bench:browser",
+    "bench:spec": "pnpm build && node benchmarks/spec-compression.mjs",
     "fonts:generate": "node scripts/generate-embedded-fonts.mjs",
     "fonts:check": "node scripts/generate-embedded-fonts.mjs --check",
     "schema:generate": "node scripts/generate-json-schema.mjs",
@@ -75,6 +76,7 @@
     "verify": "pnpm lint && pnpm typecheck && pnpm fonts:check && pnpm recipes:check && pnpm test && pnpm build"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@biomejs/biome": "^2.4.12",
     "@playwright/test": "^1.56.0",
     "@types/node": "^22.15.0",

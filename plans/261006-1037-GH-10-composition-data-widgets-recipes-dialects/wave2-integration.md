@@ -136,6 +136,20 @@ W2-B re-reads `gh issue view 10` and adds any checklist line that is missing bel
 | Required and benchmark fixtures | The 6 fixtures, plus `docs/artifacts/spec-compression.md` |
 | Browser checks | `composition-matrix.spec.ts`, `network-audit.spec.ts` |
 | Backward compatibility | `tests/unit/backward-compat.test.ts` |
+| Simple item syntax still valid; nested structures serialize deterministically | `tests/unit/rich-composition.test.ts` (text-only fragments byte-identical), `tests/unit/fixtures.test.ts` (normalize twice, compile ×3 per fixture) |
+| No generic CSS values or layout expressions in the spec | `tests/unit/responsive-layout.test.ts` (enumerated spans and options), `tests/unit/security-forbidden.test.ts` |
+| Transforms deterministic and bounded; spec stays JSON/YAML | `tests/unit/data-transform.test.ts`, `tests/unit/data-datasets.test.ts`, `tests/unit/spec-input.test.ts` |
+| State conditions cannot run code or selectors | `tests/unit/visible-when.test.ts`, `tests/unit/runtime-state-escape.test.ts`, `tests/unit/controls.test.ts` (`bind` path policy) |
+| Every visualization has a text or table fallback | `tests/unit/chart-v2.test.ts`, `tests/unit/render-charts.test.ts` |
+| Data-table keyboard, touch, print, script-off, narrow screens | `tests/browser/data-table.spec.ts`, `composition-matrix.spec.ts` (`data-tables`, `complex-dashboard`, `interactive-data-explorer`) |
+| Filter-bar owns filtering of its target table (no second search box) | `tests/unit/data-table.test.ts` ("leaves search to a filter-bar that targets the table") |
+| Guardrails: no raw HTML/CSS/JS, no expressions, bounded input, offline, CSP from capabilities | `tests/unit/security-forbidden.test.ts`, `tests/unit/render-security.test.ts`, `tests/unit/escape.test.ts`, `tests/unit/media-policy.test.ts`, `network-audit.spec.ts` |
+| Guardrails: deterministic output, explicit a11y contracts, feature CSS/runtime tree-shakes | `tests/unit/render-determinism.test.ts`, `tests/unit/fixtures.test.ts`, `tests/unit/render-a11y.test.ts`, `tests/unit/block-modules-registry.test.ts` |
+| Guardrails: Page Spec is the public boundary, IR internal; schema canonical from the registry | `tests/unit/package-manifest.test.ts`, `tests/unit/json-schema.test.ts`, `pnpm schema:check` |
+| Malformed nested composition gives stable JSON-path diagnostics | `tests/unit/nested-composition-normalize.test.ts`, `tests/unit/rich-composition.test.ts` |
+| Browser matrix: 1440, 768, 375, 320; no overflow; keyboard; reduced motion; script-off; print; zero network; critical a11y (axe) | `tests/browser/composition-matrix.spec.ts` (every fixture in `fixtures/pages`) |
+| Catalog and describe stay cheaper than the full schema and bounded | `tests/unit/catalog-budget.test.ts`, `docs/artifacts/spec-compression.md` (read bytes per fixture) |
+| Capability growth does not materially regress token efficiency | `docs/artifacts/agent-token-cost.md` (full `describe --json` and compact `describe --compact` rows), `docs/artifacts/spec-compression.md` |
 
 ## Risks
 

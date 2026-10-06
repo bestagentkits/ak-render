@@ -1,20 +1,15 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { expect, type Page, test } from '@playwright/test';
 import { CHART_KINDS } from '../../src/blocks/chart/chart-kinds.js';
 import { compile } from '../../src/render/render.js';
+import { browserWorkspace } from './browser-workspace.js';
 
-const workspace = mkdtempSync(join(tmpdir(), 'ak-render-chart-v2-'));
+const workspace = browserWorkspace('chart-v2');
 const fixture = readFileSync(
   fileURLToPath(new URL('../../fixtures/pages/charts-v2.yaml', import.meta.url)),
   'utf8',
 );
-
-test.afterAll(() => {
-  rmSync(workspace, { recursive: true, force: true });
-});
 
 /** A legend with many long series names, which must wrap rather than widen the page. */
 const LONG_LEGEND = `version: 1
@@ -33,9 +28,7 @@ ${Array.from(
 `;
 
 async function open(page: Page, name: string, source: string, width: number): Promise<void> {
-  mkdirSync(workspace, { recursive: true });
-  const target = join(workspace, `${name}.html`);
-  writeFileSync(target, compile(source).html, 'utf8');
+  const target = workspace.write(name, compile(source).html);
   await page.setViewportSize({ width, height: 900 });
   await page.goto(`file://${target}`, { waitUntil: 'load' });
 }

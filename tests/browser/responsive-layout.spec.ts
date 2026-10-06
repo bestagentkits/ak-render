@@ -1,25 +1,15 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { expect, type Page, test } from '@playwright/test';
 import { compile } from '../../src/render/render.js';
+import { browserWorkspace } from './browser-workspace.js';
 
 const pagesDir = fileURLToPath(new URL('../../fixtures/pages', import.meta.url));
-const workspace = mkdtempSync(join(tmpdir(), 'ak-render-layout-'));
-const target = join(workspace, 'responsive-layouts.html');
-writeFileSync(
-  target,
-  compile(readFileSync(`${pagesDir}/responsive-layouts.yaml`, 'utf8'), {
-    source: 'responsive-layouts',
-  }).html,
-  'utf8',
-);
-const url = `file://${target}`;
-
-test.afterAll(() => {
-  rmSync(workspace, { recursive: true, force: true });
-});
+const workspace = browserWorkspace('layout');
+const html = compile(readFileSync(`${pagesDir}/responsive-layouts.yaml`, 'utf8'), {
+  source: 'responsive-layouts',
+}).html;
+const url = (): string => `file://${workspace.write('responsive-layouts', html)}`;
 
 async function overflow(page: Page): Promise<number> {
   return page.evaluate(
@@ -56,7 +46,7 @@ for (const width of [320, 375, 768, 1440]) {
     test(`no horizontal overflow at ${width}px (${colorScheme})`, async ({ page }) => {
       await page.emulateMedia({ colorScheme });
       await page.setViewportSize({ width, height: 900 });
-      await page.goto(url);
+      await page.goto(url());
       expect(await overflow(page)).toBe(0);
     });
   }
@@ -64,7 +54,7 @@ for (const width of [320, 375, 768, 1440]) {
 
 test('an 8/4 split keeps its track ratio on a wide screen', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto(url);
+  await page.goto(url());
   const [wide, narrow] = await itemBoxes(page);
   const gap = await page
     .locator('.ak-grid[data-ak-tracks]')
@@ -76,7 +66,7 @@ test('an 8/4 split keeps its track ratio on a wide screen', async ({ page }) => 
 
 test('the rowSpan item spans the rows of the items beside it', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto(url);
+  await page.goto(url());
   const [tall, first, second] = await itemBoxes(page);
   expect(second.y).toBeGreaterThan(first.y);
   expect(second.x).toBeCloseTo(first.x, 0);
@@ -85,7 +75,7 @@ test('the rowSpan item spans the rows of the items beside it', async ({ page }) 
 
 test('every grid item is full width on a phone', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
-  await page.goto(url);
+  await page.goto(url());
   const grid = await page.locator('.ak-grid[data-ak-tracks]').boundingBox();
   for (const box of await itemBoxes(page)) {
     expect(Math.abs(box.width - (grid?.width ?? 0))).toBeLessThanOrEqual(1);
@@ -107,7 +97,7 @@ test('semantic layouts sit side by side on a wide screen and stack in reading or
       }),
     );
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto(url);
+  await page.goto(url());
   expect((await order()).every((layout) => layout.sideBySide)).toBe(true);
   await page.setViewportSize({ width: 375, height: 812 });
   expect((await order()).every((layout) => layout.firstAbove)).toBe(true);
@@ -115,7 +105,7 @@ test('semantic layouts sit side by side on a wide screen and stack in reading or
 
 test('the aside stays in view while the main column scrolls on a wide screen', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 700 });
-  await page.goto(url);
+  await page.goto(url());
   const aside = page.locator('.ak-main-aside > aside');
   await expect(aside).toHaveCSS('position', 'sticky');
   await page.emulateMedia({ media: 'print' });
@@ -123,7 +113,7 @@ test('the aside stays in view while the main column scrolls on a wide screen', a
 });
 
 test('a rail of links is a labelled navigation landmark', async ({ page }) => {
-  await page.goto(url);
+  await page.goto(url());
   await expect(page.getByRole('navigation', { name: 'Report sections' })).toHaveCount(1);
   await expect(page.getByRole('complementary')).not.toHaveCount(0);
 });
@@ -134,7 +124,7 @@ test('reads completely without scripts', async ({ browser }) => {
     viewport: { width: 375, height: 812 },
   });
   const page = await context.newPage();
-  await page.goto(url);
+  await page.goto(url());
   expect(await overflow(page)).toBe(0);
   await expect(
     page.getByText('Three compiles of every fixture produce the same hash.'),

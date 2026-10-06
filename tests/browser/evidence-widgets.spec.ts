@@ -1,31 +1,20 @@
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, type Page, test } from '@playwright/test';
 import { compile } from '../../src/render/render.js';
+import { browserWorkspace } from './browser-workspace.js';
 
 const fixturesDir = fileURLToPath(new URL('../../fixtures', import.meta.url));
-const workspace = mkdtempSync(join(tmpdir(), 'ak-render-evidence-'));
-let target = '';
-
-test.beforeAll(() => {
-  mkdirSync(join(workspace, 'assets'), { recursive: true });
-  copyFileSync(
-    join(fixturesDir, 'assets/shot-dashboard.webp'),
-    join(workspace, 'assets/shot-dashboard.webp'),
-  );
-  const source = readFileSync(join(fixturesDir, 'pages/evidence-widgets.yaml'), 'utf8');
-  target = join(workspace, 'evidence-widgets.html');
-  writeFileSync(target, compile(source, { source: 'evidence-widgets.yaml' }).html, 'utf8');
-});
-
-test.afterAll(() => {
-  rmSync(workspace, { recursive: true, force: true });
-});
+// The annotated image is referenced relatively, so the assets sit beside the page.
+const workspace = browserWorkspace('evidence', { assets: true });
+const html = compile(readFileSync(join(fixturesDir, 'pages/evidence-widgets.yaml'), 'utf8'), {
+  source: 'evidence-widgets.yaml',
+}).html;
+const pageUrl = (): string => `file://${workspace.write('evidence-widgets', html)}`;
 
 async function open(page: Page): Promise<void> {
-  await page.goto(`file://${target}`, { waitUntil: 'load' });
+  await page.goto(pageUrl(), { waitUntil: 'load' });
   await page.locator('.ak-annotated img').scrollIntoViewIfNeeded();
   await expect
     .poll(() =>
@@ -102,7 +91,7 @@ test.describe('without scripts and in print', () => {
   test.use({ javaScriptEnabled: false });
 
   test('notes, verdicts and references stay readable', async ({ page }) => {
-    await page.goto(`file://${target}`, { waitUntil: 'load' });
+    await page.goto(pageUrl(), { waitUntil: 'load' });
     await page.emulateMedia({ media: 'print' });
     await expect(page.locator('.ak-annotated-notes li')).toHaveCount(4);
     await expect(page.locator('.ak-annotated-notes')).toBeVisible();

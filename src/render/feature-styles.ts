@@ -17,6 +17,20 @@ import { scrollEdges } from './derived-variables.js';
 import { SHOWCASE_CSS } from './showcase-styles.js';
 import { disclosureSummary, TRANSITION } from './style-units.js';
 
+/**
+ * Selectors for a block that follows a visible block across `visibleWhen`
+ * wrappers: a block inside a wrapper with a visible block or wrapper before it,
+ * and a block after a visible wrapper (or after a hidden one that itself
+ * follows a block). `scope` prefixes the parent, as in `.ak-section > `.
+ */
+function whenGapTargets(target: string, scope = ''): string {
+  const before = ':where(.ak-block,.ak-when:not([hidden]))';
+  const wrapperBefore = ':where(.ak-when:not([hidden]),.ak-block ~ .ak-when)';
+  return [`${scope}${before} ~ .ak-when > ${target}`, `${scope}${wrapperBefore} ~ ${target}`].join(
+    ',',
+  );
+}
+
 export const FEATURE_CSS: Readonly<Partial<Record<RuntimeFeature, string>>> = {
   ...SHOWCASE_CSS,
   tabs: TABS_CSS,
@@ -76,8 +90,17 @@ dialog.ak-dialog > p{color:var(--ak-color-text-muted)}
 @media print{.ak-toc{display:none!important}}`,
   // A `visibleWhen` wrapper adds no box of its own; `hidden` must win over any
   // display a block sets, and the compiler already emitted the initial view.
+  // Because the wrapper is not a block, the base `.ak-block + .ak-block` gap
+  // skips it: these rules restore the gap (and the section-break gaps) for a
+  // block inside a wrapper and for a block after one, whenever a visible block
+  // comes earlier. They stay at low specificity, so the base resets of flex and
+  // grid containers keep winning.
   state: `.ak-when{display:contents}
-.ak-when[hidden]{display:none!important}`,
+.ak-when[hidden]{display:none!important}
+${whenGapTargets('.ak-block')}{margin-top:var(--ak-gap)}
+${whenGapTargets('.ak-block:has(> .ak-section-head)', '.ak-section > ')}{margin-top:calc(var(--ak-gap) * 1.75)}
+${whenGapTargets('.ak-block:is(.ak-section,:has(> .ak-section-head))', '.ak-main > ')}{margin-top:calc(var(--ak-gap) * 2.5)}
+:where(.ak-stack,.ak-grid,.ak-split) > .ak-when > .ak-block{margin-top:0}`,
   diagram: `.ak-diagram{min-width:0}
 .ak-diagram-rendered{overflow-x:auto;overscroll-behavior-x:contain;contain:paint;padding:calc(var(--ak-space-unit) * 2);background:var(--ak-fill);border:var(--ak-border-width) solid var(--ak-color-border);border-radius:var(--ak-radius-medium);box-shadow:var(--ak-elevation-card)}
 ${scrollEdges('.ak-diagram-rendered')}

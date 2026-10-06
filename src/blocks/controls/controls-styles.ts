@@ -5,8 +5,9 @@
  * breakpoint. Without scripts the inputs stay disabled and a muted note says
  * so; print hides every control, since a printed control does nothing.
  *
- * The `visibleWhen` wrapper is `display:contents`, so it breaks the base
- * `.ak-block + .ak-block` gap; a view a control switches gets the gap back.
+ * The state sheet restores block gaps around `visibleWhen` wrappers; the filter
+ * bar's control grid only cancels that gap for a wrapped control, as its grid
+ * gap already spaces the controls.
  */
 
 import { TRANSITION, UNIT } from '../../render/style-units.js';
@@ -39,8 +40,7 @@ ${FIELDS.split(',')
 .ak-control-hint{margin:0;font-size:.85em;color:var(--ak-color-text-muted)}
 .ak-control-note{margin:0;font-size:.8em;font-style:italic;color:var(--ak-color-text-muted)}
 [data-ak-ready]>.ak-control-note{display:none}
-.ak-control~[data-ak-when]>.ak-block{margin-top:var(--ak-gap)}
-:is(.ak-stack,.ak-grid,.ak-split,.ak-filter-controls)>[data-ak-when]>.ak-block{margin-top:0}
+.ak-filter-controls>[data-ak-when]>.ak-block{margin-top:0}
 @media (max-width:768px){${FIELDS}{min-height:44px}.ak-choice{min-height:44px}}
 @media print{.ak-control{display:none!important}}`;
 

@@ -1,22 +1,14 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { expect, type Page, test } from '@playwright/test';
 import { compile } from '../../src/render/render.js';
+import { browserWorkspace } from './browser-workspace.js';
 
-const workspace = mkdtempSync(join(tmpdir(), 'ak-render-narrow-layout-'));
-
-test.afterAll(() => {
-  rmSync(workspace, { recursive: true, force: true });
-});
+const workspace = browserWorkspace('narrow-layout');
 
 const WIDTHS = [1440, 768, 375] as const;
 
 /** Compile a spec and open the artifact from disk at the given width. */
 async function open(page: Page, name: string, source: string, width: number): Promise<void> {
-  mkdirSync(workspace, { recursive: true });
-  const target = join(workspace, `${name}.html`);
-  writeFileSync(target, compile(source).html, 'utf8');
+  const target = workspace.write(name, compile(source).html);
   await page.setViewportSize({ width, height: 812 });
   await page.goto(`file://${target}`, { waitUntil: 'load' });
 }

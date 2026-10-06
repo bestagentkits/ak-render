@@ -1,0 +1,120 @@
+version: 1
+
+meta:
+  title: Context Compression Benchmark
+  description: Baseline against candidate on token cost, latency and accuracy, with per-task evidence, a cost bridge and cited method
+  locale: en
+
+theme:
+  preset: swiss-clean
+
+policy:
+  network: deny
+
+datasets:
+  tasks:
+    - { task: Dashboard, baseline: 21800, candidate: 6400, saving: 71, accuracy: 98, r1: 7100, r2: 6800, r3: 6500, r4: 6400 }
+    - { task: Incident report, baseline: 18400, candidate: 5900, saving: 68, accuracy: 97, r1: 6600, r2: 6200, r3: 6000, r4: 5900 }
+    - { task: Release notes, baseline: 9600, candidate: 3100, saving: 68, accuracy: 100, r1: 3500, r2: 3300, r3: 3200, r4: 3100 }
+    - { task: Architecture review, baseline: 26200, candidate: 8800, saving: 66, accuracy: 95, r1: 9900, r2: 9400, r3: 9000, r4: 8800 }
+    - { task: Pricing page, baseline: 15100, candidate: 4300, saving: 72, accuracy: 99, r1: 4900, r2: 4600, r3: 4400, r4: 4300 }
+    - { task: Research summary, baseline: 12700, candidate: 4600, saving: 64, accuracy: 96, r1: 5200, r2: 4900, r3: 4700, r4: 4600 }
+
+blocks:
+  - type: hero
+    eyebrow: Benchmark · 6 tasks · 4 runs each
+    title: Structured specs cut page tokens by two thirds
+    description: The same six page requests, written once as raw HTML and once as a Page Spec, measured on tokens, latency and rubric accuracy.
+
+  - type: section
+    id: headline
+    title: Headline comparison
+    blocks:
+      - type: benchmark-comparison
+        title: Raw HTML against Page Spec
+        baseline: { label: Raw HTML }
+        candidate: { label: Page Spec }
+        metrics:
+          - { label: Output tokens per page, baseline: 17300, candidate: 5517, better: lower, format: integer }
+          - { label: Generation time, baseline: 41200, candidate: 14800, better: lower, format: duration }
+          - { label: Rubric accuracy, baseline: 91, candidate: 97.5, better: higher, format: percent, decimals: 1 }
+          - { label: Cost per page, baseline: 0.26, candidate: 0.083, better: lower, format: currency }
+          - { label: Retries to a valid page, baseline: 1.4, candidate: 1.4, better: lower, decimals: 1 }
+        currency: USD
+        method: Each task ran four times per arm on the same model and temperature. Tokens are output tokens only; the spec arm includes the compact describe output it read.
+        limitations: Six tasks is a small sample, and accuracy is a rubric score from one reviewer.
+        source: { label: Run log and rubric, href: '#ref-run-log' }
+
+  - type: section
+    id: evidence
+    title: Evidence
+    blocks:
+      - type: tabs
+        title: Per-task results
+        items:
+          - id: tokens
+            title: Tokens
+            blocks:
+              - type: chart
+                kind: bar
+                title: Output tokens per task
+                data:
+                  - { task: Dashboard, arm: Raw HTML, tokens: 21800 }
+                  - { task: Dashboard, arm: Page Spec, tokens: 6400 }
+                  - { task: Incident, arm: Raw HTML, tokens: 18400 }
+                  - { task: Incident, arm: Page Spec, tokens: 5900 }
+                  - { task: Release, arm: Raw HTML, tokens: 9600 }
+                  - { task: Release, arm: Page Spec, tokens: 3100 }
+                  - { task: Architecture, arm: Raw HTML, tokens: 26200 }
+                  - { task: Architecture, arm: Page Spec, tokens: 8800 }
+                x: { field: task, label: Task }
+                y: { field: tokens, label: Tokens, format: compact }
+                series: { field: arm }
+          - id: table
+            title: Table
+            blocks:
+              - type: data-table
+                title: Tokens per task
+                dataRef: tasks
+                columns:
+                  - { key: task, label: Task }
+                  - { key: baseline, label: Raw HTML, type: number, format: integer }
+                  - { key: candidate, label: Page Spec, type: number, format: integer }
+                  - { key: saving, label: Saving, type: percent }
+                  - { key: accuracy, label: Accuracy, type: percent }
+                  - { key: r4, label: Spec tokens by run, type: sparkline, fields: [r1, r2, r3, r4] }
+          - id: cost
+            title: Cost bridge
+            blocks:
+              - type: chart
+                kind: waterfall
+                title: Monthly cost bridge for 2,000 pages
+                labels: [Raw HTML, Fewer tokens, Fewer retries, Describe reads, Validation]
+                series:
+                  - label: Cost
+                    values: [520, -372, -12, 18, 12]
+                y: { label: Cost, format: currency, currency: USD }
+              - type: text
+                variant: caption
+                text: Describe reads and validation add a small fixed cost per page; the token saving dominates.
+
+  - type: section
+    id: sources
+    title: Sources
+    blocks:
+      - type: references
+        items:
+          - id: run-log
+            title: Benchmark run log, four runs per task and arm
+            source: Internal evaluation notebook
+            year: 2026
+            note: Raw token counts, timings and retry counts per run.
+          - id: rubric
+            title: Page quality rubric v2
+            authors: Evaluation guild
+            year: 2026
+            note: Ten checks covering structure, accessibility and content fidelity.
+          - id: pricing
+            title: Model list prices, September 2026
+            source: Provider pricing page
+            year: 2026
