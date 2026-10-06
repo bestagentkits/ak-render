@@ -235,6 +235,39 @@ describe('data-table', () => {
     expect(section(compile(page({ data: rows(13) })).html)).toContain('data-ak-sticky');
   });
 
+  it('leaves search to a filter-bar that targets the table', () => {
+    const bar = (target: string) => ({
+      type: 'filter-bar',
+      target,
+      blocks: [{ type: 'text-input', label: 'Name', field: 'name' }],
+    });
+    const spec = {
+      version: 1,
+      meta: { title: 'Filtered tables' },
+      blocks: [
+        bar('filtered'),
+        { type: 'data-table', id: 'filtered', data: rows(11) },
+        { type: 'data-table', id: 'free', data: rows(11) },
+      ],
+    };
+    const result = compile(spec);
+    expect(result.warnings).toEqual([]);
+    const tables = [
+      ...result.html.matchAll(/<section[^>]*\bak-data-table\b[\s\S]*?<\/section>/gu),
+    ].map((match) => match[0]);
+    expect(tables).toHaveLength(2);
+    const [filtered, free] = tables as [string, string];
+    expect(filtered).toContain('data-ak-id="filtered"');
+    // The bar owns filtering: no second search box, count or empty note.
+    expect(filtered).not.toContain('data-ak-dt-search');
+    expect(filtered).not.toContain('data-ak-dt-count');
+    expect(filtered).not.toContain('data-ak-dt-empty');
+    expect(filtered.match(/data-ak-filter-item/gu)).toHaveLength(11);
+    // A table no bar targets keeps its own search.
+    expect(free).toContain('data-ak-id="free"');
+    expect(free).toContain('data-ak-dt-search');
+  });
+
   it('marks header scope and every row for filtering', () => {
     const markup = section(compile(page({ data: rows(3) })).html);
     expect(markup.match(/scope="col"/gu)).toHaveLength(2);
