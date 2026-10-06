@@ -901,6 +901,7 @@ export function normalizeSpec(input: unknown, options: NormalizeOptions = {}): N
     byId,
     state: context.state,
     datasets: context.datasets,
+    registry,
   });
 
   const ir: IrDocument = {

@@ -42,6 +42,7 @@ export interface CheckContext {
   byId: ReadonlyMap<string, IrNode>;
   state: Record<string, JsonValue>;
   datasets: Record<string, DataRow[]>;
+  registry: BlockRegistry;
 }
 
 export interface BlockModule {
