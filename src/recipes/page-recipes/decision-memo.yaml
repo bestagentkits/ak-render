@@ -1,0 +1,51 @@
+# summary: Recommendation first, then context, an options table, trade-offs, risks and next steps.
+# use-cases: decision record for leadership; build vs buy memo; vendor or tool selection
+version: 1
+meta:
+  title: Replace with the decision — memo
+  description: Replace with the decision being asked for.
+theme:
+  preset: executive-report
+datasets:
+  options:
+    - { option: Replace with option A, cost: 120000, months: 3, risk: low, pick: recommended }
+    - { option: Replace with option B, cost: 45000, months: 6, risk: medium, pick: viable }
+    - { option: Replace with option C, cost: 0, months: 2, risk: high, pick: rejected }
+blocks:
+  - type: hero
+    eyebrow: Decision memo · Replace with the date
+    title: Replace with the recommendation in one sentence
+    description: Replace with who decides and by when.
+  - type: callout
+    tone: success
+    title: Recommendation
+    text: Replace with the option you recommend and the single strongest reason.
+  - type: key-value
+    title: Context
+    items:
+      - { key: Problem, value: Replace with what forces a decision now }
+      - { key: Constraint, value: Replace with the budget and deadline }
+      - { key: Owner, value: Replace with the accountable person }
+  - type: data-table
+    title: Options
+    dataRef: options
+    columns:
+      - { key: option, label: Option }
+      - { key: cost, label: Cost, type: currency, currency: USD, decimals: 0 }
+      - { key: months, label: Time, type: number, unit: months }
+      - { key: risk, label: Risk, type: badge, tones: { low: success, medium: warning, high: danger } }
+      - { key: pick, label: Verdict, type: badge, tones: { recommended: success, viable: info, rejected: neutral } }
+  - type: comparison
+    title: Trade-offs
+    left: { label: If we choose A, items: [Replace with a gain, Replace with a cost] }
+    right: { label: If we wait, items: [Replace with a gain, Replace with a cost] }
+  - type: risk-matrix
+    title: Risks of the recommendation
+    items:
+      - { area: Replace with a risk, impact: high, likelihood: low, note: Replace with the mitigation. }
+      - { area: Replace with a risk, impact: medium, likelihood: medium, note: Replace with the mitigation. }
+  - type: checklist
+    title: Next steps
+    items:
+      - { text: Replace with the first action and its owner }
+      - { text: Replace with the second action and its owner }

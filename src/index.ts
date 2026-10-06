@@ -26,6 +26,8 @@ export type { RenderErrorCode, RenderErrorOptions } from './errors.js';
 export { isRenderError, RenderError } from './errors.js';
 export type { IrDocument, IrNode, IrTheme, NetworkPolicy } from './ir.js';
 export type { JsonValue } from './json.js';
+export type { PageRecipe, PageRecipeSummary } from './recipes/index.js';
+export { recipe, recipes } from './recipes/index.js';
 export type { ActionDefinition, ActionType } from './registry/actions.js';
 export { ACTION_DEFINITIONS, ALLOWED_EVENTS, listActionTypes } from './registry/actions.js';
 export type { BlockCategory } from './registry/block-module.js';

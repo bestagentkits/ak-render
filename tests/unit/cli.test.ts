@@ -60,7 +60,15 @@ describe('ak-render CLI', () => {
   });
 
   it('prints one command usage on <command> --help instead of reading a file', () => {
-    for (const command of ['compile', 'validate', 'describe', 'search-catalog', 'themes']) {
+    for (const command of [
+      'compile',
+      'validate',
+      'describe',
+      'search-catalog',
+      'recipes',
+      'recipe',
+      'themes',
+    ]) {
       const c = capture();
       expect(run([command, '--help'], c.io), command).toBe(0);
       expect(c.out()).toContain(`Usage:\n  ak-render`);

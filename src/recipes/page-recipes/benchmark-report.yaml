@@ -1,0 +1,60 @@
+# summary: Baseline vs candidate verdicts, a per-run chart and table from one dataset, method and sources.
+# use-cases: performance regression check; model or library comparison; before/after optimisation report
+version: 1
+meta:
+  title: Replace with the benchmark title
+  description: Replace with what was measured and why.
+theme:
+  preset: data-console
+datasets:
+  runs:
+    - { case: cold start, build: baseline, ms: 412 }
+    - { case: cold start, build: candidate, ms: 288 }
+    - { case: warm start, build: baseline, ms: 96 }
+    - { case: warm start, build: candidate, ms: 81 }
+    - { case: large file, build: baseline, ms: 1840 }
+    - { case: large file, build: candidate, ms: 1210 }
+    - { case: many files, build: baseline, ms: 2630 }
+    - { case: many files, build: candidate, ms: 2710 }
+    - { case: incremental, build: baseline, ms: 154 }
+    - { case: incremental, build: candidate, ms: 98 }
+blocks:
+  - type: hero
+    eyebrow: Benchmark
+    title: Replace with the headline result
+    description: Replace with one sentence on the setup and the outcome.
+  - type: benchmark-comparison
+    title: Summary
+    baseline: { label: v1.4 baseline }
+    candidate: { label: v1.5 candidate }
+    metrics:
+      - { label: p50 latency, baseline: 154, candidate: 98, better: lower, format: duration }
+      - { label: Peak memory, baseline: 512, candidate: 468, better: lower, unit: MB }
+      - { label: Throughput, baseline: 1180, candidate: 1525, better: higher, unit: req/s }
+      - { label: Bundle size, baseline: 84, candidate: 86, better: lower, unit: kB }
+    method: Replace with the machine, dataset, run count and how outliers were handled.
+    limitations: Replace with what this benchmark does not cover.
+  - type: tabs
+    items:
+      - title: Chart
+        blocks:
+          - type: chart
+            kind: bar
+            title: Latency per case
+            dataRef: runs
+            x: { field: case }
+            y: { field: ms, label: Time, format: duration }
+            series: { field: build }
+      - title: Table
+        blocks:
+          - type: data-table
+            dataRef: runs
+            columns:
+              - { key: case, label: Case }
+              - { key: build, label: Build, type: badge, tones: { candidate: info } }
+              - { key: ms, label: Time, type: number, format: duration }
+  - type: references
+    title: Sources
+    items:
+      - { id: harness, title: Replace with the benchmark harness, source: Repository README, year: 2026 }
+      - { id: raw, title: Replace with the raw results file, note: Replace with where the raw numbers live. }

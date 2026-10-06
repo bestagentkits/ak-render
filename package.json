@@ -70,7 +70,9 @@
     "snapshots:check": "node scripts/generate-theme-snapshots.mjs --check",
     "site:build": "pnpm build && node scripts/build-site.mjs",
     "site:deploy": "pnpm site:build && wrangler deploy --config site/wrangler.jsonc",
-    "verify": "pnpm lint && pnpm typecheck && pnpm fonts:check && pnpm test && pnpm build"
+    "recipes:generate": "node scripts/generate-recipes-module.mjs",
+    "recipes:check": "node scripts/generate-recipes-module.mjs --check",
+    "verify": "pnpm lint && pnpm typecheck && pnpm fonts:check && pnpm recipes:check && pnpm test && pnpm build"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.12",

@@ -1,0 +1,60 @@
+# summary: Launch page with hero, feature bento, plan comparison, pricing, quotes and a call to action.
+# use-cases: product or feature launch; landing page draft; internal tool announcement
+version: 1
+meta:
+  title: Replace with the product name
+  description: Replace with the one-line value proposition.
+theme:
+  preset: product-studio
+blocks:
+  - type: hero
+    eyebrow: Replace with a launch label
+    title: Replace with the promise in six words
+    description: Replace with who it is for and the outcome they get.
+    align: center
+  - type: bento
+    items:
+      - { eyebrow: Speed, title: Replace with the headline feature, text: Replace with the benefit in one sentence., value: 3x, size: large }
+      - { title: Replace with a second feature, text: Replace with the benefit., size: wide }
+      - { title: Replace with a third feature, text: Replace with the benefit. }
+      - { title: Replace with a fourth feature, text: Replace with the benefit. }
+  - type: feature-matrix
+    title: Compare plans
+    plans: [Starter, Team, Enterprise]
+    rows:
+      - { feature: Replace with feature A, values: [true, true, true] }
+      - { feature: Replace with feature B, values: [false, true, true] }
+      - { feature: Replace with feature C, values: [false, false, true] }
+      - { feature: Seats, values: ['1', Up to 25, Unlimited] }
+  - type: pricing
+    plans:
+      - name: Starter
+        price: 0
+        currency: USD
+        period: month
+        summary: Replace with who Starter is for.
+        features: [Replace with a feature, Replace with a limit]
+        cta: { label: Start free, href: '#start' }
+      - name: Team
+        price: 24
+        currency: USD
+        period: month
+        highlight: true
+        summary: Replace with who Team is for.
+        features: [Everything in Starter, Replace with a feature]
+        cta: { label: Start a trial, href: '#trial' }
+      - name: Enterprise
+        price: Custom
+        summary: Replace with who Enterprise is for.
+        features: [Everything in Team, Replace with a feature]
+        cta: { label: Contact sales, href: '#contact' }
+  - type: testimonial
+    items:
+      - { quote: Replace with a short customer quote about the outcome., name: Replace with a name, role: Replace with role and company }
+      - { quote: Replace with a second quote about a different benefit., name: Replace with a name, role: Replace with role and company }
+  - type: cta
+    title: Replace with the closing call to action
+    text: Replace with the reason to act now.
+    actions:
+      - { label: Get started, href: '#start', variant: primary }
+      - { label: Read the docs, href: '#docs', variant: secondary }

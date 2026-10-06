@@ -1,0 +1,56 @@
+# summary: Impact summary, timeline, error log, root cause, failing checks and follow-up board for a postmortem.
+# use-cases: incident postmortem; outage summary for leadership; service degradation review
+version: 1
+meta:
+  title: Replace with the incident name
+  description: Replace with a one-line incident summary.
+theme:
+  preset: executive-report
+datasets:
+  followups:
+    - { title: Add a canary for config pushes, column: todo, owner: Platform, status: P1 }
+    - { title: Alert on queue depth, column: doing, owner: SRE, status: P1 }
+    - { title: Document the rollback runbook, column: doing, owner: On-call, status: P2 }
+    - { title: Roll back the bad config, column: done, owner: On-call, status: P0 }
+blocks:
+  - type: hero
+    eyebrow: Incident report · Replace with the severity
+    title: Replace with what users experienced
+    description: Replace with the duration, the blast radius and the current state.
+  - type: stats
+    items:
+      - { label: Duration, value: 47 min }
+      - { label: Users affected, value: '12%' }
+      - { label: Failed requests, value: 38.2k }
+      - { label: Time to detect, value: 6 min }
+  - type: timeline
+    title: Timeline
+    items:
+      - { when: '09:12', title: Config change deployed, text: Replace with what changed. }
+      - { when: '09:18', title: Alert fired, text: Replace with how it was detected. }
+      - { when: '09:31', title: Cause identified, text: Replace with the finding. }
+      - { when: '09:59', title: Recovered, text: Replace with the fix that restored service. }
+  - type: log-viewer
+    title: Key log lines
+    lines:
+      - { time: '09:12:04', level: info, source: deploy, message: Replace with the config push line }
+      - { time: '09:17:51', level: warn, source: api, message: Replace with the first warning }
+      - { time: '09:18:02', level: error, source: api, message: Replace with the error users hit }
+  - type: callout
+    tone: warning
+    title: Root cause
+    text: Replace with the root cause in two or three plain sentences.
+  - type: test-results
+    title: Checks that should have caught it
+    suites:
+      - name: Replace with a suite name
+        cases:
+          - { name: Replace with the check that failed, status: fail, message: Replace with why it missed the fault. }
+          - { name: Replace with a check that passed, status: pass, duration: 120 }
+  - type: kanban
+    title: Follow-ups
+    dataRef: followups
+    columns:
+      - { id: todo, title: To do }
+      - { id: doing, title: In progress }
+      - { id: done, title: Done }

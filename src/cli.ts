@@ -16,6 +16,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isRenderError, type RenderError } from './errors.js';
 import { serveMcp } from './mcp-server.js';
+import { type PageRecipe, recipe, recipes } from './recipes/index.js';
 import { BLOCK_CATEGORIES } from './registry/block-module.js';
 import { searchCatalog } from './registry/catalog-search.js';
 import { type CompactBlockDescription, describeMany } from './registry/describe-many.js';
@@ -326,9 +327,46 @@ const COMMANDS: Record<string, Command> = {
       return 0;
     },
   },
+  recipes: {
+    summary: 'List page recipes: complete starter specs for common pages.',
+    usage: 'ak-render recipes [--json]',
+    run: (_args, io, flags) => {
+      const listing = recipes();
+      if (flags.json) {
+        io.stdout(`${JSON.stringify(listing, null, 2)}\n`);
+        return 0;
+      }
+      const width = Math.max(...listing.map((entry) => entry.name.length));
+      for (const entry of listing) io.stdout(`${entry.name.padEnd(width)}  ${entry.summary}\n`);
+      return 0;
+    },
+  },
+  recipe: {
+    summary: 'Print one page recipe as a starter Page Spec (YAML).',
+    usage: 'ak-render recipe <name> [--json]',
+    run: (args, io, flags) => {
+      const name = args[0];
+      if (name === undefined) {
+        io.stderr('ak-render: recipe requires a recipe name (see ak-render recipes)\n');
+        return 2;
+      }
+      let found: PageRecipe;
+      try {
+        found = recipe(name);
+      } catch (error) {
+        if (isRenderError(error)) {
+          io.stderr(`ak-render: ${error.message}\n`);
+          return 1;
+        }
+        throw error;
+      }
+      io.stdout(flags.json ? `${JSON.stringify(found, null, 2)}\n` : found.spec);
+      return 0;
+    },
+  },
   mcp: {
     summary:
-      'Serve catalog, search-catalog, describe, validate, render and themes as MCP tools over stdio.',
+      'Serve catalog, search-catalog, describe, recipes, recipe, validate, render and themes as MCP tools over stdio.',
     usage: 'ak-render mcp',
     run: () => {
       // The server keeps the process alive until its client closes stdin.
