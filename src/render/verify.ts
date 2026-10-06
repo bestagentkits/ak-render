@@ -9,6 +9,7 @@
 
 import { type Diagnostic, DiagnosticBag } from '../diagnostics.js';
 import type { IrDocument } from '../ir.js';
+import type { FeatureModule } from '../registry/block-module.js';
 import type { RuntimeFeature } from '../registry/roster.js';
 
 export interface VerifyInput {
@@ -20,6 +21,8 @@ export interface VerifyInput {
   features: ReadonlySet<RuntimeFeature>;
   css: string;
   js: string;
+  /** Registry features; their markers are checked like the core ones. */
+  moduleFeatures?: readonly FeatureModule[];
 }
 
 /**
@@ -49,6 +52,7 @@ const FEATURE_MARKERS: Readonly<Partial<Record<RuntimeFeature, string>>> = {
   cta: '.ak-cta',
   frame: '.ak-frame-view',
   checklist: '.ak-checklist',
+  state: '.ak-when',
 };
 
 /** Features whose behavior requires emitted JavaScript. */
@@ -61,6 +65,7 @@ const SCRIPTED_FEATURES: readonly RuntimeFeature[] = [
   'dialog',
   'outline',
   'before-after',
+  'state',
 ];
 
 function countMatches(text: string, pattern: RegExp): number {
@@ -177,7 +182,21 @@ export function verifyDocument(input: VerifyInput): Diagnostic[] {
   if (!/:focus-visible/u.test(html)) report('missing a :focus-visible rule');
   if (!/prefers-reduced-motion/u.test(html)) report('missing a prefers-reduced-motion rule');
 
-  for (const [feature, marker] of Object.entries(FEATURE_MARKERS) as [RuntimeFeature, string][]) {
+  const markers: [RuntimeFeature, string, boolean][] = [
+    ...(Object.entries(FEATURE_MARKERS) as [RuntimeFeature, string][]).map(
+      ([feature, marker]): [RuntimeFeature, string, boolean] => [
+        feature,
+        marker,
+        SCRIPTED_FEATURES.includes(feature),
+      ],
+    ),
+    ...(input.moduleFeatures ?? []).map((feature): [RuntimeFeature, string, boolean] => [
+      feature.name,
+      feature.marker,
+      feature.script !== undefined,
+    ]),
+  ];
+  for (const [feature, marker, scripted] of markers) {
     const used = input.features.has(feature);
     const emitted = input.css.includes(marker);
     if (used && !emitted) report(`feature "${feature}" is used but its stylesheet was not emitted`);
@@ -186,7 +205,6 @@ export function verifyDocument(input: VerifyInput): Diagnostic[] {
         `feature "${feature}" is not used but its stylesheet was emitted (tree-shaking regression)`,
       );
     }
-    const scripted = SCRIPTED_FEATURES.includes(feature);
     if (used && scripted && input.js === '') {
       report(`feature "${feature}" requires runtime behavior but no script was emitted`);
     }

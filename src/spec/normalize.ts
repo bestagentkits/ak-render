@@ -9,6 +9,9 @@
  */
 
 import { checkSeriesLengths } from '../blocks/chart/chart.js';
+import type { DataRow } from '../data/dataset-types.js';
+import { type BlockDataInput, resolveBlockData } from '../data/resolve-block-data.js';
+import { validateDatasets } from '../data/validate-datasets.js';
 import { type Diagnostic, DiagnosticBag, pathIndex, pathKey } from '../diagnostics.js';
 import { isRenderError, RenderError } from '../errors.js';
 import { derivedNodeId } from '../hash.js';
@@ -19,9 +22,11 @@ import { NODE_ID_PATTERN, validateProps } from '../registry/prop-schema.js';
 import { blockTypes, DEFAULT_REGISTRY, getBlockDefinition } from '../registry/registry.js';
 import type { BlockDefinition, RuntimeFeature } from '../registry/roster.js';
 import { slotKey } from '../render/render-context.js';
+import { validateThemeRecipes } from '../theme/recipes.js';
 import { VERSION } from '../version.js';
 import { type BindingMap, validateBindingsDeep } from './bindings.js';
 import { type BoundsReport, checkBounds, LIMITS } from './bounds.js';
+import { validateCondition } from './conditions.js';
 import { scanForbiddenKeys } from './forbidden.js';
 import { migrateSpec } from './migrate.js';
 import { blockedReason, imageReferenceAllowed } from './network-policy.js';
@@ -37,6 +42,7 @@ export interface NormalizeResult {
 const THEME_PRESET_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const LOCALE_PATTERN = /^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/;
 const DEFAULT_THEME_PRESET = 'editorial';
+const THEME_FIELDS: readonly string[] = ['preset', 'extends', 'tokens', 'dark', 'recipes'];
 export const NETWORK_CAPABILITIES = ['media', 'fonts', 'images'] as const;
 
 interface BuildContext {
@@ -44,6 +50,8 @@ interface BuildContext {
   nodes: IrNode[];
   usedIds: Set<string>;
   registry: BlockRegistry;
+  state: Record<string, JsonValue>;
+  datasets: Record<string, DataRow[]>;
 }
 
 export interface NormalizeOptions extends ParseOptions {
@@ -91,6 +99,7 @@ interface Envelope {
   theme: IrTheme;
   policy: IrDocument['policy'];
   state: Record<string, JsonValue>;
+  datasets: Record<string, DataRow[]>;
   blocks: unknown[];
 }
 
@@ -152,25 +161,31 @@ function normalizeEnvelope(
       });
       theme = { preset: preset ?? DEFAULT_THEME_PRESET };
       if (extendsName !== undefined) theme.extends = extendsName;
-      const tokens = themeValue.tokens;
-      if (tokens !== undefined) {
+      for (const key of ['tokens', 'dark'] as const) {
+        const tokens = themeValue[key];
+        if (tokens === undefined) continue;
         if (!isPlainObject(tokens)) {
           bag.add({
             code: 'SPEC_VALIDATION_ERROR',
-            path: '$.theme.tokens',
+            path: pathKey('$.theme', key),
             message: 'expected a token object',
           });
         } else {
-          theme.tokens = tokens as JsonValue;
+          // Token names and values are checked when the theme resolves.
+          theme[key] = tokens as JsonValue;
         }
       }
+      if (themeValue.recipes !== undefined) {
+        const recipes = validateThemeRecipes(themeValue.recipes, '$.theme.recipes', bag);
+        if (Object.keys(recipes).length > 0) theme.recipes = recipes;
+      }
       for (const key of Object.keys(themeValue)) {
-        if (!['preset', 'extends', 'tokens'].includes(key)) {
+        if (!THEME_FIELDS.includes(key)) {
           bag.add({
             code: 'SPEC_VALIDATION_ERROR',
             path: pathKey('$.theme', key),
             message: `unknown theme field "${key}"`,
-            details: { allowed: ['preset', 'extends', 'tokens'] },
+            details: { allowed: [...THEME_FIELDS] },
           });
         }
       }
@@ -304,6 +319,8 @@ function normalizeEnvelope(
     }
   }
 
+  const datasets = validateDatasets(document.datasets, '$.datasets', bag);
+
   const blocks = document.blocks;
   if (!Array.isArray(blocks) || blocks.length === 0) {
     bag.add({
@@ -324,6 +341,7 @@ function normalizeEnvelope(
     theme,
     policy,
     state,
+    datasets,
     blocks,
   };
 }
@@ -368,6 +386,9 @@ function resolveNodeId(
   context.usedIds.add(candidate);
   return { id: candidate, authorSupplied: false };
 }
+
+/** Envelope keys a data-bound block reads instead of props. */
+const DATA_KEYS: readonly string[] = ['dataRef', 'data', 'transform'];
 
 /** Where a block is being built: its parent's type and the slot's accepted types. */
 interface Placement {
@@ -494,11 +515,21 @@ function buildNode(
 
   const childSlot = definition.slots?.children;
   const rawProps: Record<string, unknown> = {};
+  const dataInput: BlockDataInput = {};
   let childBlocks: unknown;
+  let visibleWhen: unknown;
   for (const [key, value] of Object.entries(entry)) {
     if (key === 'type') continue;
     if (key === 'blocks') {
       childBlocks = value;
+      continue;
+    }
+    if (key === 'visibleWhen') {
+      visibleWhen = value;
+      continue;
+    }
+    if (definition.data !== undefined && DATA_KEYS.includes(key)) {
+      dataInput[key as keyof BlockDataInput] = value;
       continue;
     }
     rawProps[key] = value;
@@ -537,6 +568,34 @@ function buildNode(
     assets: [...definition.assets],
     network: definition.network,
   };
+  if (visibleWhen !== undefined) {
+    const condition = validateCondition(
+      visibleWhen,
+      pathKey(path, 'visibleWhen'),
+      context.bag,
+      context.state,
+    );
+    if (condition !== undefined) {
+      node.when = condition;
+      node.runtimeFeatures.push('state');
+    }
+  }
+  if (definition.data !== undefined) {
+    const data = resolveBlockData(dataInput, context.datasets, path, context.bag);
+    if (data !== undefined) node.data = data;
+    else if (
+      definition.data.required &&
+      dataInput.dataRef === undefined &&
+      dataInput.data === undefined
+    ) {
+      context.bag.add({
+        code: 'SPEC_VALIDATION_ERROR',
+        path: pathKey(path, 'dataRef'),
+        message: `block type "${definition.type}" needs "dataRef" or "data"`,
+        details: { known: Object.keys(context.datasets) },
+      });
+    }
+  }
   context.nodes.push(node);
 
   const buildList = (entries: unknown[], listPath: string, accepts: Placement['accepts']) => {
@@ -784,7 +843,14 @@ export function normalizeSpec(input: unknown, options: NormalizeOptions = {}): N
   }
 
   const envelope = normalizeEnvelope(migrated.document, bag);
-  const context: BuildContext = { bag, nodes: [], usedIds: new Set<string>(), registry };
+  const context: BuildContext = {
+    bag,
+    nodes: [],
+    usedIds: new Set<string>(),
+    registry,
+    state: envelope?.state ?? {},
+    datasets: envelope?.datasets ?? {},
+  };
   const rootChildren: string[] = [];
 
   if (envelope !== undefined) {
@@ -831,8 +897,8 @@ export function normalizeSpec(input: unknown, options: NormalizeOptions = {}): N
   postChecks(context.nodes, envelope?.policy.network ?? 'deny', bag, registry, {
     bag,
     byId,
-    state: envelope?.state ?? {},
-    datasets: {},
+    state: context.state,
+    datasets: context.datasets,
   });
 
   const ir: IrDocument = {
@@ -843,6 +909,7 @@ export function normalizeSpec(input: unknown, options: NormalizeOptions = {}): N
     theme: envelope?.theme ?? { preset: DEFAULT_THEME_PRESET },
     policy: envelope?.policy ?? { network: 'deny' },
     state: envelope?.state ?? {},
+    datasets: context.datasets,
     rootId: root.id,
     nodes: [root, ...context.nodes],
     warnings: bag.warnings(),
@@ -864,6 +931,7 @@ function emptyIr(): IrDocument {
     theme: { preset: DEFAULT_THEME_PRESET },
     policy: { network: 'deny' },
     state: {},
+    datasets: {},
     rootId: 'page',
     nodes: [],
     warnings: [],

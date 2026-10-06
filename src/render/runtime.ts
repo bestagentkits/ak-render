@@ -13,7 +13,9 @@
  */
 
 import { CAROUSEL, TABS } from '../blocks/composition/composition-runtime.js';
+import type { FeatureModule } from '../registry/block-module.js';
 import type { RuntimeFeature } from '../registry/roster.js';
+import { serializeJsonForScript } from './escape.js';
 
 /** Features that produce user-facing feedback and therefore need a live region. */
 const ANNOUNCING_FEATURES: readonly RuntimeFeature[] = ['copy', 'filter', 'theme'];
@@ -23,9 +25,11 @@ export interface RuntimeOptions {
   state: Record<string, unknown>;
   /** True when at least one block declares an action binding. */
   hasBindings: boolean;
+  /** Registry features the page uses, in registry order. */
+  moduleFeatures?: readonly FeatureModule[];
 }
 
-const HELPERS = `
+const helpers = (conditions: boolean): string => `
 function q(sel, ctx) { return (ctx || doc).querySelector(sel); }
 function qa(sel, ctx) { return Array.prototype.slice.call((ctx || doc).querySelectorAll(sel)); }
 function byId(id) { return qa('[data-ak-id="' + id + '"]'); }
@@ -74,6 +78,47 @@ function syncBindings() {
     } else {
       el.textContent = String(value);
     }
+  });${conditions ? '\n  syncConditions();' : ''}
+}`;
+
+/**
+ * `visibleWhen`: re-evaluate every condition after a state change. The rules
+ * match `evaluateCondition` in the compiler exactly, which already emitted the
+ * initial view; own keys only, so \`state.constructor\` reads as unset.
+ */
+const STATE = `
+function readOwnPath(path) {
+  var parts = String(path).split('.');
+  var cursor = state;
+  for (var i = 1; i < parts.length; i += 1) {
+    if (cursor === null || typeof cursor !== 'object' || Array.isArray(cursor)) return undefined;
+    if (!Object.prototype.hasOwnProperty.call(cursor, parts[i])) return undefined;
+    cursor = cursor[parts[i]];
+  }
+  return cursor;
+}
+function evalCondition(condition) {
+  var value = readOwnPath(condition.path);
+  var op = condition.op;
+  if (op === 'equals') return value === condition.value;
+  if (op === 'notEquals') return value !== condition.value;
+  if (op === 'in' || op === 'notIn') {
+    var found = false;
+    for (var i = 0; i < condition.value.length; i += 1) {
+      if (condition.value[i] === value) found = true;
+    }
+    return op === 'in' ? found : !found;
+  }
+  if (op === 'truthy') return Boolean(value);
+  if (op === 'falsy') return !value;
+  return true;
+}
+function syncConditions() {
+  qa('[data-ak-when]').forEach(function (el) {
+    var condition = readJson(el, 'data-ak-when');
+    if (!condition || typeof condition.path !== 'string') return;
+    if (evalCondition(condition)) el.removeAttribute('hidden');
+    else el.setAttribute('hidden', '');
   });
 }`;
 
@@ -86,6 +131,9 @@ function fire(source, eventName, detail) {
       for (var i = 0; i < bindings.length; i += 1) run(bindings[i], source, detail);
       return;
     }
+    // A block's event belongs to that block: it never reaches an enclosing
+    // block's bindings.
+    if (target.hasAttribute('data-ak-id')) return;
     target = target.parentElement;
   }
 }`;
@@ -134,7 +182,9 @@ function run(action, source, detail) {
     return;
   }
   if (type === 'set-value') {
-    setPath(action.path, action.value);
+    // An action without its own value takes the event's, such as a slider's.
+    var next = Object.prototype.hasOwnProperty.call(action, 'value') ? action.value : (detail ? detail.value : undefined);
+    if (next !== undefined) setPath(action.path, next);
     return;
   }
   if (type === 'next' || type === 'previous') {
@@ -479,9 +529,11 @@ restoreTheme();`;
 /** Build the emitted runtime for the features a page actually uses. */
 export function buildRuntime(options: RuntimeOptions): string {
   const { features } = options;
-  const needsLiveRegion = ANNOUNCING_FEATURES.some((feature) => features.has(feature));
+  const modules = options.moduleFeatures ?? [];
+  const conditions = features.has('state');
   const parts: string[] = [];
 
+  if (conditions) parts.push(STATE);
   if (features.has('theme')) parts.push(THEME);
   if (features.has('copy')) parts.push(COPY);
   if (features.has('dialog')) parts.push(DIALOG);
@@ -491,6 +543,9 @@ export function buildRuntime(options: RuntimeOptions): string {
   if (features.has('tabs')) parts.push(TABS);
   if (features.has('outline')) parts.push(OUTLINE);
   if (features.has('before-after')) parts.push(BEFORE_AFTER);
+  for (const feature of modules) {
+    if (feature.script !== undefined) parts.push(feature.script.code);
+  }
   parts.push(EFFECTS);
 
   const wiring: string[] = [];
@@ -500,6 +555,9 @@ export function buildRuntime(options: RuntimeOptions): string {
   if (features.has('filter')) wiring.push('wireFilters();');
   if (features.has('outline')) wiring.push('wireOutline();');
   if (features.has('before-after')) wiring.push('wireBeforeAfter();');
+  for (const feature of modules) {
+    if (feature.script?.boot !== undefined) wiring.push(feature.script.boot);
+  }
   wiring.push('wireEffects();');
 
   return [
@@ -507,15 +565,16 @@ export function buildRuntime(options: RuntimeOptions): string {
     '"use strict";',
     'var doc = document;',
     'var root = doc.documentElement;',
-    `var state = ${JSON.stringify(options.state)};`,
-    HELPERS,
+    // The state is author data inside a script element: escaped so a value such
+    // as `</script>` cannot close it.
+    `var state = ${serializeJsonForScript(options.state)};`,
+    helpers(conditions),
     RUN,
     FIRE,
     ...parts,
     DELEGATION,
     BOOT,
     ...wiring,
-    needsLiveRegion ? '' : '',
     '})();',
   ]
     .filter((part) => part !== '')
@@ -523,6 +582,12 @@ export function buildRuntime(options: RuntimeOptions): string {
 }
 
 /** Features whose presence requires the live region in the document. */
-export function needsLiveRegion(features: ReadonlySet<RuntimeFeature>): boolean {
-  return ANNOUNCING_FEATURES.some((feature) => features.has(feature));
+export function needsLiveRegion(
+  features: ReadonlySet<RuntimeFeature>,
+  moduleFeatures: readonly FeatureModule[] = [],
+): boolean {
+  return (
+    ANNOUNCING_FEATURES.some((feature) => features.has(feature)) ||
+    moduleFeatures.some((feature) => feature.announces === true && features.has(feature.name))
+  );
 }

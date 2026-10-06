@@ -74,6 +74,10 @@ dialog.ak-dialog > p{color:var(--ak-color-text-muted)}
 .ak-toc a[aria-current]{color:var(--ak-color-accent);border-left-color:var(--ak-color-accent);font-weight:600}
 @media (min-width:1280px){.ak-shell--outline{max-width:1400px;display:grid;grid-template-columns:minmax(0,1fr) 216px;column-gap:calc(var(--ak-space-unit) * 8);align-items:start}.ak-shell--outline > *{grid-column:1}.ak-shell--outline > .ak-toc{display:block;grid-column:2;grid-row:1 / span 2;position:sticky;top:calc(var(--ak-space-unit) * 4);max-height:calc(100vh - var(--ak-space-unit) * 8);overflow-y:auto;padding-top:calc(var(--ak-space-unit) * 1)}}
 @media print{.ak-toc{display:none!important}}`,
+  // A `visibleWhen` wrapper adds no box of its own; `hidden` must win over any
+  // display a block sets, and the compiler already emitted the initial view.
+  state: `.ak-when{display:contents}
+.ak-when[hidden]{display:none!important}`,
   diagram: `.ak-diagram{min-width:0}
 .ak-diagram-rendered{overflow-x:auto;overscroll-behavior-x:contain;padding:calc(var(--ak-space-unit) * 2);background:var(--ak-fill);border:var(--ak-border-width) solid var(--ak-color-border);border-radius:var(--ak-radius-medium);box-shadow:var(--ak-elevation-card)}
 ${scrollEdges('.ak-diagram-rendered')}

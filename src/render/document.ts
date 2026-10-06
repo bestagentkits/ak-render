@@ -34,6 +34,11 @@ export interface DocumentInput {
   motionDisabled?: boolean;
   /** Rendered page outline; omitted or empty when the page has none. */
   outline?: string;
+  /**
+   * Emit the live region. Omitted: derived from the core features the page's
+   * blocks declare; the compiler passes it so registry features count too.
+   */
+  liveRegion?: boolean;
 }
 
 export interface AssembledDocument {
@@ -107,11 +112,11 @@ function nonceAdapterStyles(body: string, styleNonce: string): string {
 export function assembleDocument(input: DocumentInput): AssembledDocument {
   const { csp, styleNonce, scriptNonce } = buildContentSecurityPolicy(input);
   const { meta } = input.ir;
-  const liveRegion = needsLiveRegion(
-    new Set(input.ir.nodes.flatMap((node) => node.runtimeFeatures)),
-  )
-    ? `<div class="ak-sr" data-ak-live role="status" aria-live="polite"></div>`
-    : '';
+  const liveRegion =
+    (input.liveRegion ??
+    needsLiveRegion(new Set(input.ir.nodes.flatMap((node) => node.runtimeFeatures))))
+      ? `<div class="ak-sr" data-ak-live role="status" aria-live="polite"></div>`
+      : '';
   const themeToggle = input.themeToggle
     ? `<div class="ak-page-bar"><button type="button" class="ak-btn ak-theme-toggle" data-ak-theme-toggle aria-pressed="false" aria-label="Toggle dark theme">Dark</button></div>`
     : '';

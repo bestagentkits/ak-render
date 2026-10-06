@@ -15,16 +15,19 @@ import { RenderError } from '../errors.js';
 import { stableHash } from '../hash.js';
 import type { IrDocument, IrNode } from '../ir.js';
 import { isPlainObject } from '../json.js';
-import type { BlockRegistry } from '../registry/block-module.js';
+import type { BlockRegistry, FeatureModule } from '../registry/block-module.js';
 import { DEFAULT_REGISTRY } from '../registry/registry.js';
 import type { RuntimeFeature } from '../registry/roster.js';
+import { evaluateCondition } from '../spec/conditions.js';
 import { type NormalizeResult, normalizeSpec } from '../spec/normalize.js';
 import { loadTheme, type ResolvedTheme, resolveTheme } from '../theme/load-theme.js';
 import { builtinThemeCatalog, type ThemeCatalog } from '../theme/theme-catalog.js';
 import { type RenderContext, renderNode } from './blocks.js';
 import { assembleDocument } from './document.js';
+import { renderAttributes } from './escape.js';
 import { embeddedFontCss } from './font-faces.js';
 import { hasOutline, renderOutline } from './outline.js';
+import { recipeCss } from './recipe-styles.js';
 import { buildRuntime, needsLiveRegion } from './runtime.js';
 import { BASE_CSS, FEATURE_CSS } from './styles.js';
 import { inverseSurfaceCss, usesInverseSurface } from './surface-styles.js';
@@ -89,6 +92,7 @@ const FEATURE_ORDER: readonly RuntimeFeature[] = [
   'checklist',
   'showcase',
   'cta',
+  'state',
 ];
 
 function collectFeatures(ir: IrDocument, includeTheme: boolean): Set<RuntimeFeature> {
@@ -144,6 +148,7 @@ function collectOrigins(ir: IrDocument): string[] {
 
 function buildCss(
   features: ReadonlySet<RuntimeFeature>,
+  moduleFeatures: readonly FeatureModule[],
   theme: ResolvedTheme,
   ir: IrDocument,
 ): string {
@@ -153,6 +158,10 @@ function buildCss(
     const sheet = FEATURE_CSS[feature];
     if (sheet !== undefined) sheets.push(sheet);
   }
+  for (const feature of moduleFeatures) sheets.push(feature.css);
+  // Recipes restyle feature surfaces, so they follow every feature sheet.
+  const recipes = recipeCss(ir.theme.recipes, features);
+  if (recipes !== '') sheets.push(recipes);
   sheets.push(theme.css);
   // The night band redeclares colour tokens, so it must follow the theme sheet.
   if (usesInverseSurface(ir.nodes)) sheets.push(inverseSurfaceCss(theme));
@@ -179,6 +188,22 @@ function nodeIndex(ir: IrDocument): Map<string, IrNode> {
   return new Map(ir.nodes.map((node) => [node.id, node]));
 }
 
+/**
+ * Render a node, wrapped when it carries `visibleWhen`. The wrapper starts
+ * hidden exactly when the condition is false for the initial state, so the page
+ * reads correctly without scripts; the runtime toggles it afterwards.
+ */
+function renderVisible(node: IrNode, context: RenderContext): string {
+  const html = renderNode(node, context);
+  if (node.when === undefined) return html;
+  const attributes = renderAttributes({
+    class: 'ak-when',
+    'data-ak-when': JSON.stringify(node.when),
+    hidden: !evaluateCondition(node.when, context.ir.state),
+  });
+  return `<div${attributes}>${html}</div>`;
+}
+
 function renderBody(
   ir: IrDocument,
   theme: ResolvedTheme,
@@ -194,7 +219,7 @@ function renderBody(
     ids
       .map((childId) => byId.get(childId))
       .filter((child): child is IrNode => child !== undefined)
-      .map((child) => `<!-- ak:${child.id} -->${renderNode(child, context)}`)
+      .map((child) => `<!-- ak:${child.id} -->${renderVisible(child, context)}`)
       .join('\n');
   const context: RenderContext = {
     ir,
@@ -256,6 +281,7 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
 
   const includeThemeToggle = options.themeToggle !== false;
   const features = collectFeatures(ir, includeThemeToggle);
+  const moduleFeatures = registry.features.filter((feature) => features.has(feature.name));
 
   const irDiagnostics = verifyIr(ir, features);
   if (irDiagnostics.some((diagnostic) => diagnostic.severity === 'error')) {
@@ -273,10 +299,17 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
   });
   // Faces come first and need the rendered text, which decides their subsets.
   const fonts = embeddedFontCss(resolved, `${ir.meta.title}\n${body}`);
-  const css = [fonts, buildCss(features, resolved, ir)].filter((sheet) => sheet !== '').join('\n');
+  const css = [fonts, buildCss(features, moduleFeatures, resolved, ir)]
+    .filter((sheet) => sheet !== '')
+    .join('\n');
   const runtimeNeeded = features.size > 0 || bodyNeedsRuntime(body);
   const js = runtimeNeeded
-    ? buildRuntime({ features, state: ir.state, hasBindings: bodyNeedsRuntime(body) })
+    ? buildRuntime({
+        features,
+        state: ir.state,
+        hasBindings: bodyNeedsRuntime(body),
+        moduleFeatures,
+      })
     : '';
 
   const assembled = assembleDocument({
@@ -290,6 +323,11 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
     density: resolved.density,
     motionDisabled: resolved.motionPolicy === 'none',
     outline: renderOutline(ir),
+    // Declared by the blocks themselves: the theme toggle alone announces nothing.
+    liveRegion: needsLiveRegion(
+      new Set(ir.nodes.flatMap((node) => node.runtimeFeatures)),
+      moduleFeatures,
+    ),
   });
 
   const verification = verifyDocument({
@@ -301,6 +339,7 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
     features,
     css,
     js,
+    moduleFeatures,
   });
   const verificationErrors = verification.filter((diagnostic) => diagnostic.severity === 'error');
   if (verificationErrors.length > 0) {
@@ -316,7 +355,10 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
     bytes: assembled.html.length,
     ir,
     theme: resolved,
-    features: FEATURE_ORDER.filter((feature) => features.has(feature)),
+    features: [
+      ...FEATURE_ORDER.filter((feature) => features.has(feature)),
+      ...moduleFeatures.map((feature) => feature.name),
+    ],
     warnings: [
       ...normalized.diagnostics.filter((diagnostic) => diagnostic.severity === 'warning'),
       ...themeBag.warnings(),
