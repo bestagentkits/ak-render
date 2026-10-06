@@ -7,7 +7,9 @@
  *
  * Bindings:
  *   RENDER_SHARES  R2 bucket, private. Shares and short-lived MCP render artifacts.
- *   RATE_LIMIT     KV namespace, fixed-window counters.
+ *                  Lifecycle rules: r2-lifecycle.json (applied by a deploy step).
+ *   RATE_LIMIT_*   Workers Rate Limiting bindings, one per route class. Limits
+ *                  mirror RATE_LIMITS in src/config.ts (a unit test keeps them equal).
  *   BROWSER        Browser Run binding. Screenshot and PDF only.
  *
  * Routes: the Worker answers /mcp and /v1/* on render.agentkit.best. That
@@ -41,12 +43,17 @@
       "bucket_name": "ak-render-shares"
     }
   ],
-  "kv_namespaces": [
-    {
-      // Namespace title: ak-render-rate-limit.
-      "binding": "RATE_LIMIT",
-      "id": "1e8e95424a9c4ac7bc774cb689842438"
-    }
+  // Rate limits per 60 s. namespace_id is an account-unique integer this
+  // config chooses; keep the ids stable, because changing one resets its
+  // counters. Per subject: render, share, export, validate. Per client IP:
+  // anonymous MCP discovery calls, and bearer checks the cache cannot answer.
+  "ratelimits": [
+    { "name": "RATE_LIMIT_RENDER", "namespace_id": "4101", "simple": { "limit": 60, "period": 60 } },
+    { "name": "RATE_LIMIT_SHARE", "namespace_id": "4102", "simple": { "limit": 20, "period": 60 } },
+    { "name": "RATE_LIMIT_EXPORT", "namespace_id": "4103", "simple": { "limit": 10, "period": 60 } },
+    { "name": "RATE_LIMIT_VALIDATE", "namespace_id": "4104", "simple": { "limit": 120, "period": 60 } },
+    { "name": "RATE_LIMIT_ANON_IP", "namespace_id": "4105", "simple": { "limit": 120, "period": 60 } },
+    { "name": "RATE_LIMIT_AUTH_IP", "namespace_id": "4106", "simple": { "limit": 30, "period": 60 } }
   ],
   // Browser Run Quick Actions (screenshot, pdf) need compatibility_date
   // 2026-03-24 or later.

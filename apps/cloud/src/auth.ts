@@ -9,11 +9,15 @@
  *   { schemaVersion, status: "active", userId, authMethod, licenseId,
  *     activationId, entitlements: { agentkitApp: bool, kits: { <kit>: bool } } }
  *
- * The token is never stored: it is not written to R2, to KV, to logs, or into a
- * response. It exists for the duration of one request.
+ * The token is never stored: it is not written to R2, to logs, or into a
+ * response. Answers are cached in memory for a minute under a SHA-256 digest of
+ * the token (principal-cache.ts), never under the token itself, and a cache
+ * miss counts against a per-IP limit before anything is forwarded upstream.
  */
 
 import type { Env } from './bindings.js';
+import { bearerDigest, cachedOutcome, rememberOutcome } from './principal-cache.js';
+import { clientIp, withinRateLimit } from './rate-limit.js';
 
 export type Scope = 'render' | 'share';
 
@@ -24,7 +28,7 @@ export interface Principal {
 
 export type AuthFailure = {
   ok: false;
-  status: 401 | 403 | 502;
+  status: 401 | 403 | 429 | 502;
   code: string;
   message: string;
 };
@@ -36,6 +40,16 @@ export const ENTITLEMENTS_PATH = '/api/agentkit/entitlements';
 
 /** Upper bound on the entitlements round trip; a slow upstream fails closed. */
 const ENTITLEMENTS_TIMEOUT_MS = 5_000;
+
+/**
+ * `WWW-Authenticate` value for a 401. A presented credential that failed is an
+ * `invalid_token` (RFC 6750); a missing one only names the scheme.
+ */
+export function bearerChallenge(request: Request): string {
+  return request.headers.has('authorization')
+    ? 'Bearer realm="ak-render", error="invalid_token"'
+    : 'Bearer realm="ak-render"';
+}
 
 function bearerOf(request: Request): string | undefined {
   const header = request.headers.get('authorization');
@@ -140,10 +154,18 @@ export function principalFromEntitlements(body: unknown): AuthOutcome {
 /**
  * Validate the request's bearer and return the principal it grants.
  *
- * A non-200 answer, a redirect, a malformed body, a timeout or an unreachable
- * endpoint all fail closed: an unverifiable bearer is not a bearer.
+ * A recent answer for the same bearer is reused from the in-isolate cache.
+ * Otherwise the lookup first counts against the caller's IP, so a client
+ * spraying bearers cannot turn this worker into an amplifier against the
+ * entitlements endpoint. A non-200 answer, a redirect, a malformed body, a
+ * timeout or an unreachable endpoint all fail closed: an unverifiable bearer is
+ * not a bearer.
  */
-export async function authenticate(request: Request, env: Env): Promise<AuthOutcome> {
+export async function authenticate(
+  request: Request,
+  env: Env,
+  now: number = Date.now(),
+): Promise<AuthOutcome> {
   const token = bearerOf(request);
   if (token === undefined) {
     return {
@@ -153,6 +175,24 @@ export async function authenticate(request: Request, env: Env): Promise<AuthOutc
       message: 'a bearer token is required',
     };
   }
+  const digest = await bearerDigest(token);
+  const cached = cachedOutcome(digest, now);
+  if (cached !== undefined) return cached;
+  if (!(await withinRateLimit(env, 'auth-ip', clientIp(request)))) {
+    return {
+      ok: false,
+      status: 429,
+      code: 'RATE_LIMITED',
+      message: 'too many bearer checks from this address',
+    };
+  }
+  const outcome = await lookUpEntitlements(token, env);
+  rememberOutcome(digest, outcome, now);
+  return outcome;
+}
+
+/** One round trip to the canonical entitlements endpoint. */
+async function lookUpEntitlements(token: string, env: Env): Promise<AuthOutcome> {
   const base = env.ENTITLEMENTS_URL.replace(/\/+$/u, '');
   let response: Response;
   try {

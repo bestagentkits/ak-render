@@ -5,16 +5,17 @@ import {
   checkRequestBytes,
   DEFAULT_SHARE_RETENTION_DAYS,
   MAX_SHARE_RETENTION_DAYS,
-  RATE_LIMITS,
   retentionDays,
 } from '../../apps/cloud/src/config.js';
 import { handleRequest } from '../../apps/cloud/src/index.js';
+import { cachedDigests } from '../../apps/cloud/src/principal-cache.js';
 import { purgeExpiredShares } from '../../apps/cloud/src/share.js';
 import { compile, VERSION } from '../../src/index.js';
 import {
   activeEntitlements,
   ENTITLEMENTS_ORIGIN,
   harness,
+  limiterKeys,
   post,
   SPEC,
   stubEntitlements,
@@ -129,12 +130,16 @@ describe('cloud renderer: authorization', () => {
   });
 
   it('never persists the bearer token', async () => {
-    const { env, r2, kv } = harness();
+    const { env, r2, limits } = harness();
     await handleRequest(post('/v1/render', { spec: SPEC }), env);
     const shared = await handleRequest(post('/v1/share', { spec: SPEC }), env);
     expect(shared.status).toBe(201);
     expect(r2.values.join('\n')).not.toContain(TOKEN);
-    expect(kv.values.join('\n')).not.toContain(TOKEN);
+    expect(limiterKeys(limits).join('\n')).not.toContain(TOKEN);
+    // The principal cache holds a SHA-256 digest of the bearer, never the bearer.
+    expect(cachedDigests()).toHaveLength(1);
+    expect(cachedDigests()[0]).toMatch(/^[0-9a-f]{64}$/u);
+    expect(cachedDigests().join('\n')).not.toContain(TOKEN);
     for (const entry of r2.objects.values()) {
       expect(JSON.stringify(entry.customMetadata ?? {})).not.toContain(TOKEN);
     }
@@ -158,16 +163,38 @@ describe('cloud renderer: budgets and rate limits', () => {
   });
 
   it('rate limits per subject and route', async () => {
-    const { env, kv } = harness();
+    // A one-call allowance reaches the limit without compiling sixty pages.
+    const { env, limits } = harness({ limits: { render: 1 } });
     const first = await handleRequest(post('/v1/render', { spec: SPEC }), env);
     expect(first.status).toBe(200);
-    // Jump the counter to the limit instead of compiling 60 pages, which is
-    // slow enough to time out under a loaded parallel run.
-    const [key] = [...kv.entries.keys()].filter((entry) => entry.startsWith('rl:render:'));
-    expect(key).toBeDefined();
-    kv.entries.set(key as string, String(RATE_LIMITS.render));
+    expect([...limits.render.counts.keys()]).toEqual(['user-1']);
     const limited = await handleRequest(post('/v1/render', { spec: SPEC }), env);
     expect(limited.status).toBe(429);
+    expect(await limited.json()).toMatchObject({ code: 'RATE_LIMITED' });
+    // Another route class keeps its own allowance.
+    expect((await handleRequest(post('/v1/share', { spec: SPEC }), env)).status).toBe(201);
+    // Another subject keeps its own allowance.
+    stubEntitlements(activeEntitlements('user-2'));
+    expect((await handleRequest(post('/v1/render', { spec: SPEC }, 'other'), env)).status).toBe(
+      200,
+    );
+  });
+
+  it('fails closed with a generic RATE_LIMITED when the limiter faults', async () => {
+    const { env, limits } = harness();
+    limits.render.fault = new Error('rate limiter internal detail');
+    const response = await handleRequest(post('/v1/render', { spec: SPEC }), env);
+    expect(response.status).toBe(429);
+    const body = await response.text();
+    expect(JSON.parse(body)).toMatchObject({ code: 'RATE_LIMITED' });
+    expect(body).not.toContain('internal detail');
+  });
+
+  it('fails closed when a limiter binding is missing', async () => {
+    const { env } = harness();
+    delete (env as Partial<typeof env>).RATE_LIMIT_EXPORT;
+    const response = await handleRequest(post('/v1/pdf', { spec: SPEC }), env);
+    expect(response.status).toBe(429);
   });
 
   it('keeps app budgets well below the platform limits', () => {

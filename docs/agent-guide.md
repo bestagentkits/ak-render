@@ -103,9 +103,12 @@ is the same. Two things differ:
 ```
 
 A refused call comes back as a tool error whose text is JSON with a `code`:
-`UNAUTHENTICATED` (no or rejected token), `ENTITLEMENT_INACTIVE` or `FORBIDDEN`
+`UNAUTHENTICATED` (no token), `ENTITLEMENT_INACTIVE` or `FORBIDDEN`
 (the account is not entitled), `RATE_LIMITED` (wait for the next minute), or a
-compiler code such as `SPEC_UNKNOWN_BLOCK` with the JSON path to fix. Local
+compiler code such as `SPEC_UNKNOWN_BLOCK` with the JSON path to fix. A token
+the server rejects fails the whole request with HTTP 401 instead; replace the
+token in the client configuration. Under protocol revision 2025-06-18 or later
+send one message per request: batches are refused. Local
 rendering never needs the token or the network.
 
 ## Rules that save retries

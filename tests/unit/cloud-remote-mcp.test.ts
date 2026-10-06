@@ -1,11 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ARTIFACT_TTL_SECONDS, RATE_LIMITS } from '../../apps/cloud/src/config.js';
+import { ARTIFACT_TTL_SECONDS } from '../../apps/cloud/src/config.js';
 import { handleRequest } from '../../apps/cloud/src/index.js';
 import { compile } from '../../src/index.js';
 import { handleMcpMessage } from '../../src/mcp-server.js';
 import {
   activeEntitlements,
   harness,
+  limiterKeys,
   ORIGIN,
   post,
   SPEC,
@@ -25,7 +26,12 @@ interface ToolReply {
 
 let nextId = 1;
 
-function mcpRequest(method: string, params: unknown, token: string | null): Request {
+function mcpRequest(
+  method: string,
+  params: unknown,
+  token: string | null,
+  headers: Record<string, string> = {},
+): Request {
   return new Request(`${ORIGIN}/mcp`, {
     method: 'POST',
     headers: {
@@ -33,8 +39,32 @@ function mcpRequest(method: string, params: unknown, token: string | null): Requ
       accept: 'application/json, text/event-stream',
       'mcp-protocol-version': '2025-11-25',
       ...(token === null ? {} : { authorization: `Bearer ${token}` }),
+      ...headers,
     },
     body: JSON.stringify({ jsonrpc: '2.0', id: nextId++, method, params }),
+  });
+}
+
+/** A 2025-03-26 batch (the last revision with batching) of tool calls. */
+function batchRequest(
+  calls: { name: string; arguments?: Record<string, unknown> }[],
+  token: string | null = TOKEN,
+): Request {
+  return new Request(`${ORIGIN}/mcp`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'mcp-protocol-version': '2025-03-26',
+      ...(token === null ? {} : { authorization: `Bearer ${token}` }),
+    },
+    body: JSON.stringify(
+      calls.map((params, index) => ({
+        jsonrpc: '2.0',
+        id: index + 1,
+        method: 'tools/call',
+        params,
+      })),
+    ),
   });
 }
 
@@ -99,6 +129,73 @@ describe('remote MCP: discovery', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it('limits anonymous discovery calls per client IP', async () => {
+    const { env, limits } = harness({ limits: { 'anon-ip': 2 } });
+    const from = (ip: string) => ({ 'cf-connecting-ip': ip });
+    const call = async (ip: string) => {
+      const response = await handleRequest(
+        mcpRequest('tools/call', { name: 'themes', arguments: {} }, null, from(ip)),
+        env,
+      );
+      return ((await response.json()) as { result: ToolReply }).result;
+    };
+    expect((await call('203.0.113.7')).isError).toBeUndefined();
+    expect((await call('203.0.113.7')).isError).toBeUndefined();
+    const limited = await call('203.0.113.7');
+    expect(limited.isError).toBe(true);
+    expect(JSON.parse(limited.content[0]?.text ?? '{}')).toMatchObject({ code: 'RATE_LIMITED' });
+    // A different address keeps its own allowance.
+    expect((await call('198.51.100.1')).isError).toBeUndefined();
+    expect([...limits['anon-ip'].counts.keys()].sort()).toEqual(['198.51.100.1', '203.0.113.7']);
+  });
+
+  it('counts every discovery call in a batch, so a batch cannot multiply the allowance', async () => {
+    const { env } = harness({ limits: { 'anon-ip': 3 } });
+    const response = await handleRequest(
+      batchRequest(
+        Array.from({ length: 5 }, () => ({ name: 'catalog' })),
+        null,
+      ),
+      env,
+    );
+    const replies = (await response.json()) as { result: ToolReply }[];
+    expect(replies.map((reply) => reply.result.isError === true)).toEqual([
+      false,
+      false,
+      false,
+      true,
+      true,
+    ]);
+  });
+
+  it('refuses a batch above 16 members before running any of it', async () => {
+    const { env, limits } = harness();
+    const response = await handleRequest(
+      batchRequest(
+        Array.from({ length: 17 }, () => ({ name: 'catalog' })),
+        null,
+      ),
+      env,
+    );
+    expect(response.status).toBe(400);
+    expect(limits['anon-ip'].counts.size).toBe(0);
+  });
+
+  it('refuses a batch under a protocol revision without batching', async () => {
+    const { env } = harness();
+    const response = await handleRequest(
+      new Request(`${ORIGIN}/mcp`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'mcp-protocol-version': '2025-11-25' },
+        body: JSON.stringify([
+          { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'catalog' } },
+        ]),
+      }),
+      env,
+    );
+    expect(response.status).toBe(400);
+  });
+
   it('answers GET on /mcp with 405', async () => {
     const { env } = harness();
     const response = await handleRequest(new Request(`${ORIGIN}/mcp`), env);
@@ -107,6 +204,38 @@ describe('remote MCP: discovery', () => {
 });
 
 describe('remote MCP: authorization', () => {
+  it('answers a rejected bearer with HTTP 401 and a Bearer challenge', async () => {
+    const { env, r2 } = harness({
+      entitlements: { status: 'inactive', code: 'not_authenticated' },
+      status: 401,
+    });
+    for (const [method, params] of [
+      ['tools/call', { name: 'render', arguments: { spec: SPEC } }],
+      ['tools/call', { name: 'catalog', arguments: {} }],
+      ['tools/list', {}],
+    ] as const) {
+      const response = await handleRequest(mcpRequest(method, params, 'expired-token'), env);
+      expect(response.status).toBe(401);
+      expect(response.headers.get('www-authenticate')).toBe(
+        'Bearer realm="ak-render", error="invalid_token"',
+      );
+      const body = (await response.json()) as { error: { message: string } };
+      expect(body.error.message).toBe('the bearer was rejected');
+    }
+    expect(r2.objects.size).toBe(0);
+  });
+
+  it('answers a non-bearer Authorization scheme with HTTP 401', async () => {
+    const { env, fetchMock } = harness();
+    const response = await handleRequest(
+      mcpRequest('tools/list', {}, null, { authorization: 'Basic dXNlcjpwYXNz' }),
+      env,
+    );
+    expect(response.status).toBe(401);
+    expect(response.headers.get('www-authenticate')).toContain('Bearer');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('rejects validate and render without a bearer as tool errors', async () => {
     const { env, r2 } = harness();
     for (const name of ['validate', 'render']) {
@@ -132,28 +261,57 @@ describe('remote MCP: authorization', () => {
   it('authenticates a batch once', async () => {
     const { env, fetchMock } = harness();
     const response = await handleRequest(
-      new Request(`${ORIGIN}/mcp`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', authorization: `Bearer ${TOKEN}` },
-        body: JSON.stringify([
-          {
-            jsonrpc: '2.0',
-            id: 1,
-            method: 'tools/call',
-            params: { name: 'validate', arguments: { spec: SPEC } },
-          },
-          {
-            jsonrpc: '2.0',
-            id: 2,
-            method: 'tools/call',
-            params: { name: 'render', arguments: { spec: SPEC } },
-          },
-        ]),
-      }),
+      batchRequest([
+        { name: 'validate', arguments: { spec: SPEC } },
+        { name: 'render', arguments: { spec: SPEC } },
+      ]),
       env,
     );
     expect(response.status).toBe(200);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('reuses an accepted bearer across requests instead of asking upstream again', async () => {
+    const { env, fetchMock } = harness();
+    await tool(env, 'validate', { spec: SPEC });
+    await tool(env, 'validate', { spec: SPEC });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('remote MCP: errors never leak internals', () => {
+  it('reports a storage fault as a generic INTERNAL_ERROR', async () => {
+    const { env, r2 } = harness();
+    r2.put = async () => {
+      throw new Error('R2 bucket ak-render-shares: internal detail');
+    };
+    const { status, reply, payload } = await tool(env, 'render', { spec: SPEC });
+    expect(status).toBe(200);
+    expect(reply.isError).toBe(true);
+    expect(payload['code']).toBe('INTERNAL_ERROR');
+    expect(reply.content[0]?.text).not.toContain('internal detail');
+  });
+
+  it('keeps an argument error readable', async () => {
+    const { env } = harness();
+    const { reply } = await tool(env, 'describe', {}, null);
+    expect(reply.isError).toBe(true);
+    expect(reply.content[0]?.text).toContain('"type" must be a non-empty string');
+  });
+
+  it('reports a faulting limiter as RATE_LIMITED without its message', async () => {
+    const { env, limits } = harness();
+    limits.validate.fault = new Error('limiter internal detail');
+    limits['anon-ip'].fault = new Error('limiter internal detail');
+    for (const [name, token] of [
+      ['validate', TOKEN],
+      ['catalog', null],
+    ] as const) {
+      const { reply, payload } = await tool(env, name, { spec: SPEC }, token);
+      expect(reply.isError).toBe(true);
+      expect(payload['code']).toBe('RATE_LIMITED');
+      expect(reply.content[0]?.text).not.toContain('internal detail');
+    }
   });
 });
 
@@ -266,44 +424,62 @@ describe('remote MCP: render', () => {
 
 describe('remote MCP: rate limits are shared with REST', () => {
   it('stops MCP render once REST renders used the window', async () => {
-    const { env } = harness();
-    const now = new Date('2026-10-06T00:00:30.000Z');
-    for (let attempt = 0; attempt < RATE_LIMITS.render; attempt += 1) {
-      await handleRequest(post('/v1/render', { spec: SPEC }), env, now);
+    const { env } = harness({ limits: { render: 2 } });
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      await handleRequest(post('/v1/render', { spec: SPEC }), env);
     }
-    const { reply, payload } = await tool(env, 'render', { spec: SPEC }, TOKEN, now);
+    const { reply, payload } = await tool(env, 'render', { spec: SPEC });
     expect(reply.isError).toBe(true);
     expect(payload['code']).toBe('RATE_LIMITED');
   });
 
   it('stops REST render once MCP renders used the window', async () => {
-    const { env } = harness();
-    const now = new Date('2026-10-06T00:01:30.000Z');
-    for (let attempt = 0; attempt < RATE_LIMITS.render; attempt += 1) {
-      await tool(env, 'render', { spec: SPEC }, TOKEN, now);
+    const { env } = harness({ limits: { render: 2 } });
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      await tool(env, 'render', { spec: SPEC });
     }
-    const response = await handleRequest(post('/v1/render', { spec: SPEC }), env, now);
+    const response = await handleRequest(post('/v1/render', { spec: SPEC }), env);
     expect(response.status).toBe(429);
   });
 
-  it('counts a shared render against the share limit too', async () => {
-    const { env } = harness();
-    const now = new Date('2026-10-06T00:02:30.000Z');
-    for (let attempt = 0; attempt < RATE_LIMITS.share; attempt += 1) {
-      await handleRequest(post('/v1/share', { spec: SPEC }), env, now);
+  it('counts a shared render against the share limit, as POST /v1/share does', async () => {
+    const { env, limits } = harness({ limits: { share: 2 } });
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      await handleRequest(post('/v1/share', { spec: SPEC }), env);
     }
-    const { payload } = await tool(env, 'render', { spec: SPEC, share: true }, TOKEN, now);
+    const { payload } = await tool(env, 'render', { spec: SPEC, share: true });
     expect(payload['code']).toBe('RATE_LIMITED');
+    // Neither a REST share nor an MCP share consumes the render allowance.
+    expect(limits.render.counts.size).toBe(0);
+  });
+
+  it('keeps sharing available when the render allowance is spent, and the reverse', async () => {
+    const { env } = harness({ limits: { render: 1, share: 1 } });
+    expect((await tool(env, 'render', { spec: SPEC })).reply.isError).toBeUndefined();
+    expect((await tool(env, 'render', { spec: SPEC })).payload['code']).toBe('RATE_LIMITED');
+    expect((await tool(env, 'render', { spec: SPEC, share: true })).payload['shared']).toBe(true);
+  });
+
+  it('consumes nothing for a call refused by authorization', async () => {
+    const { env, limits } = harness({
+      entitlements: {
+        ...activeEntitlements(),
+        entitlements: { agentkitApp: false, kits: {} },
+      },
+    });
+    expect((await tool(env, 'render', { spec: SPEC, share: true })).payload['code']).toBe(
+      'FORBIDDEN',
+    );
+    expect(limits.render.counts.size + limits.share.counts.size).toBe(0);
   });
 
   it('never persists the bearer through MCP', async () => {
-    const { env, r2, kv } = harness();
+    const { env, r2, limits } = harness();
     await tool(env, 'render', { spec: SPEC });
     await tool(env, 'render', { spec: SPEC, share: true });
     const stored = [
       ...r2.values,
-      ...kv.values,
-      ...[...kv.entries.keys()],
+      ...limiterKeys(limits),
       ...[...r2.objects.values()].map((entry) => JSON.stringify(entry.customMetadata ?? {})),
     ].join('\n');
     expect(stored).not.toContain(TOKEN);

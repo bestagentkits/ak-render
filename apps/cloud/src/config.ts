@@ -30,8 +30,12 @@ export const MAX_SHARE_RETENTION_DAYS = 365;
 export const ARTIFACT_TTL_SECONDS = 60 * 60;
 
 /**
- * Per-subject fixed-window rate limits, per minute. REST routes and MCP tool
- * calls count against the same keys.
+ * Rate limits per minute, one Workers Rate Limiting binding each. The numbers
+ * are enforced by the `ratelimits` entries in wrangler.jsonc; this table is the
+ * typed mirror the code and docs read, and a unit test keeps the two equal.
+ *
+ * The first four count per subject, and REST routes and MCP tool calls share
+ * them. The last two count per client IP.
  */
 export const RATE_LIMITS = {
   render: 60,
@@ -39,11 +43,15 @@ export const RATE_LIMITS = {
   export: 10,
   /** MCP `validate`: cheaper than a render, so a looser limit. */
   validate: 120,
+  /** MCP `catalog`, `describe` and `themes`, which answer without a bearer. */
+  'anon-ip': 120,
+  /** Bearer checks the principal cache could not answer, i.e. upstream lookups. */
+  'auth-ip': 30,
 } as const satisfies Record<string, number>;
 
 export type RateLimitKey = keyof typeof RATE_LIMITS;
 
-/** Rate-limit window in seconds. */
+/** Rate-limit period in seconds; the binding accepts 10 or 60. */
 export const RATE_WINDOW_SECONDS = 60;
 
 export function retentionDays(env: { SHARE_RETENTION_DAYS?: string }): number {
