@@ -156,13 +156,15 @@ ${disclosureSummary('.ak-details')}
 @media (min-width:1280px){.ak-shell--outline{max-width:1400px;display:grid;grid-template-columns:minmax(0,1fr) 216px;column-gap:calc(var(--ak-space-unit) * 8);align-items:start}.ak-shell--outline > *{grid-column:1}.ak-shell--outline > .ak-toc{display:block;grid-column:2;grid-row:1 / span 2;position:sticky;top:calc(var(--ak-space-unit) * 4);max-height:calc(100vh - var(--ak-space-unit) * 8);overflow-y:auto;padding-top:calc(var(--ak-space-unit) * 1)}}
 @media print{.ak-toc{display:none!important}}`,
   diagram: `.ak-diagram{min-width:0}
-.ak-diagram-rendered{overflow-x:auto;overscroll-behavior-x:contain;padding:calc(var(--ak-space-unit) * 2);background:var(--ak-fill);border:var(--ak-border-width) solid var(--ak-color-border);border-radius:var(--ak-radius-medium);box-shadow:var(--ak-elevation-card)}
+.ak-diagram-rendered{overflow-x:auto;overscroll-behavior-x:contain;contain:paint;padding:calc(var(--ak-space-unit) * 2);background:var(--ak-fill);border:var(--ak-border-width) solid var(--ak-color-border);border-radius:var(--ak-radius-medium);box-shadow:var(--ak-elevation-card)}
 ${scrollEdges('.ak-diagram-rendered')}
 .ak-diagram-rendered svg{display:block;max-width:none;height:auto}
 .ak-diagram-details{margin-top:calc(var(--ak-space-unit) * 1.5)}
 ${disclosureSummary('.ak-diagram-details')}
 @media (max-width:768px){.ak-diagram-details summary{min-height:44px}}
-@media print{.ak-diagram-rendered{overflow:visible;box-shadow:none}.ak-diagram-rendered svg{max-width:100%}}
+@media print{.ak-diagram-rendered{overflow:visible;box-shadow:none}.ak-diagram-rendered svg{max-width:100%}.ak-diagram-details::details-content{content-visibility:visible;display:block}.ak-diagram-details summary::before{display:none}}
+@media (prefers-reduced-motion:reduce),print{.ak-diagram-canvas,.ak-diagram-canvas *{animation:none!important;transition:none!important}}
+[data-motion="none"] .ak-diagram-canvas,[data-motion="none"] .ak-diagram-canvas *{animation:none!important;transition:none!important}
 .ak-diagram-fallback{display:flex;flex-direction:column;gap:var(--ak-space-unit);background:var(--ak-fill);border:var(--ak-border-width) solid var(--ak-color-border);border-radius:var(--ak-radius-medium);padding:calc(var(--ak-space-unit) * 3);box-shadow:var(--ak-elevation-card)}
 .ak-diagram-fallback{gap:calc(var(--ak-space-unit) * 2)}
 .ak-diagram-fallback > .ak-caption{font-size:.74rem;color:var(--ak-color-text-muted)}

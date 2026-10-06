@@ -37,10 +37,11 @@ Release mechanics and the compatibility contract live in
 
 ### Fixed
 
-- Diagram adapter `<style>` elements now receive the page style nonce, so styled adapter SVG renders as drawn instead of in default black. The policy stays nonce-only: inline `style` attributes are removed from adapter output with a warning, and adapter CSS that uses `@import` or a remote `url()` is rejected. `docs/diagram-adapter.md` explains how to style adapter output.
+- Diagram adapter `<style>` elements now receive the page style nonce, so styled adapter SVG renders as drawn instead of in default black. The policy stays nonce-only: inline `style` attributes are removed from adapter output with a warning. Adapter CSS is scoped with `@scope` to its own diagram canvas, so it cannot restyle the page, and it cannot load anything: escapes, comments, `!important`, `url()` other than a fragment reference such as `url(#grad)`, `image-set()` and every at-rule except `@media`, `@keyframes` and `@supports` reject the output to the structured fallback. Adapter markup that writes a `nonce` or one of the page's own adapter attributes is rejected too. Adapter animation stops under reduced motion, `motion-policy: none` and print. `docs/diagram-adapter.md` lists what adapter CSS may use.
+- Checking adapter markup is linear in its size. An unterminated tag repeated to the 256 KB bound took minutes; it now takes milliseconds.
 - A long unbroken token, such as a path or an env var list, no longer widens the page on a phone. Key-value values, list items, text and callouts break the token inside their own line, so the reported key-value page no longer scrolls sideways at 375px.
 - A `diagram-panel` shows adapter SVG at its natural size. A wide diagram scrolls sideways inside its panel, a named region that scrolls from the keyboard, instead of shrinking its labels until they are unreadable. In print it is scaled to the page width.
-- A `diagram-panel` whose adapter rendered no longer shows the structured description beside the drawing. The description stays in the document behind a closed "Text description" disclosure.
+- A `diagram-panel` whose adapter rendered no longer shows the structured description beside the drawing. The description stays in the document behind a closed "Text description" disclosure, which opens in print, with or without script.
 - A long `terminal` session no longer leaves its last lines blank in a capture. Lines now stagger 80ms apart instead of 340ms, lines past the twelfth share its delay, and the whole session is drawn about 1.4s after it arrives.
 - A wide `table` or adapter diagram now shows a soft shade on each edge that has more content beyond it, so a frame that scrolls sideways no longer looks clipped. A frame that fits shows none.
 

@@ -64,7 +64,7 @@ describe('diagram adapter: public contract', () => {
   it('puts adapter output in a named, keyboard-scrollable region', () => {
     const result = compile(SPEC, { diagramAdapter: adapter(() => VALID_SVG) });
     expect(result.html).toContain(
-      '<div class="ak-diagram-rendered" data-ak-diagram-adapter="test-adapter" role="region" aria-label="Compiler pipeline" tabindex="0"><svg',
+      '<div class="ak-diagram-rendered" data-ak-diagram-adapter="test-adapter" role="region" aria-label="Compiler pipeline" tabindex="0"><div class="ak-diagram-canvas" data-ak-diagram-scope="arch"><svg',
     );
   });
 
@@ -212,7 +212,7 @@ describe('diagram adapter: page style policy', () => {
     const result = compile(SPEC, { diagramAdapter: adapter(() => STYLED_SVG) });
     const nonce = styleNonce(result.html);
     expect(result.html).toContain(
-      `<style nonce="${nonce}" data-ak-adapter-style>.n{fill:#fff}</style>`,
+      `<style nonce="${nonce}" data-ak-adapter-style>@scope (.ak-diagram-canvas[data-ak-diagram-scope="arch"]){.n{fill:#fff}}</style>`,
     );
     // Every style element on the page carries the one page nonce.
     const styleTags = result.html.match(/<style\b[^>]*>/gu) ?? [];
@@ -227,15 +227,55 @@ describe('diagram adapter: page style policy', () => {
     expect(policy(result.html)).toMatch(/style-src 'nonce-[^']+';/u);
   });
 
-  it('replaces a nonce the adapter wrote with the page nonce', () => {
+  it('normalises the style tag and keeps its other attributes', () => {
     const result = compile(SPEC, {
-      diagramAdapter: adapter(() =>
-        STYLED_SVG.replace('<style>', '<STYLE nonce="guessed" media="all">'),
-      ),
+      diagramAdapter: adapter(() => STYLED_SVG.replace('<style>', '<STYLE media="all">')),
     });
     const nonce = styleNonce(result.html);
-    expect(result.html).not.toContain('guessed');
     expect(result.html).toContain(`<style nonce="${nonce}" data-ak-adapter-style media="all">`);
+  });
+
+  it('rejects markup that writes its own nonce', () => {
+    const result = compile(SPEC, {
+      diagramAdapter: adapter(() => STYLED_SVG.replace('<style>', '<style nonce="guessed">')),
+    });
+    expect(result.html).not.toContain('guessed');
+    expect(result.html).not.toContain('data-ak-diagram-adapter');
+    expect(result.warnings[0]?.message).toContain('nonce attribute');
+  });
+
+  it('cannot be tricked into writing the nonce inside an attribute value', () => {
+    // The style marker inside a quoted value would otherwise receive the nonce,
+    // and the quote the nonce brings would end the attribute early.
+    const markup =
+      '<svg viewBox="0 0 10 10"><g aria-label="<style data-ak-adapter-style">x</g></svg>';
+    const result = compile(SPEC, { diagramAdapter: adapter(() => markup) });
+    expect(result.html).not.toContain('aria-label="<style');
+    expect(result.html).not.toContain('data-ak-diagram-adapter');
+    expect(result.warnings[0]?.message).toContain('reserved page attribute');
+    const styleTags = result.html.match(/<style\b[^>]*>/gu) ?? [];
+    expect(styleTags).toHaveLength(1);
+  });
+
+  it('rejects markup that claims the canvas scope attribute', () => {
+    expect(
+      checkAdapterMarkup('<svg><g data-ak-diagram-scope="other"><rect /></g></svg>'),
+    ).toMatchObject({ ok: false, reason: 'reserved page attribute' });
+  });
+
+  it('scopes each panel to its own canvas', () => {
+    const twoPanels = `${SPEC}  - type: diagram-panel
+    id: second
+    title: Second
+    spec:
+      components:
+        - id: x
+          label: X
+`;
+    const result = compile(twoPanels, { diagramAdapter: adapter(() => STYLED_SVG) });
+    expect(result.html).toContain('@scope (.ak-diagram-canvas[data-ak-diagram-scope="arch"])');
+    expect(result.html).toContain('@scope (.ak-diagram-canvas[data-ak-diagram-scope="second"])');
+    expect(result.html).toContain('<div class="ak-diagram-canvas" data-ak-diagram-scope="second">');
   });
 
   it('removes inline style attributes and says so', () => {

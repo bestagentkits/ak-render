@@ -254,6 +254,26 @@ function downloadText(text, filename, source) {
   announce('Downloaded ' + safeName);
 }`;
 
+/**
+ * Print a diagram's folded text description. The print stylesheet opens it
+ * through \`::details-content\`; where that selector is unsupported, the runtime
+ * opens each closed description for the print and closes it again afterwards.
+ */
+const DIAGRAM = `
+function wireDiagramPrint() {
+  var opened = [];
+  window.addEventListener('beforeprint', function () {
+    qa('details.ak-diagram-details:not([open])').forEach(function (details) {
+      details.open = true;
+      opened.push(details);
+    });
+  });
+  window.addEventListener('afterprint', function () {
+    opened.forEach(function (details) { details.open = false; });
+    opened = [];
+  });
+}`;
+
 const OUTLINE = `
 function wireOutline() {
   var links = qa('[data-ak-outline-link]');
@@ -602,6 +622,7 @@ export function buildRuntime(options: RuntimeOptions): string {
   if (features.has('tabs')) parts.push(TABS);
   if (features.has('outline')) parts.push(OUTLINE);
   if (features.has('before-after')) parts.push(BEFORE_AFTER);
+  if (features.has('diagram')) parts.push(DIAGRAM);
   parts.push(EFFECTS);
 
   const wiring: string[] = [];
@@ -611,6 +632,7 @@ export function buildRuntime(options: RuntimeOptions): string {
   if (features.has('filter')) wiring.push('wireFilters();');
   if (features.has('outline')) wiring.push('wireOutline();');
   if (features.has('before-after')) wiring.push('wireBeforeAfter();');
+  if (features.has('diagram')) wiring.push('wireDiagramPrint();');
   wiring.push('wireEffects();');
 
   return [

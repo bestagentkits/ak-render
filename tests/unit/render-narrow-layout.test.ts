@@ -56,7 +56,7 @@ describe('sideways scrollers', () => {
       '.ak-diagram-rendered svg{display:block;max-width:none;height:auto}',
     );
     expect(css(html)).toContain(
-      '@media print{.ak-diagram-rendered{overflow:visible;box-shadow:none}.ak-diagram-rendered svg{max-width:100%}}',
+      '@media print{.ak-diagram-rendered{overflow:visible;box-shadow:none}.ak-diagram-rendered svg{max-width:100%}',
     );
   });
 });

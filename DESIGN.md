@@ -44,7 +44,8 @@ Themes are typed data (`src/theme/tokens.ts`); the stylesheet consumes these tok
 ## Diagrams with an adapter
 
 - The adapter's SVG sits in a card panel at its natural size. A wide drawing scrolls sideways inside the panel, with the same edge shades as a wide table, and prints scaled to the page width.
-- The structured description folds behind a closed "Text description" disclosure, so it does not repeat the drawing. See `docs/diagram-adapter.md`.
+- The structured description folds behind a closed "Text description" disclosure, so it does not repeat the drawing. It prints open.
+- Adapter styles apply only inside the diagram's canvas, and adapter motion stops under reduced motion and in print. See `docs/diagram-adapter.md`.
 
 ## Signature layer
 

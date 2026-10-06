@@ -863,14 +863,15 @@ const RENDERERS: Record<string, Renderer> = {
       // Adapter output keeps its natural size: a wide diagram scrolls sideways
       // inside a keyboard-focusable region instead of shrinking its labels. The
       // text description then folds away behind a disclosure, so it does not
-      // repeat the drawing; it stays in the document, and the static SVG reads
-      // without script and in print.
+      // repeat the drawing; it stays in the document, prints open, and the
+      // static SVG reads without script and in print. The inner canvas is the
+      // root the adapter's stylesheets are scoped to.
       accepted
         ? `<div class="ak-diagram-rendered" data-ak-diagram-adapter="${escapeAttribute(
             adapterResult.adapter,
-          )}" role="region" aria-label="${escapeAttribute(diagramTitle)}" tabindex="0">${
-            adapterResult.markup
-          }</div><details class="ak-diagram-details" data-ak-diagram-fallback><summary>Text description</summary><div class="ak-diagram-fallback">${description}</div></details>`
+          )}" role="region" aria-label="${escapeAttribute(diagramTitle)}" tabindex="0"><div class="ak-diagram-canvas" data-ak-diagram-scope="${escapeAttribute(
+            adapterResult.scope ?? '',
+          )}">${adapterResult.markup}</div></div><details class="ak-diagram-details" data-ak-diagram-fallback><summary>Text description</summary><div class="ak-diagram-fallback">${description}</div></details>`
         : `<div class="ak-diagram-fallback" data-ak-diagram-fallback>${description}<p class="ak-caption">Rendered as a structured fallback because no diagram adapter is configured.</p></div>`,
       figureCaption(caption),
       '</figure>',

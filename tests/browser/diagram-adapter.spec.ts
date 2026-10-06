@@ -31,12 +31,17 @@ const WIDE_SVG = `<svg class="ak-diagram-svg" xmlns="http://www.w3.org/2000/svg"
     `<rect class="n" x="${index * 200 + 10}" y="80" width="180" height="80" style="--step:${index}"/><text x="${index * 200 + 30}" y="125" font-size="16">Stage ${index}</text>`,
 ).join('')}</svg>`;
 
-const adapter: DiagramAdapter = { name: 'browser-test', version: '1.0.0', render: () => WIDE_SVG };
+/**
+ * A drawing whose stylesheet reaches for the whole page. Scoping must keep every
+ * page-wide rule inside the diagram while the diagram's own rules still apply.
+ */
+const GREEDY_SVG = `<svg class="ak-diagram-svg" xmlns="http://www.w3.org/2000/svg" width="200" height="100" viewBox="0 0 200 100"><style>.ak-shell{display:none}:root{background:red}html,body{background:red;color:red}.ak-diagram-details{display:none}:scope{position:fixed;inset:0;z-index:99}.n{fill:#fff;animation:pulse 2s linear infinite}@keyframes pulse{from{stroke-width:1}to{stroke-width:3}}</style><rect class="n" x="10" y="10" width="80" height="80"/></svg>`;
 
-/** Compile with the adapter and open the artifact from disk, collecting console errors. */
-async function open(page: Page, name: string): Promise<string[]> {
+/** Compile with an adapter and open the artifact from disk, collecting console errors. */
+async function open(page: Page, name: string, svg = WIDE_SVG): Promise<string[]> {
   mkdirSync(workspace, { recursive: true });
   const target = join(workspace, `${name}.html`);
+  const adapter: DiagramAdapter = { name: 'browser-test', version: '1.0.0', render: () => svg };
   writeFileSync(target, compile(SPEC, { diagramAdapter: adapter }).html, 'utf8');
   const errors: string[] = [];
   page.on('console', (message) => {
@@ -102,6 +107,66 @@ test.describe('diagram adapter output in the browser', () => {
     await expect
       .poll(async () => (await sizes()).slice(0, 2).map((size) => size.trim()))
       .toEqual(['14px 100%', '14px 100%']);
+  });
+
+  test('adapter styles cannot reach outside their own diagram', async ({ page }) => {
+    const errors = await open(page, 'greedy', GREEDY_SVG);
+    await expect(page.locator('.ak-shell')).toBeVisible();
+    await expect(page.locator('details[data-ak-diagram-fallback]')).toBeVisible();
+    const colors = await page.evaluate(() => ({
+      root: getComputedStyle(document.documentElement).backgroundColor,
+      body: getComputedStyle(document.body).color,
+    }));
+    expect(colors.root).not.toBe('rgb(255, 0, 0)');
+    expect(colors.body).not.toBe('rgb(255, 0, 0)');
+    // The diagram's own rules, keyframes included, still apply.
+    const rect = page.locator('.ak-diagram-canvas rect');
+    expect(await rect.evaluate((node) => getComputedStyle(node).fill)).toBe('rgb(255, 255, 255)');
+    expect(await rect.evaluate((node) => getComputedStyle(node).animationName)).toBe('pulse');
+    // A fixed-position canvas stays inside its panel instead of covering the page.
+    const boxes = await page.evaluate(() => {
+      const panel = document.querySelector('.ak-diagram-rendered')?.getBoundingClientRect();
+      const canvas = document.querySelector('.ak-diagram-canvas')?.getBoundingClientRect();
+      return { panel, canvas, viewport: window.innerWidth };
+    });
+    expect(boxes.canvas?.width).toBeLessThanOrEqual(boxes.panel?.width ?? 0);
+    expect(boxes.canvas?.top).toBeGreaterThanOrEqual(boxes.panel?.top ?? 0);
+    expect(errors).toEqual([]);
+  });
+
+  test('adapter motion stops under reduced motion', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await open(page, 'greedy-reduced', GREEDY_SVG);
+    const rect = page.locator('.ak-diagram-canvas rect');
+    expect(await rect.evaluate((node) => getComputedStyle(node).animationName)).toBe('none');
+  });
+
+  test('the text description prints even though it is folded on screen', async ({ page }) => {
+    await open(page, 'print');
+    await expect(page.locator('.ak-diagram-fallback')).toBeHidden();
+    await page.emulateMedia({ media: 'print' });
+    await expect(page.locator('.ak-diagram-fallback')).toBeVisible();
+    await expect(page.locator('.ak-diagram-fallback')).toContainText('Alpha');
+  });
+
+  test('the text description prints without script', async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    await open(page, 'print-no-script');
+    await page.emulateMedia({ media: 'print' });
+    await expect(page.locator('.ak-diagram-fallback')).toBeVisible();
+    await context.close();
+  });
+
+  test('the runtime opens the description for a print and folds it again after', async ({
+    page,
+  }) => {
+    await open(page, 'print-runtime');
+    const details = page.locator('details[data-ak-diagram-fallback]');
+    await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+    await expect(details).toHaveAttribute('open', '');
+    await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+    await expect(details).not.toHaveAttribute('open', '');
   });
 
   test('the text description folds away behind a disclosure', async ({ page }) => {
