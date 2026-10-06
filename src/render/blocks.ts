@@ -40,6 +40,7 @@ import { renderDiagramFallback } from './diagram-fallback.js';
 import {
   type AttributeValue,
   escapeAttribute,
+  escapeInlineText,
   escapeText,
   escapeUrl,
   renderAttributes,
@@ -180,7 +181,7 @@ function mediaFallbackBody(
   return [
     posterMarkup,
     title === '' ? '' : `<p><strong>${escapeText(title)}</strong></p>`,
-    `<p class="ak-muted">${escapeText(description)}</p>`,
+    `<p class="ak-muted">${escapeInlineText(description)}</p>`,
     `<p class="ak-caption">${escapeText(note)}</p>`,
     link,
   ]
@@ -286,7 +287,7 @@ const RENDERERS: Record<string, Renderer> = {
         : variant === 'caption'
           ? 'ak-block ak-caption'
           : 'ak-block';
-    return `<p${renderAttributes(nodeAttributes(node, { class: className }))}>${escapeText(
+    return `<p${renderAttributes(nodeAttributes(node, { class: className }))}>${escapeInlineText(
       stringProp(node, 'text'),
     )}</p>`;
   },
@@ -299,7 +300,7 @@ const RENDERERS: Record<string, Renderer> = {
     return element(
       'div',
       nodeAttributes(node, { class: 'ak-block ak-prose' }),
-      paragraphs.map((part) => `<p>${escapeText(part.replace(/\n/gu, ' '))}</p>`).join(''),
+      paragraphs.map((part) => `<p>${escapeInlineText(part.replace(/\n/gu, ' '))}</p>`).join(''),
     );
   },
 
@@ -308,7 +309,7 @@ const RENDERERS: Record<string, Renderer> = {
     return element(
       'blockquote',
       nodeAttributes(node, { class: 'ak-block ak-quote' }),
-      `<p>${escapeText(stringProp(node, 'text'))}</p>${
+      `<p>${escapeInlineText(stringProp(node, 'text'))}</p>${
         cite === '' ? '' : `<cite>${escapeText(cite)}</cite>`
       }`,
     );
@@ -373,7 +374,7 @@ const RENDERERS: Record<string, Renderer> = {
         stringProp(node, 'title') === ''
           ? ''
           : heading(3, stringProp(node, 'title'), 'ak-card-title'),
-        text === '' ? '' : `<p>${escapeText(text)}</p>`,
+        text === '' ? '' : `<p>${escapeInlineText(text)}</p>`,
         context.renderChildren(node),
       ].join(''),
     );
@@ -385,7 +386,7 @@ const RENDERERS: Record<string, Renderer> = {
     return [
       `<div${renderAttributes(nodeAttributes(node, { class: 'ak-block ak-alert', ...toneAttribute(node) }))}${role}>`,
       `<p><strong>${escapeText(stringProp(node, 'title'))}</strong></p>`,
-      `<p>${escapeText(stringProp(node, 'text'))}</p>`,
+      `<p>${escapeInlineText(stringProp(node, 'text'))}</p>`,
       '</div>',
     ].join('');
   },
@@ -404,7 +405,7 @@ const RENDERERS: Record<string, Renderer> = {
       `<aside${renderAttributes(nodeAttributes(node, { class: 'ak-block ak-callout', ...toneAttribute(node) }))}>`,
       `<p class="ak-label">${escapeText(icon)}</p>`,
       `<p><strong>${escapeText(stringProp(node, 'title'))}</strong></p>`,
-      `<p>${escapeText(stringProp(node, 'text'))}</p>`,
+      `<p>${escapeInlineText(stringProp(node, 'text'))}</p>`,
       '</aside>',
     ].join('');
   },
@@ -423,7 +424,7 @@ const RENDERERS: Record<string, Renderer> = {
       )}>`,
       eyebrow === '' ? '' : `<p class="ak-eyebrow">${escapeText(eyebrow)}</p>`,
       `<h1>${heroWords(stringProp(node, 'title'))}</h1>`,
-      description === '' ? '' : `<p>${escapeText(description)}</p>`,
+      description === '' ? '' : `<p>${escapeInlineText(description)}</p>`,
       // The shot is the first thing on screen, so it loads eagerly.
       source === ''
         ? ''
@@ -486,7 +487,7 @@ const RENDERERS: Record<string, Renderer> = {
           .map((item) => {
             const text = str(item.text);
             return `<li><p><strong>${escapeText(str(item.title))}</strong></p>${
-              text === '' ? '' : `<p>${escapeText(text)}</p>`
+              text === '' ? '' : `<p>${escapeInlineText(text)}</p>`
             }</li>`;
           })
           .join('')}</ol>`,
@@ -506,7 +507,7 @@ const RENDERERS: Record<string, Renderer> = {
             const text = str(item.text);
             return `<li><time>${escapeText(str(item.when))}</time><p><strong>${escapeText(
               str(item.title),
-            )}</strong></p>${text === '' ? '' : `<p>${escapeText(text)}</p>`}</li>`;
+            )}</strong></p>${text === '' ? '' : `<p>${escapeInlineText(text)}</p>`}</li>`;
           })
           .join('')}</ol>`,
       ].join(''),
@@ -525,7 +526,7 @@ const RENDERERS: Record<string, Renderer> = {
             const badge = str(item.badge);
             return `<li data-ak-filter-item data-ak-label="${escapeAttribute(
               str(item.text),
-            )}"><span>${escapeText(str(item.text))}</span>${
+            )}"><span>${escapeInlineText(str(item.text))}</span>${
               badge === '' ? '' : `<span class="ak-badge">${escapeText(badge)}</span>`
             }</li>`;
           })
@@ -546,7 +547,7 @@ const RENDERERS: Record<string, Renderer> = {
             const text = str(item.text);
             return `<li class="ak-card ak-card--elevated"><p><strong>${escapeText(
               str(item.title),
-            )}</strong></p>${text === '' ? '' : `<p>${escapeText(text)}</p>`}</li>`;
+            )}</strong></p>${text === '' ? '' : `<p>${escapeInlineText(text)}</p>`}</li>`;
           })
           .join('')}</ul>`,
       ].join(''),
@@ -613,7 +614,7 @@ const RENDERERS: Record<string, Renderer> = {
             (item) =>
               `<tr><th scope="row">${escapeText(str(item.area))}</th><td>${toneBadge(
                 str(item.impact),
-              )}</td><td>${toneBadge(str(item.likelihood))}</td><td>${escapeText(
+              )}</td><td>${toneBadge(str(item.likelihood))}</td><td>${escapeInlineText(
                 str(item.note),
               )}</td></tr>`,
           )
@@ -659,7 +660,7 @@ const RENDERERS: Record<string, Renderer> = {
             (item) =>
               `<li class="ak-card ak-surface" data-tone="${valueTone(str(item.kind))}"><p class="ak-label">${escapeText(
                 str(item.kind),
-              )}</p><p><strong>${escapeText(str(item.title))}</strong></p><p>${escapeText(
+              )}</p><p><strong>${escapeText(str(item.title))}</strong></p><p>${escapeInlineText(
                 str(item.text),
               )}</p></li>`,
           )
@@ -688,7 +689,7 @@ const RENDERERS: Record<string, Renderer> = {
         (item, index) =>
           `<div role="tabpanel" id="${escapeAttribute(`${base}-panel-${index}`)}" aria-labelledby="${escapeAttribute(
             str(item.id, `${base}-tab-${index}`),
-          )}" tabindex="${index === 0 ? '0' : '-1'}"${index === 0 ? '' : ' hidden'}>${escapeText(
+          )}" tabindex="${index === 0 ? '0' : '-1'}"${index === 0 ? '' : ' hidden'}>${escapeInlineText(
             str(item.text),
           )}</div>`,
       )
@@ -718,7 +719,7 @@ const RENDERERS: Record<string, Renderer> = {
               // the behavior; the action only drives it.
               `<details${index === 0 ? ' open' : ''}${renderAttributes({
                 'data-ak-id': `${node.id}-item-${index}`,
-              })}><summary>${escapeText(str(item.title))}</summary><p>${escapeText(
+              })}><summary>${escapeText(str(item.title))}</summary><p>${escapeInlineText(
                 str(item.text),
               )}</p></details>`,
           )
@@ -735,7 +736,7 @@ const RENDERERS: Record<string, Renderer> = {
         (item, index) =>
           `<div class="ak-carousel-slide" data-ak-slide tabindex="-1" aria-hidden="${
             index === 0 ? 'false' : 'true'
-          }"${index === 0 ? '' : ' hidden'}><h3>${escapeText(str(item.title))}</h3><p>${escapeText(
+          }"${index === 0 ? '' : ' hidden'}><h3>${escapeText(str(item.title))}</h3><p>${escapeInlineText(
             str(item.text),
           )}</p></div>`,
       )
@@ -910,7 +911,7 @@ const RENDERERS: Record<string, Renderer> = {
                   str(item.alt),
                 )}</a>`;
             return `<li><figure>${body}${
-              captionText === '' ? '' : `<figcaption>${escapeText(captionText)}</figcaption>`
+              captionText === '' ? '' : `<figcaption>${escapeInlineText(captionText)}</figcaption>`
             }</figure></li>`;
           })
           .join('')}</ul>`,
@@ -971,7 +972,7 @@ const RENDERERS: Record<string, Renderer> = {
       `<figure${renderAttributes(nodeAttributes(node, { class: 'ak-block ak-media' }))}>`,
       `<video controls preload="metadata"${poster === '' ? '' : ` poster="${escapeAttribute(escapeUrl(poster))}"`}><source src="${escapeAttribute(
         resolved.src,
-      )}" />${escapeText(str(fallback.description, 'Video content'))}</video>`,
+      )}" />${escapeInlineText(str(fallback.description, 'Video content'))}</video>`,
       figureCaption(captionText),
       '</figure>',
     ].join('');
@@ -1020,7 +1021,7 @@ const RENDERERS: Record<string, Renderer> = {
     }
     return [
       `<figure${renderAttributes(nodeAttributes(node, { class: 'ak-block ak-media' }))}>`,
-      `<audio controls preload="metadata" src="${escapeAttribute(resolved.src)}">${escapeText(
+      `<audio controls preload="metadata" src="${escapeAttribute(resolved.src)}">${escapeInlineText(
         str(fallback.description, 'Audio content'),
       )}</audio>`,
       figureCaption(captionText),
@@ -1090,7 +1091,7 @@ const RENDERERS: Record<string, Renderer> = {
         }),
       )}>`,
       heading(2, stringProp(node, 'title'), 'ak-dialog-title'),
-      text === '' ? '' : `<p>${escapeText(text)}</p>`,
+      text === '' ? '' : `<p>${escapeInlineText(text)}</p>`,
       `<div class="ak-dialog-actions">${actions
         .map((action) => {
           const on = isPlainObject(action.on) ? action.on : {};

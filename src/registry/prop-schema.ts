@@ -453,8 +453,15 @@ export function propSchemaToJsonSchema(schema: PropSchema): Record<string, unkno
       if (schema.id === true) out.pattern = NODE_ID_PATTERN.source;
       return out;
     }
-    case 'text':
-      return { type: 'string', maxLength: schema.maxLength ?? 50_000 };
+    case 'text': {
+      const out: Record<string, unknown> = {
+        type: 'string',
+        maxLength: schema.maxLength ?? 50_000,
+      };
+      // Text kinds document how they render (inline code or verbatim).
+      if (schema.description !== undefined) out.description = schema.description;
+      return out;
+    }
     case 'number': {
       const out: Record<string, unknown> = { type: schema.integer === true ? 'integer' : 'number' };
       if (schema.min !== undefined) out.minimum = schema.min;

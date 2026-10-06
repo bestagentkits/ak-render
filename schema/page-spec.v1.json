@@ -833,7 +833,8 @@
         },
         "text": {
           "type": "string",
-          "maxLength": 50000
+          "maxLength": 50000,
+          "description": "Plain text; a `backtick` pair renders as inline code."
         },
         "id": {
           "type": "string",
@@ -856,7 +857,8 @@
         },
         "text": {
           "type": "string",
-          "maxLength": 50000
+          "maxLength": 50000,
+          "description": "Plain text; a `backtick` pair renders as inline code."
         },
         "id": {
           "type": "string",
@@ -879,7 +881,8 @@
         },
         "text": {
           "type": "string",
-          "maxLength": 50000
+          "maxLength": 50000,
+          "description": "Plain text; a `backtick` pair renders as inline code."
         },
         "cite": {
           "type": "string",
@@ -914,7 +917,8 @@
         },
         "text": {
           "type": "string",
-          "maxLength": 100000
+          "maxLength": 100000,
+          "description": "Emitted verbatim; backticks stay literal."
         },
         "id": {
           "type": "string",
@@ -1048,7 +1052,8 @@
         },
         "text": {
           "type": "string",
-          "maxLength": 50000
+          "maxLength": 50000,
+          "description": "Plain text; a `backtick` pair renders as inline code."
         },
         "id": {
           "type": "string",
@@ -1089,7 +1094,8 @@
         },
         "text": {
           "type": "string",
-          "maxLength": 50000
+          "maxLength": 50000,
+          "description": "Plain text; a `backtick` pair renders as inline code."
         },
         "id": {
           "type": "string",
@@ -1127,7 +1133,8 @@
         },
         "text": {
           "type": "string",
-          "maxLength": 50000
+          "maxLength": 50000,
+          "description": "Plain text; a `backtick` pair renders as inline code."
         },
         "id": {
           "type": "string",
@@ -1158,7 +1165,8 @@
         },
         "description": {
           "type": "string",
-          "maxLength": 50000
+          "maxLength": 50000,
+          "description": "Plain text; a `backtick` pair renders as inline code."
         },
         "align": {
           "type": "string",
@@ -1294,7 +1302,8 @@
               },
               "text": {
                 "type": "string",
-                "maxLength": 50000
+                "maxLength": 50000,
+                "description": "Plain text; a `backtick` pair renders as inline code."
               }
             },
             "additionalProperties": false,
@@ -1343,7 +1352,8 @@
               },
               "text": {
                 "type": "string",
-                "maxLength": 50000
+                "maxLength": 50000,
+                "description": "Plain text; a `backtick` pair renders as inline code."
               }
             },
             "additionalProperties": false,
@@ -1385,7 +1395,8 @@
             "properties": {
               "text": {
                 "type": "string",
-                "maxLength": 50000
+                "maxLength": 50000,
+                "description": "Plain text; a `backtick` pair renders as inline code."
               },
               "badge": {
                 "type": "string",
@@ -1434,7 +1445,8 @@
               },
               "text": {
                 "type": "string",
-                "maxLength": 50000
+                "maxLength": 50000,
+                "description": "Plain text; a `backtick` pair renders as inline code."
               }
             },
             "additionalProperties": false,
@@ -1622,7 +1634,8 @@
               },
               "note": {
                 "type": "string",
-                "maxLength": 50000
+                "maxLength": 50000,
+                "description": "Plain text; a `backtick` pair renders as inline code."
               }
             },
             "additionalProperties": false,
@@ -1674,7 +1687,8 @@
               },
               "text": {
                 "type": "string",
-                "maxLength": 50000
+                "maxLength": 50000,
+                "description": "Plain text; a `backtick` pair renders as inline code."
               }
             },
             "additionalProperties": false,
@@ -1724,7 +1738,8 @@
               },
               "text": {
                 "type": "string",
-                "maxLength": 50000
+                "maxLength": 50000,
+                "description": "Plain text; a `backtick` pair renders as inline code."
               }
             },
             "additionalProperties": false,
@@ -1775,7 +1790,8 @@
               },
               "text": {
                 "type": "string",
-                "maxLength": 50000
+                "maxLength": 50000,
+                "description": "Plain text; a `backtick` pair renders as inline code."
               }
             },
             "additionalProperties": false,
@@ -1964,7 +1980,8 @@
         },
         "description": {
           "type": "string",
-          "maxLength": 50000
+          "maxLength": 50000,
+          "description": "Text summary for assistive technology; backticks stay literal."
         },
         "labels": {
           "type": "array",
@@ -2030,7 +2047,8 @@
         },
         "caption": {
           "type": "string",
-          "maxLength": 50000
+          "maxLength": 50000,
+          "description": "Plain text; a `backtick` pair renders as inline code."
         },
         "id": {
           "type": "string",
@@ -2066,7 +2084,8 @@
               },
               "text": {
                 "type": "string",
-                "maxLength": 50000
+                "maxLength": 50000,
+                "description": "Plain text; a `backtick` pair renders as inline code."
               },
               "eyebrow": {
                 "type": "string",
@@ -2185,7 +2204,8 @@
               },
               "text": {
                 "type": "string",
-                "maxLength": 2000
+                "maxLength": 2000,
+                "description": "Emitted verbatim; backticks stay literal."
               }
             },
             "additionalProperties": false,
@@ -2327,7 +2347,8 @@
         },
         "caption": {
           "type": "string",
-          "maxLength": 50000
+          "maxLength": 50000,
+          "description": "Plain text; a `backtick` pair renders as inline code."
         },
         "id": {
           "type": "string",
@@ -2440,7 +2461,8 @@
         },
         "text": {
           "type": "string",
-          "maxLength": 50000
+          "maxLength": 50000,
+          "description": "Plain text; a `backtick` pair renders as inline code."
         },
         "bullets": {
           "type": "array",
@@ -2551,7 +2573,8 @@
         },
         "text": {
           "type": "string",
-          "maxLength": 50000
+          "maxLength": 50000,
+          "description": "Plain text; a `backtick` pair renders as inline code."
         },
         "actions": {
           "type": "array",
@@ -2613,7 +2636,8 @@
         },
         "caption": {
           "type": "string",
-          "maxLength": 50000
+          "maxLength": 50000,
+          "description": "Plain text; a `backtick` pair renders as inline code."
         },
         "id": {
           "type": "string",
@@ -2658,7 +2682,8 @@
               },
               "caption": {
                 "type": "string",
-                "maxLength": 50000
+                "maxLength": 50000,
+                "description": "Plain text; a `backtick` pair renders as inline code."
               }
             },
             "additionalProperties": false,
@@ -2714,14 +2739,16 @@
         },
         "caption": {
           "type": "string",
-          "maxLength": 50000
+          "maxLength": 50000,
+          "description": "Plain text; a `backtick` pair renders as inline code."
         },
         "fallback": {
           "type": "object",
           "properties": {
             "description": {
               "type": "string",
-              "maxLength": 50000
+              "maxLength": 50000,
+              "description": "Plain text; a `backtick` pair renders as inline code."
             },
             "linkText": {
               "type": "string",
@@ -2777,14 +2804,16 @@
         },
         "caption": {
           "type": "string",
-          "maxLength": 50000
+          "maxLength": 50000,
+          "description": "Plain text; a `backtick` pair renders as inline code."
         },
         "fallback": {
           "type": "object",
           "properties": {
             "description": {
               "type": "string",
-              "maxLength": 50000
+              "maxLength": 50000,
+              "description": "Plain text; a `backtick` pair renders as inline code."
             },
             "linkText": {
               "type": "string",
@@ -2969,7 +2998,8 @@
         },
         "text": {
           "type": "string",
-          "maxLength": 50000
+          "maxLength": 50000,
+          "description": "Plain text; a `backtick` pair renders as inline code."
         },
         "actions": {
           "type": "array",
@@ -3099,7 +3129,8 @@
               },
               "text": {
                 "type": "string",
-                "maxLength": 50000
+                "maxLength": 50000,
+                "description": "Plain text; a `backtick` pair renders as inline code."
               }
             },
             "additionalProperties": false,

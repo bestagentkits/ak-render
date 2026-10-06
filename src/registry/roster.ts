@@ -89,10 +89,18 @@ const str = (o: Omit<PropSchema & { kind: 'string' }, 'kind'> = {}): PropSchema 
   kind: 'string',
   ...o,
 });
+/**
+ * How text renders. `describe` and the JSON Schema both carry it, once per
+ * prop, so it stays short.
+ */
+const PROSE_DESCRIPTION = 'Plain text; a `backtick` pair renders as inline code.';
+const VERBATIM_DESCRIPTION = 'Emitted verbatim; backticks stay literal.';
+
 const txt = (
   o: { required?: boolean; default?: string; maxLength?: number; description?: string } = {},
 ): PropSchema => ({
   kind: 'text',
+  description: PROSE_DESCRIPTION,
   ...o,
 });
 const num = (
@@ -316,7 +324,7 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
     props: {
       language: str({ maxLength: 32, default: 'text' }),
       title: OPTIONAL_TITLE,
-      text: txt({ required: true, maxLength: 100_000 }),
+      text: txt({ required: true, maxLength: 100_000, description: VERBATIM_DESCRIPTION }),
       ...anchorProps,
     },
     assets: ['code'],
@@ -630,7 +638,9 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
     props: {
       kind: enumStr(CHART_KINDS, { required: true }),
       title: OPTIONAL_TITLE,
-      description: txt(),
+      description: txt({
+        description: 'Text summary for assistive technology; backticks stay literal.',
+      }),
       labels: list(str({ maxLength: 80 }), { required: true, minItems: 1, maxItems: 200 }),
       series: itemsOf(
         { label: LABEL, values: list(num(), { required: true, minItems: 1, maxItems: 200 }) },
@@ -737,7 +747,7 @@ export const BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
           kind: enumStr(['command', 'output', 'comment', 'success', 'error'], {
             default: 'output',
           }),
-          text: txt({ required: true, maxLength: 2_000 }),
+          text: txt({ required: true, maxLength: 2_000, description: VERBATIM_DESCRIPTION }),
         },
         { minItems: 1, maxItems: 60 },
       ),

@@ -4,7 +4,7 @@
 
 Agent loop: `ak-render catalog` once, `ak-render describe <type> --json` for each block you use, `ak-render validate <spec|-> --json` and fix every diagnostic by its JSON path, then `ak-render <spec|-> --out page.html`. Pass `-` to read the spec from stdin. `ak-render mcp` exposes the same loop as MCP tools over stdio (`catalog`, `describe`, `validate`, `render`, `themes`); `render` writes the file and returns only a summary.
 
-Do not write HTML, CSS or inline scripts: the spec has no field for them. Output makes no network request unless the spec opts in under `policy.network`.
+Do not write HTML, CSS or inline scripts: the spec has no field for them. In prose text props, a pair of backticks renders as inline code; nothing else is parsed as markup. Output makes no network request unless the spec opts in under `policy.network`.
 
 ## Docs
 

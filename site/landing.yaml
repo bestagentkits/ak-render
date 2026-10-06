@@ -72,7 +72,7 @@ blocks:
           - title: Catalog
             text: 'ak-render catalog lists all 54 block types and every action in 5,164 bytes. The agent reads it once per task.'
           - title: Describe
-            text: 'ak-render describe <type> --json returns one contract: props, defaults, bounds, slots and actions. The hero contract is 1,766 bytes.'
+            text: 'ak-render describe <type> --json returns one contract: props, defaults, bounds, slots and actions. The hero contract is 1,844 bytes.'
           - title: Validate
             text: 'ak-render validate <spec> --json returns diagnostics with a stable code and the JSON path to fix. Exit code 1 means fix and retry.'
           - title: Compile
@@ -89,7 +89,7 @@ blocks:
           - kind: command
             text: ak-render describe hero --json | wc -c
           - kind: output
-            text: '1766'
+            text: '1844'
           - kind: comment
             text: '# a typo in the spec comes back with the path to fix'
           - kind: command

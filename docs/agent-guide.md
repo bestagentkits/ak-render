@@ -81,6 +81,9 @@ it points, so review it like any file write. `spec` may be YAML/JSON text or the
   unless the spec opts in under `policy.network`; see
   [media-policy.md](./media-policy.md). A remote video `poster` is rejected at
   its path unless the page allows remote `images`.
+- Write commands, paths and identifiers in prose between backticks:
+  `` `ak-render catalog` `` renders as inline code. That is the only markup
+  text props understand; titles, `code` and `terminal` text stay literal.
 - URLs accept `https`, `http`, `mailto` and relative paths; `javascript:` and
   similar schemes are rejected.
 - Use semantic blocks (`hero`, `steps`, `timeline`, `comparison`, `kpi`, `cta`)

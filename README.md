@@ -81,6 +81,12 @@ ak-render describe kpi --json    # the same, machine-readable
 Containers (`section`, `grid`, `split`, `stack`) take their children under
 `blocks:`.
 
+Text is plain text, with one exception: in prose props such as `text`, a step's
+or list item's `text`, a `description` or a `caption`, a pair of backticks
+renders as inline code, so `` `ak-render catalog` `` reads as a command. Nothing
+else is parsed as markup, an unpaired backtick stays literal, and titles, code
+and terminal lines are never changed. `describe` marks each prop that does this.
+
 ### Validate and fix
 
 ```bash

@@ -28,7 +28,13 @@ import {
   stringProp,
   titleHeader,
 } from './block-helpers.js';
-import { escapeAttribute, escapeText, escapeUrl, renderAttributes } from './escape.js';
+import {
+  escapeAttribute,
+  escapeInlineText,
+  escapeText,
+  escapeUrl,
+  renderAttributes,
+} from './escape.js';
 
 /** Minimal render context the showcase renderers need. */
 export interface ShowcaseContext {
@@ -73,6 +79,11 @@ function paragraph(className: string, text: string): string {
   return text === '' ? '' : `<p class="${className}">${escapeText(text)}</p>`;
 }
 
+/** A paragraph of prose: backtick spans become inline code. */
+function prose(className: string, text: string): string {
+  return text === '' ? '' : `<p class="${className}">${escapeInlineText(text)}</p>`;
+}
+
 // --- bento ------------------------------------------------------------------
 
 const TILE_SIZES = new Set(['small', 'wide', 'tall', 'large']);
@@ -89,7 +100,7 @@ function bento(node: IrNode, context: ShowcaseContext): string {
       paragraph('ak-eyebrow', str(item.eyebrow)),
       paragraph('ak-tile-value', str(item.value)),
       paragraph('ak-tile-title', str(item.title)),
-      paragraph('ak-tile-text', str(item.text)),
+      prose('ak-tile-text', str(item.text)),
     ].join('');
     return `<li${renderAttributes({
       class: 'ak-tile',
@@ -412,7 +423,7 @@ function showcase(node: IrNode, context: ShowcaseContext): string {
       '<div class="ak-showcase-copy">',
       paragraph('ak-eyebrow', stringProp(node, 'eyebrow')),
       `<h2>${escapeText(stringProp(node, 'title'))}</h2>`,
-      paragraph('ak-showcase-text', stringProp(node, 'text')),
+      prose('ak-showcase-text', stringProp(node, 'text')),
       bullets.length === 0
         ? ''
         : `<ul class="ak-showcase-points">${bullets.map((item) => `<li>${escapeText(item)}</li>`).join('')}</ul>`,
@@ -480,7 +491,7 @@ function cta(node: IrNode): string {
     [
       paragraph('ak-eyebrow', stringProp(node, 'eyebrow')),
       `<h2 class="ak-cta-title">${escapeText(stringProp(node, 'title'))}</h2>`,
-      paragraph('ak-cta-text', stringProp(node, 'text')),
+      prose('ak-cta-text', stringProp(node, 'text')),
       actions === '' ? '' : `<div class="ak-cta-actions">${actions}</div>`,
     ].join(''),
   );

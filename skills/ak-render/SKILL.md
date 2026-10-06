@@ -127,6 +127,10 @@ presets it finds. Use only a name it lists. Don't try to restyle the page.
   as `rawHTML`, `iframe`, `srcdoc`, or `script` are rejected. Don't look for
   an escape hatch, and don't post-process the emitted file. Links accept
   `https`, `http`, `mailto`, and relative paths, and `javascript:` is rejected.
+- **Backticks are the only inline markup.** In prose text (a `text`, a step or
+  list item's `text`, a `description`, a `caption`), a pair of backticks
+  renders as inline code, so write `` `ak-render validate` `` for a command or
+  path. Titles, `code` blocks, and `terminal` lines stay literal.
 - **Never invent data.** Every number, date, name, path, and finding must come
   from the conversation, the repository, or tool output. If a value is
   unknown, leave the block out or ask. Don't fill it with a plausible guess.

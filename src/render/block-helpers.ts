@@ -8,7 +8,13 @@
 import type { IrNode, NetworkPolicy } from '../ir.js';
 import { isPlainObject, type JsonValue } from '../json.js';
 import { isRemote, type MediaCapability, networkAllows } from '../spec/network-policy.js';
-import { type AttributeValue, escapeText, escapeUrl, renderAttributes } from './escape.js';
+import {
+  type AttributeValue,
+  escapeInlineText,
+  escapeText,
+  escapeUrl,
+  renderAttributes,
+} from './escape.js';
 
 // The network gate is shared with validation; renderers keep importing it from here.
 export {
@@ -71,8 +77,9 @@ export function titleHeader(node: IrNode, level = 2): string {
   return title === '' ? '' : heading(level, title);
 }
 
+/** A figure caption is prose, so backtick spans become inline code. */
 export function figureCaption(value: string): string {
-  return value === '' ? '' : `<figcaption>${escapeText(value)}</figcaption>`;
+  return value === '' ? '' : `<figcaption>${escapeInlineText(value)}</figcaption>`;
 }
 
 /**

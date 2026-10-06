@@ -72,7 +72,7 @@ blocks:
         text: |
           Rich text renders several paragraphs from line breaks.
 
-          The compiler splits on blank lines and escapes every paragraph.
+          The compiler splits on blank lines and escapes every paragraph. A pair of backticks, as in `ak-render validate`, becomes inline code.
       - type: quote
         text: A closed action vocabulary can be validated, tested, and reviewed.
         cite: Design note
@@ -136,7 +136,7 @@ blocks:
         title: Compile pipeline
         items:
           - title: Parse
-            text: JSON or YAML becomes a nested spec.
+            text: JSON or YAML becomes a nested spec, which `ak-render validate` checks before anything renders.
           - title: Normalize
             text: The spec becomes a flat IR with stable node ids.
           - title: Render

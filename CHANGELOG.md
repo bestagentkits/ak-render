@@ -18,6 +18,7 @@ Release mechanics and the compatibility contract live in
 
 - `benchmarks/agent-token-cost.mjs` estimates the tokens of a page task end to end: guidance read, output written and what returns into context, against a corpus of hand-written HTML passed with `--legacy-html`. Results are in `docs/artifacts/agent-token-cost.md`, with the corpus recorded by anonymous label.
 - `scripts/capture-demo-media.mjs` captures five more page shots and four component crops (KPI, terminal, checklist, file tree), and `--only <names>` recaptures a subset without the walkthrough video.
+- A pair of backticks in prose text renders as inline code, so `` `ak-render catalog` `` in a `text`, a step, a list item, a description or a caption reads as a command. The text is escaped before the span is wrapped, nothing else is parsed as markup, and an unpaired backtick stays literal. Titles, `code` blocks, `terminal` lines and the chart summary are unchanged, and `describe` and the JSON Schema say which props do this.
 
 ### Fixed
 
