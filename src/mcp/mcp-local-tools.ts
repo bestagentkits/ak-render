@@ -1,7 +1,8 @@
 /**
  * The tool set the local stdio server runs.
  *
- * `catalog`, `describe` and `validate` are the shared pure tools. `render`
+ * `catalog`, `search-catalog`, `describe` and `validate` are the shared pure
+ * tools. `render`
  * writes the HTML to a file under the server's working directory and `themes`
  * discovers project and user presets on disk, which is why this module, unlike
  * the shared definitions, may touch the filesystem. Nothing here touches the
@@ -21,6 +22,7 @@ import {
   optionalTheme,
   renderSummary,
   requireString,
+  SEARCH_CATALOG_TOOL,
   THEMES_DEFINITION,
   themesResult,
   VALIDATE_TOOL,
@@ -69,6 +71,7 @@ const LOCAL_THEMES_TOOL: McpTool<McpContext> = {
 /** Local tools, in the order an agent uses them. */
 export const LOCAL_TOOLS: readonly McpTool<McpContext>[] = [
   CATALOG_TOOL,
+  SEARCH_CATALOG_TOOL,
   DESCRIBE_TOOL,
   VALIDATE_TOOL,
   LOCAL_RENDER_TOOL,

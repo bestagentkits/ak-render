@@ -13,9 +13,10 @@
  *   - a stored artifact URL in place of a filesystem path for `render`;
  *   - error results that never carry an internal message.
  *
- * `catalog`, `describe` and `themes` answer without a bearer so a client can
- * discover the server before it is configured with a token. They take no spec
- * and read only static compiler data, but each call still builds a response of
+ * `catalog`, `search-catalog`, `describe` and `themes` answer without a bearer
+ * so a client can discover the server before it is configured with a token.
+ * They take no spec and read only static compiler data (a search query is at
+ * most 200 characters), but each call still builds a response of
  * several kilobytes, so they count per client IP, and the transport caps a
  * batch at 16 members. `validate` parses an arbitrary spec, so it needs a
  * bearer with the render grant and counts against its own limit.
@@ -43,6 +44,7 @@ import {
   type McpTool,
   optionalTheme,
   REMOTE_RENDER_DEFINITION,
+  SEARCH_CATALOG_TOOL,
   VALIDATE_TOOL,
 } from '../../../src/mcp/mcp-tool-definitions.js';
 import {
@@ -171,6 +173,7 @@ const REMOTE_RENDER_TOOL: RemoteTool = {
 /** Remote tools, in the same order and with the same names as the stdio server. */
 export const REMOTE_TOOLS: readonly RemoteTool[] = [
   anonymous(CATALOG_TOOL),
+  anonymous(SEARCH_CATALOG_TOOL),
   anonymous(DESCRIBE_TOOL),
   REMOTE_VALIDATE_TOOL,
   REMOTE_RENDER_TOOL,

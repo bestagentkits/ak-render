@@ -111,15 +111,18 @@ describe('remote MCP: discovery', () => {
       { cwd: '/', home: '/' },
     );
     const local = (stdio?.result as { tools: { name: string }[] } | undefined)?.tools ?? [];
-    expect(local.length).toBe(5);
+    expect(local.length).toBe(6);
     expect(remote.map((entry) => entry.name)).toEqual(local.map((entry) => entry.name));
     // Discovery never reaches the entitlements endpoint.
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('serves catalog, describe and themes without a bearer', async () => {
+  it('serves catalog, search-catalog, describe and themes without a bearer', async () => {
     const { env, fetchMock } = harness();
     expect((await tool(env, 'catalog', {}, null)).payload['blockCount']).toBeGreaterThan(40);
+    const search = await tool(env, 'search-catalog', { query: 'architecture diagram' }, null);
+    expect(search.reply.isError).toBeUndefined();
+    expect((search.payload as unknown as { type: string }[])[0]?.type).toBe('diagram-panel');
     expect((await tool(env, 'describe', { type: 'hero' }, null)).payload['type']).toBe('hero');
     const themes = (await tool(env, 'themes', {}, null)).payload as {
       presets: { name: string; origin: string }[];

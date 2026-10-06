@@ -2,8 +2,9 @@
  * The MCP tool contract: one source of truth for every transport.
  *
  * The stdio server and the Streamable HTTP server list tools from here. The
- * read-only tools (`catalog`, `describe`, `validate`) are complete and pure, so
- * both transports run the very same function. `render` and `themes` differ only
+ * read-only tools (`catalog`, `search-catalog`, `describe`, `validate`) are
+ * complete and pure, so both transports run the very same function. `render`
+ * and `themes` differ only
  * in where their output goes or where presets come from, so this module owns
  * their descriptions, input schemas and result shapes, and each transport
  * supplies the side effect: a local file for stdio, a stored artifact for HTTP.
@@ -11,7 +12,10 @@
  * No Node-only import is allowed here; the Worker bundles this module.
  */
 
-import { catalog, describe } from '../registry/registry.js';
+import { BLOCK_CATEGORIES } from '../registry/block-module.js';
+import { CATALOG_SEARCH_LIMITS, searchCatalog } from '../registry/catalog-search.js';
+import { DESCRIBE_MANY_LIMIT, describeMany } from '../registry/describe-many.js';
+import { catalog, describe, formatCatalogJson } from '../registry/registry.js';
 import type { CompileResult } from '../render/render.js';
 import { validate } from '../spec/validate.js';
 import { builtinPresetEntries } from '../theme/presets.js';
@@ -60,27 +64,107 @@ export function optionalTheme(args: Record<string, unknown>): string | undefined
   return typeof theme === 'string' && theme !== '' ? theme : undefined;
 }
 
+/** An optional string argument: absent or empty means "not given". */
+function optionalString(args: Record<string, unknown>, key: string): string | undefined {
+  const value = args[key];
+  if (value === undefined || value === '') return undefined;
+  if (typeof value !== 'string') throw new ToolArgumentError(`"${key}" must be a string`);
+  return value;
+}
+
 export const CATALOG_TOOL: McpTool<unknown> = {
   name: 'catalog',
   description:
-    'List every block type and action with a one-line summary. Call once per task, then describe only the types you use.',
-  inputSchema: NO_INPUT,
-  run: () => text(catalog()),
+    'List block types (category, tags, one-line summary) and actions. Pass category for one group. Call once per task, then describe only the types you use.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      category: {
+        type: 'string',
+        enum: [...BLOCK_CATEGORIES],
+        description: 'Optional: list only this category.',
+      },
+    },
+    additionalProperties: false,
+  },
+  run: (args) => {
+    const category = optionalString(args, 'category');
+    return text(formatCatalogJson(catalog(category === undefined ? {} : { category })));
+  },
 };
+
+export const SEARCH_CATALOG_TOOL: McpTool<unknown> = {
+  name: 'search-catalog',
+  description:
+    'Find block types by intent words, e.g. "sortable table" or "pricing". Returns up to 8 ranked hits with type, category, summary and score.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      query: {
+        type: 'string',
+        maxLength: CATALOG_SEARCH_LIMITS.maxQueryLength,
+        description: 'A few words describing what the block should do.',
+      },
+    },
+    required: ['query'],
+    additionalProperties: false,
+  },
+  run: (args) => text(searchCatalog(requireString(args, 'query'))),
+};
+
+/** The `types` argument: a non-empty list of non-empty strings. */
+function requireTypes(args: Record<string, unknown>): string[] {
+  const value = args.types;
+  if (
+    !Array.isArray(value) ||
+    value.length === 0 ||
+    value.length > DESCRIBE_MANY_LIMIT ||
+    !value.every((item): item is string => typeof item === 'string' && item !== '')
+  ) {
+    throw new ToolArgumentError(
+      `"types" must be a list of 1 to ${DESCRIBE_MANY_LIMIT} non-empty strings`,
+    );
+  }
+  return value;
+}
 
 export const DESCRIBE_TOOL: McpTool<unknown> = {
   name: 'describe',
   description:
-    'Full contract for one block type: props with defaults and bounds, slots, actions, runtime features, network needs and accessibility.',
+    'Block contracts: props with defaults and bounds, slots, actions, features, network, accessibility. Pass type, or types (up to 12). compact: true gives one line per prop.',
   inputSchema: {
     type: 'object',
     properties: {
       type: { type: 'string', description: 'Block type from catalog, e.g. "hero".' },
+      types: {
+        type: 'array',
+        items: { type: 'string' },
+        minItems: 1,
+        maxItems: DESCRIBE_MANY_LIMIT,
+        description: 'Several block types; the reply is a list in this order. Use instead of type.',
+      },
+      compact: {
+        type: 'boolean',
+        description: 'One line per prop (kind, required, enum); no prose or examples.',
+      },
     },
-    required: ['type'],
     additionalProperties: false,
   },
-  run: (args) => text(describe(requireString(args, 'type'))),
+  run: (args) => {
+    if (args.compact !== undefined && typeof args.compact !== 'boolean') {
+      throw new ToolArgumentError('"compact" must be a boolean');
+    }
+    const compact = args.compact === true;
+    if (args.types !== undefined) {
+      if (args.type !== undefined) {
+        throw new ToolArgumentError('pass either "type" or "types", not both');
+      }
+      return text(describeMany(requireTypes(args), { compact }));
+    }
+    const type = requireString(args, 'type');
+    // The single-type reply keeps its original shape: one contract object.
+    return text(compact ? describeMany([type], { compact: true })[0] : describe(type));
+  },
 };
 
 export const VALIDATE_TOOL: McpTool<unknown> = {
