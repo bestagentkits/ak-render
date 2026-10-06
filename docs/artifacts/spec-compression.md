@@ -1,6 +1,6 @@
 # Spec compression
 
-Produced by `benchmarks/spec-compression.mjs` with compiler 0.2.0. Machine-readable
+Produced by `benchmarks/spec-compression.mjs` with compiler 0.3.0. Machine-readable
 companion: [`spec-compression.json`](./spec-compression.json). Sizes are UTF-8 bytes.
 
 - **Spec**: the fixture as written, with shared `datasets` and `dataRef`.

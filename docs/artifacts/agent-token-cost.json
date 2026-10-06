@@ -1,7 +1,7 @@
 {
   "artifact": "agent-token-cost",
   "producer": "benchmarks/agent-token-cost.mjs",
-  "compiler": "0.2.0",
+  "compiler": "0.3.0",
   "method": {
     "tokens": "estimated at 4 characters per token, as in the legacy baseline",
     "visibleText": "characters outside tags, <style> and <script>, whitespace collapsed",

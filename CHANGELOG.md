@@ -7,7 +7,7 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 Release mechanics and the compatibility contract live in
 [docs/release-policy.md](./docs/release-policy.md).
 
-## [0.3.0] - Unreleased
+## [0.3.0] - 2026-10-06
 
 The Page Spec stays `version: 1`, and every spec that was valid in 0.2.0 stays
 valid. These changes alter existing behaviour or output on purpose:

@@ -53,7 +53,7 @@ HTML:
   "bytes": 106964, "hash": "…", "title": "…", "theme": "editorial",
   "features": ["theme"], "nodes": 2, "warnings": [],
   "artifactUrl": "https://render.agentkit.best/v1/artifact/<uuid>",
-  "expiresAt": "…", "shared": false, "version": "0.2.0"
+  "expiresAt": "…", "shared": false, "version": "0.3.0"
 }
 ```
 
