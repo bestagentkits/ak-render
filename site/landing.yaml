@@ -58,7 +58,7 @@ blocks:
         right:
           label: The agent writes a Page Spec
           items:
-            - The explain gallery page is a 2.6 kB spec; the compiler emits the other 121.4 kB
+            - The explain gallery page is a 2.6 kB spec; the compiler emits the other 124.4 kB
             - The same spec and compiler version produce identical bytes and hash
             - One file that opens from disk, with fonts embedded and the network denied
             - Keyboard, reduced motion, print and the dark scheme come from the compiler
@@ -103,17 +103,17 @@ blocks:
           - kind: success
             text: 'ok: plan.yaml'
           - kind: output
-            text: '  blocks: 4 (nodes: 5)'
+            text: '  blocks: 8 (nodes: 9)'
           - kind: command
             text: ak-render plan.yaml --out plan.html
           - kind: output
-            text: wrote 109000 bytes to plan.html (1 runtime features, hash 0j9tjby0y34eej)
+            text: wrote 111479 bytes to plan.html (3 runtime features, hash 12524sw1xvd176)
           - kind: comment
             text: '# same spec from stdin, same bytes'
           - kind: command
             text: cat plan.yaml | ak-render - --out again.html
           - kind: output
-            text: wrote 109000 bytes to again.html (1 runtime features, hash 0j9tjby0y34eej)
+            text: wrote 111479 bytes to again.html (3 runtime features, hash 12524sw1xvd176)
           - kind: command
             text: cmp plan.html again.html && echo identical
           - kind: success
@@ -132,14 +132,14 @@ blocks:
             value: −87%
             caption: 'Benchmarked: 87–88%. 33.7k–36.6k tokens of legacy guidance against 4.4k for catalog and contracts'
           - label: Typical task, estimated
-            value: −73%
-            caption: 47.5k → 12.7k tokens, summed from measured parts at 4 characters per token
+            value: −66%
+            caption: 47.5k → 16.1k tokens with full contracts, 11.5k (−76%) with compact ones; 4 characters per token
           - label: Output on real pages
-            value: −54%
+            value: −52%
             caption: Median projected saving over 12 HTML pages agents wrote in real projects
           - label: Compiled page in context
             value: 0 bytes
-            caption: The HTML goes to disk; the agent reads a summary of about 450 characters
+            caption: The HTML goes to disk; the agent reads a summary of under 800 characters
       - type: split
         ratio: wide-left
         blocks:
@@ -150,8 +150,10 @@ blocks:
             series:
               - label: Hand-written HTML
                 values: [33.7, 13.9, 0]
-              - label: AK Render
-                values: [5.7, 6.9, 0.1]
+              - label: AK Render, full contracts
+                values: [8.7, 7.2, 0.1]
+              - label: AK Render, compact contracts
+                values: [4.1, 7.2, 0.1]
           - type: steps
             title: Where the HTML goes
             items:
@@ -171,7 +173,7 @@ blocks:
           - title: Validation
             text: A failed check returns a stable code and the JSON path to fix, not a broken page to inspect.
           - title: Context shielding
-            text: A compiled page is 109–240 kB. The summary the agent reads back is under 800 characters.
+            text: A compiled page is 111–246 kB. The summary the agent reads back is under 800 characters.
           - title: Determinism
             text: The same spec compiles to the same bytes, so a rerun gives the agent nothing new to review.
           - title: Edits
@@ -179,7 +181,7 @@ blocks:
       - type: callout
         tone: info
         title: Measured, estimated, and not yet measured
-        text: 'Character counts are measured; tokens are estimated at 4 characters per token, with no tokenizer or live model run. The 87–88% figure comes from benchmarks/render-benchmark.mjs. The 73% task figure adds measured parts, and the spec size is projected from the legacy pages'' visible text. A page that is mostly prose saves little or nothing on output: one of the 12 grew by 29%. Live A/B runs, repair loops and wall time are not measured yet. Method and data: docs/artifacts/agent-token-cost.md.'
+        text: 'Character counts are measured; tokens are estimated at 4 characters per token, with no tokenizer or live model run. The 87–88% figure comes from benchmarks/render-benchmark.mjs. The 66% task figure (76% with compact contracts) adds measured parts, and the spec size is projected from the legacy pages'' visible text. A page that is mostly prose saves little or nothing on output: one of the 12 grew by 36%. Live A/B runs, repair loops and wall time are not measured yet. Method and data: docs/artifacts/agent-token-cost.md.'
 
   - type: section
     id: blocks
@@ -362,7 +364,7 @@ blocks:
                     text: Page Spec v1 accepted with migration policy.
                   - when: Week 2
                     title: Compiler and themes
-                    text: Deterministic output with six built-in presets.
+                    text: Deterministic output under every built-in preset.
                   - when: Week 3
                     title: Runtime
                     text: Browser-tested interactions across input methods.
@@ -624,6 +626,27 @@ blocks:
           - type: link
             label: theme-dialects
             href: gallery/theme-dialects.html
+      - type: toolbar
+        title: Open a composition demo
+        items:
+          - type: link
+            label: complex-dashboard
+            href: gallery/complex-dashboard.html
+          - type: link
+            label: benchmark-report
+            href: gallery/benchmark-report.html
+          - type: link
+            label: research-report
+            href: gallery/research-report.html
+          - type: link
+            label: product-case-study
+            href: gallery/product-case-study.html
+          - type: link
+            label: interactive-data-explorer
+            href: gallery/interactive-data-explorer.html
+          - type: link
+            label: incident-report
+            href: gallery/incident-report.html
 
   - type: section
     id: measured
@@ -637,7 +660,7 @@ blocks:
             caption: ak-render catalog prints 7,228 bytes
           - label: Spec the agent writes
             value: 2.6 kB
-            caption: explain.yaml; the compiled page is 124.0 kB
+            caption: explain.yaml; the compiled page is 127.0 kB
           - label: Network requests on open
             value: '0'
             caption: explain.html from file:// in Chromium
