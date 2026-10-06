@@ -16,6 +16,7 @@
 import { ADAPTER_STYLE_MARKER } from '../diagram/adapter.js';
 import { stableHash } from '../hash.js';
 import type { IrDocument, NetworkPolicy } from '../ir.js';
+import { nonDefaultRecipes } from '../theme/recipes.js';
 import { escapeAttribute, escapeText } from './escape.js';
 import { needsLiveRegion } from './runtime.js';
 
@@ -32,6 +33,12 @@ export interface DocumentInput {
   density: string;
   /** The theme turned motion off; the runtime reads this from the root element. */
   motionDisabled?: boolean;
+  /**
+   * Resolved component recipes. Each non-default choice becomes a
+   * `data-r-<surface>` attribute that scopes its recipe sheet; defaults emit
+   * nothing, so a page without recipes keeps its bytes.
+   */
+  recipes?: Readonly<Record<string, string>>;
   /** Rendered page outline; omitted or empty when the page has none. */
   outline?: string;
   /**
@@ -146,9 +153,12 @@ export function assembleDocument(input: DocumentInput): AssembledDocument {
   ].join('');
 
   const outline = input.outline ?? '';
+  const recipeAttributes = nonDefaultRecipes(input.recipes)
+    .map(([surface, choice]) => ` data-r-${surface}="${escapeAttribute(choice)}"`)
+    .join('');
   const html = [
     '<!DOCTYPE html>',
-    `<html lang="${escapeAttribute(meta.locale)}" data-density="${escapeAttribute(input.density)}"${input.motionDisabled === true ? ' data-motion="none"' : ''}>`,
+    `<html lang="${escapeAttribute(meta.locale)}" data-density="${escapeAttribute(input.density)}"${input.motionDisabled === true ? ' data-motion="none"' : ''}${recipeAttributes}>`,
     '<head>',
     '<meta charset="utf-8" />',
     '<meta name="viewport" content="width=device-width, initial-scale=1" />',
