@@ -62,9 +62,9 @@ export const tabsBlock: BlockModule = {
         (item, index) =>
           `<div role="tabpanel" id="${escapeAttribute(`${base}-panel-${index}`)}" aria-labelledby="${escapeAttribute(
             str(item.id, `${base}-tab-${index}`),
-          )}" tabindex="${index === 0 ? '0' : '-1'}"${index === 0 ? '' : ' hidden'}>${escapeInlineText(
-            str(item.text),
-          )}</div>`,
+          )}" tabindex="${index === 0 ? '0' : '-1'}"><p class="ak-tab-panel-title">${escapeText(
+            str(item.title),
+          )}</p>${escapeInlineText(str(item.text))}</div>`,
       )
       .join('');
     return element(

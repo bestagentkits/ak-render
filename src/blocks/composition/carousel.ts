@@ -42,12 +42,10 @@ export const carouselBlock: BlockModule = {
     const label = stringProp(node, 'ariaLabel', 'Carousel');
     const slides = items
       .map(
-        (item, index) =>
-          `<div class="ak-carousel-slide" data-ak-slide tabindex="-1" aria-hidden="${
-            index === 0 ? 'false' : 'true'
-          }"${index === 0 ? '' : ' hidden'}><h3>${escapeText(str(item.title))}</h3><p>${escapeInlineText(
-            str(item.text),
-          )}</p></div>`,
+        (item) =>
+          `<div class="ak-carousel-slide" data-ak-slide tabindex="-1"><h3>${escapeText(
+            str(item.title),
+          )}</h3><p>${escapeInlineText(str(item.text))}</p></div>`,
       )
       .join('');
     return element(

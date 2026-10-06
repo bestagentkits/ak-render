@@ -2,11 +2,19 @@
  * Runtime parts for the composition blocks: tab selection and the carousel.
  * `runtime.ts` emits them in the same position and order as the other core
  * parts, and only when a page uses the feature.
+ *
+ * Without scripts every panel and slide is readable: the markup ships them all
+ * visible, and the runtime marks a container ready (`data-ak-tabs-ready`,
+ * `data-ak-carousel-ready`) before it hides the inactive ones. Queries only
+ * match a container's own tabs and slides, never those of a nested container.
  */
 
 export const TABS = `
+function ownTabs(container, selector) {
+  return qa(selector, container).filter(function (el) { return el.closest('[data-ak-tabs]') === container; });
+}
 function selectTab(container, action, fireFn) {
-  var tabs = qa('[role="tab"]', container);
+  var tabs = ownTabs(container, '[role="tab"]');
   if (!tabs.length) return;
   var index = tabs.length - 1;
   if (typeof action.index === 'number') index = Math.min(Math.max(action.index, 0), tabs.length - 1);
@@ -19,8 +27,8 @@ function selectTab(container, action, fireFn) {
   activateTab(container, index, true, fireFn, true);
 }
 function activateTab(container, index, moveFocus, fireFn, announceChange) {
-  var tabs = qa('[role="tab"]', container);
-  qa('[role="tabpanel"]', container).forEach(function (panel, panelIndex) {
+  var tabs = ownTabs(container, '[role="tab"]');
+  ownTabs(container, '[role="tabpanel"]').forEach(function (panel, panelIndex) {
     var selected = panelIndex === index;
     panel.hidden = !selected;
     panel.setAttribute('tabindex', selected ? '0' : '-1');
@@ -38,14 +46,15 @@ function activateTab(container, index, moveFocus, fireFn, announceChange) {
 }
 function wireTabs() {
   qa('[data-ak-tabs]').forEach(function (container) {
+    container.setAttribute('data-ak-tabs-ready', '');
     activateTab(container, 0, false, fire, false);
-    qa('[role="tab"]', container).forEach(function (tab, index) {
+    ownTabs(container, '[role="tab"]').forEach(function (tab, index) {
       tab.addEventListener('click', function () { selectTab(container, { index: index }, fire); }, false);
       tab.addEventListener('keydown', function (event) {
         var keys = ['ArrowRight', 'ArrowLeft', 'Home', 'End'];
         if (keys.indexOf(event.key) === -1) return;
         event.preventDefault();
-        var total = qa('[role="tab"]', container).length;
+        var total = ownTabs(container, '[role="tab"]').length;
         var current = index;
         if (event.key === 'ArrowRight') current = (index + 1) % total;
         else if (event.key === 'ArrowLeft') current = (index - 1 + total) % total;
@@ -58,8 +67,11 @@ function wireTabs() {
 }`;
 
 export const CAROUSEL = `
+function ownSlides(carousel, selector) {
+  return qa(selector, carousel).filter(function (el) { return el.closest('[data-ak-carousel-root]') === carousel; });
+}
 function shiftSlide(carousel, delta, fireFn) {
-  var slides = qa('[data-ak-slide]', carousel);
+  var slides = ownSlides(carousel, '[data-ak-slide]');
   if (!slides.length) return;
   var current = slides.findIndex(function (slide) { return !slide.hidden; });
   if (current < 0) current = 0;
@@ -67,7 +79,7 @@ function shiftSlide(carousel, delta, fireFn) {
   showSlide(carousel, next, fireFn, false);
 }
 function showSlide(carousel, index, fireFn, focus) {
-  var slides = qa('[data-ak-slide]', carousel);
+  var slides = ownSlides(carousel, '[data-ak-slide]');
   if (!slides.length) return;
   var bounded = Math.min(Math.max(index, 0), slides.length - 1);
   slides.forEach(function (slide, slideIndex) {
@@ -75,34 +87,37 @@ function showSlide(carousel, index, fireFn, focus) {
     slide.hidden = !active;
     slide.setAttribute('aria-hidden', String(!active));
   });
-  var buttons = qa('[data-ak-carousel]', carousel);
+  var buttons = ownSlides(carousel, '[data-ak-carousel]');
   buttons.forEach(function (button) {
     var isPrev = button.getAttribute('data-ak-carousel') === 'prev';
     button.disabled = !carousel.hasAttribute('data-ak-loop') && ((isPrev && bounded === 0) || (!isPrev && bounded === slides.length - 1));
   });
-  var status = q('[data-ak-carousel-status]', carousel);
+  var status = ownSlides(carousel, '[data-ak-carousel-status]')[0];
   if (status) status.textContent = (bounded + 1) + ' / ' + slides.length;
   if (focus && slides[bounded]) slides[bounded].focus();
   if (fireFn) fireFn(carousel, 'change', { index: bounded });
 }
 function wireCarousels() {
   qa('[data-ak-carousel-root]').forEach(function (carousel) {
+    carousel.setAttribute('data-ak-carousel-ready', '');
     showSlide(carousel, 0, fire, false);
-    qa('[data-ak-carousel]', carousel).forEach(function (button) {
+    ownSlides(carousel, '[data-ak-carousel]').forEach(function (button) {
       button.addEventListener('click', function () {
         shiftSlide(carousel, button.getAttribute('data-ak-carousel') === 'next' ? 1 : -1, fire);
       }, false);
     });
     carousel.addEventListener('keydown', function (event) {
       if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      if (event.target.closest('[data-ak-carousel-root]') !== carousel) return;
       event.preventDefault();
       var delta = event.key === 'ArrowRight' ? 1 : -1;
-      var slides = qa('[data-ak-slide]', carousel);
+      var slides = ownSlides(carousel, '[data-ak-slide]');
       var current = slides.findIndex(function (slide) { return !slide.hidden; });
       showSlide(carousel, current + delta, fire, true);
     }, false);
     var startX = null;
     carousel.addEventListener('touchstart', function (event) {
+      if (event.target.closest('[data-ak-carousel-root]') !== carousel) return;
       if (event.touches.length === 1) startX = event.touches[0].clientX;
     }, { passive: true });
     carousel.addEventListener('touchend', function (event) {
