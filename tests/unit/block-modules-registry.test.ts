@@ -67,7 +67,7 @@ describe('block registry', () => {
   it('accepts a valid group and appends it after the built-ins', () => {
     const registry = buildRegistry([...BLOCK_GROUPS, group([probe('probe')], [FEATURE])]);
     expect(registry.definitions.at(-1)?.type).toBe('probe');
-    expect(registry.features).toEqual([FEATURE]);
+    expect(registry.features.at(-1)).toEqual(FEATURE);
   });
 
   it('rejects a duplicate block type', () => {

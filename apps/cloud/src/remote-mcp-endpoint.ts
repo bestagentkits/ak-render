@@ -62,7 +62,7 @@ import { renderArtifact } from './render.js';
 import { createArtifact, createShare } from './share.js';
 
 export const REMOTE_INSTRUCTIONS = `AK Render compiles a Page Spec (YAML or JSON) into one self-contained, offline HTML file.
-Loop: call catalog once, describe only the block types you plan to use, validate the spec and fix every diagnostic by its JSON path, then render.
+Loop: call catalog once (or search-catalog with a few words), describe only the block types you plan to use (several at once with types, compact: true for the short form), validate the spec and fix every diagnostic by its JSON path, then render.
 On this remote server render stores the page and returns its artifactUrl and a short summary, never the HTML. Pass share: true for a longer-lived share link.
 validate and render need an AgentKit bearer token in the Authorization header.
 Describe meaning, not presentation: the compiler owns layout, colour, typography and motion.`;

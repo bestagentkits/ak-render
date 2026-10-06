@@ -212,7 +212,7 @@ export const LOCAL_RENDER_DEFINITION: McpToolDefinition = {
 export const REMOTE_RENDER_DEFINITION: McpToolDefinition = {
   name: 'render',
   description:
-    'Compile a Page Spec and store the standalone HTML behind a URL. Returns a summary (bytes, hash, features, warnings, artifactUrl, expiresAt), never the HTML itself. The artifact is short-lived unless `share` is true.',
+    'Compile a Page Spec and store the HTML behind a URL. Returns a summary (bytes, hash, features, warnings, artifactUrl, expiresAt), never the HTML. Short-lived unless `share` is true.',
   inputSchema: {
     type: 'object',
     properties: {
