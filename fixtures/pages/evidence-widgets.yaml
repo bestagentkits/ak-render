@@ -1,0 +1,106 @@
+version: 1
+
+meta:
+  title: Compiler Benchmark v0.3
+  description: Evidence widgets — a benchmark comparison, a time breakdown, an annotated capture and references
+  locale: en
+
+theme:
+  preset: editorial
+
+policy:
+  network: deny
+
+datasets:
+  compile-phases:
+    - phase: Parse and validate
+      ms: 9
+    - phase: Normalize
+      ms: 6
+    - phase: Render blocks
+      ms: 14
+    - phase: Assemble CSS
+      ms: 7
+    - phase: Verify document
+      ms: 5
+
+blocks:
+  - type: hero
+    eyebrow: Benchmark
+    title: v0.3 against v0.2
+    description: Same corpus, same machine, five runs each. The median of each run set is reported.
+
+  - type: section
+    title: Results
+    blocks:
+      - type: benchmark-comparison
+        id: release-benchmark
+        baseline: { label: v0.2 }
+        candidate: { label: v0.3 }
+        metrics:
+          - { label: p95 compile latency, baseline: 420, candidate: 310, unit: ms, better: lower, format: number }
+          - { label: Throughput, baseline: 1200, candidate: 1480, unit: pages/s, better: higher }
+          - { label: Output size, baseline: 70200, candidate: 71900, better: lower, format: bytes }
+          - { label: Peak memory, baseline: 48.2, candidate: 48.5, unit: MB, better: lower }
+          - { label: Cache hit rate, baseline: 81, candidate: 87, better: higher, format: percent }
+        method: Median of `5` runs over the 11 gallery fixtures, warm process, Node 22.
+        limitations: One machine and one corpus; pages with adapter diagrams were excluded.
+        source: { label: Benchmark notes, href: '#ref-bench-notes' }
+
+  - type: section
+    title: Where the time goes
+    blocks:
+      - type: metric-breakdown
+        id: compile-time-breakdown
+        title: Compile time per phase (v0.3)
+        dataRef: compile-phases
+        fields: { label: phase, value: ms }
+        unit: ms
+
+      - type: metric-breakdown
+        id: size-budget
+        title: Output budget
+        total: { label: Budget, value: 80000 }
+        format: bytes
+        parts:
+          - { label: Stylesheet, value: 31000 }
+          - { label: Embedded font, value: 24500 }
+          - { label: Markup, value: 12400 }
+          - { label: Runtime, value: 4000, tone: info }
+
+  - type: section
+    title: Annotated capture
+    blocks:
+      - type: annotated-image
+        id: dashboard-capture
+        src: assets/shot-dashboard.webp
+        alt: The compiler health dashboard with four stats and a bar chart
+        caption: Dashboard fixture rendered by v0.3 at 1200×750.
+        notes:
+          - { x: 55, y: 45, label: Compile time, text: The stat counts up on arrival and settles on the authored text. }
+          - { x: 30, y: 75, label: Legacy bars, text: Each bar carries a hover value label. }
+          - { x: 65, y: 90, label: AK Render bars }
+          - { x: 85, y: 5, label: Theme toggle, text: Present on every page by default. }
+
+  - type: section
+    title: References
+    blocks:
+      - type: references
+        id: sources
+        items:
+          - id: bench-notes
+            title: Benchmark notes for v0.3
+            source: docs/artifacts
+            year: 2026
+            note: Raw timings and the machine profile.
+          - id: render-benchmark
+            title: Render benchmark script
+            href: benchmarks/render-benchmark.mjs
+            authors: AK Render maintainers
+          - id: web-vitals
+            title: Web Vitals
+            href: https://web.dev/articles/vitals
+            authors: Google
+            source: web.dev
+            year: 2024
+            note: Why p95 latency is reported rather than the mean.
