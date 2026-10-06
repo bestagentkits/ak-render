@@ -1,0 +1,185 @@
+version: 1
+meta:
+  title: Product widgets
+  description: Pricing plans, a feature matrix, testimonials, a logo cloud, a team roster, a month calendar and a gallery with a full-size viewer, all from typed blocks.
+theme:
+  preset: swiss-clean
+blocks:
+  - type: hero
+    eyebrow: Product page
+    title: Product widgets
+    description: Every block on this page is typed data. The compiler lays it out, so the spec only says what the product offers.
+
+  - type: section
+    title: Pricing
+    blocks:
+      - type: pricing
+        id: plans
+        plans:
+          - name: Free
+            price: $0
+            period: month
+            summary: For trying the compiler on a side project.
+            features:
+              - All core blocks
+              - Offline HTML output
+              - Community support
+            cta:
+              label: Start free
+              href: https://example.com/start
+          - name: Pro
+            price: 29
+            currency: USD
+            period: month
+            summary: For teams that ship reports every week.
+            highlight: true
+            features:
+              - Everything in Free
+              - Theme presets and recipes
+              - Shared datasets
+              - Priority support
+            cta:
+              label: Choose Pro
+              href: https://example.com/pro
+          - name: Team
+            price: 290
+            currency: USD
+            period: year
+            summary: For organisations with many authors.
+            features:
+              - Everything in Pro
+              - Ten seats
+              - Usage reports
+            cta:
+              label: Contact sales
+              href: mailto:sales@example.com
+
+      - type: feature-matrix
+        id: compare
+        title: Compare plans
+        plans: [Free, Pro, Team]
+        rows:
+          - feature: Core blocks
+            values: [true, true, true]
+          - feature: Theme presets
+            values: [false, true, true]
+          - feature: Shared datasets
+            values: [false, true, true]
+          - feature: Seats
+            values: ['1', '3', '10']
+          - feature: Storage
+            values: [1 GB, 10 GB, 100 GB]
+          - feature: Usage reports
+            values: [false, false, true]
+
+  - type: section
+    title: Customers
+    blocks:
+      - type: testimonial
+        id: featured-quote
+        items:
+          - quote: We replaced a folder of hand-written report templates with one spec per report. Reviews got faster because the pages stopped drifting.
+            name: Mai Tran
+            role: Engineering lead, Northwind
+            logo: assets/logo-northwind.svg
+
+      - type: testimonial
+        id: quotes
+        title: What teams say
+        items:
+          - quote: The pages open from a laptop with no network, which is exactly what our audit trail needs.
+            name: Daniel Okafor
+            role: Compliance, Harbor
+          - quote: Agents stopped burning tokens on markup. They write the data and the page looks right.
+            name: Sofia Lindqvist
+            role: Platform, Lumen
+          - quote: Dark mode, print and phones all work without us touching CSS.
+            name: Kenji Watanabe
+            role: Design systems, Orbit
+
+      - type: logo-cloud
+        id: customers
+        title: Trusted by
+        items:
+          - name: Northwind
+            src: assets/logo-northwind.svg
+          - name: Lumen
+            src: assets/logo-lumen.svg
+          - name: Orbit
+            src: assets/logo-orbit.svg
+          - name: Harbor
+            src: assets/logo-harbor.svg
+          - name: Quill
+            src: assets/logo-quill.svg
+          - name: Vertex
+            src: assets/logo-vertex.svg
+
+  - type: section
+    title: Team
+    blocks:
+      - type: people
+        id: team
+        items:
+          - name: Linh Nguyen
+            role: Product
+            bio: Owns the Page Spec and the block catalog.
+            links:
+              - label: Profile
+                href: https://example.com/linh
+          - name: Arjun Mehta
+            role: Compiler
+            bio: Works on normalization, the IR and determinism.
+          - name: Clara Weiss
+            role: Design
+            bio: Keeps every preset readable in light, dark and print.
+            links:
+              - label: Portfolio
+                href: https://example.com/clara
+          - name: Tomás Ruiz
+            role: Developer relations
+            bio: Writes the recipes and the agent guide.
+
+  - type: section
+    title: Schedule
+    blocks:
+      - type: calendar
+        id: october
+        month: 2026-10
+        events:
+          - date: 2026-10-01
+            title: Release candidate
+            tone: info
+          - date: 2026-10-06
+            time: '10:00'
+            title: Design review
+          - date: 2026-10-14
+            time: '14:00'
+            title: Launch
+            tone: success
+          - date: 2026-10-14
+            time: '09:30'
+            title: Launch checklist
+            tone: warning
+          - date: 2026-10-22
+            title: Docs freeze
+          - date: 2026-10-30
+            time: '16:00'
+            title: Retrospective
+
+  - type: section
+    title: Screens
+    blocks:
+      - type: gallery
+        id: screens
+        title: Compiled fixtures
+        columns: 3
+        items:
+          - src: assets/shot-explain-light.webp
+            alt: The explain fixture in light mode
+            caption: Explain, light
+          - src: assets/shot-dashboard.webp
+            alt: The dashboard fixture with stat tiles and a bar chart
+            caption: Dashboard
+          - src: assets/shot-diff.webp
+            alt: The diff fixture in dark mode
+            caption: Diff, dark
