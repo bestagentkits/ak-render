@@ -104,7 +104,7 @@ Native inputs get 44px minimum targets, visible focus through tokens, and `<fiel
   - Reset restores.
   - Keyboard-only operation works.
   - Script-off shows all rows and the initial section.
-  - axe reports no critical issue.
+  - No critical a11y issue: run axe if the maintainer approves it (wave2 open question 7), otherwise extend the existing `render-a11y` assertions.
 
 ## Acceptance
 

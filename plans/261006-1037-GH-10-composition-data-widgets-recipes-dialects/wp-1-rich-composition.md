@@ -102,7 +102,7 @@ items:
 - [ ] Existing fixtures that use tabs, accordion, carousel and bento produce the same HTML apart from the
   documented panel markup change. List the snapshot diffs in the notes so the controller can review them.
 - [ ] No horizontal overflow at 320 and 375 for `rich-composition.yaml`.
-- [ ] axe reports no critical issue. The tab and tabpanel ARIA linkage is intact.
+- [ ] No critical a11y issue: run axe if the maintainer approves it (wave2 open question 7), otherwise extend the existing `render-a11y` assertions. The tab and tabpanel ARIA linkage is intact.
 
 ## Risks
 

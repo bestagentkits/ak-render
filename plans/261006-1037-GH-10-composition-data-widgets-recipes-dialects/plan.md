@@ -51,6 +51,15 @@ Recipes wait for wave 2 because each recipe must validate against the final rost
 Dependency graph: `W0-B → W0-A → {WP1..WP10} → {W2-A, W2-B, W2-C} → controller final gates`. No two WPs in a wave
 own the same file. Each WP file has an ownership table.
 
+Running with 7 agents:
+
+- First batch: WP1, WP2, WP3, WP4, WP8, WP9, WP10.
+- When the first agents finish: WP5, WP6, WP7.
+
+The merge order is WP2, WP1, WP9, WP10, WP3, WP4, WP8, WP5, WP6, WP7. WP3 goes before WP8 because the filter-bar
+fixture targets data-table. After each merge the controller runs `pnpm verify` and the catalog budget test, then
+regenerates and commits the artifacts.
+
 ## Ownership rules (every WP)
 
 - **Frozen after wave 0:** `src/registry/roster.ts`, `src/render/blocks.ts`, `src/render/showcase-blocks.ts`,
@@ -109,3 +118,13 @@ requires reverting every wave 1 merge first.
 ## Unresolved questions
 
 See the end of [wave2-integration.md](./wave2-integration.md#open-questions-for-the-maintainer).
+
+## Controller decisions on open questions (2026-10-06)
+
+1. `faq` → rich `accordion`; `quote-grid` → `testimonial` with 2+ items. Accepted.
+2. `percent` format takes the human value: `87` renders `87%` (matches the issue's `reduction: 87` example).
+3. Calendar weeks start Monday (ISO 8601) by default; optional `weekStart: monday|sunday` enum.
+4. Release is `0.3.0` (additive, pre-1.0 minor).
+5. Gallery lightbox is compiler-decided (no author flag), per "do not add a knob the compiler can decide".
+6. `theme.dark` docs/normalize mismatch: fix in this release (W2-C owns the docs side; W0-A decides whether normalize should accept it or the doc is wrong — prefer making the doc match current behavior unless accepting is trivially safe).
+7. `@axe-core/playwright` may be added as a devDependency by W2-B for the critical a11y check.

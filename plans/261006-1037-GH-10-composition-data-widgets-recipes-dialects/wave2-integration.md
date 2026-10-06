@@ -80,7 +80,7 @@ Fixture content requirements (each one validates with zero warnings):
 - print emulation: every panel is visible;
 - keyboard: every interactive control is reachable by Tab and has a visible focus ring;
 - the network audit: zero requests, reusing `tests/browser/network-audit.ts`;
-- axe: no critical violations, if axe is already a dev dependency. Otherwise use the existing a11y unit checks, and
+- axe: no critical violations, only if the maintainer approves adding it (open question 7). Otherwise use the existing a11y unit checks, and
   do not add a dependency without the maintainer.
 
 `benchmarks/spec-compression.mjs`:

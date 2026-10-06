@@ -77,7 +77,7 @@ more images. This is listed as an open question.
 ## Acceptance
 
 - [ ] Every block has zero warnings in the fixture.
-- [ ] axe reports no critical issue.
+- [ ] No critical a11y issue: run axe if the maintainer approves it (wave2 open question 7), otherwise extend the existing `render-a11y` assertions.
 - [ ] Remote logos and avatars are gated by `policy.network`.
 
 ## Risks
