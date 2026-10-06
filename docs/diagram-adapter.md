@@ -48,14 +48,34 @@ compile: a broken or absent adapter degrades the page.
 
 Adapter output is verified before it is embedded. `checkAdapterMarkup` rejects
 script, iframe, object, embed, `foreignObject`, `base`, and `form` elements, any
-`on*` handler, `javascript:` URLs, `data:text/html` URLs, `srcdoc`, empty output,
-and output over 256 KB. A rejection emits the semantic fallback and a warning
-naming the adapter and the reason.
+`on*` handler, `javascript:` URLs, `data:text/html` URLs, `srcdoc`, CSS
+`@import`, remote CSS `url()` references, empty output, and output over 256 KB.
+A rejection emits the semantic fallback and a warning naming the adapter and the
+reason.
 
 This is the same posture the page itself takes, and it is the reason an adapter
 cannot become an escape hatch around the "no raw script, no inline handler, no
 arbitrary frame" contract. The check is exported so adapter authors can assert
 the same contract in their own tests.
+
+## Styling adapter output
+
+The page's Content Security Policy allows styles only by nonce
+(`style-src 'nonce-…'`, never `'unsafe-inline'`). Accepted adapter markup is
+fitted to that policy before it is embedded:
+
+- **`<style>` elements work.** Each one receives the page style nonce, so the
+  browser applies it. Any `nonce` the adapter wrote is replaced. The stylesheet
+  is page-wide like any other, so scope selectors under your SVG's own class
+  (for example `.ak-diagram-svg .node`).
+- **Inline `style="…"` attributes do not.** The policy refuses them, and a
+  nonce cannot be attached to an attribute. They are removed before embedding,
+  and the compile returns a warning naming the adapter and how many were
+  removed. Move those declarations into a `<style>` element, or use SVG
+  presentation attributes such as `fill` and `stroke`, which the policy does not
+  govern.
+- Adapter CSS cannot `@import` another stylesheet or reference a remote
+  `url()`; output that does is rejected (see above).
 
 ## The fallback is always present
 

@@ -168,3 +168,86 @@ describe('diagram adapter: trust boundary', () => {
     expect(result?.rejected).toBe('empty output');
   });
 });
+
+describe('diagram adapter: page style policy', () => {
+  const STYLED_SVG =
+    '<svg viewBox="0 0 10 10" role="img" aria-label="Styled"><style>.n{fill:#fff}</style><rect class="n" x="1" y="1" width="8" height="8" /></svg>';
+
+  // The policy sits in a meta attribute, so its quotes are entity-escaped.
+  function policy(html: string): string {
+    const content = /http-equiv="Content-Security-Policy" content="([^"]+)"/u.exec(html)?.[1];
+    return (content ?? '').replaceAll('&#39;', "'");
+  }
+
+  function styleNonce(html: string): string {
+    const match = /style-src 'nonce-([^']+)'/u.exec(policy(html));
+    if (match?.[1] === undefined) throw new Error('page has no style nonce');
+    return match[1];
+  }
+
+  it('gives adapter style elements the page style nonce', () => {
+    const result = compile(SPEC, { diagramAdapter: adapter(() => STYLED_SVG) });
+    const nonce = styleNonce(result.html);
+    expect(result.html).toContain(
+      `<style nonce="${nonce}" data-ak-adapter-style>.n{fill:#fff}</style>`,
+    );
+    // Every style element on the page carries the one page nonce.
+    const styleTags = result.html.match(/<style\b[^>]*>/gu) ?? [];
+    expect(styleTags.length).toBe(2);
+    for (const tag of styleTags) expect(tag).toContain(`nonce="${nonce}"`);
+    expect(result.warnings).toEqual([]);
+  });
+
+  it('keeps the policy nonce-only', () => {
+    const result = compile(SPEC, { diagramAdapter: adapter(() => STYLED_SVG) });
+    expect(policy(result.html)).not.toMatch(/unsafe-inline/u);
+    expect(policy(result.html)).toMatch(/style-src 'nonce-[^']+';/u);
+  });
+
+  it('replaces a nonce the adapter wrote with the page nonce', () => {
+    const result = compile(SPEC, {
+      diagramAdapter: adapter(() =>
+        STYLED_SVG.replace('<style>', '<STYLE nonce="guessed" media="all">'),
+      ),
+    });
+    const nonce = styleNonce(result.html);
+    expect(result.html).not.toContain('guessed');
+    expect(result.html).toContain(`<style nonce="${nonce}" data-ak-adapter-style media="all">`);
+  });
+
+  it('removes inline style attributes and says so', () => {
+    const markup =
+      '<svg viewBox="0 0 10 10"><rect class="n" style="--step:1" x="1" /><rect style=\'fill:red\' y="2"/></svg>';
+    const result = compile(SPEC, { diagramAdapter: adapter(() => markup) });
+    expect(result.html).toContain('<rect class="n" x="1" />');
+    expect(result.html).toContain('<rect y="2" />');
+    expect(result.html).not.toContain('--step:1');
+    expect(result.warnings).toHaveLength(1);
+    expect(result.warnings[0]?.message).toMatch(/2 inline style attribute\(s\)/u);
+    expect(result.warnings[0]?.message).toContain('test-adapter');
+  });
+
+  it('leaves text that merely mentions a style attribute alone', () => {
+    const markup = '<svg viewBox="0 0 10 10"><text x="1">use style="x" sparingly</text></svg>';
+    const result = compile(SPEC, { diagramAdapter: adapter(() => markup) });
+    expect(result.html).toContain('<text x="1">use style="x" sparingly</text>');
+    expect(result.warnings).toEqual([]);
+  });
+
+  it('rejects adapter CSS that would load another stylesheet or a remote resource', () => {
+    expect(checkAdapterMarkup('<svg><style>@import "x.css";</style></svg>')).toMatchObject({
+      ok: false,
+      reason: 'CSS @import',
+    });
+    expect(
+      checkAdapterMarkup('<svg><style>.n{fill:url(https://evil.example/x)}</style></svg>'),
+    ).toMatchObject({ ok: false, reason: 'remote CSS url()' });
+    expect(checkAdapterMarkup('<svg><rect fill="url(#grad)" /></svg>')).toEqual({ ok: true });
+  });
+
+  it('is deterministic with styled output', () => {
+    const first = compile(SPEC, { diagramAdapter: adapter(() => STYLED_SVG) });
+    const second = compile(SPEC, { diagramAdapter: adapter(() => STYLED_SVG) });
+    expect(second.html).toBe(first.html);
+  });
+});

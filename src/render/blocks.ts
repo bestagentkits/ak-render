@@ -840,6 +840,14 @@ const RENDERERS: Record<string, Renderer> = {
         message: `diagram adapter "${adapterResult.adapter}" output was rejected (${adapterResult.rejected}); the structured fallback is used`,
       });
     }
+    if (adapterResult?.removedInlineStyles !== undefined) {
+      context.warnings?.push({
+        code: 'POLICY_VIOLATION',
+        severity: 'warning',
+        path: `$.blocks.${node.id}`,
+        message: `diagram adapter "${adapterResult.adapter}" output had ${adapterResult.removedInlineStyles} inline style attribute(s), which the page Content Security Policy refuses; they were removed. Move those styles into a <style> element.`,
+      });
+    }
     const accepted =
       adapterResult !== undefined &&
       adapterResult.rejected === undefined &&

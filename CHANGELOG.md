@@ -19,6 +19,10 @@ Release mechanics and the compatibility contract live in
 - `benchmarks/agent-token-cost.mjs` estimates the tokens of a page task end to end: guidance read, output written and what returns into context, against a corpus of hand-written HTML passed with `--legacy-html`. Results are in `docs/artifacts/agent-token-cost.md`, with the corpus recorded by anonymous label.
 - `scripts/capture-demo-media.mjs` captures five more page shots and four component crops (KPI, terminal, checklist, file tree), and `--only <names>` recaptures a subset without the walkthrough video.
 
+### Fixed
+
+- Diagram adapter `<style>` elements now receive the page style nonce, so styled adapter SVG renders as drawn instead of in default black. The policy stays nonce-only: inline `style` attributes are removed from adapter output with a warning, and adapter CSS that uses `@import` or a remote `url()` is rejected. `docs/diagram-adapter.md` explains how to style adapter output.
+
 ## [0.2.0] - 2026-10-05
 
 Every emitted page changes in this release: new styles, embedded fonts, and a
