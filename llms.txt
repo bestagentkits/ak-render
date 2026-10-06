@@ -4,12 +4,15 @@
 
 Agent loop: `ak-render catalog` once, `ak-render describe <type> --json` for each block you use, `ak-render validate <spec|-> --json` and fix every diagnostic by its JSON path, then `ak-render <spec|-> --out page.html`. Pass `-` to read the spec from stdin. `ak-render mcp` exposes the same loop as MCP tools over stdio (`catalog`, `describe`, `validate`, `render`, `themes`); `render` writes the file and returns only a summary.
 
+Remote MCP over Streamable HTTP: `https://render.agentkit.best/mcp` serves the same five tools for agents without Node. `render` there takes no `out`; it stores the page and returns the summary plus `artifactUrl` (one hour, or a 30-day share link with `share: true`), never the HTML. `catalog`, `describe` and `themes` need no token; `validate` and `render` need `Authorization: Bearer <AgentKit token>`. Local compilation stays canonical and needs no account.
+
 Do not write HTML, CSS or inline scripts: the spec has no field for them. In prose text props, a pair of backticks renders as inline code; nothing else is parsed as markup. Output makes no network request unless the spec opts in under `policy.network`.
 
 ## Docs
 
 - [Agent guide](https://github.com/bestagentkits/ak-render/blob/main/docs/agent-guide.md): the loop, a minimal spec, MCP setup, and rules that save retries
-- [README](https://github.com/bestagentkits/ak-render/blob/main/README.md): install, library API and CLI
+- [README](https://github.com/bestagentkits/ak-render/blob/main/README.md): install, library API, CLI and the three agent modes
+- [Cloud renderer](https://github.com/bestagentkits/ak-render/blob/main/apps/cloud/README.md): remote MCP endpoint, REST routes, scopes and limits
 - [Themes](https://github.com/bestagentkits/ak-render/blob/main/docs/themes.md): built-in presets, custom presets and embedded fonts
 - [Media and network policy](https://github.com/bestagentkits/ak-render/blob/main/docs/media-policy.md): what loads offline and how to opt in
 

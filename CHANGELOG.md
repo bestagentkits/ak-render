@@ -9,13 +9,24 @@ Release mechanics and the compatibility contract live in
 
 ## [Unreleased]
 
+### Fixed
+
+- The cloud Worker validates bearers against the canonical AgentKit endpoint, `GET https://agentkit.best/api/agentkit/entitlements`, instead of an unreachable host, so authenticated render, share and export can succeed. It fails closed on a rejected token (401), an inactive account (403), and an upstream error, redirect, timeout or malformed body (502). An active app or kit entitlement grants the `render` and `share` scopes, which stay separate checks.
+- Screenshot and PDF export call the Browser Run binding's Quick Actions with the compiled HTML inline and caching off, and `wrangler.jsonc` attaches the `BROWSER` binding.
+
 ### Changed
+
+- The cloud Worker is routed at `render.agentkit.best/mcp` and `render.agentkit.best/v1/*`, beside the site's Custom Domain on the same hostname.
 
 - The Claude Code and Codex plugin manifests link to https://render.agentkit.best, and the Codex plugin shows an icon, a logo and the brand colour in the plugin directory.
 - The landing page shows what the compiler saves an agent (measured and estimated token figures, kept apart), each component crop beside the fixture YAML that produced it, and a gallery of every demo page. The README gains a token cost section.
 
 ### Added
 
+- Remote MCP over Streamable HTTP at `https://render.agentkit.best/mcp`, served by the cloud Worker. It lists the same five tools as `ak-render mcp`. A remote `render` takes no `out`: it compiles through the same path as `POST /v1/render` (byte-identical HTML), stores the page and returns the summary plus `artifactUrl` and `expiresAt`, never the HTML. The artifact lives one hour, or becomes an expiring share with `share: true` (needs the share scope). `catalog`, `describe` and `themes` answer without a token; `validate` and `render` need an AgentKit bearer and count against the same per-subject rate limits as REST.
+- The MCP server is split into transport-independent modules under `src/mcp/`: protocol vocabulary, one set of tool contracts, JSON-RPC routing, the stdio transport, and a Fetch-API Streamable HTTP transport the Worker imports. `ak-render mcp` answers byte for byte as before.
+- `GET /v1/artifact/:id` serves the short-lived artifact a remote MCP render stored.
+- `scripts/cloud-smoke.mjs` smoke-tests a deployed renderer (MCP and REST, share lifecycle, exports) with `BASE_URL` and an optional `TOKEN`; the manual cloud deploy workflow runs it after deploying.
 - `benchmarks/agent-token-cost.mjs` estimates the tokens of a page task end to end: guidance read, output written and what returns into context, against a corpus of hand-written HTML passed with `--legacy-html`. Results are in `docs/artifacts/agent-token-cost.md`, with the corpus recorded by anonymous label.
 - `scripts/capture-demo-media.mjs` captures five more page shots and four component crops (KPI, terminal, checklist, file tree), and `--only <names>` recaptures a subset without the walkthrough video.
 - A pair of backticks in prose text renders as inline code, so `` `ak-render catalog` `` in a `text`, a step, a list item, a description or a caption reads as a command. The text is escaped before the span is wrapped, nothing else is parsed as markup, and an unpaired backtick stays literal. Titles, `code` blocks, `terminal` lines and the chart summary are unchanged, and `describe` and the JSON Schema say which props do this.

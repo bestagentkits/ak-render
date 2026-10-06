@@ -182,11 +182,25 @@ codex plugin marketplace add bestagentkits/ak-render
 codex plugin add ak-render@ak-render
 ```
 
-### MCP server
+### Three ways to run it
 
-`ak-render mcp` serves `catalog`, `describe`, `validate`, `render` and `themes`
-as MCP tools over stdio. `render` writes the HTML to disk and returns only a
-summary, so the page never enters the agent's context.
+All three serve the same tools with the same contracts, backed by the same
+compiler, so a spec renders to the same bytes whichever an agent picks.
+
+| Mode | Needs | `render` returns | Network |
+| --- | --- | --- | --- |
+| Local CLI | Node 20.11+ | writes `--out`, prints a summary with `--json` | none |
+| Local MCP (stdio) | Node 20.11+ | writes `out`, returns a summary | none |
+| Remote MCP (Streamable HTTP) | an AgentKit token | stores the page, returns a summary and `artifactUrl` | yes |
+
+Local is canonical and needs no account. The remote server exists for agents
+that cannot install Node or need a URL to hand someone.
+
+**Local CLI.** The loop above, with `ak-render` on the path or through `npx`.
+
+**Local MCP over stdio.** `ak-render mcp` serves `catalog`, `describe`,
+`validate`, `render` and `themes` as MCP tools. `render` writes the HTML to disk
+and returns only a summary, so the page never enters the agent's context.
 
 ```json
 {
@@ -195,6 +209,29 @@ summary, so the page never enters the agent's context.
   }
 }
 ```
+
+**Remote MCP over Streamable HTTP.** `https://render.agentkit.best/mcp` serves
+the same five tools. A remote server cannot write into your filesystem, so
+`render` takes no `out`: it stores the page and returns the same summary plus an
+`artifactUrl` that lives for one hour, or a share link that lives for 30 days
+with `share: true`. The HTML still never enters the agent's context.
+`catalog`, `describe` and `themes` answer without a token; `validate` and
+`render` need an AgentKit bearer token.
+
+```json
+{
+  "mcpServers": {
+    "ak-render": {
+      "type": "http",
+      "url": "https://render.agentkit.best/mcp",
+      "headers": { "Authorization": "Bearer ${AGENTKIT_TOKEN}" }
+    }
+  }
+}
+```
+
+Details, limits and the REST routes are in
+[apps/cloud/README.md](./apps/cloud/README.md).
 
 ## Token cost
 
@@ -251,8 +288,9 @@ Six decisions define the boundary, argued in
    and only the feature modules a page uses.
 4. **Themes are typed data, never CSS.** Built-in presets plus user presets that
    `extends` them. No CSS escape hatch, no CDN fonts.
-5. **Local is canonical; cloud is opt-in.** The hosted renderer reuses the same
-   compiler and is never the source of truth.
+5. **Local is canonical; cloud is opt-in.** The hosted renderer and the remote
+   MCP server reuse the same compiler and tool contracts and are never the
+   source of truth.
 6. **Optional capabilities arrive as adapters.** Diagrams can delegate to an
    installed diagram compiler; without one, a structured fallback renders.
 
@@ -327,7 +365,8 @@ capability is not done until a fixture exercises it.
 | `skills/`, `.claude-plugin/`, `.agents/plugins/`, `plugin.json`, `mcp.json` | Agent skill and plugin manifests |
 | `assets/` | Embedded font licences and the plugin icon (`icon.svg` is the source of `logo.png` and `composer-icon.png`) |
 | `site/` | Landing page spec, build script output and Cloudflare config |
-| `apps/cloud/` | Opt-in Cloudflare renderer (cloud milestone) |
+| `src/mcp/` | MCP protocol, shared tool contracts, stdio and Streamable HTTP transports |
+| `apps/cloud/` | Opt-in Cloudflare renderer: REST routes and the remote MCP endpoint |
 
 ## Development
 

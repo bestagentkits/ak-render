@@ -75,6 +75,39 @@ it points, so review it like any file write. `spec` may be YAML/JSON text or the
 }
 ```
 
+### Remote MCP server
+
+Without Node, use the hosted server at `https://render.agentkit.best/mcp` (MCP
+Streamable HTTP). It lists the same five tools with the same names, and the loop
+is the same. Two things differ:
+
+- `render` has no `out`, because a remote server cannot write into your
+  filesystem. It stores the page and returns the same summary plus
+  `artifactUrl` and `expiresAt`. The artifact lives for one hour; pass
+  `share: true` for a share link that lives for 30 days. The HTML is never in
+  the reply.
+- `validate` and `render` need an AgentKit bearer token. `catalog`, `describe`
+  and `themes` work without one. `themes` lists the built-in presets only, since
+  the server has no project presets to discover.
+
+```json
+{
+  "mcpServers": {
+    "ak-render": {
+      "type": "http",
+      "url": "https://render.agentkit.best/mcp",
+      "headers": { "Authorization": "Bearer ${AGENTKIT_TOKEN}" }
+    }
+  }
+}
+```
+
+A refused call comes back as a tool error whose text is JSON with a `code`:
+`UNAUTHENTICATED` (no or rejected token), `ENTITLEMENT_INACTIVE` or `FORBIDDEN`
+(the account is not entitled), `RATE_LIMITED` (wait for the next minute), or a
+compiler code such as `SPEC_UNKNOWN_BLOCK` with the JSON path to fix. Local
+rendering never needs the token or the network.
+
 ## Rules that save retries
 
 - The output is offline. A remote image or video stays a labelled fallback
