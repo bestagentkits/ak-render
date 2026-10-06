@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { Env, KVNamespace, R2Bucket, R2ObjectBody } from '../../apps/cloud/src/bindings.js';
 import {
   checkNodes,
   checkOutputBytes,
@@ -11,147 +10,16 @@ import {
 import { handleRequest } from '../../apps/cloud/src/index.js';
 import { purgeExpiredShares } from '../../apps/cloud/src/share.js';
 import { compile, VERSION } from '../../src/index.js';
-
-class FakeR2 implements R2Bucket {
-  readonly objects = new Map<string, { value: string; customMetadata?: Record<string, string> }>();
-
-  async get(key: string): Promise<R2ObjectBody | null> {
-    const entry = this.objects.get(key);
-    if (entry === undefined) return null;
-    return {
-      key,
-      size: entry.value.length,
-      text: async () => entry.value,
-      ...(entry.customMetadata === undefined ? {} : { customMetadata: entry.customMetadata }),
-    };
-  }
-
-  async put(
-    key: string,
-    value: string,
-    options?: { customMetadata?: Record<string, string> },
-  ): Promise<void> {
-    this.objects.set(key, {
-      value,
-      ...(options?.customMetadata === undefined ? {} : { customMetadata: options.customMetadata }),
-    });
-  }
-
-  async delete(key: string): Promise<void> {
-    this.objects.delete(key);
-  }
-
-  async list(options?: { prefix?: string }): Promise<{ objects: { key: string }[] }> {
-    const prefix = options?.prefix ?? '';
-    return {
-      objects: [...this.objects.keys()]
-        .filter((key) => key.startsWith(prefix))
-        .map((key) => ({ key })),
-    };
-  }
-
-  get values(): string[] {
-    return [...this.objects.values()].map((entry) => entry.value);
-  }
-}
-
-class FakeKV implements KVNamespace {
-  readonly entries = new Map<string, string>();
-
-  async get(key: string): Promise<string | null> {
-    return this.entries.get(key) ?? null;
-  }
-
-  async put(key: string, value: string): Promise<void> {
-    this.entries.set(key, value);
-  }
-
-  get values(): string[] {
-    return [...this.entries.values()];
-  }
-}
-
-const TOKEN = 'test-bearer-token-value';
-
-interface Harness {
-  env: Env;
-  r2: FakeR2;
-  kv: FakeKV;
-  entitlementsCalls: string[];
-  browserCalls: string[];
-  fetchMock: ReturnType<typeof vi.fn>;
-}
-
-function harness(options: { scopes?: string[]; browser?: boolean } = {}): Harness {
-  const r2 = new FakeR2();
-  const kv = new FakeKV();
-  const entitlementsCalls: string[] = [];
-  const browserCalls: string[] = [];
-
-  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
-    const url =
-      typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
-    entitlementsCalls.push(url);
-    return new Response(
-      JSON.stringify({ subject: 'user-1', entitlements: options.scopes ?? ['render', 'share'] }),
-      { status: 200, headers: { 'content-type': 'application/json' } },
-    );
-  });
-  vi.stubGlobal('fetch', fetchMock);
-
-  const env: Env = {
-    ENTITLEMENTS_URL: 'https://entitlements.example.test',
-    RENDER_SHARES: r2,
-    RATE_LIMIT: kv,
-    ...(options.browser === true
-      ? {
-          BROWSER: {
-            fetch: async () => {
-              browserCalls.push('browser');
-              return new Response(new Uint8Array([1, 2, 3]), {
-                status: 200,
-                headers: { 'content-type': 'image/png' },
-              });
-            },
-          },
-        }
-      : {}),
-  };
-
-  return { env, r2, kv, entitlementsCalls, browserCalls, fetchMock };
-}
-
-function post(path: string, body: unknown, token: string | null = TOKEN): Request {
-  return new Request(`https://render.example.test${path}`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      ...(token === null ? {} : { authorization: `Bearer ${token}` }),
-    },
-    body: JSON.stringify(body),
-  });
-}
-
-const SPEC = {
-  version: 1,
-  meta: { title: 'Cloud parity' },
-  blocks: [
-    { type: 'hero', title: 'Cloud parity' },
-    { type: 'stats', items: [{ label: 'Blocks', value: '2' }] },
-  ],
-};
-
-const YAML_SPEC = `version: 1
-meta:
-  title: Cloud parity
-blocks:
-  - type: hero
-    title: Cloud parity
-  - type: stats
-    items:
-      - label: Blocks
-        value: "2"
-`;
+import {
+  activeEntitlements,
+  ENTITLEMENTS_ORIGIN,
+  harness,
+  post,
+  SPEC,
+  stubEntitlements,
+  TOKEN,
+  YAML_SPEC,
+} from './support/cloud-worker-harness.js';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -202,15 +70,37 @@ describe('cloud renderer: authorization', () => {
     expect(await response.json()).toMatchObject({ code: 'UNAUTHENTICATED' });
   });
 
-  it('keeps render permission separate from share permission', async () => {
-    const renderOnly = harness({ scopes: ['render'] });
-    const shareDenied = await handleRequest(post('/v1/share', { spec: SPEC }), renderOnly.env);
-    expect(shareDenied.status).toBe(403);
-    expect(await shareDenied.json()).toMatchObject({ code: 'FORBIDDEN' });
+  it('refuses every scoped route to an inactive entitlement', async () => {
+    const { env } = harness({ entitlements: { ...activeEntitlements(), status: 'inactive' } });
+    for (const path of ['/v1/render', '/v1/share', '/v1/pdf']) {
+      const response = await handleRequest(post(path, { spec: SPEC }), env);
+      expect(response.status).toBe(403);
+      expect(await response.json()).toMatchObject({ code: 'ENTITLEMENT_INACTIVE' });
+    }
+  });
 
-    const shareOnly = harness({ scopes: ['share'] });
-    const renderDenied = await handleRequest(post('/v1/render', { spec: SPEC }), shareOnly.env);
-    expect(renderDenied.status).toBe(403);
+  it('refuses render and share to an active account with no active kit or app grant', async () => {
+    const { env } = harness({
+      entitlements: {
+        ...activeEntitlements(),
+        entitlements: { agentkitApp: false, kits: { engineer: false } },
+      },
+    });
+    const render = await handleRequest(post('/v1/render', { spec: SPEC }), env);
+    expect(render.status).toBe(403);
+    expect(await render.json()).toMatchObject({ code: 'FORBIDDEN' });
+    const share = await handleRequest(post('/v1/share', { spec: SPEC }), env);
+    expect(share.status).toBe(403);
+  });
+
+  it('forwards the bearer only to the canonical entitlements endpoint', async () => {
+    const { env, fetchMock } = harness();
+    await handleRequest(post('/v1/render', { spec: SPEC }), env);
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${ENTITLEMENTS_ORIGIN}/api/agentkit/entitlements`);
+    expect(init.method).toBe('GET');
+    expect(new Headers(init.headers).get('authorization')).toBe(`Bearer ${TOKEN}`);
+    expect(init.redirect).toBe('manual');
   });
 
   it('fails closed when the entitlements endpoint is unreachable', async () => {
@@ -308,12 +198,12 @@ describe('cloud renderer: storage policy', () => {
   });
 
   it('sends no content anywhere except the entitlements endpoint', async () => {
-    const { env, entitlementsCalls, fetchMock } = harness();
+    const { env, fetchMock } = harness();
     await handleRequest(post('/v1/render', { spec: SPEC }), env);
     await handleRequest(post('/v1/share', { spec: SPEC }), env);
     const urls = fetchMock.mock.calls.map((call) => String(call[0]));
-    expect(urls.every((url) => url.startsWith('https://entitlements.example.test'))).toBe(true);
-    expect(entitlementsCalls.length).toBeGreaterThan(0);
+    expect(urls.length).toBeGreaterThan(0);
+    expect(urls.every((url) => url.startsWith(ENTITLEMENTS_ORIGIN))).toBe(true);
     // Nothing in the outbound call carries page content.
     for (const call of fetchMock.mock.calls) {
       expect(JSON.stringify(call[1] ?? {})).not.toContain('Cloud parity');
@@ -364,15 +254,7 @@ describe('cloud renderer: shares', () => {
     const { id } = (await created.json()) as { id: string };
 
     // A different valid principal cannot revoke someone else's share.
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        async () =>
-          new Response(JSON.stringify({ subject: 'user-2', entitlements: ['share'] }), {
-            status: 200,
-          }),
-      ),
-    );
+    stubEntitlements(activeEntitlements('user-2'));
     const denied = await handleRequest(
       new Request(`https://render.example.test/v1/share/${id}`, {
         method: 'DELETE',
@@ -383,15 +265,7 @@ describe('cloud renderer: shares', () => {
     expect(denied.status).toBe(403);
 
     // The owner can.
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        async () =>
-          new Response(JSON.stringify({ subject: 'user-1', entitlements: ['share'] }), {
-            status: 200,
-          }),
-      ),
-    );
+    stubEntitlements(activeEntitlements('user-1'));
     const revoked = await handleRequest(
       new Request(`https://render.example.test/v1/share/${id}`, {
         method: 'DELETE',
@@ -443,10 +317,31 @@ describe('cloud renderer: export', () => {
     const response = await handleRequest(post('/v1/pdf', { spec: SPEC }), env);
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toBe('application/pdf');
-    expect(browserCalls.length).toBe(1);
+    expect(browserCalls.map((call) => call.action)).toEqual(['pdf']);
     // The global fetch is used for entitlements only, never for export.
     const urls = fetchMock.mock.calls.map((call) => String(call[0]));
-    expect(urls.every((url) => url.startsWith('https://entitlements.example.test'))).toBe(true);
+    expect(urls.every((url) => url.startsWith(ENTITLEMENTS_ORIGIN))).toBe(true);
+  });
+
+  it('hands Browser Run the compiled HTML inline, never a URL to fetch', async () => {
+    const { env, browserCalls } = harness({ browser: true });
+    const response = await handleRequest(post('/v1/screenshot', { spec: SPEC }), env);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toBe('image/png');
+    const [call] = browserCalls;
+    expect(call?.action).toBe('screenshot');
+    expect(call?.options['html']).toBe(compile(SPEC).html);
+    expect(call?.options['url']).toBeUndefined();
+  });
+
+  it('reports a failing browser binding as EXPORT_FAILED', async () => {
+    const { env } = harness();
+    env.BROWSER = {
+      quickAction: async () => new Response('busy', { status: 503 }),
+    };
+    const response = await handleRequest(post('/v1/pdf', { spec: SPEC }), env);
+    expect(response.status).toBe(502);
+    expect(await response.json()).toMatchObject({ code: 'EXPORT_FAILED' });
   });
 
   it('never sends page content to a non-browser destination', async () => {

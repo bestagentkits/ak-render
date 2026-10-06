@@ -5,11 +5,14 @@
  * published compiler, so cloud output and local output are identical for the
  * same spec, version, and options. The parity test asserts exactly that.
  *
- * A render response is never stored. Only an explicit share or export persists
- * anything, and the caller must hold the matching scope for that.
+ * Every hosted surface compiles here: the REST routes and the remote MCP
+ * `render` tool alike. A REST render response is never stored; a share, and the
+ * short-lived artifact a remote MCP render returns a URL for, are the only
+ * things persisted, and the caller must hold the matching scope for each.
  */
 
 import { compile, isRenderError, VERSION } from '../../../src/index.js';
+import { type RenderSummary, renderSummary } from '../../../src/mcp/mcp-tool-definitions.js';
 import type { Env } from './bindings.js';
 import { checkNodes, checkOutputBytes, type BudgetViolation } from './config.js';
 
@@ -26,6 +29,8 @@ export interface RenderedArtifact {
   hash: string;
   nodes: number;
   version: string;
+  /** The compact summary MCP returns in place of the HTML. */
+  summary: RenderSummary;
 }
 
 export type RenderOutcome =
@@ -86,6 +91,7 @@ export function renderArtifact(payload: RenderPayload, _env: Env): RenderOutcome
       hash: result.hash,
       nodes: result.ir.nodes.length,
       version: VERSION,
+      summary: renderSummary(result),
     },
   };
 }

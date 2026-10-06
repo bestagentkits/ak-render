@@ -32,19 +32,27 @@ export interface KVNamespace {
   put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
 }
 
-export interface Fetcher {
-  fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response>;
+/**
+ * Browser Run binding, reduced to Quick Actions. `quickAction` renders the
+ * given HTML in a managed headless browser and answers with the file itself
+ * (compatibility date 2026-03-24 or later).
+ */
+export interface BrowserRun {
+  quickAction(action: 'screenshot' | 'pdf', options: Record<string, unknown>): Promise<Response>;
 }
 
 export interface Env {
-  /** Canonical AgentKit entitlements endpoint. The worker validates against it. */
+  /**
+   * Origin of the canonical AgentKit entitlements endpoint, e.g.
+   * `https://agentkit.best`. The worker appends `/api/agentkit/entitlements`.
+   */
   ENTITLEMENTS_URL: string;
   /** Private bucket holding shared artifacts. Never public. */
   RENDER_SHARES: R2Bucket;
   /** Rate-limit counters, keyed by subject and route. */
   RATE_LIMIT: KVNamespace;
   /** Browser Run binding. Present only where screenshot/PDF is deployed. */
-  BROWSER?: Fetcher;
+  BROWSER?: BrowserRun;
   /** Share retention in days. Defaults to the conservative value in config.ts. */
   SHARE_RETENTION_DAYS?: string;
 }

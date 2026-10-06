@@ -2,8 +2,12 @@
  * Bearer validation through the canonical AgentKit entitlements endpoint.
  *
  * This worker never copies AgentKit's signing secrets and never talks to its
- * database. It forwards the caller's bearer to the entitlements endpoint the
- * deployment is configured with and trusts only that answer.
+ * database. It forwards the caller's bearer to
+ * `GET {ENTITLEMENTS_URL}/api/agentkit/entitlements` and trusts only that
+ * answer. The response shape it accepts is the one the AgentKit CLI parses:
+ *
+ *   { schemaVersion, status: "active", userId, authMethod, licenseId,
+ *     activationId, entitlements: { agentkitApp: bool, kits: { <kit>: bool } } }
  *
  * The token is never stored: it is not written to R2, to KV, to logs, or into a
  * response. It exists for the duration of one request.
@@ -18,9 +22,20 @@ export interface Principal {
   readonly scopes: readonly Scope[];
 }
 
-export type AuthOutcome =
-  | { ok: true; principal: Principal }
-  | { ok: false; status: 401 | 403 | 502; code: string; message: string };
+export type AuthFailure = {
+  ok: false;
+  status: 401 | 403 | 502;
+  code: string;
+  message: string;
+};
+
+export type AuthOutcome = { ok: true; principal: Principal } | AuthFailure;
+
+/** Path of the canonical entitlements endpoint, appended to ENTITLEMENTS_URL. */
+export const ENTITLEMENTS_PATH = '/api/agentkit/entitlements';
+
+/** Upper bound on the entitlements round trip; a slow upstream fails closed. */
+const ENTITLEMENTS_TIMEOUT_MS = 5_000;
 
 function bearerOf(request: Request): string | undefined {
   const header = request.headers.get('authorization');
@@ -30,24 +45,124 @@ function bearerOf(request: Request): string | undefined {
   return token === undefined || token === '' ? undefined : token;
 }
 
+const malformed = (message: string): AuthFailure => ({
+  ok: false,
+  status: 502,
+  code: 'ENTITLEMENTS_MALFORMED',
+  message,
+});
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+/** The entitlement facts this worker grants scopes from. */
+export interface EntitlementGrants {
+  agentkitApp: boolean;
+  activeKits: readonly string[];
+}
+
+/**
+ * Scope mapping.
+ *
+ * Today one active AgentKit entitlement (the app, or any kit) grants both
+ * `render` and `share`: the endpoint has no narrower grant to read. The two
+ * scopes are still derived by separate rules, so a future render-only or
+ * share-only entitlement changes one function here and nothing else, and every
+ * route keeps checking the scope it needs.
+ */
+export function scopesFor(grants: EntitlementGrants): Scope[] {
+  const scopes: Scope[] = [];
+  if (grantsRender(grants)) scopes.push('render');
+  if (grantsShare(grants)) scopes.push('share');
+  return scopes;
+}
+
+function hasActiveEntitlement(grants: EntitlementGrants): boolean {
+  return grants.agentkitApp || grants.activeKits.length > 0;
+}
+
+function grantsRender(grants: EntitlementGrants): boolean {
+  return hasActiveEntitlement(grants);
+}
+
+function grantsShare(grants: EntitlementGrants): boolean {
+  return hasActiveEntitlement(grants);
+}
+
+/**
+ * Parse a 200 entitlements body into a principal, or fail closed.
+ *
+ * Anything other than `status: "active"` with a subject and an entitlements
+ * object is refused: an inactive account is authenticated but not entitled
+ * (403), and a body this worker cannot read is an upstream fault (502).
+ */
+export function principalFromEntitlements(body: unknown): AuthOutcome {
+  if (!isRecord(body)) return malformed('the entitlements response is not an object');
+  if (typeof body['status'] !== 'string') {
+    return malformed('the entitlements response has no status');
+  }
+  if (body['status'] !== 'active') {
+    return {
+      ok: false,
+      status: 403,
+      code: 'ENTITLEMENT_INACTIVE',
+      message: 'the bearer has no active AgentKit entitlement',
+    };
+  }
+  const userId = body['userId'];
+  const licenseId = body['licenseId'];
+  // The user id is the subject. A license-only principal (no user id) keeps a
+  // distinct namespace so it can never collide with a user's shares.
+  const subject =
+    typeof userId === 'string' && userId !== ''
+      ? userId
+      : typeof licenseId === 'string' && licenseId !== ''
+        ? `license:${licenseId}`
+        : undefined;
+  if (subject === undefined) return malformed('the entitlements response has no subject');
+
+  const entitlements = body['entitlements'];
+  if (!isRecord(entitlements)) return malformed('the entitlements response has no entitlements');
+  const app = entitlements['agentkitApp'];
+  const kits = entitlements['kits'];
+  if (app !== undefined && typeof app !== 'boolean') {
+    return malformed('entitlements.agentkitApp is not a boolean');
+  }
+  if (kits !== undefined && !isRecord(kits)) return malformed('entitlements.kits is not an object');
+  const activeKits = Object.entries(kits ?? {})
+    .filter(([, active]) => active === true)
+    .map(([kit]) => kit)
+    .sort();
+  const scopes = scopesFor({ agentkitApp: app === true, activeKits });
+  return { ok: true, principal: { subject, scopes } };
+}
+
 /**
  * Validate the request's bearer and return the principal it grants.
  *
- * A non-200 answer, a malformed body, or an unreachable endpoint all fail
- * closed: an unverifiable bearer is not a bearer.
+ * A non-200 answer, a redirect, a malformed body, a timeout or an unreachable
+ * endpoint all fail closed: an unverifiable bearer is not a bearer.
  */
 export async function authenticate(request: Request, env: Env): Promise<AuthOutcome> {
   const token = bearerOf(request);
   if (token === undefined) {
-    return { ok: false, status: 401, code: 'UNAUTHENTICATED', message: 'a bearer token is required' };
+    return {
+      ok: false,
+      status: 401,
+      code: 'UNAUTHENTICATED',
+      message: 'a bearer token is required',
+    };
   }
-  const base = env.ENTITLEMENTS_URL.replace(/\/$/u, '');
+  const base = env.ENTITLEMENTS_URL.replace(/\/+$/u, '');
   let response: Response;
   try {
-    response = await fetch(`${base}/v1/entitlements/verify`, {
-      method: 'POST',
-      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-      body: JSON.stringify({}),
+    response = await fetch(`${base}${ENTITLEMENTS_PATH}`, {
+      method: 'GET',
+      headers: { authorization: `Bearer ${token}`, accept: 'application/json' },
+      // A redirect is an answer this worker does not understand, and following
+      // one could carry the bearer to a host it was not meant for.
+      redirect: 'manual',
+      signal: AbortSignal.timeout(ENTITLEMENTS_TIMEOUT_MS),
     });
   } catch {
     return {
@@ -60,7 +175,7 @@ export async function authenticate(request: Request, env: Env): Promise<AuthOutc
   if (response.status === 401 || response.status === 403) {
     return { ok: false, status: 401, code: 'UNAUTHENTICATED', message: 'the bearer was rejected' };
   }
-  if (!response.ok) {
+  if (response.status !== 200) {
     return {
       ok: false,
       status: 502,
@@ -72,28 +187,9 @@ export async function authenticate(request: Request, env: Env): Promise<AuthOutc
   try {
     body = await response.json();
   } catch {
-    return {
-      ok: false,
-      status: 502,
-      code: 'ENTITLEMENTS_MALFORMED',
-      message: 'the entitlements endpoint returned a non-JSON body',
-    };
+    return malformed('the entitlements endpoint returned a non-JSON body');
   }
-  const record = body as { subject?: unknown; entitlements?: unknown } | null;
-  const subject = record?.subject;
-  const entitlements = record?.entitlements;
-  if (typeof subject !== 'string' || subject === '' || !Array.isArray(entitlements)) {
-    return {
-      ok: false,
-      status: 502,
-      code: 'ENTITLEMENTS_MALFORMED',
-      message: 'the entitlements response is missing subject or entitlements',
-    };
-  }
-  const scopes = entitlements.filter(
-    (entry): entry is Scope => entry === 'render' || entry === 'share',
-  );
-  return { ok: true, principal: { subject, scopes } };
+  return principalFromEntitlements(body);
 }
 
 /**
@@ -110,4 +206,14 @@ export function authorize(principal: Principal, scope: Scope): AuthOutcome {
     code: 'FORBIDDEN',
     message: `the bearer does not grant the ${scope} scope`,
   };
+}
+
+/** Authenticated principal holding every listed scope, or the first failure. */
+export function authorizeAll(outcome: AuthOutcome, scopes: readonly Scope[]): AuthOutcome {
+  if (!outcome.ok) return outcome;
+  for (const scope of scopes) {
+    const permitted = authorize(outcome.principal, scope);
+    if (!permitted.ok) return permitted;
+  }
+  return outcome;
 }
