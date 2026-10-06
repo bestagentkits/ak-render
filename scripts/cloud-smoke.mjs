@@ -130,13 +130,30 @@ async function unauthenticatedSurface() {
   const listed = await mcp('tools/list', {});
   const names = (listed.body?.result?.tools ?? []).map((tool) => tool.name);
   check(
-    ['catalog', 'describe', 'validate', 'render', 'themes'].every((name) => names.includes(name)),
+    [
+      'catalog',
+      'search-catalog',
+      'describe',
+      'validate',
+      'render',
+      'themes',
+      'recipes',
+      'recipe',
+    ].every((name) => names.includes(name)),
     'mcp tools/list',
     names.join(','),
   );
 
   const catalog = await callTool('catalog', {});
   check(!catalog.isError && catalog.payload.blockCount > 0, 'mcp catalog without a bearer');
+
+  const recipe = await callTool('recipe', { name: 'dashboard' });
+  // The recipe tool replies with the YAML starter spec, not JSON.
+  check(
+    !recipe.isError && String(recipe.payload.text ?? '').includes('version: 1'),
+    'mcp recipe without a bearer',
+    JSON.stringify(recipe.payload).slice(0, 200),
+  );
 
   const render = await callTool('render', { spec: SPEC });
   check(
