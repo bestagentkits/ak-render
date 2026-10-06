@@ -58,8 +58,8 @@ export const filterBarBlock: BlockModule = {
     type: FILTER_BAR_TYPE,
     kind: 'semantic',
     category: 'interaction',
-    tags: ['filter', 'controls', 'dataset', 'toolbar'],
-    useCases: ['filter a table', 'narrow a board or log'],
+    tags: ['filter', 'rows', 'controls', 'dataset', 'toolbar'],
+    useCases: ['filter table rows by status or field', 'narrow a board or log'],
     purpose: 'Controls that filter one filterable block.',
     summary:
       'Filter bar: 1-8 controls (field + match) filtering a target; adds a live count and Reset.',

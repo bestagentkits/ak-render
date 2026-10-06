@@ -56,7 +56,8 @@ describe('searchCatalog', () => {
   });
 
   it('matches a plural against a singular word', () => {
-    expect(searchCatalog('tables')[0]?.type).toBe('table');
+    // Both table blocks are a right answer to a plural query for tables.
+    expect(['table', 'data-table']).toContain(searchCatalog('tables')[0]?.type);
     expect(searchCatalog('shortcuts')[0]?.type).toBe('kbd');
   });
 

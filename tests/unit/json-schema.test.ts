@@ -55,13 +55,16 @@ describe('published JSON Schema', () => {
     expect(ajv.validateSchema(schema)).toBe(true);
   });
 
-  it('accepts every fixture', () => {
-    for (const file of readdirSync(pagesDir).filter((name) => name.endsWith('.yaml'))) {
+  // One test per fixture, so the per-test timeout does not shrink as the roster grows.
+  it.each(readdirSync(pagesDir).filter((name) => name.endsWith('.yaml')))(
+    'accepts %s',
+    (file) => {
       const document = parseSpec(readFileSync(`${pagesDir}/${file}`, 'utf8'));
       const valid = validateAgainstSchema(document);
       expect(valid, `${file}: ${ajv.errorsText(validateAgainstSchema.errors)}`).toBe(true);
-    }
-  });
+    },
+    20_000,
+  );
 
   it('rejects a spec with an unknown block property', () => {
     const valid = validateAgainstSchema({
