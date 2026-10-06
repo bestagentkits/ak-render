@@ -4,6 +4,7 @@
   "compiler": "0.2.0",
   "method": {
     "tokens": "estimated at 4 characters per token, as in the legacy baseline",
+    "guidance": "legacy: baseline mean task; AK Render: the AgentKit shared contract plus the median fixture discovery (skill, catalog, describe --json)",
     "visibleText": "characters outside tags, <style> and <script>, whitespace collapsed",
     "projectedSpec": "legacy visible text times the median fixture spec-to-text ratio",
     "legacyCorpus": "agent-written HTML artifacts from real projects, recorded by anonymous label"
@@ -118,9 +119,9 @@
         "pageChars": 226989,
         "textChars": 8615,
         "specToText": 2.0883343006384214,
-        "summaryChars": 738,
-        "blockTypes": 53,
-        "discoveryChars": 92561
+        "summaryChars": 747,
+        "blockTypes": 54,
+        "discoveryChars": 93734
       },
       {
         "fixture": "brainstorm.yaml",
@@ -128,9 +129,9 @@
         "pageChars": 117222,
         "textChars": 1497,
         "specToText": 1.5731462925851702,
-        "summaryChars": 468,
-        "blockTypes": 6,
-        "discoveryChars": 20627
+        "summaryChars": 477,
+        "blockTypes": 7,
+        "discoveryChars": 21800
       },
       {
         "fixture": "dashboard.yaml",
@@ -138,9 +139,9 @@
         "pageChars": 142647,
         "textChars": 2749,
         "specToText": 0.767188068388505,
-        "summaryChars": 444,
-        "blockTypes": 5,
-        "discoveryChars": 18903
+        "summaryChars": 453,
+        "blockTypes": 6,
+        "discoveryChars": 20076
       },
       {
         "fixture": "diff.yaml",
@@ -148,9 +149,9 @@
         "pageChars": 117026,
         "textChars": 1472,
         "specToText": 1.7758152173913044,
-        "summaryChars": 423,
-        "blockTypes": 7,
-        "discoveryChars": 22725
+        "summaryChars": 432,
+        "blockTypes": 8,
+        "discoveryChars": 23898
       },
       {
         "fixture": "explain.yaml",
@@ -158,9 +159,9 @@
         "pageChars": 121596,
         "textChars": 1537,
         "specToText": 1.7065712426805466,
-        "summaryChars": 475,
-        "blockTypes": 8,
-        "discoveryChars": 21959
+        "summaryChars": 484,
+        "blockTypes": 9,
+        "discoveryChars": 23132
       },
       {
         "fixture": "interactive.yaml",
@@ -168,9 +169,9 @@
         "pageChars": 131414,
         "textChars": 1378,
         "specToText": 3.107402031930334,
-        "summaryChars": 532,
+        "summaryChars": 541,
         "blockTypes": 12,
-        "discoveryChars": 31721
+        "discoveryChars": 31713
       },
       {
         "fixture": "media.yaml",
@@ -178,9 +179,9 @@
         "pageChars": 115586,
         "textChars": 1407,
         "specToText": 2.4186211798152097,
-        "summaryChars": 498,
-        "blockTypes": 9,
-        "discoveryChars": 26424
+        "summaryChars": 507,
+        "blockTypes": 10,
+        "discoveryChars": 27597
       },
       {
         "fixture": "plan.yaml",
@@ -188,9 +189,9 @@
         "pageChars": 107535,
         "textChars": 1531,
         "specToText": 1.9170476812540822,
-        "summaryChars": 454,
-        "blockTypes": 8,
-        "discoveryChars": 22651
+        "summaryChars": 463,
+        "blockTypes": 9,
+        "discoveryChars": 23824
       },
       {
         "fixture": "recap.yaml",
@@ -198,9 +199,9 @@
         "pageChars": 128127,
         "textChars": 1431,
         "specToText": 1.3438155136268344,
-        "summaryChars": 439,
-        "blockTypes": 6,
-        "discoveryChars": 20552
+        "summaryChars": 448,
+        "blockTypes": 7,
+        "discoveryChars": 21725
       },
       {
         "fixture": "showcase.yaml",
@@ -208,9 +209,9 @@
         "pageChars": 154158,
         "textChars": 4032,
         "specToText": 2.1753472222222223,
-        "summaryChars": 609,
-        "blockTypes": 13,
-        "discoveryChars": 34369
+        "summaryChars": 618,
+        "blockTypes": 14,
+        "discoveryChars": 35542
       },
       {
         "fixture": "theme-showcase.yaml",
@@ -218,9 +219,9 @@
         "pageChars": 127173,
         "textChars": 1599,
         "specToText": 1.5697310819262038,
-        "summaryChars": 488,
-        "blockTypes": 10,
-        "discoveryChars": 26423
+        "summaryChars": 497,
+        "blockTypes": 11,
+        "discoveryChars": 27596
       }
     ],
     "medianSpecToText": 1.7758152173913044,
@@ -236,13 +237,13 @@
       },
       {
         "label": "legacy-02",
-        "legacyOutputTokens": 9867,
-        "specTokens": 6513,
+        "legacyOutputTokens": 9868,
+        "specTokens": 6514,
         "outputReduction": 0.339912714932027
       },
       {
         "label": "legacy-03",
-        "legacyOutputTokens": 17875,
+        "legacyOutputTokens": 17876,
         "specTokens": 7404,
         "outputReduction": 0.5858062071798327
       },
@@ -260,20 +261,20 @@
       },
       {
         "label": "legacy-06",
-        "legacyOutputTokens": 23405,
+        "legacyOutputTokens": 23406,
         "specTokens": 19089,
         "outputReduction": 0.18442735174614755
       },
       {
         "label": "legacy-07",
         "legacyOutputTokens": 3798,
-        "specTokens": 2829,
+        "specTokens": 2830,
         "outputReduction": 0.25495257534991544
       },
       {
         "label": "legacy-08",
         "legacyOutputTokens": 8625,
-        "specTokens": 1935,
+        "specTokens": 1936,
         "outputReduction": 0.7756166000171403
       },
       {
@@ -285,13 +286,13 @@
       {
         "label": "legacy-10",
         "legacyOutputTokens": 19204,
-        "specTokens": 24804,
+        "specTokens": 24805,
         "outputReduction": -0.29164699157535834
       },
       {
         "label": "legacy-11",
         "legacyOutputTokens": 91627,
-        "specTokens": 23841,
+        "specTokens": 23842,
         "outputReduction": 0.7398000883905098
       },
       {
@@ -305,22 +306,22 @@
   },
   "typicalTask": {
     "before": {
-      "guidance": 33669,
-      "output": 13871,
-      "total": 47540
+      "guidance": 25026,
+      "output": 13872,
+      "total": 38898
     },
     "after": {
-      "guidance": 5681,
-      "output": 6890,
-      "returned": 119,
-      "total": 12690
+      "guidance": 7149,
+      "output": 6891,
+      "returned": 121,
+      "total": 14161
     },
-    "reduction": 0.7330668910391249,
+    "reduction": 0.6359452928171114,
     "excludes": "task context and narrative reasoning (equal on both paths), repairs and retries"
   },
   "contextReduction": {
     "source": "docs/artifacts/benchmark-render.md",
-    "note": "presentation guidance only, benchmarked against AgentKit with its ak-render skill"
+    "note": "presentation guidance only: the AgentKit legacy HTML references against the shared contract plus the ak-render plugin skill route"
   },
   "notMeasured": [
     "live model input and output tokens per task (needs the A/B harness)",

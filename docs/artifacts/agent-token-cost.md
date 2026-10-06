@@ -12,12 +12,12 @@ baseline. No tokenizer or live model run is involved.
 
 | Part | Hand-written HTML | AK Render |
 | --- | ---: | ---: |
-| Presentation guidance read | 33.7k (baseline mean) | 5.7k (skill, catalog, describe) |
+| Presentation guidance read | 25.0k (baseline mean) | 7.1k (shared contract, skill, catalog, describe) |
 | Written by the agent | 13.9k (median legacy page) | 6.9k (projected spec) |
 | Returned into context | written page stays in context | 0.1k (render summary) |
-| **Total** | **47.5k** | **12.7k** |
+| **Total** | **38.9k** | **14.2k** |
 
-Estimated reduction: **73%**. Excludes task context and narrative reasoning (equal on both paths), repairs and retries.
+Estimated reduction: **64%**. Excludes task context and narrative reasoning (equal on both paths), repairs and retries.
 
 ## Legacy corpus (measured)
 
@@ -48,17 +48,17 @@ presentation code the agent no longer writes.
 
 | Fixture | Spec | Visible text | Spec / text | Page | Summary | Discovery |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `all-components.yaml` | 17991 | 8615 | 2.09 | 226989 | 738 | 92561 |
-| `brainstorm.yaml` | 2355 | 1497 | 1.57 | 117222 | 468 | 20627 |
-| `dashboard.yaml` | 2109 | 2749 | 0.77 | 142647 | 444 | 18903 |
-| `diff.yaml` | 2614 | 1472 | 1.78 | 117026 | 423 | 22725 |
-| `explain.yaml` | 2623 | 1537 | 1.71 | 121596 | 475 | 21959 |
-| `interactive.yaml` | 4282 | 1378 | 3.11 | 131414 | 532 | 31721 |
-| `media.yaml` | 3403 | 1407 | 2.42 | 115586 | 498 | 26424 |
-| `plan.yaml` | 2935 | 1531 | 1.92 | 107535 | 454 | 22651 |
-| `recap.yaml` | 1923 | 1431 | 1.34 | 128127 | 439 | 20552 |
-| `showcase.yaml` | 8771 | 4032 | 2.18 | 154158 | 609 | 34369 |
-| `theme-showcase.yaml` | 2510 | 1599 | 1.57 | 127173 | 488 | 26423 |
+| `all-components.yaml` | 17991 | 8615 | 2.09 | 226989 | 747 | 93734 |
+| `brainstorm.yaml` | 2355 | 1497 | 1.57 | 117222 | 477 | 21800 |
+| `dashboard.yaml` | 2109 | 2749 | 0.77 | 142647 | 453 | 20076 |
+| `diff.yaml` | 2614 | 1472 | 1.78 | 117026 | 432 | 23898 |
+| `explain.yaml` | 2623 | 1537 | 1.71 | 121596 | 484 | 23132 |
+| `interactive.yaml` | 4282 | 1378 | 3.11 | 131414 | 541 | 31713 |
+| `media.yaml` | 3403 | 1407 | 2.42 | 115586 | 507 | 27597 |
+| `plan.yaml` | 2935 | 1531 | 1.92 | 107535 | 463 | 23824 |
+| `recap.yaml` | 1923 | 1431 | 1.34 | 128127 | 448 | 21725 |
+| `showcase.yaml` | 8771 | 4032 | 2.18 | 154158 | 618 | 35542 |
+| `theme-showcase.yaml` | 2510 | 1599 | 1.57 | 127173 | 497 | 27596 |
 
 Median spec-to-text ratio 1.78; a compiled page is a median
 45× its spec, and none of it enters the agent's context.
