@@ -1,27 +1,17 @@
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, type Page, test } from '@playwright/test';
 import { compile } from '../../src/render/render.js';
+import { browserWorkspace } from './browser-workspace.js';
 
 const fixturesDir = fileURLToPath(new URL('../../fixtures', import.meta.url));
-const workspace = mkdtempSync(join(tmpdir(), 'ak-render-product-'));
 // The fixture references its images relatively, so they sit beside the page.
-cpSync(join(fixturesDir, 'assets'), join(workspace, 'assets'), { recursive: true });
-const pagePath = join(workspace, 'product-widgets.html');
-writeFileSync(
-  pagePath,
-  compile(readFileSync(join(fixturesDir, 'pages/product-widgets.yaml'), 'utf8'), {
-    source: 'product-widgets.yaml',
-  }).html,
-  'utf8',
-);
-const pageUrl = `file://${pagePath}`;
-
-test.afterAll(() => {
-  rmSync(workspace, { recursive: true, force: true });
-});
+const workspace = browserWorkspace('product', { assets: true });
+const html = compile(readFileSync(join(fixturesDir, 'pages/product-widgets.yaml'), 'utf8'), {
+  source: 'product-widgets.yaml',
+}).html;
+const pageUrl = (): string => `file://${workspace.write('product-widgets', html)}`;
 
 function collectErrors(page: Page): string[] {
   const errors: string[] = [];
@@ -35,7 +25,7 @@ const figure = (index: number) => `#ak-lb-screens-${index}`;
 test.describe('gallery lightbox', () => {
   test('opens from the keyboard, steps, closes on Escape and returns focus', async ({ page }) => {
     const errors = collectErrors(page);
-    await page.goto(pageUrl, { waitUntil: 'load' });
+    await page.goto(pageUrl(), { waitUntil: 'load' });
     await expect(page.locator('[data-ak-lightbox-root]')).toHaveAttribute(
       'data-ak-lightbox-ready',
       '',
@@ -68,7 +58,7 @@ test.describe('gallery lightbox', () => {
 
   test('the Close control shuts the viewer and returns focus to the opener', async ({ page }) => {
     const errors = collectErrors(page);
-    await page.goto(pageUrl, { waitUntil: 'load' });
+    await page.goto(pageUrl(), { waitUntil: 'load' });
     await page.locator(thumb(2)).click();
     await page.locator(`${figure(2)} [data-ak-lightbox-close]`).click();
     await expect(page.locator('dialog.ak-lightbox-dialog')).not.toHaveAttribute('open', '');
@@ -77,7 +67,7 @@ test.describe('gallery lightbox', () => {
   });
 
   test('prints the grid without the viewer', async ({ page }) => {
-    await page.goto(pageUrl, { waitUntil: 'load' });
+    await page.goto(pageUrl(), { waitUntil: 'load' });
     await page.emulateMedia({ media: 'print' });
     await expect(page.locator('.ak-gallery img').first()).toBeVisible();
     await expect(page.locator(figure(1))).toBeHidden();
@@ -88,7 +78,7 @@ test.describe('without scripts', () => {
   test.use({ javaScriptEnabled: false });
 
   test('a thumbnail link opens the full-size figure and Close returns', async ({ page }) => {
-    await page.goto(pageUrl, { waitUntil: 'load' });
+    await page.goto(pageUrl(), { waitUntil: 'load' });
     await expect(page.locator(figure(1))).toBeHidden();
     await page.locator(thumb(1)).click();
     await expect(page).toHaveURL(/#ak-lb-screens-1$/u);
@@ -111,7 +101,7 @@ test.describe('narrow screens', () => {
   test('pricing stacks, the calendar becomes an agenda, and nothing overflows', async ({
     page,
   }) => {
-    await page.goto(pageUrl, { waitUntil: 'load' });
+    await page.goto(pageUrl(), { waitUntil: 'load' });
     const lefts = await page
       .locator('.ak-plan')
       .evaluateAll((plans) => plans.map((plan) => Math.round(plan.getBoundingClientRect().left)));

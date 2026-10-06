@@ -1,27 +1,19 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { expect, type Page, test } from '@playwright/test';
 import { compile } from '../../src/render/render.js';
+import { browserWorkspace } from './browser-workspace.js';
 
 const pagesDir = fileURLToPath(new URL('../../fixtures/pages', import.meta.url));
-const workspace = mkdtempSync(join(tmpdir(), 'ak-render-state-'));
+const workspace = browserWorkspace('state');
 
 function write(name: string, spec: unknown): string {
-  mkdirSync(workspace, { recursive: true });
-  const target = join(workspace, `${name}.html`);
-  writeFileSync(target, compile(spec, { source: name }).html, 'utf8');
-  return `file://${target}`;
+  return `file://${workspace.write(name, compile(spec, { source: name }).html)}`;
 }
 
 function fixture(name: string): string {
   return write(name, readFileSync(`${pagesDir}/${name}.yaml`, 'utf8'));
 }
-
-test.afterAll(() => {
-  rmSync(workspace, { recursive: true, force: true });
-});
 
 const CONDITIONAL_PAGE = {
   version: 1,

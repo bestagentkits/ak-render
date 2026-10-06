@@ -1,32 +1,21 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { expect, type Page, test } from '@playwright/test';
 import { compile } from '../../src/render/render.js';
 import { FILTERABLE_REGISTRY } from '../unit/support/probe-filterable-group.js';
+import { browserWorkspace } from './browser-workspace.js';
 
 const pagesDir = fileURLToPath(new URL('../../fixtures/pages', import.meta.url));
-const workspace = mkdtempSync(join(tmpdir(), 'ak-render-controls-'));
+const workspace = browserWorkspace('controls');
 
 function write(name: string, spec: unknown): string {
-  mkdirSync(workspace, { recursive: true });
-  const target = join(workspace, `${name}.html`);
-  writeFileSync(
-    target,
-    compile(spec, { source: name, registry: FILTERABLE_REGISTRY }).html,
-    'utf8',
-  );
-  return `file://${target}`;
+  const html = compile(spec, { source: name, registry: FILTERABLE_REGISTRY }).html;
+  return `file://${workspace.write(name, html)}`;
 }
 
 function fixture(name: string): string {
   return write(name, readFileSync(`${pagesDir}/${name}.yaml`, 'utf8'));
 }
-
-test.afterAll(() => {
-  rmSync(workspace, { recursive: true, force: true });
-});
 
 const RUNS = [
   { model: 'Legacy', tokens: 33696, provider: 'acme', cached: false, day: '2026-01-04' },

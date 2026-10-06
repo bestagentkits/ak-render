@@ -1,26 +1,18 @@
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, type Page, test } from '@playwright/test';
 import { compile } from '../../src/render/render.js';
+import { browserWorkspace } from './browser-workspace.js';
 
 const fixturesDir = fileURLToPath(new URL('../../fixtures', import.meta.url));
-const workspace = mkdtempSync(join(tmpdir(), 'ak-render-showcase-'));
+const workspace = browserWorkspace('showcase', { assets: true });
 
 /** Compile the showcase fixture beside a copy of its assets, as the gallery does. */
 function artifact(): string {
-  mkdirSync(workspace, { recursive: true });
-  cpSync(join(fixturesDir, 'assets'), join(workspace, 'assets'), { recursive: true });
   const source = readFileSync(join(fixturesDir, 'pages/showcase.yaml'), 'utf8');
-  const target = join(workspace, 'showcase.html');
-  writeFileSync(target, compile(source, { source: 'showcase.yaml' }).html, 'utf8');
-  return target;
+  return workspace.write('showcase', compile(source, { source: 'showcase.yaml' }).html);
 }
-
-test.afterAll(() => {
-  rmSync(workspace, { recursive: true, force: true });
-});
 
 async function open(page: Page): Promise<void> {
   await page.goto(`file://${artifact()}`, { waitUntil: 'load' });

@@ -1,25 +1,19 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { expect, type Page, test } from '@playwright/test';
 import { compile } from '../../src/render/render.js';
+import { browserWorkspace } from './browser-workspace.js';
 
-const workspace = mkdtempSync(join(tmpdir(), 'ak-render-engineering-'));
+const workspace = browserWorkspace('engineering');
 const fixture = readFileSync(
   fileURLToPath(new URL('../../fixtures/pages/engineering-widgets.yaml', import.meta.url)),
   'utf8',
 );
-const target = join(workspace, 'engineering-widgets.html');
-writeFileSync(target, compile(fixture).html, 'utf8');
-
-test.afterAll(() => {
-  rmSync(workspace, { recursive: true, force: true });
-});
+const html = compile(fixture).html;
 
 async function open(page: Page, width: number): Promise<void> {
   await page.setViewportSize({ width, height: 800 });
-  await page.goto(`file://${target}`, { waitUntil: 'load' });
+  await page.goto(`file://${workspace.write('engineering-widgets', html)}`, { waitUntil: 'load' });
 }
 
 test.describe('engineering widgets', () => {

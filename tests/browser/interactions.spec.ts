@@ -1,12 +1,11 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { expect, type Page, test } from '@playwright/test';
 import { compile } from '../../src/render/render.js';
+import { browserWorkspace } from './browser-workspace.js';
 
 const pagesDir = fileURLToPath(new URL('../../fixtures/pages', import.meta.url));
-const workspace = mkdtempSync(join(tmpdir(), 'ak-render-interactions-'));
+const workspace = browserWorkspace('interactions');
 
 /**
  * Each fixture is compiled once and opened over `file://`, which is the same
@@ -15,17 +14,8 @@ const workspace = mkdtempSync(join(tmpdir(), 'ak-render-interactions-'));
  */
 function artifact(name: string): string {
   const source = readFileSync(`${pagesDir}/${name}`, 'utf8');
-  const target = join(workspace, `${name.replace(/\.yaml$/u, '')}.html`);
-  // The workspace is recreated on demand: a retry or a parallel worker may have
-  // cleaned up an earlier copy.
-  mkdirSync(workspace, { recursive: true });
-  writeFileSync(target, compile(source, { source: name }).html, 'utf8');
-  return target;
+  return workspace.write(name.replace(/\.yaml$/u, ''), compile(source, { source: name }).html);
 }
-
-test.afterAll(() => {
-  rmSync(workspace, { recursive: true, force: true });
-});
 
 async function open(page: Page): Promise<void> {
   // Written per test rather than once at import time, so a retry or a parallel
@@ -393,9 +383,7 @@ blocks:
       - label: Pages
         value: '1,240'
 `;
-    const target = join(workspace, 'still.html');
-    mkdirSync(workspace, { recursive: true });
-    writeFileSync(target, compile(source).html, 'utf8');
+    const target = workspace.write('still', compile(source).html);
     await page.emulateMedia({ reducedMotion: 'no-preference', colorScheme: 'dark' });
     await page.goto(`file://${target}`, { waitUntil: 'load' });
     expect(await duration(page)).toMatch(/^0(m?s)?$/u);
@@ -423,9 +411,7 @@ blocks:
 `;
 
   async function openCounting(page: Page): Promise<void> {
-    const target = join(workspace, 'counting.html');
-    mkdirSync(workspace, { recursive: true });
-    writeFileSync(target, compile(source).html, 'utf8');
+    const target = workspace.write('counting', compile(source).html);
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.goto(`file://${target}`, { waitUntil: 'load' });
   }
@@ -471,9 +457,7 @@ blocks:
             language: json
             text: '{ "mcpServers": { "ak-render": { "command": "npx", "args": ["-y", "@bestagentkits/render", "mcp"] } } }'
 `;
-    const target = join(workspace, 'split-of-stacks.html');
-    mkdirSync(workspace, { recursive: true });
-    writeFileSync(target, compile(source).html, 'utf8');
+    const target = workspace.write('split-of-stacks', compile(source).html);
     await page.setViewportSize({ width: 375, height: 800 });
     await page.goto(`file://${target}`, { waitUntil: 'load' });
     // A long code line scrolls inside its frame instead of widening the page.
@@ -553,9 +537,7 @@ test.describe('rich composition', () => {
         },
       ],
     };
-    const target = join(workspace, 'tab-state.html');
-    mkdirSync(workspace, { recursive: true });
-    writeFileSync(target, compile(spec).html, 'utf8');
+    const target = workspace.write('tab-state', compile(spec).html);
     await page.goto(`file://${target}`, { waitUntil: 'load' });
     // Loading selects the first tab without firing, so the declared state stands.
     await expect(page.getByText('Viewing A.')).toBeVisible();

@@ -1,13 +1,4 @@
-import {
-  cpSync,
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AxeBuilder } from '@axe-core/playwright';
@@ -16,13 +7,14 @@ import type { JsonValue } from '../../src/json.js';
 import { compile } from '../../src/render/render.js';
 import { evaluateCondition } from '../../src/spec/conditions.js';
 import { normalize } from '../../src/spec/normalize.js';
+import { browserWorkspace } from './browser-workspace.js';
 import { startNetworkAudit } from './network-audit.js';
 
 /**
  * Composition matrix: every fixture page, checked for the properties every
  * compiled page owes its reader, whatever blocks it composes. Each fixture is
  * its own describe block, so the suite shards by fixture across workers, and
- * each worker compiles a fixture once and reuses the file for every check.
+ * each worker compiles a fixture once and reuses the HTML for every check.
  */
 
 const fixturesDir = fileURLToPath(new URL('../../fixtures', import.meta.url));
@@ -35,32 +27,23 @@ const FIXTURES = readdirSync(pagesDir)
 const WIDTHS = [320, 375, 768, 1440] as const;
 const SCHEMES = ['light', 'dark'] as const;
 
-// One workspace per worker; fixtures reference `assets/…` relatively. With
-// fully parallel workers a file-level afterAll can run between two groups of
-// this file's tests in the same worker, so the workspace is rebuilt on demand
-// instead of being assumed to survive.
-const workspace = join(tmpdir(), `ak-render-matrix-${process.pid}`);
+// Fixtures reference `assets/…` relatively, so the assets sit beside the pages.
+const workspace = browserWorkspace('matrix', { assets: true });
+const compiled = new Map<string, string>();
 
 function source(name: string): string {
   return readFileSync(join(pagesDir, `${name}.yaml`), 'utf8');
 }
 
-/** The compiled fixture's file URL, compiled at most once per workspace. */
+/** The compiled fixture's file URL; the fixture compiles at most once per worker. */
 function pageUrl(name: string): string {
-  if (!existsSync(join(workspace, 'assets'))) {
-    mkdirSync(workspace, { recursive: true });
-    cpSync(join(fixturesDir, 'assets'), join(workspace, 'assets'), { recursive: true });
+  let html = compiled.get(name);
+  if (html === undefined) {
+    html = compile(source(name), { source: `${name}.yaml` }).html;
+    compiled.set(name, html);
   }
-  const target = join(workspace, `${name}.html`);
-  if (!existsSync(target)) {
-    writeFileSync(target, compile(source(name), { source: `${name}.yaml` }).html, 'utf8');
-  }
-  return `file://${target}`;
+  return `file://${workspace.write(name, html)}`;
 }
-
-test.afterAll(() => {
-  rmSync(workspace, { recursive: true, force: true });
-});
 
 /** Item titles of the disclosure blocks, which must read without scripts. */
 function disclosureTitles(name: string): string[] {

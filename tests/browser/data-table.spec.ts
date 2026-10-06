@@ -1,32 +1,22 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { expect, type Page, test } from '@playwright/test';
 import { compile } from '../../src/render/render.js';
+import { browserWorkspace } from './browser-workspace.js';
 
 const pagesDir = fileURLToPath(new URL('../../fixtures/pages', import.meta.url));
-const workspace = mkdtempSync(join(tmpdir(), 'ak-render-data-table-'));
+const workspace = browserWorkspace('data-table');
 
 function fixtureUrl(): string {
-  mkdirSync(workspace, { recursive: true });
-  const target = join(workspace, 'data-tables.html');
   const source = readFileSync(`${pagesDir}/data-tables.yaml`, 'utf8');
-  writeFileSync(target, compile(source, { source: 'data-tables' }).html, 'utf8');
-  return `file://${target}`;
+  return `file://${workspace.write('data-tables', compile(source, { source: 'data-tables' }).html)}`;
 }
-
-const url = fixtureUrl();
-
-test.afterAll(() => {
-  rmSync(workspace, { recursive: true, force: true });
-});
 
 /** The fixture's first table: 24 runs, so it has search and a sticky header. */
 const RUNS = '[data-ak-data-table][data-ak-sticky]';
 
 async function open(page: Page): Promise<void> {
-  await page.goto(url);
+  await page.goto(fixtureUrl());
   await expect(page.locator(RUNS)).toHaveAttribute('data-ak-table-ready', '');
 }
 
@@ -105,7 +95,7 @@ test.describe('without scripts', () => {
   test.use({ javaScriptEnabled: false });
 
   test('shows the complete table and no controls', async ({ page }) => {
-    await page.goto(url);
+    await page.goto(fixtureUrl());
     await expect(visibleRows(page)).toHaveCount(24);
     await expect(page.locator(`${RUNS} .ak-dt-tools`)).toBeHidden();
     await expect(page.locator(`${RUNS} thead button`)).toHaveCount(0);
