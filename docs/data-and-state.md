@@ -35,15 +35,19 @@ blocks:
 
 - Cells are scalars only: a string, a finite number, a boolean or `null`.
   Nested objects and lists are rejected, so a dataset is always a table.
+- Field names are identifiers that may contain dashes (`FIELD_KEY_PATTERN` in
+  [`src/data/dataset-types.ts`](../src/data/dataset-types.ts)). `__proto__`, `constructor` and `prototype` are refused,
+  because a row is a plain object and those names would reach its prototype
+  instead of naming a cell.
 - The number of datasets, rows, fields and string length is bounded
   (`DATA_LIMITS` in [`src/data/dataset-types.ts`](../src/data/dataset-types.ts)).
   A bound is an error at the dataset's path, not a silent truncation.
 - A field a block names that the rows do not have is a `SPEC_VALIDATION_ERROR`
   at the path the author wrote, with `details.allowed` listing the fields that
   exist. This is the repair loop agents rely on.
-- `dataRef` is the cheaper spec: the benchmark artifact
-  `docs/artifacts/spec-compression.md` compares bound specs against the same
-  data inlined.
+- `dataRef` is the cheaper spec: the
+  [spec compression artifact](./artifacts/spec-compression.md), produced by
+  `pnpm bench:spec`, compares bound specs against the same data inlined.
 
 ## Transforms
 
@@ -168,9 +172,10 @@ adds none.
       match: max
 ```
 
-The filter-bar owns the filtering of its `data-table` target: put free-text
-search in the bar as a `search` child rather than relying on the table's own
-search. `target` must be a filterable block's `id`; anything else is an error at
+The filter-bar owns the filtering of its `data-table` target. A table that a
+bar targets emits no search box, row count or "no match" note of its own, so
+put free-text search in the bar as a `search` child. `target` must be a
+filterable block's `id`; anything else is an error at
 `.target` that lists the ids that qualify. The bar adds an announced result
 count and a Reset button. Without scripts every row stays visible and the count
 shows the total; print shows every row, because a filtered printout would be

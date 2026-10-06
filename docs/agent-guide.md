@@ -90,7 +90,8 @@ it points, so review it like any file write. `spec` may be YAML/JSON text or the
 
 Without Node, use the hosted server at `https://render.agentkit.best/mcp` (MCP
 Streamable HTTP). It serves `catalog`, `search-catalog`, `describe`,
-`validate`, `render` and `themes` with the same names and contracts, and the
+`recipes`, `recipe`, `validate`, `render` and `themes` with the same names and
+contracts, and the
 loop is the same. Two things differ:
 
 - `render` has no `out`, because a remote server cannot write into your
@@ -99,7 +100,8 @@ loop is the same. Two things differ:
   `share: true` for a share link that lives for 30 days. The HTML is never in
   the reply.
 - `validate` and `render` need an AgentKit bearer token. `catalog`,
-  `search-catalog`, `describe` and `themes` work without one. `themes` lists the built-in presets only, since
+  `search-catalog`, `describe`, `recipes`, `recipe` and `themes` work without
+  one. `themes` lists the built-in presets only, since
   the server has no project presets to discover.
 
 ```json

@@ -4,7 +4,7 @@
 
 Agent loop: find blocks with `ak-render search-catalog <intent words>` or `ak-render catalog [--category <c>]` (83 block types in 8 categories), optionally start from `ak-render recipe <name>` (list them with `ak-render recipes`), read contracts with `ak-render describe <type...> --compact` (full contract: `describe <type> --json`), `ak-render validate <spec|-> --json` and fix every diagnostic by its JSON path, then `ak-render <spec|-> --out page.html`. Pass `-` to read the spec from stdin. `ak-render mcp` exposes the same loop as MCP tools over stdio (`catalog`, `search-catalog`, `describe`, `recipes`, `recipe`, `validate`, `render`, `themes`); `render` writes the file and returns only a summary.
 
-Remote MCP over Streamable HTTP: `https://render.agentkit.best/mcp` serves `catalog`, `search-catalog`, `describe`, `validate`, `render` and `themes` for agents without Node. `render` there takes no `out`; it stores the page and returns the summary plus `artifactUrl` (one hour, or a 30-day share link with `share: true`), never the HTML. `catalog`, `search-catalog`, `describe` and `themes` need no token; `validate` and `render` need `Authorization: Bearer <AgentKit token>`. Local compilation stays canonical and needs no account.
+Remote MCP over Streamable HTTP: `https://render.agentkit.best/mcp` serves `catalog`, `search-catalog`, `describe`, `recipes`, `recipe`, `validate`, `render` and `themes` for agents without Node. `render` there takes no `out`; it stores the page and returns the summary plus `artifactUrl` (one hour, or a 30-day share link with `share: true`), never the HTML. `catalog`, `search-catalog`, `describe`, `recipes`, `recipe` and `themes` need no token; `validate` and `render` need `Authorization: Bearer <AgentKit token>`. Local compilation stays canonical and needs no account.
 
 Do not write HTML, CSS or inline scripts: the spec has no field for them. In prose text props, a pair of backticks renders as inline code; nothing else is parsed as markup. Output makes no network request unless the spec opts in under `policy.network`. Shared numbers go in top-level `datasets` and blocks bind them with `dataRef`; page state, `visibleWhen`, native controls and `filter-bar` are declarative data too.
 
@@ -20,7 +20,7 @@ Do not write HTML, CSS or inline scripts: the spec has no field for them. In pro
 ## Reference
 
 - [Page Spec JSON Schema](https://github.com/bestagentkits/ak-render/blob/main/schema/page-spec.v1.json): machine-readable schema for editors and validators
-- [Example specs](https://github.com/bestagentkits/ak-render/tree/main/fixtures/pages): plan, explain, recap, diff, dashboard, media, interactive and showcase pages, plus one page per widget family, layout, data and theme feature
+- [Example specs](https://github.com/bestagentkits/ak-render/tree/main/fixtures/pages): plan, explain, recap, diff, dashboard, media, interactive and showcase pages, one page per widget family, layout, data and theme feature, and six composition pages
 
 ## Optional
 

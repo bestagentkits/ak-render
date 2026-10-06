@@ -164,7 +164,7 @@ account with no active kit and no app grant gets no scope (`403 FORBIDDEN`).
 | `share` | 20/min per subject | REST share and MCP `share: true` share the counter. |
 | `export` | 10/min per subject | Screenshot and PDF are the expensive path. |
 | `validate` | 120/min per subject | MCP only. |
-| `anon-ip` | 120/min per client IP | MCP `catalog`, `describe`, `themes`. |
+| `anon-ip` | 120/min per client IP | MCP `catalog`, `search-catalog`, `describe`, `recipes`, `recipe`, `themes`. |
 | `auth-ip` | 30/min per client IP | Bearer checks the principal cache cannot answer. |
 | MCP batch | 16 members | Only under revisions with batching. |
 | MCP render artifact | 1 hour | Long enough to open the page; a durable link is a share. |
