@@ -59,11 +59,32 @@ const ATTRIBUTE = new RegExp(
  */
 const FRAGMENT_REFERENCE = /^#[A-Za-z0-9_.:-]+$/u;
 
+/** Attributes, besides any `*:href`, that make the browser fetch or navigate to a URL. */
+const URL_ATTRIBUTES: ReadonlySet<string> = new Set([
+  'href',
+  'src',
+  'srcset',
+  'poster',
+  'action',
+  'formaction',
+  'background',
+  'data',
+  'codebase',
+  'ping',
+]);
+
 /** True for an attribute that makes the browser fetch or navigate to a URL. */
 function isUrlAttribute(lowered: string): boolean {
-  return (
-    lowered === 'href' || lowered.endsWith(':href') || lowered === 'src' || lowered === 'srcset'
-  );
+  return URL_ATTRIBUTES.has(lowered) || lowered.endsWith(':href');
+}
+
+/**
+ * SVG animation can write a URL into another attribute after parsing
+ * (`<set attributeName="href" to="https://…">`), so animating a URL attribute
+ * is refused like writing one.
+ */
+function animatesUrlAttribute(lowered: string, value: string | undefined): boolean {
+  return lowered === 'attributename' && isUrlAttribute(unquote(value).trim().toLowerCase());
 }
 
 /** An attribute value without its quotes; an attribute with no value is empty. */
@@ -243,6 +264,7 @@ export function fitAdapterMarkup(markup: string, scope: string): FittedMarkup {
         // A drawing may point at its own gradients, markers and symbols, never
         // at another document, a remote resource or a navigation target.
         if (isUrlAttribute(lowered) && !FRAGMENT_REFERENCE.test(unquote(value))) external = lowered;
+        if (animatesUrlAttribute(lowered, value)) external = `${lowered}=${unquote(value)}`;
         if (lowered === 'style') {
           removedInlineStyles += 1;
           return '';

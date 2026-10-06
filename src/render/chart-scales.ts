@@ -74,7 +74,14 @@ export function formatNumber(value: number): string {
  */
 export function numberFormatter(spec: FormatSpec): (value: number) => string {
   const format = spec.format === undefined || spec.format === 'text' ? 'number' : spec.format;
-  return (value) => formatValue(round(value), { ...spec, format });
+  // Only floating-point noise is removed here; the format owns the decimals,
+  // so a fine-grained value is not rounded away before it is formatted.
+  return (value) => formatValue(denoise(value), { ...spec, format });
+}
+
+/** Drop floating-point noise (0.1 + 0.2) without rounding real precision away. */
+export function denoise(value: number): number {
+  return Number(value.toPrecision(12));
 }
 
 export function seriesClass(index: number): string {
@@ -172,7 +179,7 @@ export function tickValues(bounds: TickBounds): number[] {
   const steps = Math.round((bounds.max - bounds.min) / bounds.step);
   const values: number[] = [];
   for (let index = 0; index <= steps; index += 1) {
-    const value = round(bounds.min + bounds.step * index);
+    const value = denoise(bounds.min + bounds.step * index);
     if (value <= bounds.max + bounds.step / 1000) values.push(value);
   }
   return values;
@@ -187,6 +194,12 @@ export function tickFormatter(spec: FormatSpec, bounds: TickBounds): (value: num
   const whole = Number.isInteger(bounds.step) && Number.isInteger(bounds.min);
   if (spec.format === 'currency' && spec.decimals === undefined && whole) {
     return numberFormatter({ ...spec, decimals: 0 });
+  }
+  // A step finer than the format's default two decimals would print every
+  // tick the same ("0 | 0 | 0"), so the ticks get the decimals the step needs.
+  if (spec.decimals === undefined && bounds.step > 0 && bounds.step < 0.01) {
+    const needed = Math.min(4, Math.ceil(-Math.log10(bounds.step) - 1e-9));
+    return numberFormatter({ ...spec, decimals: needed });
   }
   return numberFormatter(spec);
 }

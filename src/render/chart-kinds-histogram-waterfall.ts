@@ -42,7 +42,10 @@ export function histogramEdges(samples: readonly number[], bins: number): number
   if (finite.length === 0) return [];
   const low = Math.min(...finite);
   const high = Math.max(...finite);
-  if (low === high) return [low, low + 1];
+  // One bin when every sample is equal, or when the values are too large for
+  // clean steps to separate (1e16 + 4): its width must still be representable.
+  const single = [low, high > low ? high : low + Math.max(1, Math.abs(low) * Number.EPSILON * 4)];
+  if (low === high) return single;
   const target = Math.max(1, bins);
   const magnitude = 10 ** Math.floor(Math.log10((high - low) / target));
   const layout = (step: number) => {
@@ -58,7 +61,8 @@ export function histogramEdges(samples: readonly number[], bins: number): number
   for (let index = 0; index <= best.count; index += 1) {
     edges.push(Number((best.start + best.step * index).toPrecision(12)));
   }
-  return edges;
+  const increasing = edges.every((edge, index) => index === 0 || edge > (edges[index - 1] ?? edge));
+  return increasing ? edges : single;
 }
 
 /** Samples per bin; each bin is [a, b) and the last is closed. */

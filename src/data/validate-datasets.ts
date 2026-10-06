@@ -52,7 +52,7 @@ export function validateRows(value: unknown, path: string, bag: DiagnosticBag): 
         bag.add({
           code: 'SPEC_VALIDATION_ERROR',
           path: cellPath,
-          message: `"${key}" is not a valid field name (letters, digits, "_" and "-", 64 max, not starting with a digit or dash)`,
+          message: `"${key}" is not a valid field name (letters, digits, "_" and "-", 64 max, not starting with a digit or dash, not __proto__, constructor or prototype)`,
         });
         continue;
       }

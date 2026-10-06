@@ -102,6 +102,11 @@ function sharedDate(lines: readonly LogLine[]): string {
   return date;
 }
 
+/** The tone for a level, read only from the table's own keys (never `constructor`). */
+function levelTone(level: string): string {
+  return Object.hasOwn(LEVEL_TONES, level) ? (LEVEL_TONES[level] ?? 'neutral') : 'neutral';
+}
+
 function renderLine(line: LogLine, date: string): string {
   const shown = date === '' ? line.time : (ISO_TIME.exec(line.time)?.[2] ?? line.time);
   const time =
@@ -112,7 +117,7 @@ function renderLine(line: LogLine, date: string): string {
     class: 'ak-log-line',
     'data-level': line.level,
     ...filterRowAttributes(line.row),
-  })}>${time}<span class="ak-log-level" data-tone="${LEVEL_TONES[line.level] ?? 'neutral'}">${escapeText(
+  })}>${time}<span class="ak-log-level" data-tone="${levelTone(line.level)}">${escapeText(
     line.level.toUpperCase(),
   )}</span><span class="ak-log-source">${escapeText(line.source)}</span><span class="ak-log-message">${escapeText(
     line.message,
@@ -126,7 +131,7 @@ function renderLogViewer(node: IrNode): string {
     (level) => [level, lines.filter((line) => line.level === level).length] as const,
   )
     .filter(([, count]) => count > 0)
-    .map(([level, count]) => `<li data-tone="${LEVEL_TONES[level]}">${count} ${level}</li>`)
+    .map(([level, count]) => `<li data-tone="${levelTone(level)}">${count} ${level}</li>`)
     .join('');
   const facts = `<div class="ak-log-head"><p class="ak-log-total">${lines.length} ${
     lines.length === 1 ? 'line' : 'lines'

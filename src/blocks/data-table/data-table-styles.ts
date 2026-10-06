@@ -61,6 +61,7 @@ const STICKY = `@media (min-width:561px){${ROOT}[data-ak-sticky] thead th{positi
 /** At 560px and below every row becomes a card of labelled values. */
 const CARDS = `@media (max-width:560px){${ROOT} .ak-table-wrap{overflow:visible;border:0;border-radius:0;background:none;box-shadow:none;animation:none}
 ${ROOT} table,${ROOT} tbody,${ROOT} tbody tr,${ROOT} tbody td,${ROOT} tbody th{display:block;width:auto;min-width:0}
+${ROOT} tbody tr[hidden]{display:none}
 ${ROOT} thead{${SR_ONLY}}
 ${ROOT}[data-ak-table-ready] thead{position:static;width:auto;height:auto;margin:0 0 ${UNIT(1)};overflow:visible;clip:auto;white-space:normal;display:block}
 ${ROOT}[data-ak-table-ready] thead tr{display:flex;flex-wrap:wrap;gap:${UNIT(0.75)}}

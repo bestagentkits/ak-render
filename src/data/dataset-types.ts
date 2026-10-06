@@ -30,7 +30,10 @@ export const DATA_LIMITS = {
  * Field keys: an identifier that may also contain dashes. Dataset names follow
  * the node id pattern (`NODE_ID_PATTERN`).
  */
-export const FIELD_KEY_PATTERN = /^[A-Za-z_][A-Za-z0-9_-]{0,63}$/;
+// Object.prototype's own names are refused: a row is a plain object, and
+// `__proto__` as a key would replace the row's prototype instead of naming a cell.
+export const FIELD_KEY_PATTERN =
+  /^(?!(?:__proto__|constructor|prototype)$)[A-Za-z_][A-Za-z0-9_-]{0,63}$/;
 
 /** Rows a block resolved from `dataRef` or `data`, after its transform. */
 export interface MaterializedData {

@@ -246,11 +246,10 @@ function sortRows(rows: readonly DataRow[], keys: readonly SortKey[]): DataRow[]
 }
 
 function selectFields(rows: readonly DataRow[], fields: readonly string[]): DataRow[] {
-  return rows.map((row) => {
-    const selected: DataRow = {};
-    for (const field of fields) selected[field] = fieldValue(row, field);
-    return selected;
-  });
+  // fromEntries defines own properties, so no field name can reach a prototype.
+  return rows.map(
+    (row) => Object.fromEntries(fields.map((field) => [field, fieldValue(row, field)])) as DataRow,
+  );
 }
 
 /**
