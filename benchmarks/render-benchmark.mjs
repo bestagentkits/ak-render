@@ -34,6 +34,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { blockTypes } from './fixture-block-types.mjs';
 
 const REPO_ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const FIXTURE_DIR = join(REPO_ROOT, 'fixtures/pages');
@@ -41,7 +42,13 @@ const BASELINE_PATH = join(REPO_ROOT, 'docs/artifacts/baseline-legacy-html-conte
 
 function argValue(flag, fallback) {
   const index = process.argv.indexOf(flag);
-  return index === -1 || process.argv[index + 1] === undefined ? fallback : process.argv[index + 1];
+  if (index === -1) return fallback;
+  const value = process.argv[index + 1];
+  if (value === undefined || value.startsWith('--')) {
+    console.error(`render-benchmark: ${flag} needs a value`);
+    process.exit(2);
+  }
+  return value;
 }
 
 const AGENTKIT_ROOT = resolve(
@@ -66,11 +73,11 @@ const COMPARABLE_TASKS = [
 ];
 
 function estimateTokens(chars) {
-  // Same method as the baseline: a point estimate with a stated band.
+  // Same method and rounding as the baseline: a point estimate with a stated band.
   return {
-    low: Math.round(chars / 4.5),
-    point: Math.round(chars / 4),
-    high: Math.round(chars / 3.5),
+    low: Math.ceil(chars / 4.5),
+    point: Math.ceil(chars / 4),
+    high: Math.ceil(chars / 3.5),
   };
 }
 
@@ -89,17 +96,16 @@ function cli(args) {
   return execFileSync(process.execPath, [CLI, ...args], { encoding: 'utf8' });
 }
 
-/** Distinct block types a fixture uses, in first-use order. */
-function blockTypes(spec) {
-  return [...new Set([...spec.matchAll(/^\s*-?\s*type:\s*([a-z-]+)\s*$/gmu)].map((m) => m[1]))];
-}
-
 function gitRevision(root) {
   try {
-    return execFileSync('git', ['-C', root, 'rev-parse', '--short=9', 'HEAD'], {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    }).trim();
+    return execFileSync(
+      'git',
+      ['-C', root, 'describe', '--always', '--dirty', '--abbrev=9', '--exclude=*'],
+      {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      },
+    ).trim();
   } catch {
     return 'unknown';
   }
@@ -194,7 +200,7 @@ function describeChars(type) {
 }
 
 const taskGuidance = COMPARABLE_TASKS.map(({ task, fixture }) => {
-  const types = blockTypes(readFileSync(join(FIXTURE_DIR, fixture), 'utf8'));
+  const types = blockTypes(compile, readFileSync(join(FIXTURE_DIR, fixture), 'utf8'), fixture);
   const describe = types.reduce((sum, type) => sum + describeChars(type), 0);
   const chars = fixedChars + describe;
   return {
