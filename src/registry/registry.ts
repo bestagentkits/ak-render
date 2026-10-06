@@ -17,7 +17,7 @@ import { LIMITS } from '../spec/bounds.js';
 import { CONDITION_JSON_SCHEMA } from '../spec/conditions.js';
 import { THEME_RECIPES_JSON_SCHEMA } from '../theme/recipes.js';
 import { ACTION_DEFINITIONS, type ActionType, ALLOWED_EVENTS, actionsCatalog } from './actions.js';
-import type { BlockRegistry } from './block-module.js';
+import { BLOCK_CATEGORIES, type BlockCategory, type BlockRegistry } from './block-module.js';
 import { propSchemaToJsonSchema } from './prop-schema.js';
 import { buildRegistry } from './registry-builder.js';
 import type { BlockDefinition } from './roster.js';
@@ -39,13 +39,24 @@ export interface CatalogEntry {
   kind: 'semantic' | 'primitive';
   version: number;
   summary: string;
+  category: BlockCategory;
+  /** Search tags; `searchCatalog` also matches use cases, which stay out of the listing. */
+  tags: string[];
 }
 
 export interface Catalog {
   schemaVersion: number;
+  /** Number of blocks in this listing (the category's, when filtered). */
   blockCount: number;
+  /** Present only when the listing is filtered to one category. */
+  category?: BlockCategory;
   blocks: CatalogEntry[];
   actions: { type: ActionType; summary: string }[];
+}
+
+export interface CatalogOptions {
+  /** List only this category; an unknown name is an error that lists the allowed ones. */
+  category?: BlockCategory | (string & {});
 }
 
 export function getBlockDefinition(
@@ -59,19 +70,58 @@ export function blockTypes(registry: BlockRegistry = DEFAULT_REGISTRY): string[]
   return registry.definitions.map((definition) => definition.type);
 }
 
-/** Compact discovery surface: names, kinds, and one-line summaries. */
-export function catalog(): Catalog {
+function isBlockCategory(value: string): value is BlockCategory {
+  return (BLOCK_CATEGORIES as readonly string[]).includes(value);
+}
+
+/**
+ * Compact discovery surface: names, kinds, categories, tags and one-line
+ * summaries, in registry order. `category` narrows it to one group.
+ */
+export function catalog(options: CatalogOptions = {}): Catalog {
+  const { category } = options;
+  if (category !== undefined && !isBlockCategory(category)) {
+    throw new RenderError(
+      'SPEC_VALIDATION_ERROR',
+      `unknown category "${category}"; expected one of: ${BLOCK_CATEGORIES.join(', ')}`,
+      { path: 'category', details: { category, allowed: [...BLOCK_CATEGORIES] } },
+    );
+  }
+  const blocks = BLOCK_DEFINITIONS.filter(
+    (definition) => category === undefined || definition.category === category,
+  ).map((definition) => ({
+    type: definition.type,
+    kind: definition.kind,
+    version: definition.version,
+    summary: definition.summary,
+    category: definition.category,
+    tags: [...definition.tags],
+  }));
   return {
     schemaVersion: SPEC_SCHEMA_VERSION,
-    blockCount: BLOCK_DEFINITIONS.length,
-    blocks: BLOCK_DEFINITIONS.map((definition) => ({
-      type: definition.type,
-      kind: definition.kind,
-      version: definition.version,
-      summary: definition.summary,
-    })),
+    blockCount: blocks.length,
+    ...(category === undefined ? {} : { category }),
+    blocks,
     actions: actionsCatalog(),
   };
+}
+
+/**
+ * The catalog as JSON text, one block and one action per line.
+ *
+ * Indenting every entry field would cost more bytes than the entries carry, and
+ * the catalog is the one listing an agent loads up front. The value is the
+ * same JSON a parser reads from any other formatting.
+ */
+export function formatCatalogJson(listing: Catalog): string {
+  const members = Object.entries(listing).map(([key, value]) => {
+    const name = JSON.stringify(key);
+    if (!Array.isArray(value)) return `  ${name}: ${JSON.stringify(value)}`;
+    if (value.length === 0) return `  ${name}: []`;
+    const rows = value.map((item) => `    ${JSON.stringify(item)}`).join(',\n');
+    return `  ${name}: [\n${rows}\n  ]`;
+  });
+  return `{\n${members.join(',\n')}\n}`;
 }
 
 /**

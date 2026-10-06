@@ -30,7 +30,15 @@ export type { ActionDefinition, ActionType } from './registry/actions.js';
 export { ACTION_DEFINITIONS, ALLOWED_EVENTS, listActionTypes } from './registry/actions.js';
 export type { BlockCategory } from './registry/block-module.js';
 export { BLOCK_CATEGORIES } from './registry/block-module.js';
-export type { Catalog, CatalogEntry } from './registry/registry.js';
+export type { CatalogSearchHit } from './registry/catalog-search.js';
+export { searchCatalog } from './registry/catalog-search.js';
+export type {
+  BlockDescription,
+  CompactBlockDescription,
+  DescribeManyOptions,
+} from './registry/describe-many.js';
+export { describeMany } from './registry/describe-many.js';
+export type { Catalog, CatalogEntry, CatalogOptions } from './registry/registry.js';
 export {
   blockTypes,
   buildPageSpecJsonSchema,
