@@ -16,6 +16,20 @@ Release mechanics and the compatibility contract live in
   square corners, no card shadow, and the `cards: flat`, `tables: ledger`,
   `metrics: headline` and `callouts: outlined` recipes. Every built-in list
   now names eleven presets.
+- The hosted MCP server at `https://render.agentkit.best/mcp` supports OAuth.
+  An MCP client added with only the URL signs in to agentkit.best in the
+  browser and refreshes on its own: access tokens last an hour, and each
+  refresh slides the grant to 365 days. The worker verifies the tokens locally
+  against the issuer's JWKS and serves RFC 9728 protected-resource metadata.
+  A personal AgentKit API key (`ck_live_…`) also works as a static bearer and
+  lasts until revoked.
+
+### Changed
+
+- With OAuth enabled (`OAUTH_RESOURCE`), a remote MCP request without a bearer
+  gets HTTP 401 with a `resource_metadata` challenge, which is what starts
+  a client's sign-in. Before, it was served, and only `validate` and `render`
+  refused it. A deployment without OAuth keeps anonymous discovery.
 
 ## [0.3.0] - 2026-10-06
 

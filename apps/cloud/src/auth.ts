@@ -1,6 +1,10 @@
 /**
  * Bearer validation through the canonical AgentKit entitlements endpoint.
  *
+ * A bearer is an AgentKit personal API key, a CLI session token, or, where the
+ * deployment enables OAuth, an OAuth access token. OAuth tokens are verified
+ * locally (oauth-access-token.ts); every other bearer takes the path below.
+ *
  * This worker never copies AgentKit's signing secrets and never talks to its
  * database. It forwards the caller's bearer to
  * `GET {ENTITLEMENTS_URL}/api/agentkit/entitlements` and trusts only that
@@ -16,6 +20,13 @@
  */
 
 import type { Env } from './bindings.js';
+import {
+  isOAuthAccessToken,
+  OAUTH_SCOPES,
+  oauthConfig,
+  protectedResourceMetadataUrl,
+  verifyOAuthAccessToken,
+} from './oauth-access-token.js';
 import { bearerDigest, cachedOutcome, rememberOutcome } from './principal-cache.js';
 import { clientIp, withinRateLimit } from './rate-limit.js';
 
@@ -43,12 +54,20 @@ const ENTITLEMENTS_TIMEOUT_MS = 5_000;
 
 /**
  * `WWW-Authenticate` value for a 401. A presented credential that failed is an
- * `invalid_token` (RFC 6750); a missing one only names the scheme.
+ * `invalid_token` (RFC 6750); a missing one only names the scheme. With OAuth
+ * enabled the challenge also points at the protected-resource metadata
+ * (RFC 9728) and names the scopes, which is how an MCP client discovers where
+ * to sign in.
  */
-export function bearerChallenge(request: Request): string {
-  return request.headers.has('authorization')
-    ? 'Bearer realm="ak-render", error="invalid_token"'
-    : 'Bearer realm="ak-render"';
+export function bearerChallenge(request: Request, env: Env): string {
+  const parts = ['realm="ak-render"'];
+  const oauth = oauthConfig(env);
+  if (oauth !== undefined) {
+    parts.push(`resource_metadata="${protectedResourceMetadataUrl(oauth)}"`);
+    parts.push(`scope="${Object.values(OAUTH_SCOPES).join(' ')}"`);
+  }
+  if (request.headers.has('authorization')) parts.push('error="invalid_token"');
+  return `Bearer ${parts.join(', ')}`;
 }
 
 function bearerOf(request: Request): string | undefined {
@@ -174,6 +193,12 @@ export async function authenticate(
       code: 'UNAUTHENTICATED',
       message: 'a bearer token is required',
     };
+  }
+  // An OAuth access token is verified locally against the issuer's keys: no
+  // entitlements round trip, so no cache entry and no per-IP lookup budget.
+  const oauth = oauthConfig(env);
+  if (oauth !== undefined && isOAuthAccessToken(token)) {
+    return verifyOAuthAccessToken(token, oauth, now);
   }
   const digest = await bearerDigest(token);
   const cached = cachedOutcome(digest, now);

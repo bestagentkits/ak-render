@@ -246,20 +246,19 @@ and returns only a summary, so the page never enters the agent's context.
 `render` takes no `out`: it stores the page and returns the same summary plus an
 `artifactUrl` that lives for one hour, or a share link that lives for 30 days
 with `share: true`. The HTML still never enters the agent's context.
-`catalog`, `search-catalog`, `describe`, `recipes`, `recipe` and `themes`
-answer without a token; `validate` and `render` need an AgentKit bearer token.
-
 ```json
 {
   "mcpServers": {
-    "ak-render": {
-      "type": "http",
-      "url": "https://render.agentkit.best/mcp",
-      "headers": { "Authorization": "Bearer ${AGENTKIT_TOKEN}" }
-    }
+    "ak-render": { "type": "http", "url": "https://render.agentkit.best/mcp" }
   }
 }
 ```
+
+The client signs in to agentkit.best through OAuth the first time it connects
+and refreshes on its own; a grant in regular use lasts indefinitely, and one
+left idle expires after 365 days. For CI or a client without OAuth, send a
+personal AgentKit API key (`ck_live_…`) instead, which lasts until revoked:
+add `"headers": { "Authorization": "Bearer ${AGENTKIT_TOKEN}" }`.
 
 Details, limits and the REST routes are in
 [apps/cloud/README.md](./apps/cloud/README.md).
