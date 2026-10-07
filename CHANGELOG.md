@@ -7,6 +7,16 @@ this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 Release mechanics and the compatibility contract live in
 [docs/release-policy.md](./docs/release-policy.md).
 
+## [Unreleased]
+
+### Added
+
+- `crimson-press` built-in preset: cream paper, black ink and a crimson
+  accent, Fraunces display over Inter Tight body and JetBrains Mono labels,
+  square corners, no card shadow, and the `cards: flat`, `tables: ledger`,
+  `metrics: headline` and `callouts: outlined` recipes. Every built-in list
+  now names eleven presets.
+
 ## [0.3.0] - 2026-10-06
 
 The Page Spec stays `version: 1`, and every spec that was valid in 0.2.0 stays

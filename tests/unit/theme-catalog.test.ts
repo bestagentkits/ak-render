@@ -172,6 +172,7 @@ describe('preset discovery and precedence', () => {
     const catalog = buildThemeCatalog({ cwd: project, home, discovery: false });
     expect(catalogPresetNames(catalog)).toEqual([
       'blueprint',
+      'crimson-press',
       'data-console',
       'editorial',
       'executive-report',

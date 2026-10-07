@@ -137,9 +137,9 @@ the compile command:
 npx -y @bestagentkits/render themes
 ```
 
-The ten built-in presets are `blueprint`, `data-console`, `editorial`,
-`executive-report`, `paper-ink`, `product-studio`, `research-notebook`,
-`swiss-clean`, `terminal-mono`, and `warm-signal`, and `themes` also lists any
+The eleven built-in presets are `blueprint`, `crimson-press`, `data-console`,
+`editorial`, `executive-report`, `paper-ink`, `product-studio`,
+`research-notebook`, `swiss-clean`, `terminal-mono`, and `warm-signal`, and `themes` also lists any
 project or user presets it finds. Use only a name it lists. Don't try to restyle the page.
 
 ## Rules
