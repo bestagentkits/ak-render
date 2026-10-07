@@ -20,7 +20,7 @@ blocks:
   - type: stats
     items:
       - label: Presets
-        value: '10'
+        value: '11'
       - label: Tokens
         value: '30'
       - label: Schemes
@@ -97,6 +97,7 @@ blocks:
     title: Built-in presets
     items:
       - text: blueprint
+      - text: crimson-press
       - text: data-console
       - text: editorial
       - text: executive-report

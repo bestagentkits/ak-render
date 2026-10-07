@@ -20,6 +20,7 @@ constrained as a built-in one.
 | `executive-report` | White and ink with a navy accent, headline metrics, outlined cards. |
 | `product-studio` | Soft neutral surfaces, a violet accent, framed media and raised cards. |
 | `research-notebook` | Paper with an oxblood accent, serif reading type, ledger tables and outlined notes. |
+| `crimson-press` | Cream paper, black ink and a crimson accent, light serif display, square ledger rules. |
 
 Each preset declares a **light and a dark** token set, so the emitted artifact
 supports both schemes and the built-in theme toggle. The legacy curated palettes
@@ -94,6 +95,7 @@ keeps every default renders the same bytes as one without recipes.
 | `executive-report` | `metrics: headline`, `charts: minimal`, `sections: divided`, `cards: outlined` |
 | `product-studio` | `media: framed`, `cards: raised` |
 | `research-notebook` | `callouts: outlined`, `tables: ledger`, `hero: compact`, `cards: flat` |
+| `crimson-press` | `cards: flat`, `tables: ledger`, `metrics: headline`, `callouts: outlined` (and square corners, no card shadow) |
 
 An unknown surface or value is a `SPEC_VALIDATION_ERROR` whose
 `details.allowed` lists the valid choices.
@@ -184,6 +186,7 @@ to a system stack that ends in a generic family:
 | `executive-report` | `AK Inter Tight` | headings and body |
 | `product-studio` | `AK Plus Jakarta Sans` | headings and body |
 | `research-notebook` | `AK Fraunces` | headings (body stays the system serif) |
+| `crimson-press` | `AK Fraunces`, `AK Inter Tight`, `AK JetBrains Mono` | headings; body; labels and code |
 
 The compiler inlines a face as a `data:` WOFF2 only when a resolved font stack
 names it (`src/render/font-faces.ts`). The Latin subset is always emitted; the

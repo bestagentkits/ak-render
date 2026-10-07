@@ -14,7 +14,7 @@ Do not write HTML, CSS or inline scripts: the spec has no field for them. In pro
 - [README](https://github.com/bestagentkits/ak-render/blob/main/README.md): install, library API, CLI and the three agent modes
 - [Cloud renderer](https://github.com/bestagentkits/ak-render/blob/main/apps/cloud/README.md): remote MCP endpoint, REST routes, scopes and limits
 - [Data and state](https://github.com/bestagentkits/ak-render/blob/main/docs/data-and-state.md): datasets, transforms, value formats, state, visibleWhen, controls and filter-bar
-- [Themes](https://github.com/bestagentkits/ak-render/blob/main/docs/themes.md): the ten built-in presets, component recipes, custom presets and embedded fonts
+- [Themes](https://github.com/bestagentkits/ak-render/blob/main/docs/themes.md): the eleven built-in presets, component recipes, custom presets and embedded fonts
 - [Media and network policy](https://github.com/bestagentkits/ak-render/blob/main/docs/media-policy.md): what loads offline and how to opt in
 
 ## Reference

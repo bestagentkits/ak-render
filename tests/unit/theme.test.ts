@@ -18,9 +18,10 @@ blocks:
 `;
 
 describe('theme presets', () => {
-  it('ships the ten built-in presets', () => {
+  it('ships the eleven built-in presets', () => {
     expect(themePresetNames()).toEqual([
       'blueprint',
+      'crimson-press',
       'data-console',
       'editorial',
       'executive-report',

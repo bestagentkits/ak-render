@@ -18,6 +18,62 @@ import {
 } from './preset-builder.js';
 
 export const DIALECT_PRESETS: Readonly<Record<string, PresetDefinition>> = {
+  'crimson-press': preset({
+    name: 'crimson-press',
+    description:
+      'Workshop broadsheet: cream paper, black ink and a crimson accent, light serif display, square ledger rules.',
+    typing: {
+      'font-heading': face('Fraunces', SYSTEM_SERIF),
+      'font-body': face('Inter Tight', SYSTEM_SANS),
+      'font-mono': face('JetBrains Mono', SYSTEM_MONO),
+    },
+    structure: {
+      'font-scale': '1.333',
+      measure: '70ch',
+      'radius-small': '0px',
+      'radius-medium': '0px',
+      'radius-large': '0px',
+      'elevation-card': 'none',
+      'elevation-popover': 'subtle',
+    },
+    recipes: {
+      cards: 'flat',
+      tables: 'ledger',
+      metrics: 'headline',
+      callouts: 'outlined',
+    },
+    colors: {
+      light: {
+        'color-background': '#faf7f2',
+        'color-surface': '#f0ebe1',
+        'color-surface-raised': '#e8e1d4',
+        'color-border': '#dcd9d4',
+        'color-text': '#0a0a0a',
+        'color-text-muted': '#5f574e',
+        'color-accent': '#b8232c',
+        'color-accent-contrast': '#ffffff',
+        'color-info': '#24507a',
+        'color-success': '#2f6b46',
+        'color-warning': '#765c1c',
+        'color-danger': '#9c1f26',
+      },
+      dark: {
+        'color-background': '#0f0e0c',
+        'color-surface': '#1a1916',
+        'color-surface-raised': '#24221e',
+        'color-border': '#3a3631',
+        'color-text': '#faf7f2',
+        'color-text-muted': '#aaa296',
+        'color-accent': '#e8a4a8',
+        'color-accent-contrast': '#0a0a0a',
+        'color-info': '#9cc0e0',
+        'color-success': '#93c9a3',
+        'color-warning': '#d9b56a',
+        'color-danger': '#f0958f',
+      },
+    },
+  }),
+
   'data-console': preset({
     name: 'data-console',
     description:

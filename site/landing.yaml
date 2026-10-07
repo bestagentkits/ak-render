@@ -200,7 +200,7 @@ blocks:
             text: From hero and bento to data tables, kanban boards and pricing, including the page root.
             size: small
           - title: Built-in theme presets
-            value: '10'
+            value: '11'
             text: Each with a light and a dark token set, an embedded display face and its own component recipes.
             size: small
           - title: Diffs with intent
@@ -423,6 +423,8 @@ blocks:
             text: Soft neutral surfaces, a violet accent, framed media and raised cards. Set in Plus Jakarta Sans.
           - title: research-notebook
             text: Paper with an oxblood accent, serif reading type, ledger tables and outlined notes. Set in Fraunces.
+          - title: crimson-press
+            text: Cream paper, black ink and a crimson accent, with square ledger rules. Set in Fraunces, Inter Tight and JetBrains Mono.
       - type: before-after
         title: One spec, two color schemes
         before:
