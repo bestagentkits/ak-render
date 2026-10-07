@@ -82,14 +82,21 @@ async function accessToken(
 /** A worker env with OAuth on, and a fetch stub serving JWKS and entitlements. */
 function oauthHarness(options: { jwksStatus?: number } = {}) {
   const base = harness();
+  const jwks = { status: options.jwksStatus ?? 200 };
   const env: Env = { ...base.env, OAUTH_RESOURCE: RESOURCE, OAUTH_ISSUER: ISSUER };
   const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
     if (url === `${ISSUER}/.well-known/jwks.json`) {
       return new Response(
-        JSON.stringify({ keys: [{ ...publicJwk, kid: KID, alg: 'ES256', use: 'sig' }] }),
+        JSON.stringify({
+          keys: [
+            // A malformed key the worker must skip without losing the good one.
+            { kty: 'EC', crv: 'P-256', kid: 'broken', x: 'AA', y: 'AA' },
+            { ...publicJwk, kid: KID, alg: 'ES256', use: 'sig' },
+          ],
+        }),
         {
-          status: options.jwksStatus ?? 200,
+          status: jwks.status,
           headers: { 'content-type': 'application/json' },
         },
       );
@@ -104,7 +111,7 @@ function oauthHarness(options: { jwksStatus?: number } = {}) {
     fetchMock.mock.calls.filter(([input]) => String(input).startsWith(ISSUER)).length;
   const entitlementCalls = () =>
     fetchMock.mock.calls.filter(([input]) => String(input).startsWith(ENTITLEMENTS_ORIGIN)).length;
-  return { ...base, env, fetchMock, jwksCalls, entitlementCalls };
+  return { ...base, env, jwks, fetchMock, jwksCalls, entitlementCalls };
 }
 
 function mcp(method: string, params: unknown, token: string | null): Request {
@@ -272,6 +279,35 @@ describe('cloud OAuth: access tokens', () => {
     );
     expect(response.status).toBe(502);
     expect(((await response.json()) as { code: string }).code).toBe('JWKS_UNREACHABLE');
+  });
+
+  it('keeps verifying with cached keys through an issuer outage, fetching at most once a minute', async () => {
+    const { env, jwks, jwksCalls } = oauthHarness();
+    const token = await accessToken();
+    const start = Date.now();
+    const at = (minutes: number) => new Date(start + minutes * 60_000);
+    expect(
+      (await handleRequest(post('/v1/render', { spec: SPEC }, token), env, at(0))).status,
+    ).toBe(200);
+    jwks.status = 503;
+    // Past the 10-minute refresh: the refetch fails, the cached key still verifies.
+    expect(
+      (await handleRequest(post('/v1/render', { spec: SPEC }, token), env, at(11))).status,
+    ).toBe(200);
+    expect(
+      (await handleRequest(post('/v1/render', { spec: SPEC }, token), env, at(11.5))).status,
+    ).toBe(200);
+    expect(jwksCalls()).toBe(2);
+  });
+
+  it('shares one key fetch between concurrent requests', async () => {
+    const { env, jwksCalls } = oauthHarness();
+    const token = await accessToken();
+    const responses = await Promise.all(
+      [0, 1, 2].map(() => handleRequest(post('/v1/render', { spec: SPEC }, token), env)),
+    );
+    expect(responses.map((response) => response.status)).toEqual([200, 200, 200]);
+    expect(jwksCalls()).toBe(1);
   });
 
   it('still sends an API key to the entitlements endpoint', async () => {

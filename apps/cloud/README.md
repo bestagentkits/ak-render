@@ -165,12 +165,15 @@ verified in [`src/oauth-access-token.ts`](./src/oauth-access-token.ts):
   lifetime is at most an hour;
 - a delegated token (`act`) is refused.
 
-Keys are cached for 10 minutes. An unknown `kid` refetches them at most once a
-minute, and an unreachable JWKS fails closed (`502 JWKS_UNREACHABLE`). Scope
+Keys are cached for 10 minutes and refetched at most once a minute, with
+concurrent requests sharing one fetch. While the issuer is unreachable a cached
+key keeps verifying for another hour; with no usable key the worker fails
+closed (`502 JWKS_UNREACHABLE`). Scope
 `ak-render:render` grants `render` and `ak-render:share` grants `share`. The
 subject is `sub`, the AgentKit user id the entitlements endpoint also reports,
 so a share keeps the same owner whichever credential made it. The issuer
-re-checks the account on every refresh, and a revoked grant stops working when
+grants this resource only to an account that owns an Engineer or Marketing
+kit (the same rule as an API key) and re-checks it on every refresh, and a revoked grant stops working when
 its last access token expires, within an hour.
 
 Every other bearer is checked against the canonical AgentKit entitlements endpoint,

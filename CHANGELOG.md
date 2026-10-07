@@ -26,7 +26,8 @@ Release mechanics and the compatibility contract live in
 
 ### Changed
 
-- With OAuth enabled (`OAUTH_RESOURCE`), a remote MCP request without a bearer
+- **Breaking for anonymous remote MCP use.** With OAuth enabled
+  (`OAUTH_RESOURCE`, as on `render.agentkit.best`), a remote MCP request without a bearer
   gets HTTP 401 with a `resource_metadata` challenge, which is what starts
   a client's sign-in. Before, it was served, and only `validate` and `render`
   refused it. A deployment without OAuth keeps anonymous discovery.

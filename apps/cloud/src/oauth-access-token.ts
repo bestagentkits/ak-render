@@ -36,6 +36,13 @@ const JWKS_TTL_MS = 10 * 60_000;
 /** Least time between two JWKS fetches, so unknown `kid`s cannot force a fetch storm. */
 const JWKS_REFETCH_MS = 60_000;
 
+/**
+ * How long past their refresh time cached keys still verify while the issuer
+ * cannot be reached. Keys rotate rarely, so an issuer outage should not take
+ * down rendering for clients whose key is already known.
+ */
+const JWKS_STALE_GRACE_MS = 60 * 60_000;
+
 const JWKS_TIMEOUT_MS = 5_000;
 
 /** Longest token this worker will parse; the issuer's are well under 2 kB. */
@@ -110,10 +117,16 @@ interface KeySet {
 }
 
 let keySet: KeySet | undefined;
+/** When the last fetch started, successful or not; the refetch floor counts from here. */
+let lastAttemptAt = Number.NEGATIVE_INFINITY;
+/** The fetch in progress, shared by every request that needs it. */
+let inflight: Promise<KeySet> | undefined;
 
 /** Drop the cached signing keys. Tests call this so each starts cold. */
 export function clearJwksCache(): void {
   keySet = undefined;
+  lastAttemptAt = Number.NEGATIVE_INFINITY;
+  inflight = undefined;
 }
 
 async function fetchKeySet(issuer: string, now: number): Promise<KeySet> {
@@ -138,26 +151,56 @@ async function fetchKeySet(issuer: string, now: number): Promise<KeySet> {
       continue;
     }
     const { kty, crv, x, y } = jwk as { kty: string; crv: string; x: string; y: string };
-    const key = await crypto.subtle.importKey(
-      'jwk',
-      { kty, crv, x, y },
-      { name: 'ECDSA', namedCurve: 'P-256' },
-      false,
-      ['verify'],
-    );
-    keys.set(jwk['kid'], key);
+    try {
+      const key = await crypto.subtle.importKey(
+        'jwk',
+        { kty, crv, x, y },
+        { name: 'ECDSA', namedCurve: 'P-256' },
+        false,
+        ['verify'],
+      );
+      keys.set(jwk['kid'], key);
+    } catch {
+      // One malformed key must not discard the rest of the set.
+    }
   }
   return { keys, fetchedAt: now };
 }
 
-/** The verification key for `kid`, refreshing the cached set when it is stale or lacks it. */
+/**
+ * The verification key for `kid`, or `undefined` when the issuer does not
+ * publish it. Throws when the keys cannot be fetched and none usable are
+ * cached.
+ *
+ * A fresh cached key is used as is. Otherwise the set is refetched, at most
+ * once per `JWKS_REFETCH_MS` whether the last attempt succeeded or not, and
+ * concurrent requests share the one fetch. If refetching is not allowed yet or
+ * fails, a cached key keeps verifying for `JWKS_STALE_GRACE_MS`.
+ */
 async function signingKey(issuer: string, kid: string, now: number): Promise<CryptoKey | undefined> {
-  const fresh = keySet !== undefined && now - keySet.fetchedAt < JWKS_TTL_MS;
   const known = keySet?.keys.get(kid);
-  if (fresh && known !== undefined) return known;
-  if (keySet !== undefined && now - keySet.fetchedAt < JWKS_REFETCH_MS) return known;
-  keySet = await fetchKeySet(issuer, now);
-  return keySet.keys.get(kid);
+  if (known !== undefined && keySet !== undefined && now - keySet.fetchedAt < JWKS_TTL_MS) {
+    return known;
+  }
+  let failed = false;
+  if (inflight !== undefined || now - lastAttemptAt >= JWKS_REFETCH_MS) {
+    if (inflight === undefined) {
+      lastAttemptAt = now;
+      inflight = fetchKeySet(issuer, now).finally(() => {
+        inflight = undefined;
+      });
+    }
+    try {
+      keySet = await inflight;
+      return keySet.keys.get(kid);
+    } catch {
+      failed = true;
+    }
+  }
+  const usable = keySet !== undefined && now - keySet.fetchedAt < JWKS_TTL_MS + JWKS_STALE_GRACE_MS;
+  if (known !== undefined && usable) return known;
+  if (failed || !usable) throw new Error('jwks unavailable');
+  return undefined;
 }
 
 const rejected: AuthOutcome = {
