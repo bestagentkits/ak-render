@@ -16,6 +16,13 @@ Release mechanics and the compatibility contract live in
   square corners, no card shadow, and the `cards: flat`, `tables: ledger`,
   `metrics: headline` and `callouts: outlined` recipes. Every built-in list
   now names eleven presets.
+- Gallery theme preview at `docs/gallery/themes/` (live at
+  `https://render.agentkit.best/gallery/themes/`): the theme-showcase spec
+  compiled under every built-in preset, one standalone page each, plus a
+  viewer whose dropdown switches the framed preset. The viewer keeps the
+  choice in the address (`#crimson-press`), makes no network request, and
+  falls back to a plain list of links without JavaScript. The landing and the
+  gallery index link to it.
 - The hosted MCP server at `https://render.agentkit.best/mcp` supports OAuth.
   An MCP client added with only the URL signs in to agentkit.best in the
   browser and refreshes on its own: access tokens last an hour, and each
