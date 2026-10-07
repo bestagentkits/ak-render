@@ -21,7 +21,7 @@ export const DIALECT_PRESETS: Readonly<Record<string, PresetDefinition>> = {
   'crimson-press': preset({
     name: 'crimson-press',
     description:
-      'Workshop broadsheet: cream paper, black ink and a crimson accent, light serif display, square ledger rules.',
+      'Workshop broadsheet: cream paper, black ink and a crimson accent, serif display, square ledger rules.',
     typing: {
       'font-heading': face('Fraunces', SYSTEM_SERIF),
       'font-body': face('Inter Tight', SYSTEM_SANS),

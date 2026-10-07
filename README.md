@@ -135,10 +135,11 @@ ak-render plan.yaml --theme blueprint          # override the spec's theme
 ### Themes
 
 Eleven built-in presets, each with a light and a dark scheme and an embedded
-display face: `blueprint`, `crimson-press`, `data-console`, `editorial`, `executive-report`,
-`paper-ink`, `product-studio`, `research-notebook`, `swiss-clean`,
-`terminal-mono` and `warm-signal`. Presets also choose component recipes, such
-as ledger tables or outlined cards, from closed lists. Pick one under
+display face: `blueprint`, `crimson-press`, `data-console`, `editorial`,
+`executive-report`, `paper-ink`, `product-studio`, `research-notebook`,
+`swiss-clean`, `terminal-mono` and `warm-signal`. Presets also choose
+component recipes, such as ledger tables or outlined cards, from closed lists.
+Pick one under
 `theme.preset`, or extend one with validated tokens:
 
 ```yaml

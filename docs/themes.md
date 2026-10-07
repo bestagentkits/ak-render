@@ -20,7 +20,7 @@ constrained as a built-in one.
 | `executive-report` | White and ink with a navy accent, headline metrics, outlined cards. |
 | `product-studio` | Soft neutral surfaces, a violet accent, framed media and raised cards. |
 | `research-notebook` | Paper with an oxblood accent, serif reading type, ledger tables and outlined notes. |
-| `crimson-press` | Cream paper, black ink and a crimson accent, light serif display, square ledger rules. |
+| `crimson-press` | Cream paper, black ink and a crimson accent, serif display, square ledger rules. |
 
 Each preset declares a **light and a dark** token set, so the emitted artifact
 supports both schemes and the built-in theme toggle. The legacy curated palettes
