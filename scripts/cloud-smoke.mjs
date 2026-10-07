@@ -6,9 +6,13 @@
  *   BASE_URL=... TOKEN=<agentkit bearer> node scripts/cloud-smoke.mjs
  *   BASE_URL=... TOKEN=... EXPECT_EXPORT=1 node scripts/cloud-smoke.mjs
  *
- * Without TOKEN only the unauthenticated surface is checked: MCP initialize,
- * tools/list and catalog, that render is refused without a bearer, and that a
- * rejected bearer answers 401 with a Bearer challenge. With
+ * Without TOKEN only the unauthenticated surface is checked. Where the
+ * deployment enables OAuth, that is the discovery chain: /mcp without a bearer
+ * answers 401 naming the protected-resource metadata, the metadata names an
+ * authorization server, and that server advertises the resource's scopes.
+ * Otherwise it is anonymous MCP initialize, tools/list and catalog, and render
+ * refused without a bearer. Either way a rejected bearer answers 401 with a
+ * Bearer challenge. With OAuth on, the MCP discovery calls run with TOKEN. With
  * TOKEN it also renders through MCP and REST, checks the artifact is the same
  * HTML from both, and runs a share through create, read, revoke and gone.
  * Screenshot and PDF are checked when the deployment answers them; a 501
@@ -109,25 +113,73 @@ async function rest(method, path, body, withToken = true) {
   });
 }
 
-async function unauthenticatedSurface() {
-  const init = await mcp('initialize', {
-    protocolVersion: '2025-11-25',
-    capabilities: {},
-    clientInfo: { name: 'ak-render-cloud-smoke', version: '1' },
+/**
+ * Probe /mcp without a bearer. A 401 whose challenge names
+ * `resource_metadata` means OAuth is on: check the discovery chain and return
+ * true, so the MCP discovery calls run with TOKEN.
+ */
+async function oauthDiscovery() {
+  const probe = await fetch(`${BASE_URL}/mcp`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 'probe', method: 'tools/list' }),
   });
+  const challenge = probe.headers.get('www-authenticate') ?? '';
+  const metadataUrl = /resource_metadata="([^"]+)"/u.exec(challenge)?.[1];
+  if (probe.status !== 401 || metadataUrl === undefined) return false;
+  check(true, 'mcp without a bearer answers 401 naming the resource metadata');
+
+  const metadata = await (await fetch(metadataUrl)).json();
+  const issuer = metadata.authorization_servers?.[0];
+  check(
+    metadata.resource === `${BASE_URL}/mcp` && typeof issuer === 'string',
+    'protected-resource metadata names this resource and an authorization server',
+    JSON.stringify(metadata),
+  );
+  const server = await (await fetch(`${issuer}/.well-known/oauth-authorization-server`)).json();
+  check(
+    server.issuer === issuer &&
+      (metadata.scopes_supported ?? []).every((scope) => server.scopes_supported?.includes(scope)),
+    'authorization server advertises the resource scopes',
+    JSON.stringify(server.scopes_supported),
+  );
+  return true;
+}
+
+async function unauthenticatedSurface() {
+  const oauth = await oauthDiscovery();
+  if (oauth && TOKEN === '') {
+    notice('OAuth is on and TOKEN is not set; MCP discovery calls skipped');
+  } else {
+    await mcpDiscovery(oauth);
+  }
+  await rejectedBearerChecks();
+}
+
+/** initialize, tools/list, catalog and recipe; with a bearer where OAuth requires one. */
+async function mcpDiscovery(withToken) {
+  const init = await mcp(
+    'initialize',
+    {
+      protocolVersion: '2025-11-25',
+      capabilities: {},
+      clientInfo: { name: 'ak-render-cloud-smoke', version: '1' },
+    },
+    withToken,
+  );
   check(
     init.status === 200 && typeof init.body?.result?.protocolVersion === 'string',
     'mcp initialize',
     `status ${init.status}`,
   );
-  const initialized = await mcp('notifications/initialized');
+  const initialized = await mcp('notifications/initialized', undefined, withToken);
   check(
     initialized.status === 202,
     'mcp notification accepted with 202',
     `status ${initialized.status}`,
   );
 
-  const listed = await mcp('tools/list', {});
+  const listed = await mcp('tools/list', {}, withToken);
   const names = (listed.body?.result?.tools ?? []).map((tool) => tool.name);
   check(
     [
@@ -144,24 +196,29 @@ async function unauthenticatedSurface() {
     names.join(','),
   );
 
-  const catalog = await callTool('catalog', {});
-  check(!catalog.isError && catalog.payload.blockCount > 0, 'mcp catalog without a bearer');
+  const how = withToken ? 'with a bearer' : 'without a bearer';
+  const catalog = await callTool('catalog', {}, withToken);
+  check(!catalog.isError && catalog.payload.blockCount > 0, `mcp catalog ${how}`);
 
-  const recipe = await callTool('recipe', { name: 'dashboard' });
+  const recipe = await callTool('recipe', { name: 'dashboard' }, withToken);
   // The recipe tool replies with the YAML starter spec, not JSON.
   check(
     !recipe.isError && String(recipe.payload.text ?? '').includes('version: 1'),
-    'mcp recipe without a bearer',
+    `mcp recipe ${how}`,
     JSON.stringify(recipe.payload).slice(0, 200),
   );
 
+  // With OAuth on, the 401 probe already proved render is refused without a bearer.
+  if (withToken) return;
   const render = await callTool('render', { spec: SPEC });
   check(
     render.isError && render.payload.code === 'UNAUTHENTICATED',
     'mcp render refused without a bearer',
     JSON.stringify(render.payload),
   );
+}
 
+async function rejectedBearerChecks() {
   // A presented bearer the entitlements endpoint rejects is an HTTP 401 with
   // a Bearer challenge, so an MCP client knows to re-authenticate.
   const rejected = await fetch(`${BASE_URL}/mcp`, {
