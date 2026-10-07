@@ -396,7 +396,7 @@ blocks:
 
   - type: section
     id: themes
-    title: Ten presets, light and dark
+    title: Eleven presets, light and dark
     blocks:
       - type: text
         variant: lead
@@ -425,6 +425,15 @@ blocks:
             text: Paper with an oxblood accent, serif reading type, ledger tables and outlined notes. Set in Fraunces.
           - title: crimson-press
             text: Cream paper, black ink and a crimson accent, with square ledger rules. Set in Fraunces, Inter Tight and JetBrains Mono.
+      - type: toolbar
+        title: See them rendered
+        items:
+          - type: link
+            label: Preview every theme
+            href: gallery/themes/index.html
+          - type: link
+            label: crimson-press demo
+            href: gallery/themes/crimson-press.html
       - type: before-after
         title: One spec, two color schemes
         before:

@@ -25,6 +25,7 @@ import {
 } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildThemePreview } from './gallery-theme-preview.mjs';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const checkMode = process.argv.includes('--check');
@@ -37,8 +38,12 @@ const galleryAssetsDir = join(galleryDir, 'assets');
 
 let compile;
 let VERSION;
+let builtinThemeCatalog;
+let themePresetNames;
 try {
-  ({ compile, VERSION } = await import(new URL('../dist/index.js', import.meta.url)));
+  ({ compile, VERSION, builtinThemeCatalog, themePresetNames } = await import(
+    new URL('../dist/index.js', import.meta.url)
+  ));
 } catch {
   console.error('generate-gallery: dist/ is missing; run "pnpm build" first');
   process.exit(1);
@@ -70,6 +75,17 @@ function buildFixture(fixture) {
 }
 
 const entries = fixtures.map(buildFixture);
+
+// One compiled page per built-in preset, plus the dropdown viewer over them.
+for (const [file, html] of buildThemePreview({
+  compile,
+  builtinThemeCatalog,
+  themePresetNames,
+  pagesDir,
+  version: VERSION,
+})) {
+  written.set(file, html);
+}
 
 /** The index is itself a Page Spec: the gallery dogfoods the compiler. */
 const indexSpec = {
@@ -164,6 +180,7 @@ const indexSpec = {
       actions: [
         { label: 'Open all components', href: 'all-components.html', variant: 'primary' },
         { label: 'Open the showcase', href: 'showcase.html' },
+        { label: 'Preview every theme', href: 'themes/index.html' },
       ],
     },
   ],
@@ -184,9 +201,13 @@ if (checkMode) {
     }
     if (readFileSync(path, 'utf8') !== html) problems.push(`stale ${relative(repoRoot, path)}`);
   }
-  const onDisk = existsSync(galleryDir)
-    ? readdirSync(galleryDir).filter((name) => name.endsWith('.html'))
-    : [];
+  const onDisk = ['', 'themes/'].flatMap((dir) =>
+    existsSync(join(galleryDir, dir))
+      ? readdirSync(join(galleryDir, dir))
+          .filter((name) => name.endsWith('.html'))
+          .map((name) => `${dir}${name}`)
+      : [],
+  );
   for (const name of onDisk) {
     if (!expected.has(name)) problems.push(`unexpected docs/gallery/${name}`);
   }
@@ -210,7 +231,7 @@ if (checkMode) {
   console.log(`generate-gallery: ${expected.size} gallery pages are up to date`);
 } else {
   rmSync(galleryDir, { recursive: true, force: true });
-  mkdirSync(galleryDir, { recursive: true });
+  mkdirSync(join(galleryDir, 'themes'), { recursive: true });
   for (const [file, html] of expected) {
     writeFileSync(join(galleryDir, file), html, 'utf8');
   }

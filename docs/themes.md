@@ -22,6 +22,10 @@ constrained as a built-in one.
 | `research-notebook` | Paper with an oxblood accent, serif reading type, ledger tables and outlined notes. |
 | `crimson-press` | Cream paper, black ink and a crimson accent, serif display, square ledger rules. |
 
+To compare them on the same content, open the
+[theme preview](https://render.agentkit.best/gallery/themes/) (or
+`docs/gallery/themes/index.html` from disk) and pick a preset from the dropdown.
+
 Each preset declares a **light and a dark** token set, so the emitted artifact
 supports both schemes and the built-in theme toggle. The legacy curated palettes
 from the AgentKit HTML references were carried over as token data; see
