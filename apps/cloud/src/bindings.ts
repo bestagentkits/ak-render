@@ -64,6 +64,15 @@ export interface Env {
    * `https://agentkit.best`. The worker appends `/api/agentkit/entitlements`.
    */
   ENTITLEMENTS_URL: string;
+  /**
+   * Canonical URL of the MCP resource OAuth tokens are issued for, e.g.
+   * `https://render.agentkit.best/mcp`. Setting it enables OAuth: access tokens
+   * for this audience are verified locally, protected-resource metadata is
+   * served, and `/mcp` answers a request without a bearer with HTTP 401.
+   */
+  OAUTH_RESOURCE?: string;
+  /** OAuth issuer origin. Defaults to the ENTITLEMENTS_URL origin. */
+  OAUTH_ISSUER?: string;
   /** Private bucket holding shared artifacts. Never public. */
   RENDER_SHARES: R2Bucket;
   /** Per-subject limits, one binding per route class (see config.ts). */

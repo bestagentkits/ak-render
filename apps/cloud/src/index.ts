@@ -14,9 +14,12 @@
  *   DELETE /v1/share/:id       revoke a share the caller owns.
  *   GET    /v1/artifact/:id    serve one short-lived artifact a remote MCP render stored.
  *   POST   /mcp                MCP over Streamable HTTP (see remote-mcp-endpoint.ts).
+ *   GET    /.well-known/oauth-protected-resource[/mcp]
+ *                               OAuth protected-resource metadata, when OAuth is enabled.
  *
  * No content telemetry. No analytics. The bearer is validated against the
- * canonical AgentKit entitlements endpoint and is never persisted.
+ * canonical AgentKit entitlements endpoint, or as an OAuth access token against
+ * the issuer's public keys, and is never persisted.
  */
 
 import {
@@ -29,6 +32,11 @@ import {
 } from './auth.js';
 import type { Env } from './bindings.js';
 import { checkRequestBytes, type RateLimitKey } from './config.js';
+import {
+  oauthConfig,
+  protectedResourceMetadata,
+  protectedResourceMetadataUrl,
+} from './oauth-access-token.js';
 import { withinRateLimit } from './rate-limit.js';
 import { handleMcp } from './remote-mcp-endpoint.js';
 import { renderArtifact, type RenderPayload } from './render.js';
@@ -36,6 +44,9 @@ import { exportArtifact } from './screenshot.js';
 import { createShare, purgeExpiredShares, readStored, revokeShare } from './share.js';
 
 const JSON_TYPE = 'application/json; charset=utf-8';
+
+/** RFC 9728 well-known prefix; the resource's own path may follow it. */
+const PROTECTED_RESOURCE_PATH = '/.well-known/oauth-protected-resource';
 
 function json(status: number, body: unknown): Response {
   return new Response(`${JSON.stringify(body)}\n`, {
@@ -69,10 +80,10 @@ function htmlResponse(html: string, cacheControl: string, stored = false): Respo
   });
 }
 
-function denied(request: Request, outcome: AuthFailure): Response {
+function denied(request: Request, env: Env, outcome: AuthFailure): Response {
   const response = json(outcome.status, { code: outcome.code, message: outcome.message });
   if (outcome.status === 401) {
-    response.headers.set('www-authenticate', bearerChallenge(request));
+    response.headers.set('www-authenticate', bearerChallenge(request, env));
   }
   return response;
 }
@@ -120,7 +131,7 @@ async function requireScope(
   now: Date,
 ): Promise<{ ok: true; principal: Principal } | { ok: false; response: Response }> {
   const outcome = authorizeAll(await authenticate(request, env, now.getTime()), [scope]);
-  if (!outcome.ok) return { ok: false, response: denied(request, outcome) };
+  if (!outcome.ok) return { ok: false, response: denied(request, env, outcome) };
   return { ok: true, principal: outcome.principal };
 }
 
@@ -135,6 +146,24 @@ export async function handleRequest(
 
   // --- remote MCP: Streamable HTTP, authorization per tool -----------------
   if (path === '/mcp') return handleMcp(request, env, now);
+
+  // --- OAuth discovery: RFC 9728 protected-resource metadata ---------------
+  if (path.startsWith(PROTECTED_RESOURCE_PATH)) {
+    const oauth = oauthConfig(env);
+    const served =
+      oauth !== undefined &&
+      (path === PROTECTED_RESOURCE_PATH ||
+        new URL(protectedResourceMetadataUrl(oauth)).pathname === path);
+    if (!served || (method !== 'GET' && method !== 'HEAD')) {
+      return json(404, { code: 'NOT_FOUND', message: 'no such route' });
+    }
+    const response = json(200, protectedResourceMetadata(oauth));
+    // Public, credential-free metadata: any origin may read it, as browser
+    // MCP clients must before they can sign in.
+    response.headers.set('cache-control', 'public, max-age=300');
+    response.headers.set('access-control-allow-origin', '*');
+    return response;
+  }
 
   // --- preview: no bearer, but only a valid unexpired share resolves --------
   if (method === 'GET' && path.startsWith('/v1/share/')) {

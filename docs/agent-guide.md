@@ -99,29 +99,32 @@ loop is the same. Two things differ:
   `artifactUrl` and `expiresAt`. The artifact lives for one hour; pass
   `share: true` for a share link that lives for 30 days. The HTML is never in
   the reply.
-- `validate` and `render` need an AgentKit bearer token. `catalog`,
-  `search-catalog`, `describe`, `recipes`, `recipe` and `themes` work without
-  one. `themes` lists the built-in presets only, since
-  the server has no project presets to discover.
+- Every request needs an AgentKit bearer: an OAuth access token the client
+  obtains by signing in, or a personal API key (`ck_live_…`). `themes` lists
+  the built-in presets only, since the server has no project presets to
+  discover.
 
 ```json
 {
   "mcpServers": {
-    "ak-render": {
-      "type": "http",
-      "url": "https://render.agentkit.best/mcp",
-      "headers": { "Authorization": "Bearer ${AGENTKIT_TOKEN}" }
-    }
+    "ak-render": { "type": "http", "url": "https://render.agentkit.best/mcp" }
   }
 }
 ```
 
+The client signs in to agentkit.best through OAuth the first time it connects
+and refreshes on its own; a grant in regular use lasts indefinitely, and one
+left idle expires after 365 days. For CI or a client without OAuth, send a
+personal AgentKit API key (`ck_live_…`) instead, which lasts until revoked:
+add `"headers": { "Authorization": "Bearer ${AGENTKIT_TOKEN}" }`.
+
 A refused call comes back as a tool error whose text is JSON with a `code`:
-`UNAUTHENTICATED` (no token), `ENTITLEMENT_INACTIVE` or `FORBIDDEN`
+`ENTITLEMENT_INACTIVE` or `FORBIDDEN`
 (the account is not entitled), `RATE_LIMITED` (wait for the next minute), or a
 compiler code such as `SPEC_UNKNOWN_BLOCK` with the JSON path to fix. A token
-the server rejects fails the whole request with HTTP 401 instead; replace the
-token in the client configuration. Under protocol revision 2025-06-18 or later
+that is missing or rejected fails the whole request with HTTP 401 instead: an
+OAuth client signs in again, and an API key must be replaced in the client
+configuration. Under protocol revision 2025-06-18 or later
 send one message per request: batches are refused. Local
 rendering never needs the token or the network.
 

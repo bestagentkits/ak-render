@@ -23,9 +23,11 @@
  *
  * A request that presents a bearer is authenticated before any message runs.
  * A rejected bearer answers HTTP 401 with `WWW-Authenticate: Bearer`, which is
- * what an MCP client expects from a protected resource. A request without a
- * bearer is still served: discovery works, and `validate`/`render` answer a
- * tool error with code `UNAUTHENTICATED`.
+ * what an MCP client expects from a protected resource. Where OAuth is enabled
+ * (`OAUTH_RESOURCE`), a request without a bearer gets the same 401, carrying
+ * the protected-resource metadata URL so the client can sign in. Otherwise it
+ * is still served: discovery works, and `validate`/`render` answer a tool
+ * error with code `UNAUTHENTICATED`.
  */
 
 import { handleMcpHttpRequest } from '../../../src/mcp/mcp-http-transport.js';
@@ -59,6 +61,7 @@ import {
 } from './auth.js';
 import type { Env } from './bindings.js';
 import { MAX_REQUEST_BYTES, type RateLimitKey } from './config.js';
+import { oauthConfig } from './oauth-access-token.js';
 import { clientIp, withinRateLimit } from './rate-limit.js';
 import { renderArtifact } from './render.js';
 import { createArtifact, createShare } from './share.js';
@@ -66,7 +69,7 @@ import { createArtifact, createShare } from './share.js';
 export const REMOTE_INSTRUCTIONS = `AK Render compiles a Page Spec (YAML or JSON) into one self-contained, offline HTML file.
 Loop: call catalog once (or search-catalog with a few words), describe only the block types you plan to use (several at once with types, compact: true for the short form), optionally start from a recipe (list them with recipes), validate the spec and fix every diagnostic by its JSON path, then render.
 On this remote server render stores the page and returns its artifactUrl and a short summary, never the HTML. Pass share: true for a longer-lived share link.
-validate and render need an AgentKit bearer token in the Authorization header.
+validate and render need an AgentKit API key or OAuth access token as the bearer in the Authorization header.
 Describe meaning, not presentation: the compiler owns layout, colour, typography and motion.`;
 
 /** Per-request context every remote tool call receives. */
@@ -184,14 +187,14 @@ export const REMOTE_TOOLS: readonly RemoteTool[] = [
   anonymous(BUILTIN_THEMES_TOOL),
 ];
 
-/** HTTP 401 for a presented bearer the entitlements endpoint rejected. */
-function rejectedBearer(request: Request, message: string): Response {
+/** HTTP 401 for a rejected bearer, or a missing one where OAuth can supply it. */
+function rejectedBearer(request: Request, env: Env, message: string): Response {
   return new Response(JSON.stringify(rpcError(null, JSON_RPC_ERRORS.invalidRequest, message)), {
     status: 401,
     headers: {
       'content-type': 'application/json',
       'cache-control': 'no-store',
-      'www-authenticate': bearerChallenge(request),
+      'www-authenticate': bearerChallenge(request, env),
     },
   });
 }
@@ -218,11 +221,20 @@ export function handleMcp(request: Request, env: Env, now: Date): Promise<Respon
     toolError: publicToolErrorResult,
     // A presented bearer is checked before any message runs, so a rejected one
     // is an HTTP 401 an MCP client can act on, not a tool result.
+    //
+    // Where OAuth is enabled, a request without a bearer is refused the same
+    // way: that 401 and its `resource_metadata` are what make an MCP client
+    // start the sign-in flow. Without OAuth there is no way for a client to
+    // obtain a token interactively, so discovery stays anonymous.
     preflight: async () => {
-      if (!request.headers.has('authorization')) return undefined;
+      if (!request.headers.has('authorization')) {
+        return oauthConfig(env) === undefined
+          ? undefined
+          : rejectedBearer(request, env, 'a bearer token is required');
+      }
       const outcome = await context.principal();
       return !outcome.ok && outcome.status === 401
-        ? rejectedBearer(request, outcome.message)
+        ? rejectedBearer(request, env, outcome.message)
         : undefined;
     },
   });

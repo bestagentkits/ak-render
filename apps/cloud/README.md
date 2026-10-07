@@ -77,32 +77,48 @@ Transport behaviour:
   `WWW-Authenticate: Bearer realm="ak-render", error="invalid_token"` and a
   JSON-RPC error body, whatever the method, so a client knows its credential is
   wrong instead of reading a tool error.
-- A request **without** a bearer is served, because discovery is anonymous. A
-  call it cannot make (`validate`, `render`) is a tool result with
-  `isError: true` and code `UNAUTHENTICATED`. The same applies to the other
-  refusals (inactive account, missing scope, rate limit, spec error, budget):
-  a tool error whose JSON body carries the code the REST route returns.
+- A request **without** a bearer is answered HTTP `401` where OAuth is enabled
+  (`OAUTH_RESOURCE` is set, as on `render.agentkit.best`). The challenge names
+  the protected-resource metadata, which is how an MCP client discovers where
+  to sign in. A deployment without OAuth serves it instead, because the client
+  has no other way to get a token: discovery is anonymous, and a call it cannot
+  make (`validate`, `render`) is a tool result with `isError: true` and code
+  `UNAUTHENTICATED`.
+- Every other refusal (inactive account, missing scope, rate limit, spec error,
+  budget) is a tool error whose JSON body carries the code the REST route
+  returns.
 - A fault that is not the caller's (storage, a binding, the runtime) is a tool
   error with code `INTERNAL_ERROR` and a generic message; no internal message
   leaves the worker.
 
-Client configuration. The server does not run an OAuth flow and publishes no
-protected-resource metadata, so a client cannot discover how to obtain a
-token: configure it with a **static bearer header**. A client that only
-supports OAuth discovery can use the anonymous tools but not `validate` or
-`render`.
+Client configuration. Pick one:
 
-```json
-{
-  "mcpServers": {
-    "ak-render": {
-      "type": "http",
-      "url": "https://render.agentkit.best/mcp",
-      "headers": { "Authorization": "Bearer ${AGENTKIT_TOKEN}" }
+- **OAuth.** Add only the URL. The client reads the `401` challenge, finds the
+  AgentKit authorization server through the metadata, opens a browser to sign
+  in, and refreshes on its own. Access tokens last an hour, and the grant
+  slides: each refresh extends it to 365 days, so a client in regular use never
+  signs in again. Revoke it under **Account → Connected apps** on agentkit.best.
+
+  ```json
+  { "mcpServers": { "ak-render": { "type": "http", "url": "https://render.agentkit.best/mcp" } } }
+  ```
+
+- **API key.** Send a personal AgentKit API key (`ck_live_…`, from the
+  agentkit.best account page) as a static bearer. It works until you revoke it
+  or until the expiry you set when you created it. Use this for CI and for
+  clients without OAuth.
+
+  ```json
+  {
+    "mcpServers": {
+      "ak-render": {
+        "type": "http",
+        "url": "https://render.agentkit.best/mcp",
+        "headers": { "Authorization": "Bearer ${AGENTKIT_TOKEN}" }
+      }
     }
   }
-}
-```
+  ```
 
 ## REST routes
 
@@ -129,7 +145,38 @@ second parser.
 
 ## Authentication and scopes
 
-The bearer is checked against the canonical AgentKit entitlements endpoint,
+The worker accepts three kinds of bearer:
+
+| Bearer | Checked by | Lifetime |
+| --- | --- | --- |
+| Personal API key, `ck_live_…` | entitlements endpoint (below) | until revoked or its own expiry |
+| CLI session token, `ak_cli_…` | entitlements endpoint | 15 minutes |
+| OAuth access token, an `at+jwt` for `OAUTH_RESOURCE` | locally, against the issuer's JWKS | 1 hour; refresh grant slides to 365 days |
+
+**OAuth.** OAuth is on when `OAUTH_RESOURCE` is set. The worker then serves
+RFC 9728 metadata at `/.well-known/oauth-protected-resource` and
+`/.well-known/oauth-protected-resource/mcp`, naming `OAUTH_ISSUER` (default:
+the `ENTITLEMENTS_URL` origin) as the authorization server, and adds
+`resource_metadata` and `scope` to every `401` challenge. An access token is
+verified in [`src/oauth-access-token.ts`](./src/oauth-access-token.ts):
+
+- the signature is ES256, with a key from `{OAUTH_ISSUER}/.well-known/jwks.json`;
+- `typ` is `at+jwt`, `iss` is the issuer, `aud` is the resource, and the
+  lifetime is at most an hour;
+- a delegated token (`act`) is refused.
+
+Keys are cached for 10 minutes and refetched at most once a minute, with
+concurrent requests sharing one fetch. While the issuer is unreachable a cached
+key keeps verifying for another hour; with no usable key the worker fails
+closed (`502 JWKS_UNREACHABLE`). Scope
+`ak-render:render` grants `render` and `ak-render:share` grants `share`. The
+subject is `sub`, the AgentKit user id the entitlements endpoint also reports,
+so a share keeps the same owner whichever credential made it. The issuer
+grants this resource only to an account that owns an Engineer or Marketing
+kit (the same rule as an API key) and re-checks it on every refresh, and a revoked grant stops working when
+its last access token expires, within an hour.
+
+Every other bearer is checked against the canonical AgentKit entitlements endpoint,
 `GET https://agentkit.best/api/agentkit/entitlements` (`ENTITLEMENTS_URL` is
 the origin; the path is fixed in [`src/auth.ts`](./src/auth.ts)). **No signing
 secret, no database credential, and no auth logic is copied into this worker.**
@@ -337,7 +384,7 @@ pnpm exec vitest run tests/unit/cloud-worker.test.ts tests/unit/cloud-remote-mcp
 - Rate limits are counted per Cloudflare location, not globally, so a client
   spread across locations can exceed a limit by that factor. The budgets are
   the hard limit.
-- The server publishes no OAuth protected-resource metadata; clients use a
-  static bearer header.
+- A revoked OAuth grant keeps working until its last access token expires
+  (at most an hour), because tokens are verified locally.
 - The remote server answers with JSON only; it opens no SSE stream and sends no
   server-initiated messages, which the tools do not need.

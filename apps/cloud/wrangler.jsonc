@@ -12,14 +12,16 @@
  *                  mirror RATE_LIMITS in src/config.ts (a unit test keeps them equal).
  *   BROWSER        Browser Run binding. Screenshot and PDF only.
  *
- * Routes: the Worker answers /mcp and /v1/* on render.agentkit.best. That
+ * Routes: the Worker answers /mcp, /v1/* and the OAuth protected-resource
+ * metadata under /.well-known/oauth-protected-resource on render.agentkit.best. That
  * hostname is a Custom Domain of the static site (site/wrangler.jsonc); Worker
- * routes on a Custom Domain's hostname run before it, so these two paths reach
+ * routes on a Custom Domain's hostname run before it, so these paths reach
  * this Worker and every other path still reaches the site. workers.dev stays
  * enabled as an undocumented fallback.
  *
  * Vars are configuration, never secrets. The bearer a caller presents is
- * validated against ENTITLEMENTS_URL and is never stored here.
+ * validated against ENTITLEMENTS_URL, or, when it is an OAuth access token for
+ * OAUTH_RESOURCE, against OAUTH_ISSUER's public JWKS. It is never stored here.
  */
 {
   "$schema": "node_modules/wrangler/config-schema.json",
@@ -35,6 +37,8 @@
     // Origin of the canonical AgentKit entitlements endpoint; the Worker calls
     // GET {ENTITLEMENTS_URL}/api/agentkit/entitlements with the caller's bearer.
     "ENTITLEMENTS_URL": "https://agentkit.best",
+    "OAUTH_ISSUER": "https://agentkit.best",
+    "OAUTH_RESOURCE": "https://render.agentkit.best/mcp",
     "SHARE_RETENTION_DAYS": "30"
   },
   "r2_buckets": [
@@ -62,7 +66,8 @@
   },
   "routes": [
     { "pattern": "render.agentkit.best/mcp", "zone_name": "agentkit.best" },
-    { "pattern": "render.agentkit.best/v1/*", "zone_name": "agentkit.best" }
+    { "pattern": "render.agentkit.best/v1/*", "zone_name": "agentkit.best" },
+    { "pattern": "render.agentkit.best/.well-known/oauth-protected-resource*", "zone_name": "agentkit.best" }
   ],
   "triggers": {
     // Hourly sweep so an expired share or render artifact stops resolving even
