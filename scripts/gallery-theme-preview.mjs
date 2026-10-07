@@ -83,7 +83,8 @@ const VIEWER_JS = `
   var select=document.getElementById('preset'),frame=document.getElementById('frame'),open=document.getElementById('open'),desc=document.getElementById('desc');
   var fallback=document.getElementById('links');fallback.hidden=true;document.getElementById('viewer').hidden=false;
   function show(name,push){
-    var option=select.querySelector('option[value="'+name+'"]');
+    var option=null;
+    for(var i=0;i<select.options.length;i++){if(select.options[i].value===name)option=select.options[i];}
     if(!option)return;
     select.value=name;frame.src=name+'.html';open.href=name+'.html';
     desc.textContent=option.getAttribute('data-description');
