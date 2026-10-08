@@ -90,6 +90,9 @@ ul.ak-grid{list-style:none;padding:0;margin:0}
 .ak-hero .ak-eyebrow{display:flex;align-items:center;gap:.85em;color:var(--ak-color-accent)}
 .ak-hero .ak-eyebrow::before{content:"";width:2.5rem;height:2px;background:currentColor;flex:none}
 .ak-hero h1{max-width:20ch;font-size:calc(var(--ak-font-size-base) * 3);font-size:calc(var(--ak-font-size-base) * pow(var(--ak-font-scale),5));line-height:1.02;letter-spacing:-.034em}
+.ak-hero-actions{display:flex;flex-wrap:wrap;gap:calc(var(--ak-space-unit) * 1.25);margin-top:calc(var(--ak-space-unit) * .5)}
+.ak-hero-actions .ak-btn{min-height:44px;padding:.7em 1.35em;font-size:1rem}
+.ak-hero[data-align="center"] .ak-hero-actions{justify-content:center}
 .ak-hero p:not(.ak-eyebrow){max-width:58ch;margin:0;font-size:calc(var(--ak-font-size-base) * 1.2);line-height:1.55;color:var(--ak-color-text-muted)}
 .ak-page-title{margin-bottom:calc(var(--ak-space-unit) * 3)}
 .ak-lead{font-size:calc(var(--ak-font-size-base) * 1.18);line-height:1.55;max-width:var(--ak-measure)}

@@ -38,6 +38,18 @@ import {
 } from './define-helpers.js';
 import type { PropSchema } from './prop-schema.js';
 
+/** Up to three link buttons, shared by the hero and the CTA band. */
+function linkActions(): PropSchema {
+  return list(
+    obj({
+      label: LABEL,
+      href: urlProp({ required: true }),
+      variant: enumStr(['primary', 'secondary'], { default: 'secondary' }),
+    }),
+    { maxItems: 3 },
+  );
+}
+
 export { CHART_KINDS } from '../blocks/chart/chart-kinds.js';
 export * from './define-helpers.js';
 
@@ -348,6 +360,7 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
       eyebrow: str({ maxLength: 80 }),
       title: TITLE,
       description: txt(),
+      actions: linkActions(),
       align: enumStr(['start', 'center'], { default: 'start' }),
       src: urlProp({
         asset: 'images',
@@ -367,7 +380,7 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
       responsive:
         'Full width; text reflows and the product shot scales to the column without cropping.',
     },
-    a11y: 'The hero title is an <h1>; the eyebrow is supporting text, not a heading. The shot keeps its alt text and its frame is decorative.',
+    a11y: 'The hero title is an <h1>; the eyebrow is supporting text, not a heading. Every action is a real link with its own text. The shot keeps its alt text and its frame is decorative.',
   }),
   semantic({
     type: 'stats',
@@ -784,14 +797,7 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
       eyebrow: str({ maxLength: 60 }),
       title: TITLE,
       text: txt(),
-      actions: list(
-        obj({
-          label: LABEL,
-          href: urlProp({ required: true }),
-          variant: enumStr(['primary', 'secondary'], { default: 'secondary' }),
-        }),
-        { maxItems: 3 },
-      ),
+      actions: linkActions(),
       ...anchorProps,
     },
     runtimeFeatures: ['cta'],

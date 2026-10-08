@@ -22,6 +22,27 @@ describe('showcase blocks', () => {
     );
   });
 
+  it('renders hero actions as link buttons after the description', () => {
+    const { html } = compile(`version: 1
+meta:
+  title: Hero actions
+blocks:
+  - type: hero
+    title: Ship it
+    description: One line.
+    actions:
+      - label: Star on GitHub
+        href: https://github.com/bestagentkits/ak-render
+        variant: primary
+      - label: See demos
+        href: '#ak-sec-demos'
+`);
+    expect(html).toContain(
+      '<p>One line.</p><div class="ak-hero-actions"><a class="ak-btn" data-variant="primary" href="https://github.com/bestagentkits/ak-render" rel="noreferrer noopener">Star on GitHub</a><a class="ak-btn" data-variant="secondary" href="#ak-sec-demos" rel="noreferrer noopener">See demos</a></div>',
+    );
+    expect(compile(page('')).html).not.toContain('<div class="ak-hero-actions">');
+  });
+
   it('renders bento tiles with sizes, figures, and local images', () => {
     const { html, features } = compile(
       page(`  - type: bento
