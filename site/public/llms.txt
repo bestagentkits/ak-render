@@ -1,0 +1,21 @@
+# AK Render
+
+> Coding agents describe a page in a short YAML or JSON Page Spec. AK Render compiles it into one deterministic, offline, self-contained HTML file. Open source (MIT), published on npm as `@bestagentkits/render`.
+
+The agent writes meaning (blocks such as hero, prose, table, chart, timeline, code, callout); the compiler owns layout, theme, accessibility and motion. The emitted page opens from `file://`, makes no network request, and the same spec always produces the same bytes. Spec input is untrusted: no raw HTML, CSS or JS.
+
+## Use it
+
+- CLI: `npx -y @bestagentkits/render validate plan.yaml`, then `npx -y @bestagentkits/render plan.yaml --out plan.html`
+- Agent skill: `npx skills add bestagentkits/ak-render`
+- Local MCP server (stdio, no account, no network): `npx -y @bestagentkits/render mcp`. Tools: `catalog`, `search-catalog`, `describe`, `recipes`, `recipe`, `validate`, `render`, `themes`.
+- Hosted MCP server (Streamable HTTP): `https://render.agentkit.best/mcp`. Sign-in is OAuth at agentkit.best or an API key. Reserved for owners of AgentKit Engineer, AgentKit Marketing or the Bundle. Anyone can run the local server or deploy their own copy on Cloudflare from the GitHub repository.
+
+## Links
+
+- [Landing page](https://render.agentkit.best/): overview, install, MCP setup for Claude, ChatGPT, Claude Code, Cursor, VS Code and Codex
+- [Gallery](https://render.agentkit.best/gallery/): compiled example pages
+- [Theme preview](https://render.agentkit.best/gallery/themes/): every built-in theme preset on the same page
+- [GitHub repository](https://github.com/bestagentkits/ak-render): source, README, agent guide, self-hosting
+- [npm package](https://www.npmjs.com/package/@bestagentkits/render)
+- [AgentKit](https://agentkit.best): the team that builds and hosts AK Render

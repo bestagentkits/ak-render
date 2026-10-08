@@ -429,6 +429,7 @@ pnpm bench:spec      # spec compression for the composition fixtures
 pnpm build && pnpm bench:render --agentkit ../agentkit --repeat 9  # committed render artifact
 pnpm site:build      # compile the landing page and gallery into site/dist
 pnpm site:deploy     # build, then deploy site/dist with wrangler
+node scripts/generate-site-images.mjs  # after pnpm build: redraw site icons and social card
 ```
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for the determinism, trust, and testing
