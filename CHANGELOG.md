@@ -23,6 +23,10 @@ Release mechanics and the compatibility contract live in
   choice in the address (`#crimson-press`), makes no network request, and
   falls back to a plain list of links without JavaScript. The landing and the
   gallery index link to it.
+- The landing page explains how to connect the hosted MCP server from Claude,
+  ChatGPT, Claude Code, Cursor, VS Code, Codex or any client with an API key,
+  states that the hosted endpoint is for AgentKit customers, and points
+  everyone else to the local MCP server or a self-hosted Cloudflare deploy.
 - The hosted MCP server at `https://render.agentkit.best/mcp` supports OAuth.
   An MCP client added with only the URL signs in to agentkit.best in the
   browser and refreshes on its own: access tokens last an hour, and each

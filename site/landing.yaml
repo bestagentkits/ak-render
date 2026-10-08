@@ -533,6 +533,131 @@ blocks:
           }
 
   - type: section
+    id: connect
+    title: Connect the hosted MCP server
+    blocks:
+      - type: text
+        variant: lead
+        text: 'https://render.agentkit.best/mcp serves the same tools over Streamable HTTP, so an agent that cannot run Node still compiles pages. render stores the page and returns a link instead of writing a file. Add only the URL and the client signs you in to agentkit.best with OAuth; the sign-in lasts up to a year while the client keeps using it.'
+      - type: callout
+        tone: info
+        title: For AgentKit customers
+        text: The hosted endpoint is for accounts that own AgentKit Engineer, AgentKit Marketing or the Bundle. Everyone else can run the local MCP server above with no account, or deploy their own copy on Cloudflare (see below).
+      - type: tabs
+        title: Pick your AI tool
+        items:
+          - id: connect-claude
+            title: Claude
+            blocks:
+              - type: text
+                text: 'claude.ai and Claude Desktop: open Settings → Connectors → Add custom connector. Name it AK Render, paste the URL, then choose Connect and sign in at agentkit.best.'
+              - type: code
+                language: text
+                title: Remote MCP server URL
+                text: https://render.agentkit.best/mcp
+          - id: connect-chatgpt
+            title: ChatGPT
+            blocks:
+              - type: text
+                text: 'Open Settings → Apps & Connectors, turn on Developer mode under Advanced settings, then choose Create. Name it AK Render, paste the URL, pick OAuth as the authentication and sign in at agentkit.best.'
+              - type: code
+                language: text
+                title: MCP server URL
+                text: https://render.agentkit.best/mcp
+          - id: connect-claude-code
+            title: Claude Code
+            blocks:
+              - type: code
+                language: bash
+                title: Add the server
+                text: claude mcp add --transport http ak-render https://render.agentkit.best/mcp
+              - type: text
+                text: Then run /mcp inside Claude Code, select ak-render and choose Authenticate.
+          - id: connect-cursor
+            title: Cursor
+            blocks:
+              - type: code
+                language: json
+                title: ~/.cursor/mcp.json
+                text: |-
+                  {
+                    "mcpServers": {
+                      "ak-render": { "url": "https://render.agentkit.best/mcp" }
+                    }
+                  }
+              - type: text
+                text: Cursor lists the server under Settings → MCP; choose its login prompt to sign in at agentkit.best.
+          - id: connect-vscode
+            title: VS Code
+            blocks:
+              - type: code
+                language: json
+                title: .vscode/mcp.json
+                text: |-
+                  {
+                    "servers": {
+                      "ak-render": { "type": "http", "url": "https://render.agentkit.best/mcp" }
+                    }
+                  }
+              - type: text
+                text: Start the server from the file or the MCP view and allow the sign-in when VS Code asks.
+          - id: connect-codex
+            title: Codex
+            blocks:
+              - type: code
+                language: bash
+                title: Add the server and sign in
+                text: |-
+                  codex mcp add ak-render --url https://render.agentkit.best/mcp
+                  codex mcp login ak-render
+          - id: connect-api-key
+            title: API key
+            blocks:
+              - type: text
+                text: 'For CI, scripts and clients without OAuth, create a personal key at agentkit.best/account/api-keys and send it as a bearer. A key lasts until you revoke it or until the expiry you choose.'
+              - type: code
+                language: json
+                title: Any client that takes headers
+                text: |-
+                  {
+                    "mcpServers": {
+                      "ak-render": {
+                        "type": "http",
+                        "url": "https://render.agentkit.best/mcp",
+                        "headers": { "Authorization": "Bearer ${AGENTKIT_TOKEN}" }
+                      }
+                    }
+                  }
+      - type: text
+        variant: caption
+        text: Disconnect a client at any time under Account → Connected apps on agentkit.best. Revoke an API key on the same account's API Keys page.
+
+  - type: section
+    id: agentkit
+    title: Made by AgentKit, open to everyone
+    blocks:
+      - type: text
+        variant: lead
+        text: AK Render is built and hosted by AgentKit, a foundation of agents, skills and workflows for Claude Code, Codex, Cursor and other coding agents. The compiler, the CLI and the local MCP server are MIT-licensed and need no account; the hosted endpoint is the part reserved for customers.
+      - type: card-grid
+        items:
+          - title: AgentKit customers
+            text: Owners of AgentKit Engineer, AgentKit Marketing or the Bundle connect to render.agentkit.best/mcp with OAuth or an API key, with stored pages, share links and PNG or PDF export included.
+          - title: Run it locally
+            text: 'npx @bestagentkits/render mcp serves every tool over stdio from your machine. It writes the page to disk, makes no network request and needs no account.'
+          - title: Deploy your own
+            text: 'apps/cloud in the GitHub repo is the same Cloudflare Worker that runs here. Its README covers the R2 bucket, rate limits, routes and deploy commands; point ENTITLEMENTS_URL at your own service that answers its token-check contract, and turn on OAuth only if you run an authorization server.'
+      - type: toolbar
+        title: Next step
+        items:
+          - type: link
+            label: Explore AgentKit
+            href: https://agentkit.best
+          - type: link
+            label: Self-hosting guide on GitHub
+            href: https://github.com/bestagentkits/ak-render/tree/main/apps/cloud#deployment
+
+  - type: section
     id: demos
     title: Demo pages, compiled from fixtures
     blocks:
