@@ -20,7 +20,15 @@ blocks:
   - type: hero
     eyebrow: Open source · MIT · @bestagentkits/render
     title: Your agent writes YAML. The compiler ships HTML.
-    description: Describe a page in a short YAML or JSON Page Spec. AK Render compiles it into one deterministic, offline, self-contained HTML file, so your agent stops spending tokens on raw HTML, CSS and JavaScript.
+    description: 'Describe a page in a short **YAML or JSON Page Spec**. AK Render compiles it into **one deterministic, offline, self-contained HTML file**, so your agent stops spending tokens on raw HTML, CSS and JavaScript.'
+    actions:
+      - label: Star on GitHub
+        href: https://github.com/bestagentkits/ak-render
+        variant: primary
+      - label: See the demos
+        href: '#ak-sec-demos'
+      - label: Connect the MCP server
+        href: '#ak-sec-connect'
     align: center
     src: assets/shot-explain-light.webp
     alt: The explain gallery page compiled by AK Render in the editorial theme, showing its serif title and the compile pipeline tabs
@@ -46,7 +54,7 @@ blocks:
     blocks:
       - type: text
         variant: lead
-        text: An agent that writes markup pays for layout, CSS and script on every page, and gets a slightly different page every run. With AK Render the agent writes only what the page says. Presentation, accessibility and security are the compiler's job.
+        text: 'An agent that writes markup pays for layout, CSS and script on every page, and gets a slightly different page every run. With AK Render the agent writes **only what the page says**. Presentation, accessibility and security are the compiler''s job.'
       - type: comparison
         left:
           label: The agent hand-writes HTML
@@ -70,13 +78,13 @@ blocks:
       - type: steps
         items:
           - title: Find
-            text: 'ak-render catalog lists all 83 block types and every action in 7,228 bytes. search-catalog ranks block types by intent words, and catalog --category lists one group.'
+            text: '`ak-render catalog` lists all **83 block types** and every action in 7,228 bytes. `search-catalog` ranks block types by intent words, and `catalog --category` lists one group.'
           - title: Describe
-            text: 'ak-render describe <type...> --compact returns one line per prop for several blocks at once. The full hero contract with --json is 2,021 bytes.'
+            text: '`ak-render describe <type...> --compact` returns one line per prop for several blocks at once. The full `hero` contract with `--json` is 2,612 bytes.'
           - title: Validate
-            text: 'ak-render validate <spec> --json returns diagnostics with a stable code and the JSON path to fix. Exit code 1 means fix and retry.'
+            text: '`ak-render validate <spec> --json` returns diagnostics with a **stable code and the JSON path to fix**. Exit code 1 means fix and retry.'
           - title: Compile
-            text: 'ak-render <spec> --out page.html writes the file and prints bytes, hash and runtime features. A spec path of "-" reads from stdin.'
+            text: '`ak-render <spec> --out page.html` writes the file and prints bytes, hash and runtime features. A spec path of `-` reads from stdin.'
       - type: terminal
         title: ~/plans
         lines:
@@ -89,7 +97,7 @@ blocks:
           - kind: command
             text: ak-render describe hero --json | wc -c
           - kind: output
-            text: '2021'
+            text: '2612'
           - kind: comment
             text: '# a typo in the spec comes back with the path to fix'
           - kind: command
@@ -125,7 +133,7 @@ blocks:
     blocks:
       - type: text
         variant: lead
-        text: A hand-written page costs an agent three times. It reads presentation guidance, writes markup, CSS and script, and then carries the finished file in its context. With AK Render it reads a small catalog, writes a short spec, and gets back a one-line summary.
+        text: 'A hand-written page costs an agent **three times**. It reads presentation guidance, writes markup, CSS and script, and then carries the finished file in its context. With AK Render it reads a small catalog, writes a short spec, and gets back **a one-line summary**.'
       - type: kpi
         items:
           - label: Presentation context
@@ -181,7 +189,7 @@ blocks:
       - type: callout
         tone: info
         title: Measured, estimated, and not yet measured
-        text: 'Character counts are measured; tokens are estimated at 4 characters per token, with no tokenizer or live model run. The 64–68% figure comes from benchmarks/render-benchmark.mjs. The 54% task figure (66% with compact contracts) adds measured parts, and the spec size is projected from the legacy pages'' visible text. A page that is mostly prose saves little or nothing on output: one of the 12 grew by 35%. Live A/B runs, repair loops and wall time are not measured yet. Method and data: docs/artifacts/agent-token-cost.md.'
+        text: 'Character counts are measured; tokens are estimated at 4 characters per token, with no tokenizer or live model run. The 64–68% figure comes from `benchmarks/render-benchmark.mjs`. The 54% task figure (66% with compact contracts) adds measured parts, and the spec size is projected from the legacy pages'' visible text. A page that is mostly prose saves little or nothing on output: one of the 12 grew by 35%. Live A/B runs, repair loops and wall time are not measured yet. Method and data: `docs/artifacts/agent-token-cost.md`.'
 
   - type: section
     id: blocks
@@ -229,7 +237,7 @@ blocks:
             alt: A donut chart from the dashboard gallery page in dark mode
           - title: Declarative actions
             value: '12'
-            text: Copy, toggle, tabs, filter, theme and download are bound in the spec. No page-authored script, no inline handler.
+            text: 'Copy, toggle, tabs, filter, theme and download are bound in the spec. **No page-authored script**, no inline handler.'
             eyebrow: Interaction
             size: wide
 
@@ -400,7 +408,7 @@ blocks:
     blocks:
       - type: text
         variant: lead
-        text: A theme is typed data, never CSS. Pick a preset, or extend one with validated tokens and component recipes; every preset ships both schemes and its fonts inside the file.
+        text: 'A theme is **typed data, never CSS**. Pick a preset, or extend one with validated tokens and component recipes; every preset ships both schemes and its fonts inside the file.'
       - type: card-grid
         items:
           - title: blueprint
@@ -454,11 +462,11 @@ blocks:
       - type: steps
         items:
           - title: Write a spec
-            text: Describe the page in YAML or JSON. Blocks carry meaning, such as hero, steps, timeline, chart or comparison; there is no field for HTML, CSS or script.
+            text: 'Describe the page in YAML or JSON. Blocks carry meaning, such as `hero`, `steps`, `timeline`, `chart` or `comparison`; **there is no field for HTML, CSS or script**.'
           - title: Validate
-            text: Diagnostics name the JSON path to fix, so an agent repairs a spec in one more turn instead of rereading a page.
+            text: '**Diagnostics name the JSON path to fix**, so an agent repairs a spec in one more turn instead of rereading a page.'
           - title: Compile and open
-            text: One HTML file that opens from disk, offline, in light and dark, and reads the same in print and in a screenshot.
+            text: '**One HTML file** that opens from disk, offline, in light and dark, and reads the same in print and in a screenshot.'
       - type: code
         language: yaml
         title: plan.yaml
@@ -500,7 +508,7 @@ blocks:
     blocks:
       - type: text
         variant: lead
-        text: The ak-render skill teaches an agent the whole loop, from catalog to compiled file. Install it with the skills CLI for any agent, or as a plugin that also registers the MCP server.
+        text: 'The `ak-render` skill teaches an agent the whole loop, from catalog to compiled file. Install it with the **skills CLI** for any agent, or as a **plugin** that also registers the MCP server.'
       - type: code
         language: bash
         title: Any agent, with the skills CLI
@@ -518,7 +526,7 @@ blocks:
           codex plugin marketplace add bestagentkits/ak-render
           codex plugin add ak-render@ak-render
       - type: text
-        text: 'ak-render mcp serves the same loop over stdio as MCP tools: catalog, search-catalog, describe, recipes, recipe, validate, render and themes. The render tool writes the file and returns only a summary, so the page never enters the context.'
+        text: '`ak-render mcp` serves the same loop over stdio as MCP tools: `catalog`, `search-catalog`, `describe`, `recipes`, `recipe`, `validate`, `render` and `themes`. The `render` tool writes the file and returns only a summary, so **the page never enters the context**.'
       - type: code
         language: json
         title: MCP client configuration
@@ -538,11 +546,11 @@ blocks:
     blocks:
       - type: text
         variant: lead
-        text: 'https://render.agentkit.best/mcp serves the same tools over Streamable HTTP, so an agent that cannot run Node still compiles pages. render stores the page and returns a link instead of writing a file. Add only the URL and the client signs you in to agentkit.best with OAuth; the sign-in lasts up to a year while the client keeps using it.'
+        text: '`https://render.agentkit.best/mcp` serves the same tools over **Streamable HTTP**, so an agent that cannot run Node still compiles pages. `render` stores the page and returns a link instead of writing a file. **Add only the URL** and the client signs you in to `agentkit.best` with **OAuth**; the sign-in lasts up to a year while the client keeps using it.'
       - type: callout
         tone: info
         title: For AgentKit customers
-        text: The hosted endpoint is for accounts that own AgentKit Engineer, AgentKit Marketing or the Bundle. Everyone else can run the local MCP server above with no account, or deploy their own copy on Cloudflare (see below).
+        text: 'The hosted endpoint is for accounts that own **AgentKit Engineer**, **AgentKit Marketing** or **the Bundle**. Everyone else can run the **local MCP server** above with no account, or **deploy their own copy** on Cloudflare (see below).'
       - type: tabs
         title: Pick your AI tool
         items:
@@ -550,7 +558,7 @@ blocks:
             title: Claude
             blocks:
               - type: text
-                text: 'claude.ai and Claude Desktop: open Settings → Connectors → Add custom connector. Name it AK Render, paste the URL, then choose Connect and sign in at agentkit.best.'
+                text: 'claude.ai and Claude Desktop: open **Settings → Connectors → Add custom connector**. Name it `AK Render`, paste the URL, then choose **Connect** and sign in at `agentkit.best`.'
               - type: code
                 language: text
                 title: Remote MCP server URL
@@ -559,7 +567,7 @@ blocks:
             title: ChatGPT
             blocks:
               - type: text
-                text: 'Open Settings → Apps & Connectors, turn on Developer mode under Advanced settings, then choose Create. Name it AK Render, paste the URL, pick OAuth as the authentication and sign in at agentkit.best.'
+                text: 'Open **Settings → Apps & Connectors**, turn on **Developer mode** under Advanced settings, then choose **Create**. Name it `AK Render`, paste the URL, pick **OAuth** as the authentication and sign in at `agentkit.best`.'
               - type: code
                 language: text
                 title: MCP server URL
@@ -572,7 +580,7 @@ blocks:
                 title: Add the server
                 text: claude mcp add --transport http ak-render https://render.agentkit.best/mcp
               - type: text
-                text: Then run /mcp inside Claude Code, select ak-render and choose Authenticate.
+                text: 'Then run `/mcp` inside Claude Code, select `ak-render` and choose **Authenticate**.'
           - id: connect-cursor
             title: Cursor
             blocks:
@@ -586,7 +594,7 @@ blocks:
                     }
                   }
               - type: text
-                text: Cursor lists the server under Settings → MCP; choose its login prompt to sign in at agentkit.best.
+                text: 'Cursor lists the server under **Settings → MCP**; choose its login prompt to sign in at `agentkit.best`.'
           - id: connect-vscode
             title: VS Code
             blocks:
@@ -600,7 +608,7 @@ blocks:
                     }
                   }
               - type: text
-                text: Start the server from the file or the MCP view and allow the sign-in when VS Code asks.
+                text: 'Start the server from `mcp.json` or the **MCP** view, and allow the sign-in when VS Code asks.'
           - id: connect-codex
             title: Codex
             blocks:
@@ -614,7 +622,7 @@ blocks:
             title: API key
             blocks:
               - type: text
-                text: 'For CI, scripts and clients without OAuth, create a personal key at agentkit.best/account/api-keys and send it as a bearer. A key lasts until you revoke it or until the expiry you choose.'
+                text: 'For CI, scripts and clients without OAuth, create a personal key at `agentkit.best/account/api-keys`, export it as `AGENTKIT_TOKEN` and send it as a bearer. A key lasts **until you revoke it** or until the expiry you choose.'
               - type: code
                 language: json
                 title: Any client that takes headers
@@ -630,7 +638,7 @@ blocks:
                   }
       - type: text
         variant: caption
-        text: Disconnect a client at any time under Account → Connected apps on agentkit.best. Revoke an API key on the same account's API Keys page.
+        text: 'Disconnect a client at any time under **Account → Connected apps** on `agentkit.best`. Revoke an API key on the same account''s **API Keys** page.'
 
   - type: section
     id: agentkit
@@ -638,15 +646,15 @@ blocks:
     blocks:
       - type: text
         variant: lead
-        text: AK Render is built and hosted by AgentKit, a foundation of agents, skills and workflows for Claude Code, Codex, Cursor and other coding agents. The compiler, the CLI and the local MCP server are MIT-licensed and need no account; the hosted endpoint is the part reserved for customers.
+        text: 'AK Render is built and hosted by **AgentKit**, a foundation of agents, skills and workflows for Claude Code, Codex, Cursor and other coding agents. The compiler, the CLI and the local MCP server are **MIT-licensed and need no account**; the hosted endpoint is the part reserved for customers.'
       - type: card-grid
         items:
           - title: AgentKit customers
-            text: Owners of AgentKit Engineer, AgentKit Marketing or the Bundle connect to render.agentkit.best/mcp with OAuth or an API key, with stored pages, share links and PNG or PDF export included.
+            text: 'Owners of **AgentKit Engineer**, **AgentKit Marketing** or **the Bundle** connect to `render.agentkit.best/mcp` with OAuth or an API key, with stored pages, share links and PNG or PDF export included.'
           - title: Run it locally
-            text: 'npx @bestagentkits/render mcp serves every tool over stdio from your machine. It writes the page to disk, makes no network request and needs no account.'
+            text: '`npx @bestagentkits/render mcp` serves every tool over stdio from your machine. It writes the page to disk, makes **no network request** and needs **no account**.'
           - title: Deploy your own
-            text: 'apps/cloud in the GitHub repo is the same Cloudflare Worker that runs here. Its README covers the R2 bucket, rate limits, routes and deploy commands; point ENTITLEMENTS_URL at your own service that answers its token-check contract, and turn on OAuth only if you run an authorization server.'
+            text: '`apps/cloud` in the GitHub repo is the same **Cloudflare Worker** that runs here. Its README covers the R2 bucket, rate limits, routes and deploy commands; point `ENTITLEMENTS_URL` at your own service that answers its token-check contract, and turn on OAuth only if you run an authorization server.'
       - type: toolbar
         title: Next step
         items:
@@ -662,7 +670,7 @@ blocks:
     title: Demo pages, compiled from fixtures
     blocks:
       - type: text
-        text: Every page in the gallery is a fixture spec in fixtures/pages compiled by the current build. Open one, then view its source to see a single HTML file with no requests.
+        text: 'Every page in the gallery is a fixture spec in `fixtures/pages` compiled by the current build. Open one, then view its source to see **a single HTML file with no requests**.'
       - type: gallery
         columns: 3
         items:

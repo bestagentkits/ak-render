@@ -88,8 +88,9 @@ blocks too, under `items[i].blocks`.
 
 Text is plain text, with one exception: in prose props such as `text`, a step's
 or list item's `text`, a `description` or a `caption`, a pair of backticks
-renders as inline code, so `` `ak-render catalog` `` reads as a command. Nothing
-else is parsed as markup, an unpaired backtick stays literal, and titles, code
+renders as inline code, so `` `ak-render catalog` `` reads as a command, and a
+pair of double asterisks renders as bold, so `**required**` stands out. Nothing
+else is parsed as markup, an unpaired marker stays literal, and titles, code
 and terminal lines are never changed. `describe` marks each prop that does this.
 
 ### Start from a page recipe

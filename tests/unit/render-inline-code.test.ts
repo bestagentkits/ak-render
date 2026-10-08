@@ -51,6 +51,43 @@ describe('inline code in prose text', () => {
   });
 });
 
+describe('strong emphasis in prose text', () => {
+  it('wraps a double-asterisk pair in <strong>', () => {
+    expect(escapeInlineText('Only for **AgentKit customers**.')).toBe(
+      'Only for <strong>AgentKit customers</strong>.',
+    );
+    expect(escapeInlineText('**a** and **b**')).toBe('<strong>a</strong> and <strong>b</strong>');
+  });
+
+  it('combines with code spans and keeps asterisks inside a span literal', () => {
+    expect(escapeInlineText('**Add** `https://x.test/mcp` now')).toBe(
+      '<strong>Add</strong> <code>https://x.test/mcp</code> now',
+    );
+    expect(escapeInlineText('`a ** b ** c`')).toBe('<code>a ** b ** c</code>');
+  });
+
+  it('keeps unpaired, empty, spaced and multi-line markers literal', () => {
+    expect(escapeInlineText('a **b')).toBe('a **b');
+    expect(escapeInlineText('a **** b')).toBe('a **** b');
+    expect(escapeInlineText('2 ** 8 ** 2')).toBe('2 ** 8 ** 2');
+    expect(escapeInlineText('** a **')).toBe('** a **');
+    expect(escapeInlineText('**a\nb**')).toBe('**a\nb**');
+  });
+
+  it('escapes markup inside a strong pair', () => {
+    expect(escapeInlineText('**<img src=x onerror=alert(1)>**')).toBe(
+      '<strong>&lt;img src=x onerror=alert(1)&gt;</strong>',
+    );
+  });
+
+  it('stays linear on a long run of unclosed markers', () => {
+    const value = `**${'a'.repeat(25_000)} ${'** '.repeat(10_000)}`;
+    const started = performance.now();
+    escapeInlineText(value);
+    expect(performance.now() - started).toBeLessThan(500);
+  });
+});
+
 describe('inline code in compiled pages', () => {
   const page = (blocks: string): string =>
     `version: 1\nmeta:\n  title: Inline code\nblocks:\n${blocks}`;

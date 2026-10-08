@@ -30,7 +30,7 @@ import {
   renderAttributes,
 } from './escape.js';
 import type { RenderContext } from './render-context.js';
-import { browserShot, SHOWCASE_RENDERERS } from './showcase-blocks.js';
+import { actionLinks, browserShot, SHOWCASE_RENDERERS } from './showcase-blocks.js';
 import { toneBadge, valueTone } from './tone.js';
 
 export type { RenderContext } from './render-context.js';
@@ -321,6 +321,7 @@ const RENDERERS: Record<string, Renderer> = {
     const eyebrow = stringProp(node, 'eyebrow');
     const description = stringProp(node, 'description');
     const source = stringProp(node, 'src');
+    const actions = actionLinks(node);
     return [
       `<div${renderAttributes(
         nodeAttributes(node, {
@@ -332,6 +333,7 @@ const RENDERERS: Record<string, Renderer> = {
       eyebrow === '' ? '' : `<p class="ak-eyebrow">${escapeText(eyebrow)}</p>`,
       `<h1>${heroWords(stringProp(node, 'title'))}</h1>`,
       description === '' ? '' : `<p>${escapeInlineText(description)}</p>`,
+      actions === '' ? '' : `<div class="ak-hero-actions">${actions}</div>`,
       // The shot is the first thing on screen, so it loads eagerly.
       source === ''
         ? ''

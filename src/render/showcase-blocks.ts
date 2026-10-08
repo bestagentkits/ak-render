@@ -442,8 +442,9 @@ function checklist(node: IrNode): string {
 
 // --- cta --------------------------------------------------------------------
 
-function cta(node: IrNode): string {
-  const actions = objectListProp(node, 'actions')
+/** A block's `actions` as link buttons; empty when it has none. */
+export function actionLinks(node: IrNode): string {
+  return objectListProp(node, 'actions')
     .map(
       (action) =>
         `<a${renderAttributes({
@@ -454,6 +455,10 @@ function cta(node: IrNode): string {
         })}>${escapeText(str(action.label))}</a>`,
     )
     .join('');
+}
+
+function cta(node: IrNode): string {
+  const actions = actionLinks(node);
   return element(
     'section',
     nodeAttributes(node, { class: 'ak-block ak-cta', 'data-surface': 'inverse' }),

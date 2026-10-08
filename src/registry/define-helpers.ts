@@ -26,7 +26,7 @@ export const str = (o: Omit<PropSchema & { kind: 'string' }, 'kind'> = {}): Prop
  * How text renders. `describe` and the JSON Schema both carry it, once per
  * prop, so it stays short.
  */
-export const PROSE_DESCRIPTION = 'Plain text; a `backtick` pair renders as inline code.';
+export const PROSE_DESCRIPTION = 'Plain text; `code` and **bold** spans render inline.';
 export const VERBATIM_DESCRIPTION = 'Emitted verbatim; backticks stay literal.';
 
 export const txt = (

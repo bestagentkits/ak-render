@@ -44,13 +44,35 @@ export function escapeText(value: string): string {
 const INLINE_CODE = /`([^`\r\n]+)`/gu;
 
 /**
- * Escape prose text and render each backtick pair as inline `<code>`.
+ * A double-asterisk pair on one line whose content neither starts nor ends with
+ * whitespace and holds no asterisk. Excluding `*` from the class bounds each
+ * attempt at the next asterisk, so matching stays linear in the input length,
+ * and the whitespace rule keeps arithmetic such as `2 ** 8 ** 2` literal.
+ */
+const INLINE_STRONG = /\*\*(?=[^\s*])([^*\r\n]*[^\s*])\*\*/gu;
+
+/** Escape a prose segment outside code spans, rendering `**strong**` pairs. */
+function escapeStrongText(value: string): string {
+  let output = '';
+  let last = 0;
+  for (const match of value.matchAll(INLINE_STRONG)) {
+    output += escapeText(value.slice(last, match.index));
+    output += `<strong>${escapeText(match[1] ?? '')}</strong>`;
+    last = match.index + match[0].length;
+  }
+  return output + escapeText(value.slice(last));
+}
+
+/**
+ * Escape prose text, rendering each backtick pair as inline `<code>` and each
+ * `**double-asterisk**` pair as `<strong>`.
  *
- * This is the only markup prose text can produce: no other Markdown is
- * recognized. Every segment, inside or outside a code span, goes through
- * `escapeText` before it is wrapped, so a span such as `` `<script>` `` stays
- * inert text. Pairing runs left to right; an unpaired backtick, an empty pair,
- * or a pair holding only whitespace stays literal.
+ * These are the only markup prose text can produce: no other Markdown is
+ * recognized. Every segment goes through `escapeText` before it is wrapped, so
+ * a span such as `` `<script>` `` stays inert text. Code spans are found first
+ * and stay literal inside, so `` `a ** b` `` keeps its asterisks. Pairing runs
+ * left to right; an unpaired marker, an empty pair, or a pair holding only
+ * whitespace stays literal.
  */
 export function escapeInlineText(value: string): string {
   let output = '';
@@ -58,11 +80,11 @@ export function escapeInlineText(value: string): string {
   for (const match of value.matchAll(INLINE_CODE)) {
     const content = match[1] ?? '';
     if (content.trim() === '') continue;
-    output += escapeText(value.slice(last, match.index));
+    output += escapeStrongText(value.slice(last, match.index));
     output += `<code>${escapeText(content)}</code>`;
     last = match.index + match[0].length;
   }
-  return output + escapeText(value.slice(last));
+  return output + escapeStrongText(value.slice(last));
 }
 
 /** Escape a value for a double-quoted attribute. */
