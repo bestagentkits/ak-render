@@ -30,6 +30,14 @@ Release mechanics and the compatibility contract live in
   choice in the address (`#crimson-press`), makes no network request, and
   falls back to a plain list of links without JavaScript. The landing and the
   gallery index link to it.
+- The landing page at `https://render.agentkit.best/` carries search and
+  social metadata: canonical URL, a 1200×630 social card for Open Graph and
+  X, favicons and a web manifest, light and dark `theme-color`, and JSON-LD
+  for the site, the software and AgentKit. The site root also serves
+  `robots.txt`, `sitemap.xml` and an `llms.txt` summary for AI answer
+  engines. The site build adds these to the landing head
+  (`scripts/site-head-metadata.mjs`); compiled pages are unchanged.
+  `scripts/generate-site-images.mjs` regenerates the icons and the card.
 - The landing hero links to the GitHub repository, the demos and the MCP setup,
   and the landing prose marks URLs, commands and identifiers as inline code and
   key phrases as bold.
