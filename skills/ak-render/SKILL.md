@@ -70,9 +70,13 @@ spec from stdin (`-`) and the `mcp` command need version 0.2.0 or later, and
    `warnings`. Don't read the HTML back into context, because the summary is
    enough.
 
-6. **Open it** with the platform opener: `open page.html` on macOS,
-   `xdg-open page.html` on Linux, or `start page.html` on Windows. Then tell the
-   user the path.
+6. **Open it once.** Before you compile, check whether the `--out` file
+   exists. If it does not, open the new page with the platform opener:
+   `open page.html` on macOS, `xdg-open page.html` on Linux, or
+   `start page.html` on Windows. Then tell the user the path. If it exists,
+   don't open it again, because the user probably has it open already and
+   every opener call adds one more tab. Tell the user to refresh the page to
+   see the update.
 
 ## Minimal spec
 
