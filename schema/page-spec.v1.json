@@ -429,6 +429,12 @@
         },
         {
           "$ref": "#/$defs/block-filter-bar"
+        },
+        {
+          "$ref": "#/$defs/block-decision"
+        },
+        {
+          "$ref": "#/$defs/block-feedback"
         }
       ]
     },
@@ -7199,6 +7205,94 @@
         }
       },
       "description": "Filter bar: 1-8 controls (field + match) filtering a target; adds a live count and Reset."
+    },
+    "block-decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "question",
+        "options"
+      ],
+      "properties": {
+        "type": {
+          "const": "decision"
+        },
+        "question": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 600,
+          "description": "Plain text; `code` and **bold** spans render inline."
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "text": {
+                "type": "string",
+                "maxLength": 400,
+                "description": "Plain text; `code` and **bold** spans render inline."
+              },
+              "recommended": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "label"
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 6
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Decision: question, context, up to 6 options (one may be recommended) and a note; needs a feedback block."
+    },
+    "block-feedback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "const": "feedback"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 400,
+          "description": "Plain text; `code` and **bold** spans render inline."
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Feedback: one per page, last; turns on comments and copies them with decision answers."
     }
   }
 }

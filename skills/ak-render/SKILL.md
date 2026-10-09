@@ -22,7 +22,7 @@ spec from stdin (`-`) and the `mcp` command need version 0.2.0 or later, and
 ## The loop
 
 1. **Find the blocks.** Search by intent, or list one category. The full
-   catalog of 83 block types and every action is about 7 kB:
+   catalog of 85 block types and every action is about 7 kB:
 
    ```bash
    npx -y @bestagentkits/render search-catalog sortable table
@@ -110,7 +110,7 @@ block with `describe` before you use it.
 
 | Page | Start with |
 | --- | --- |
-| Plan or roadmap | `hero`, `steps`, `timeline`, `risk-matrix`, `checklist`, `callout` |
+| Plan or roadmap | `hero`, `steps`, `timeline`, `risk-matrix`, `checklist`, `callout`, `decision`, `feedback` |
 | Recap or status | `hero`, `stats`, `timeline`, `checklist`, `list` |
 | Diff or code review | `diff-summary`, `code-review`, `file-tree`, `code` |
 | Dashboard | `kpi`, `chart`, `data-table`, `filter-bar`, `grid-item`, `main-aside` |
@@ -119,6 +119,11 @@ block with `describe` before you use it.
 | Product page | `hero`, `pricing`, `feature-matrix`, `testimonial`, `logo-cloud`, `people` |
 | Explainer | `hero`, `card-grid`, `tabs`, `accordion`, `code`, `callout` |
 | Comparison or decision | `comparison`, `table`, `before-after`, `callout` |
+
+For a plan the user must approve, put each open question in a `decision` and
+mark the option you would pick `recommended`. End the page with one `feedback`
+block: the user comments on any text, answers the decisions, and copies it all
+back to you as one prompt. Act on that prompt before you build.
 
 Group blocks with `section`. Tabs, accordion sections, carousel slides, and
 bento tiles can hold blocks in `items[i].blocks`. Use `grid`, `split`, and

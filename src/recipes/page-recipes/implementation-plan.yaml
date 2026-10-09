@@ -52,3 +52,9 @@ blocks:
       - { text: Replace with an acceptance criterion }
       - { text: Replace with an acceptance criterion }
       - { text: Tests and docs updated }
+  - type: decision
+    question: Replace with an open question whose answer changes what gets built
+    options:
+      - { label: Replace with the option you recommend, text: Replace with its trade-off., recommended: true }
+      - { label: Replace with the alternative, text: Replace with its trade-off. }
+  - type: feedback

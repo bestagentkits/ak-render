@@ -67,7 +67,7 @@ Requires Node.js >= 20.11.
 
 ### Find the blocks you need
 
-There are 83 block types in eight categories (layout, content, data,
+There are 85 block types in eight categories (layout, content, data,
 interaction, media, showcase, engineering, product), from primitives (`section`,
 `grid`, `split`, `text`) to semantic blocks that carry the design for you
 (`hero`, `steps`, `timeline`, `kpi`, `data-table`, `chart`, `kanban`,
@@ -162,6 +162,26 @@ runtime. A spec wires them with a closed
 set of declarative actions (`ak-render catalog` lists them); there is no
 JavaScript field. Every page reads completely with scripts off, with motion
 reduced, in print and in a screenshot.
+
+### Review a plan in the page
+
+End a plan with a `feedback` block and put each open question in a `decision`
+block. The reader selects any text, or uses a section's Comment button, to
+leave a comment, picks an answer for each decision, and presses **Copy
+feedback**. That copies one plain-text prompt with every answer and comment,
+each pointing at its section, block or code lines, to paste back to the agent.
+Comments survive a reload and reset when the page is recompiled with new
+content. Nothing leaves the browser.
+
+```yaml
+- type: decision
+  question: How do we roll back a failed switch?
+  options:
+    - label: Flip the routing flag
+      recommended: true
+    - label: Point DNS back to the old gateway
+- type: feedback
+```
 
 ### Images, video and the network
 

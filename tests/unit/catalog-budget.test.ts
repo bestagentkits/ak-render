@@ -24,7 +24,7 @@ const BUDGET = {
 } as const;
 
 /** The roster size the budgets are planned for. */
-const PLANNED_BLOCKS = 83;
+const PLANNED_BLOCKS = 85;
 
 /**
  * Summaries written before the length cap existed. Each entry must still be
