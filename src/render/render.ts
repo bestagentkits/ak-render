@@ -31,6 +31,7 @@ import { recipeCss } from './recipe-styles.js';
 import { buildRuntime, needsLiveRegion } from './runtime.js';
 import { BASE_CSS, FEATURE_CSS } from './styles.js';
 import { inverseSurfaceCss, usesInverseSurface } from './surface-styles.js';
+import { SYNTAX_TOKEN_MARKUP } from './syntax-highlight.js';
 import { verifyDocument, verifyIr } from './verify.js';
 
 export interface RenderOptions {
@@ -77,6 +78,7 @@ const FEATURE_ORDER: readonly RuntimeFeature[] = [
   'dialog',
   'filter',
   'copy',
+  'syntax',
   'theme',
   'chart',
   'diagram',
@@ -274,6 +276,9 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
     warnings: renderWarnings,
     ...(options.diagramAdapter === undefined ? {} : { diagramAdapter: options.diagramAdapter }),
   });
+  // Code panels live in several blocks and nested props, and only some
+  // languages are highlighted, so the emitted tokens decide this sheet.
+  if (body.includes(SYNTAX_TOKEN_MARKUP)) features.add('syntax');
   // Faces come first and need the rendered text, which decides their subsets.
   const fonts = embeddedFontCss(resolved, `${ir.meta.title}\n${body}`);
   const css = [fonts, buildCss(features, moduleFeatures, resolved, ir)]

@@ -61,7 +61,7 @@ describe('document chrome', () => {
       /<button type="button" class="ak-code-copy"[^>]*data-ak-on-click="[^"]*copy[^"]*"/u,
     );
     expect(html).toContain(
-      '<span class="ak-line">const a = 1;</span>\n<span class="ak-line">const b = 2;</span>',
+      '<span class="ak-line"><span class="ak-tk-k">const</span> a = <span class="ak-tk-n">1</span>;</span>\n<span class="ak-line"><span class="ak-tk-k">const</span> b = <span class="ak-tk-n">2</span>;</span>',
     );
     expect(html).toContain('<span class="ak-code-lang">ts</span>');
   });

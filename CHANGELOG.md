@@ -11,6 +11,14 @@ Release mechanics and the compatibility contract live in
 
 ### Added
 
+- Code blocks and `api-endpoint` bodies are syntax highlighted at compile
+  time for php, javascript, typescript, python, go, rust, java, kotlin,
+  csharp, c, cpp, swift, ruby, bash, sql, json, yaml and diff, plus common
+  aliases such as `ts`, `py`, `sh` and `yml`. Colours come from theme tokens
+  through the new `syntax` feature sheet, which ships only on pages with a
+  highlighted token, and keep WCAG AA contrast in every preset. Other
+  languages render plain, as before. The `language` prop's description lists
+  the highlighted languages.
 - `hero` takes optional `actions`: up to three link buttons (`label`, `href`,
   `variant`), the same shape as the `cta` band, rendered under the description.
 - Prose text renders a `**double-asterisk**` pair as bold, alongside backtick
