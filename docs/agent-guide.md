@@ -142,6 +142,10 @@ rendering never needs the token or the network.
   similar schemes are rejected.
 - Use semantic blocks (`hero`, `steps`, `timeline`, `comparison`, `kpi`,
   `data-table`, `cta`) before primitives; they carry the design for you.
+- For a plan the user has to approve, put each open question in a `decision`
+  (mark the option you would pick `recommended`) and end the page with one
+  `feedback` block. The user copies their answers and comments back to you as
+  one prompt. A `decision` without a `feedback` block fails validation.
 - Put shared numbers in `datasets` once and bind blocks with `dataRef`, instead
   of repeating rows in a chart and a table. A field a block names that the rows
   lack comes back with `details.allowed`. `percent` takes `87` for "87%". See

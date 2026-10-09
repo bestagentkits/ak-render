@@ -1,0 +1,61 @@
+version: 1
+meta:
+  title: Gateway Migration Plan
+  description: A plan the reader answers in the page, then copies back to the agent as one prompt.
+theme:
+  preset: editorial
+blocks:
+  - type: hero
+    eyebrow: Plan · review
+    title: Move the public API to the new gateway
+    description: Select any text to comment on it, answer the open decisions, then copy your feedback for the agent.
+
+  - type: section
+    title: Steps
+    blocks:
+      - type: steps
+        items:
+          - title: Mirror traffic
+            text: Send a copy of production requests to the new gateway and compare responses.
+          - title: Switch reads
+            text: Route read endpoints once error rates match for **seven days**.
+          - title: Switch writes
+            text: Move write endpoints behind a flag, one service at a time.
+
+  - type: section
+    title: Routing rule
+    blocks:
+      - type: code
+        language: yaml
+        title: gateway/routes.yaml
+        text: |
+          routes:
+            - match: /v1/orders
+              upstream: orders-v2
+              mirror: true
+            - match: /v1/users
+              upstream: users-v1
+
+  - type: section
+    title: Open decisions
+    blocks:
+      - type: decision
+        id: rollback
+        question: How do we roll back a failed switch?
+        text: Both keep data in place. They differ in how fast a rollback takes effect.
+        options:
+          - label: Flip the routing flag
+            text: Instant; needs the flag service to stay up.
+            recommended: true
+          - label: Point DNS back to the old gateway
+            text: Takes up to the DNS TTL, but has no extra dependency.
+      - type: decision
+        id: mirror-window
+        question: How long do we mirror before switching reads?
+        options:
+          - label: Seven days
+            recommended: true
+          - label: Fourteen days
+          - label: Until the error rates match, with no fixed window
+
+  - type: feedback

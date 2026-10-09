@@ -11,6 +11,17 @@ Release mechanics and the compatibility contract live in
 
 ### Added
 
+- `decision` and `feedback` blocks let a reader answer a plan inside the
+  page. A `decision` is a question with up to six options, one of which may
+  be `recommended` (it starts checked), and a note. One `feedback` block per
+  page turns on commenting: select any text, or use the Comment button on a
+  top-level section, and a comment records where it points, including code
+  line numbers. **Copy feedback** copies every answer, comment and general
+  note as one prompt to paste back to the agent. Comments survive a reload
+  and reset when the content changes. Without scripts both blocks read
+  completely, with the inputs disabled. A `decision` needs a `feedback` block
+  on the page. The new `plan-review` gallery page shows both, and the skill
+  and agent guide tell agents to use them for plans.
 - `hero` takes optional `actions`: up to three link buttons (`label`, `href`,
   `variant`), the same shape as the `cta` band, rendered under the description.
 - Prose text renders a `**double-asterisk**` pair as bold, alongside backtick

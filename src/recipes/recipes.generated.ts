@@ -379,7 +379,17 @@ blocks:
     summary:
       'Goal, scope, phased roadmap, step-by-step work, a task board, risks and the definition of done.',
     useCases: ['feature implementation plan', 'migration plan', 'project kickoff brief'],
-    blocks: ['checklist', 'comparison', 'hero', 'kanban', 'risk-matrix', 'roadmap', 'steps'],
+    blocks: [
+      'checklist',
+      'comparison',
+      'decision',
+      'feedback',
+      'hero',
+      'kanban',
+      'risk-matrix',
+      'roadmap',
+      'steps',
+    ],
     spec: `version: 1
 meta:
   title: Replace with the project name — implementation plan
@@ -432,6 +442,12 @@ blocks:
       - { text: Replace with an acceptance criterion }
       - { text: Replace with an acceptance criterion }
       - { text: Tests and docs updated }
+  - type: decision
+    question: Replace with an open question whose answer changes what gets built
+    options:
+      - { label: Replace with the option you recommend, text: Replace with its trade-off., recommended: true }
+      - { label: Replace with the alternative, text: Replace with its trade-off. }
+  - type: feedback
 `,
   },
   {
