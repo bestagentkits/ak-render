@@ -14,10 +14,12 @@ Release mechanics and the compatibility contract live in
 - `hero` takes optional `actions`: up to three link buttons (`label`, `href`,
   `variant`), the same shape as the `cta` band, rendered under the description.
 - Prose text renders a `**double-asterisk**` pair as bold, alongside backtick
-  inline code. Code spans keep their asterisks literal, a marker that is
-  unpaired, empty, or padded with whitespace (`2 ** 8`) stays literal, and the
-  content is escaped like any other text. A prose prop's description now reads
-  "Plain text; `code` and **bold** spans render inline."
+  inline code. A bold pair can wrap code spans, code spans keep their
+  asterisks literal, and a marker inside a code span never pairs with one
+  outside it. A marker that is unpaired, empty, or padded with whitespace
+  (`2 ** 8`) stays literal, and the content is escaped like any other text. A
+  prose prop's description now reads "Plain text; `code` and **bold** spans
+  render inline."
 - `crimson-press` built-in preset: cream paper, black ink and a crimson
   accent, Fraunces display over Inter Tight body and JetBrains Mono labels,
   square corners, no card shadow, and the `cards: flat`, `tables: ledger`,

@@ -66,6 +66,20 @@ describe('strong emphasis in prose text', () => {
     expect(escapeInlineText('`a ** b ** c`')).toBe('<code>a ** b ** c</code>');
   });
 
+  it('wraps a pair that holds code spans, at either end or inside', () => {
+    expect(escapeInlineText('**All code goes in `domains/Order`.** Rest')).toBe(
+      '<strong>All code goes in <code>domains/Order</code>.</strong> Rest',
+    );
+    expect(escapeInlineText('**`OrderLine`** and **`a` or `b`**')).toBe(
+      '<strong><code>OrderLine</code></strong> and <strong><code>a</code> or <code>b</code></strong>',
+    );
+  });
+
+  it('never pairs a marker inside a code span with one outside it', () => {
+    expect(escapeInlineText('**a `b** c`')).toBe('**a <code>b** c</code>');
+    expect(escapeInlineText('`a **` b**')).toBe('<code>a **</code> b**');
+  });
+
   it('keeps unpaired, empty, spaced and multi-line markers literal', () => {
     expect(escapeInlineText('a **b')).toBe('a **b');
     expect(escapeInlineText('a **** b')).toBe('a **** b');
@@ -82,6 +96,13 @@ describe('strong emphasis in prose text', () => {
 
   it('stays linear on a long run of unclosed markers', () => {
     const value = `**${'a'.repeat(25_000)} ${'** '.repeat(10_000)}`;
+    const started = performance.now();
+    escapeInlineText(value);
+    expect(performance.now() - started).toBeLessThan(500);
+  });
+
+  it('stays linear on many strong pairs that hold code spans', () => {
+    const value = '**`a` b** '.repeat(20_000);
     const started = performance.now();
     escapeInlineText(value);
     expect(performance.now() - started).toBeLessThan(500);
