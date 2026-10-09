@@ -55,6 +55,9 @@ Release mechanics and the compatibility contract live in
 
 ### Changed
 
+- The `ak-render` skill opens a page only when it writes the file for the
+  first time. On a recompile it tells the user to refresh instead, so an
+  updated page no longer opens one more browser tab.
 - **Breaking for anonymous remote MCP use.** With OAuth enabled
   (`OAUTH_RESOURCE`, as on `render.agentkit.best`), a remote MCP request without a bearer
   gets HTTP 401 with a `resource_metadata` challenge, which is what starts
