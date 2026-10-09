@@ -14,6 +14,7 @@ import { isPlainObject, type JsonValue } from '../../json.js';
 import { obj, str as strProp } from '../../registry/define-helpers.js';
 import type { PropSchema } from '../../registry/prop-schema.js';
 import { escapeText, renderAttributes } from '../../render/escape.js';
+import { codeLines } from '../../render/syntax-highlight.js';
 
 /** Data keys a bound block reads instead of props; any diagnostic under them means a binding was attempted. */
 const BINDING_KEYS = ['dataRef', 'data', 'transform'] as const;
@@ -157,15 +158,6 @@ export function copyButton(target: string, label: string): string {
   })}>Copy</button>`;
 }
 
-/** Split code into one span per line, as the core code block does, so lines are numbered. */
-function codeLines(text: string): string {
-  return text
-    .replace(/\n$/u, '')
-    .split('\n')
-    .map((line) => `<span class="ak-line">${escapeText(line)}</span>`)
-    .join('\n');
-}
-
 /** A code panel in the core code block's markup, with its own copy target. */
 export function codePanel(target: string, label: string, language: string, code: string): string {
   return [
@@ -177,7 +169,7 @@ export function codePanel(target: string, label: string, language: string, code:
     '</div>',
     `<pre${renderAttributes({ 'data-ak-id': target })}><code${renderAttributes({
       class: `language-${language}`,
-    })}>${codeLines(code)}</code></pre>`,
+    })}>${codeLines(code, language)}</code></pre>`,
     '</div>',
   ].join('');
 }

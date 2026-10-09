@@ -63,6 +63,15 @@ dialog.ak-dialog > p{color:var(--ak-color-text-muted)}
 .ak-search input:hover{border-color:color-mix(in srgb,var(--ak-color-text) 30%,var(--ak-color-border))}
 .ak-search input:focus-visible{outline:0;border-color:var(--ak-color-accent);box-shadow:var(--ak-ring)}`,
 
+  syntax: `.ak-tk-k{color:var(--ak-color-accent);font-weight:600}
+.ak-tk-s,.ak-tk-ins{color:var(--ak-color-success)}
+.ak-tk-n,.ak-tk-a{color:var(--ak-color-warning)}
+.ak-tk-t,.ak-tk-hunk{color:var(--ak-color-info)}
+.ak-tk-f{color:color-mix(in srgb,var(--ak-color-accent) 55%,var(--ak-color-text))}
+.ak-tk-v,.ak-tk-del{color:var(--ak-color-danger)}
+.ak-tk-c{color:var(--ak-color-text-muted);font-style:italic}
+.ak-tk-meta{color:var(--ak-color-text-muted);font-weight:600}`,
+
   theme: `.ak-theme-toggle{min-height:34px;padding:.35em .9em;font-family:var(--ak-font-mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ak-color-text-muted);border-radius:999px;background:var(--ak-color-surface)}
 .ak-theme-toggle::before{content:"";width:.75em;height:.75em;border-radius:50%;background:linear-gradient(90deg,currentColor 50%,transparent 50%);box-shadow:inset 0 0 0 1.5px currentColor;${TRANSITION}}
 .ak-theme-toggle:hover{color:var(--ak-color-text)}

@@ -29,6 +29,9 @@ export const str = (o: Omit<PropSchema & { kind: 'string' }, 'kind'> = {}): Prop
 export const PROSE_DESCRIPTION = 'Plain text; `code` and **bold** spans render inline.';
 export const VERBATIM_DESCRIPTION = 'Emitted verbatim; backticks stay literal.';
 
+export const LANGUAGE_DESCRIPTION =
+  'Highlighted: php, javascript, typescript, python, go, rust, java, kotlin, csharp, c, cpp, swift, ruby, bash, sql, json, yaml, diff. Any other value renders plain.';
+
 export const txt = (
   o: { required?: boolean; default?: string; maxLength?: number; description?: string } = {},
 ): PropSchema => ({

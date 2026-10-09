@@ -131,6 +131,7 @@ Images in these blocks go through the same network gate as `image` and use the `
 - A 3px reading-progress rail is driven by `animation-timeline: scroll(root)`. Browsers without scroll timelines do not show it.
 - Every page ends with a colophon: the title, the generator version and "Back to top". It contains no dates, so output stays deterministic.
 - Code blocks number their lines when there are two or more, show the language as a pill, and have a Copy button that shows a ✓ for 1.6s.
+- Code in a known language is highlighted at compile time (`src/render/syntax-highlight.ts`, feature `syntax`, emitted only when a token is). Keywords use the accent at weight 600, because the accent equals another tone in several presets. Strings use success, numbers, literals and attributes warning, types info, variables danger, functions the accent mixed 55% with text, and comments muted italic. Diff lines use success, danger and info. Every token colour keeps 4.5:1 on the code background in every preset and scheme (`tests/unit/theme-contrast.test.ts`). An unknown language stays plain.
 - Numeric table columns align right.
 - A table wider than the column scrolls inside its frame, never the page. A soft shade marks each edge that has more beyond it, driven by a scroll timeline, so a table that fits shows none.
 - Status values map to toned badges: diff status, risk level, and review kind. Diff line counts are signed and colored, and zero stays muted.
