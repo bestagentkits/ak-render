@@ -89,9 +89,11 @@ blocks too, under `items[i].blocks`.
 Text is plain text, with one exception: in prose props such as `text`, a step's
 or list item's `text`, a `description` or a `caption`, a pair of backticks
 renders as inline code, so `` `ak-render catalog` `` reads as a command, and a
-pair of double asterisks renders as bold, so `**required**` stands out. Nothing
-else is parsed as markup, an unpaired marker stays literal, and titles, code
-and terminal lines are never changed. `describe` marks each prop that does this.
+pair of double asterisks renders as bold, so `**required**` stands out. Block
+titles, step, timeline and card titles, table cells, comparison items and
+key-value values render the same spans. Nothing else is parsed as markup, an
+unpaired marker stays literal, and the document title, code blocks and
+terminal lines are never changed. `describe` marks each prose prop.
 
 ### Start from a page recipe
 

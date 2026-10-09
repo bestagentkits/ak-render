@@ -9,13 +9,7 @@ import type { DataRow } from '../data/dataset-types.js';
 import type { IrNode, NetworkPolicy } from '../ir.js';
 import { isPlainObject, type JsonValue } from '../json.js';
 import { isRemote, type MediaCapability, networkAllows } from '../spec/network-policy.js';
-import {
-  type AttributeValue,
-  escapeInlineText,
-  escapeText,
-  escapeUrl,
-  renderAttributes,
-} from './escape.js';
+import { type AttributeValue, escapeInlineText, escapeUrl, renderAttributes } from './escape.js';
 
 // The network gate is shared with validation; renderers keep importing it from here.
 export {
@@ -69,7 +63,7 @@ export function element(tag: string, attributes: AttributeValue, inner: string):
 }
 
 export function heading(level: number, text: string, className = 'ak-section-head'): string {
-  return `<header class="${className}"><h${level}>${escapeText(text)}</h${level}></header>`;
+  return `<header class="${className}"><h${level}>${escapeInlineText(text)}</h${level}></header>`;
 }
 
 /** A section heading for blocks whose `title` is optional. */

@@ -51,16 +51,44 @@ const INLINE_CODE = /`([^`\r\n]+)`/gu;
  */
 const INLINE_STRONG = /\*\*(?=[^\s*])([^*\r\n]*[^\s*])\*\*/gu;
 
-/** Escape a prose segment outside code spans, rendering `**strong**` pairs. */
-function escapeStrongText(value: string): string {
-  let output = '';
-  let last = 0;
-  for (const match of value.matchAll(INLINE_STRONG)) {
-    output += escapeText(value.slice(last, match.index));
-    output += `<strong>${escapeText(match[1] ?? '')}</strong>`;
-    last = match.index + match[0].length;
+type CodeSpan = { readonly start: number; readonly end: number; readonly content: string };
+
+function codeSpansOf(value: string): CodeSpan[] {
+  const spans: CodeSpan[] = [];
+  for (const match of value.matchAll(INLINE_CODE)) {
+    const content = match[1] ?? '';
+    if (content.trim() === '') continue;
+    spans.push({ start: match.index, end: match.index + match[0].length, content });
   }
-  return output + escapeText(value.slice(last));
+  return spans;
+}
+
+function maskCodeSpans(value: string, spans: readonly CodeSpan[]): string {
+  let masked = '';
+  let last = 0;
+  for (const span of spans) {
+    masked += value.slice(last, span.start) + 'x'.repeat(span.end - span.start);
+    last = span.end;
+  }
+  return masked + value.slice(last);
+}
+
+/**
+ * Escapes consecutive ranges of one value, wrapping the code spans in each
+ * range in `<code>`. Ranges must come in order and never split a span.
+ */
+function codeRangeEscaper(value: string, spans: readonly CodeSpan[]) {
+  let next = 0;
+  return (start: number, end: number): string => {
+    let output = '';
+    let last = start;
+    for (let span = spans[next]; span !== undefined && span.end <= end; span = spans[++next]) {
+      output += escapeText(value.slice(last, span.start));
+      output += `<code>${escapeText(span.content)}</code>`;
+      last = span.end;
+    }
+    return output + escapeText(value.slice(last, end));
+  };
 }
 
 /**
@@ -70,21 +98,24 @@ function escapeStrongText(value: string): string {
  * These are the only markup prose text can produce: no other Markdown is
  * recognized. Every segment goes through `escapeText` before it is wrapped, so
  * a span such as `` `<script>` `` stays inert text. Code spans are found first
- * and stay literal inside, so `` `a ** b` `` keeps its asterisks. Pairing runs
- * left to right; an unpaired marker, an empty pair, or a pair holding only
+ * and stay literal inside, so `` `a ** b` `` keeps its asterisks. A strong pair
+ * can hold code spans: each span is masked with a neutral character before
+ * pairing, so a marker inside a span never pairs with one outside it. Pairing
+ * runs left to right; an unpaired marker, an empty pair, or a pair holding only
  * whitespace stays literal.
  */
 export function escapeInlineText(value: string): string {
+  const spans = codeSpansOf(value);
+  const escapeRange = codeRangeEscaper(value, spans);
   let output = '';
   let last = 0;
-  for (const match of value.matchAll(INLINE_CODE)) {
-    const content = match[1] ?? '';
-    if (content.trim() === '') continue;
-    output += escapeStrongText(value.slice(last, match.index));
-    output += `<code>${escapeText(content)}</code>`;
-    last = match.index + match[0].length;
+  for (const match of maskCodeSpans(value, spans).matchAll(INLINE_STRONG)) {
+    const end = match.index + match[0].length;
+    output += escapeRange(last, match.index);
+    output += `<strong>${escapeRange(match.index + 2, end - 2)}</strong>`;
+    last = end;
   }
-  return output + escapeStrongText(value.slice(last));
+  return output + escapeRange(last, value.length);
 }
 
 /** Escape a value for a double-quoted attribute. */
