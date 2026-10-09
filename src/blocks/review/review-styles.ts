@@ -48,6 +48,14 @@ export const REVIEW_CSS = `.ak-decision{display:flex;flex-direction:column;gap:$
 .ak-review-add:hover{color:var(--ak-color-accent);border-color:color-mix(in srgb,var(--ak-color-accent) 45%,var(--ak-color-border));background:var(--ak-tint)}
 .ak-review-add:focus-visible{outline:0;box-shadow:var(--ak-ring)}
 .ak-main>.ak-section>.ak-section-head:has(>.ak-review-add)>h2{padding-right:7.5rem}
+.ak-review-add[data-ak-has-comment]{color:var(--ak-color-accent);border-color:var(--ak-color-accent);background:var(--ak-tint)}
+.ak-review-jump{align-self:flex-start;padding:0;border:0;background:none;cursor:pointer;text-align:left;text-decoration:underline;text-decoration-color:color-mix(in srgb,currentColor 35%,transparent);text-underline-offset:.25em}
+.ak-review-jump:not(:disabled)::before{content:"\\2191\\00a0";color:var(--ak-color-accent)}
+.ak-review-jump:hover{color:var(--ak-color-accent)}
+.ak-review-jump:focus-visible{outline:0;border-radius:var(--ak-radius-small);box-shadow:var(--ak-ring)}
+.ak-review-jump:disabled{cursor:default;text-decoration:none}
+::highlight(ak-review-focus){background-color:color-mix(in srgb,var(--ak-color-accent) 45%,transparent)}
+[data-ak-review-flash]{outline:2px solid var(--ak-color-accent);outline-offset:6px;border-radius:var(--ak-radius-small)}
 .ak-btn.ak-review-float[data-variant]{position:absolute;z-index:41;min-height:34px;padding:.3em .9em;font-size:.84em}
 .ak-review-editor{${POPUP};display:flex;flex-direction:column;gap:${UNIT(1)};width:min(380px,calc(100vw - 16px));padding:${UNIT(2)}}
 .ak-review-editor[hidden],.ak-review-float[hidden],.ak-review-bar[hidden],.ak-feedback-list[hidden]{display:none}
@@ -55,4 +63,4 @@ export const REVIEW_CSS = `.ak-decision{display:flex;flex-direction:column;gap:$
 .ak-review-bar .ak-btn{min-height:40px;padding:.45em 1.1em;border-radius:999px;box-shadow:var(--ak-elevation-popover)}
 ::highlight(ak-review){background-color:color-mix(in srgb,var(--ak-color-accent) 22%,transparent)}
 @media (max-width:768px){.ak-review-add,.ak-feedback-item-actions .ak-btn,.ak-review-float{min-height:44px}.ak-review-editor{position:fixed;left:8px!important;right:8px;top:auto!important;bottom:8px;width:auto}}
-@media print{.ak-review-add,.ak-review-float,.ak-review-editor,.ak-review-bar,.ak-feedback-actions,.ak-feedback-item-actions,.ak-review-nojs{display:none!important}.ak-decision,.ak-feedback{box-shadow:none}.ak-decision-option:not(:has(input:checked)){opacity:.6}}`;
+@media print{.ak-review-jump{text-decoration:none}.ak-review-add,.ak-review-float,.ak-review-editor,.ak-review-bar,.ak-feedback-actions,.ak-feedback-item-actions,.ak-review-nojs{display:none!important}.ak-decision,.ak-feedback{box-shadow:none}.ak-decision-option:not(:has(input:checked)){opacity:.6}}`;

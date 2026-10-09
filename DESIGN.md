@@ -223,7 +223,9 @@ Each widget ships its own CSS-only feature sheet, so a page carries only the she
 - The feedback panel is the same card: title, intro, the saved comments, a "General notes" field, and **Copy feedback** (primary) with a two-click **Clear** (ghost). Clear never opens a browser dialog.
 - With scripts on, the runtime adds a mono uppercase pill **Comment** button at the right of every top-level section head, a primary **Comment** button under a text selection inside `main`, and a pill at the bottom right that counts comments and scrolls to the panel. It hides while the panel is on screen.
 - The comment editor is a popover card at `elevation-popover` under its anchor. At ≤768px it is a sheet fixed to the bottom of the viewport. Escape cancels and returns focus; Ctrl or Cmd+Enter saves.
-- Commented text is marked with `::highlight(ak-review)`, a 22% accent wash, where the CSS Custom Highlight API exists. The DOM is never changed to mark it.
+- Commented text is marked with `::highlight(ak-review)`, a 22% accent wash, where the CSS Custom Highlight API exists. The DOM is never changed to mark it. After a reload the runtime finds the quote again inside its block. Clicking marked text opens its comment.
+- A section with a comment shows **Edit comment** in the accent with `--ak-tint`, and the button opens that comment. A section has at most one comment of its own.
+- In the panel, each comment's location is a link with an accent ↑. It scrolls to the commented text (a 45% accent wash for 1.6s) or to the block (an accent outline for 1.6s) and moves focus there.
 - A comment points at the top-level section, the block's own title, and code line numbers. The copied text is plain Markdown-like prose with numbered decisions and comments.
 - Without scripts every input is disabled at its initial value with a muted note, and no Comment button exists. Print hides every control and keeps the questions, the answers and the saved comments; unchosen options print at 60% opacity.
 - Comments, notes and answers are kept in `localStorage` under a key hashed from the page's IR, so a reload keeps them and changed content starts empty.

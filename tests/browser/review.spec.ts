@@ -108,6 +108,46 @@ test.describe('review', () => {
     await expect(page.getByLabel('Seven days')).toBeChecked();
   });
 
+  test('a section button knows its comment and opens it for editing', async ({ page }) => {
+    await page.goto(planReview());
+    await page.getByRole('button', { name: 'Comment on Steps' }).click();
+    await page.keyboard.type('First draft.');
+    await page.keyboard.press('Control+Enter');
+
+    const edit = page.getByRole('button', { name: 'Edit comment on Steps' });
+    await expect(edit).toHaveText('Edit comment');
+    await edit.click();
+    await expect(page.locator('.ak-review-editor textarea')).toHaveValue('First draft.');
+    await page.locator('.ak-review-editor textarea').fill('Second draft.');
+    await page.keyboard.press('Control+Enter');
+    await expect(page.locator('.ak-feedback-item')).toHaveCount(1);
+    await expect(page.locator('.ak-feedback-text')).toHaveText('Second draft.');
+  });
+
+  test('reopens a text comment by clicking the text, and jumps back to it from the list', async ({
+    page,
+  }) => {
+    await page.goto(planReview());
+    await selectText(page, '.ak-code .ak-line:nth-child(2)');
+    await page.locator('.ak-review-float').click();
+    await page.locator('.ak-review-editor textarea').fill('Mirror users too.');
+    await page.keyboard.press('Control+Enter');
+    await page.reload();
+
+    const line = page.locator('.ak-code .ak-line').nth(1);
+    await line.scrollIntoViewIfNeeded();
+    const box = await line.boundingBox();
+    if (box === null) throw new Error('line has no box');
+    await page.mouse.click(box.x + 140, box.y + box.height / 2);
+    await expect(page.locator('.ak-review-editor textarea')).toHaveValue('Mirror users too.');
+    await page.keyboard.press('Escape');
+
+    await page.locator('[data-ak-feedback]').scrollIntoViewIfNeeded();
+    await page.getByRole('button', { name: /^Go to Routing rule/ }).click();
+    await expect(line).toBeInViewport();
+    expect(await page.evaluate(() => CSS.highlights.get('ak-review-focus')?.size)).toBe(1);
+  });
+
   test('cancels an edit with Escape and returns focus to the opener', async ({ page }) => {
     await page.goto(planReview());
     const opener = page.getByRole('button', { name: 'Comment on Steps' });

@@ -34,15 +34,62 @@ function wireReview() {
     return el;
   };
   var ranges = [];
-  var paintHighlights = function () {
-    if (!(window.CSS && CSS.highlights && typeof window.Highlight === 'function')) return;
-    var live = ranges.filter(function (entry) {
-      return store.comments.some(function (comment) { return comment.id === entry.id; });
-    });
+  var canHighlight = !!(window.CSS && CSS.highlights && typeof window.Highlight === 'function');
+  var highlightRanges = function (name, list) {
+    if (!canHighlight) return;
     var highlight = new window.Highlight();
-    live.forEach(function (entry) { highlight.add(entry.range); });
-    CSS.highlights.set('ak-review', highlight);
+    list.forEach(function (range) { highlight.add(range); });
+    CSS.highlights.set(name, highlight);
   };
+  var commentById = function (id) {
+    return store.comments.filter(function (comment) { return comment.id === id; })[0] || null;
+  };
+  var rangeOf = function (comment) {
+    var entry = ranges.filter(function (candidate) { return candidate.id === comment.id; })[0];
+    return entry ? entry.range : null;
+  };
+  var paintHighlights = function () {
+    highlightRanges('ak-review', store.comments.map(rangeOf).filter(Boolean));
+  };
+  // Finds a saved quote again after a reload, matching the whitespace-collapsed text.
+  var findRange = function (el, quote) {
+    var needle = String(quote || '').replace(/…$/, '');
+    if (!el || needle === '') return null;
+    var walker = doc.createTreeWalker(el, 4);
+    var text = '';
+    var map = [];
+    var space = true;
+    for (var node = walker.nextNode(); node; node = walker.nextNode()) {
+      var value = node.nodeValue;
+      for (var i = 0; i < value.length; i += 1) {
+        if (/\\s/.test(value[i])) {
+          if (space) continue;
+          space = true;
+          text += ' ';
+        } else {
+          space = false;
+          text += value[i];
+        }
+        map.push([node, i]);
+      }
+    }
+    var at = text.indexOf(needle);
+    if (at === -1) return null;
+    var last = map[at + needle.length - 1];
+    var range = doc.createRange();
+    range.setStart(map[at][0], map[at][1]);
+    range.setEnd(last[0], last[1] + 1);
+    return range;
+  };
+  var anchorOf = function (node) {
+    var el = node.nodeType === 1 ? node : node.parentElement;
+    var block = el ? el.closest('[data-ak-id]') : null;
+    return block && main.contains(block) ? block.getAttribute('data-ak-id') : '';
+  };
+  store.comments.forEach(function (comment) {
+    var range = comment.anchor ? findRange(byId(comment.anchor)[0], comment.quote) : null;
+    if (range) ranges.push({ id: comment.id, range: range });
+  });
 
   qa('[data-ak-decision] input, [data-ak-decision] textarea, [data-ak-feedback] textarea, [data-ak-feedback] button').forEach(function (el) {
     el.disabled = false;
@@ -162,8 +209,15 @@ function wireReview() {
     if (event.key === 'Escape') { event.preventDefault(); closeEditor(); }
     if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) { event.preventDefault(); saveEditor(); }
   }, false);
-  var newComment = function (where, quote, range) {
-    return { id: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), where: where, quote: quote, text: '', range: range };
+  var newComment = function (where, quote, range, anchor, id) {
+    return {
+      id: id || 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      where: where,
+      quote: quote,
+      anchor: anchor,
+      text: '',
+      range: range
+    };
   };
 
   var floating = button('ak-review-float', 'Comment', 'primary');
@@ -192,22 +246,79 @@ function wireReview() {
   floating.addEventListener('click', function () {
     if (!pending) return;
     var rect = pending.range.getBoundingClientRect();
-    var comment = newComment(whereOf(pending.range), pending.quote, pending.range);
+    var comment = newComment(whereOf(pending.range), pending.quote, pending.range, anchorOf(pending.range.startContainer));
     floating.hidden = true;
     openEditor(comment, rect, null);
   }, false);
 
+  // Clicking commented text opens its comment again.
+  main.addEventListener('click', function (event) {
+    var selection = window.getSelection ? window.getSelection() : null;
+    if (selection && !selection.isCollapsed) return;
+    if (event.target.closest && event.target.closest('a, button, input, textarea, select, label')) return;
+    store.comments.forEach(function (comment) {
+      var range = rangeOf(comment);
+      if (!range || !editor.hidden) return;
+      var rects = range.getClientRects();
+      for (var i = 0; i < rects.length; i += 1) {
+        var rect = rects[i];
+        if (event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom) {
+          openEditor(comment, range.getBoundingClientRect(), null);
+          return;
+        }
+      }
+    });
+  }, false);
+
+  var sectionButtons = {};
+  var syncSectionButtons = function () {
+    Object.keys(sectionButtons).forEach(function (sectionId) {
+      var entry = sectionButtons[sectionId];
+      var has = commentById('section:' + sectionId) !== null;
+      entry.button.textContent = has ? 'Edit comment' : 'Comment';
+      entry.button.setAttribute('aria-label', (has ? 'Edit comment on ' : 'Comment on ') + entry.title);
+      if (has) entry.button.setAttribute('data-ak-has-comment', '');
+      else entry.button.removeAttribute('data-ak-has-comment');
+    });
+  };
   qa('.ak-main > .ak-section > .ak-section-head').forEach(function (head) {
     var title = q('h2', head);
-    if (!title) return;
+    var sectionId = head.parentElement.getAttribute('data-ak-id');
+    if (!title || !sectionId) return;
     var add = make('button', 'ak-review-add', 'Comment');
     add.type = 'button';
-    add.setAttribute('aria-label', 'Comment on ' + clean(title.textContent));
     head.appendChild(add);
+    sectionButtons[sectionId] = { button: add, title: clean(title.textContent) };
     add.addEventListener('click', function () {
-      openEditor(newComment(clean(title.textContent), '', null), add.getBoundingClientRect(), add);
+      var comment = commentById('section:' + sectionId) || newComment(clean(title.textContent), '', null, sectionId, 'section:' + sectionId);
+      openEditor(comment, add.getBoundingClientRect(), add);
     }, false);
   });
+
+  var flashTimer = 0;
+  var goTo = function (comment) {
+    var range = rangeOf(comment);
+    var el = comment.anchor ? byId(comment.anchor)[0] : null;
+    var start = range ? range.startContainer : el;
+    if (!start) return;
+    if (start.nodeType !== 1) start = start.parentElement;
+    start.scrollIntoView({ behavior: motionAllowed() ? 'smooth' : 'auto', block: 'center' });
+    window.clearTimeout(flashTimer);
+    qa('[data-ak-review-flash]').forEach(function (other) { other.removeAttribute('data-ak-review-flash'); });
+    if (range) highlightRanges('ak-review-focus', [range]);
+    else el.setAttribute('data-ak-review-flash', '');
+    flashTimer = window.setTimeout(function () {
+      highlightRanges('ak-review-focus', []);
+      if (el) el.removeAttribute('data-ak-review-flash');
+    }, 1600);
+    var section = sectionButtons[comment.anchor];
+    if (section && !range) {
+      section.button.focus({ preventScroll: true });
+    } else if (el) {
+      if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
+      el.focus({ preventScroll: true });
+    }
+  };
 
   var list = q('[data-ak-feedback-list]', panel);
   var bar = make('div', 'ak-review-bar');
@@ -229,7 +340,12 @@ function wireReview() {
     list.textContent = '';
     store.comments.forEach(function (comment) {
       var item = make('li', 'ak-feedback-item');
-      item.appendChild(make('p', 'ak-review-where', comment.where));
+      var jump = make('button', 'ak-review-where ak-review-jump', comment.where);
+      jump.type = 'button';
+      jump.setAttribute('aria-label', 'Go to ' + comment.where);
+      jump.disabled = !comment.anchor;
+      jump.addEventListener('click', function () { goTo(comment); }, false);
+      item.appendChild(jump);
       if (comment.quote) item.appendChild(make('blockquote', 'ak-review-quote', comment.quote));
       item.appendChild(make('p', 'ak-feedback-text', comment.text));
       var actions = make('div', 'ak-feedback-item-actions');
@@ -251,6 +367,7 @@ function wireReview() {
     var count = store.comments.length;
     barButton.textContent = count === 0 ? 'Select text to comment' : count + (count === 1 ? ' comment' : ' comments') + ' · Review';
     paintHighlights();
+    syncSectionButtons();
   };
 
   var indent = function (text) { return String(text).replace(/\\n/g, '\\n   '); };

@@ -16,7 +16,9 @@ Release mechanics and the compatibility contract live in
   be `recommended` (it starts checked), and a note. One `feedback` block per
   page turns on commenting: select any text, or use the Comment button on a
   top-level section, and a comment records where it points, including code
-  line numbers. **Copy feedback** copies every answer, comment and general
+  line numbers. A section's button turns into **Edit comment** once it has
+  one, clicking commented text reopens its comment, and each comment in the
+  panel links back to its place. **Copy feedback** copies every answer, comment and general
   note as one prompt to paste back to the agent. Comments survive a reload
   and reset when the content changes. Without scripts both blocks read
   completely, with the inputs disabled. A `decision` needs a `feedback` block
