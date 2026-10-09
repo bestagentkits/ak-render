@@ -142,7 +142,7 @@ describe('inline code in compiled pages', () => {
     expect(html).not.toContain('<script>alert(1)');
   });
 
-  it('leaves titles, the document title and code blocks literal', () => {
+  it('renders spans in block titles but leaves the document title and code blocks literal', () => {
     const { html } = compile(
       page(`  - type: callout
     title: The \`ak\` CLI
@@ -153,10 +153,36 @@ describe('inline code in compiled pages', () => {
 `).replace('title: Inline code', 'title: About `ak`'),
     );
     expect(html).toContain('<title>About `ak`</title>');
-    expect(html).toContain('<strong>The `ak` CLI</strong>');
+    expect(html).toContain('<strong>The <code>ak</code> CLI</strong>');
     expect(html).toContain('echo `date`');
-    expect(html).not.toContain('<code>ak</code>');
     expect(html).not.toContain('<code>date</code>');
+  });
+
+  it('renders spans in section titles, the outline, table cells, comparison items and key-value values', () => {
+    const sections = ['One', 'Two', 'Three']
+      .map(
+        (name) =>
+          `  - type: section\n    title: ${name} \`${name}Domain\`\n    blocks:\n      - type: text\n        text: x\n`,
+      )
+      .join('');
+    const { html } = compile(
+      page(`${sections}  - type: table
+    columns: [Name, Note]
+    rows:
+      - ["\`OrderLine\`", "**not** priced"]
+  - type: comparison
+    left: { label: For, items: ["One call to \`price()\`"] }
+    right: { label: Against, items: [Two jobs] }
+  - type: key-value
+    items:
+      - { key: Path, value: "\`docs/plan.md\`" }
+`),
+    );
+    expect(html).toContain('<h2>One <code>OneDomain</code></h2>');
+    expect(html).toContain('data-ak-outline-link>Two <code>TwoDomain</code></a>');
+    expect(html).toContain('<td><code>OrderLine</code></td><td><strong>not</strong> priced</td>');
+    expect(html).toContain('<li>One call to <code>price()</code></li>');
+    expect(html).toContain('<dd><code>docs/plan.md</code></dd>');
   });
 
   it('is deterministic', () => {

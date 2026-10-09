@@ -9,7 +9,7 @@
 
 import type { IrDocument } from '../ir.js';
 import { sectionAnchor } from './blocks.js';
-import { escapeAttribute, escapeText } from './escape.js';
+import { escapeAttribute, escapeInlineText } from './escape.js';
 
 /** Fewest titled top-level sections that justify an outline. */
 export const OUTLINE_MIN_SECTIONS = 3;
@@ -48,7 +48,7 @@ export function renderOutline(ir: IrDocument): string {
   const items = entries
     .map(
       (entry) =>
-        `<li><a href="#${escapeAttribute(entry.anchor)}" data-ak-outline-link>${escapeText(entry.title)}</a></li>`,
+        `<li><a href="#${escapeAttribute(entry.anchor)}" data-ak-outline-link>${escapeInlineText(entry.title)}</a></li>`,
     )
     .join('');
   return `<nav class="ak-toc" aria-label="On this page"><p class="ak-toc-title">On this page</p><ol>${items}</ol></nav>`;

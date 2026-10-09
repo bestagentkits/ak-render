@@ -19,7 +19,11 @@ Release mechanics and the compatibility contract live in
   outside it. A marker that is unpaired, empty, or padded with whitespace
   (`2 ** 8`) stays literal, and the content is escaped like any other text. A
   prose prop's description now reads "Plain text; `code` and **bold** spans
-  render inline."
+  render inline." Block titles (and the page outline), step, timeline, card
+  and callout titles, `heading` text, table cells, comparison items, risk
+  areas and key-value values render the same spans, so a class or path name
+  in a title or a cell reads as code. `meta.title`, code blocks and terminal
+  lines stay literal.
 - `crimson-press` built-in preset: cream paper, black ink and a crimson
   accent, Fraunces display over Inter Tight body and JetBrains Mono labels,
   square corners, no card shadow, and the `cards: flat`, `tables: ledger`,
