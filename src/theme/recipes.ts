@@ -10,14 +10,16 @@ import { isPlainObject } from '../json.js';
 
 /** Surfaces and their recipe values; the first value of each list is the default. */
 export const THEME_RECIPE_SPECS = {
-  cards: ['raised', 'flat', 'outlined'],
-  sections: ['ruled', 'divided', 'plain'],
+  cards: ['raised', 'flat', 'outlined', 'unboxed'],
+  sections: ['ruled', 'divided', 'plain', 'newspaper'],
   tables: ['default', 'ledger', 'minimal'],
   charts: ['default', 'minimal'],
   hero: ['default', 'compact'],
   metrics: ['default', 'headline'],
-  media: ['default', 'framed'],
+  media: ['default', 'framed', 'press-photo'],
   callouts: ['tinted', 'outlined'],
+  page: ['standard', 'wide', 'broadsheet'],
+  atmosphere: ['default', 'print'],
 } as const satisfies Record<string, readonly string[]>;
 
 export type ThemeRecipeSurface = keyof typeof THEME_RECIPE_SPECS;

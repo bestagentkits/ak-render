@@ -18,13 +18,14 @@ blocks:
 `;
 
 describe('theme presets', () => {
-  it('ships the eleven built-in presets', () => {
+  it('ships the twelve built-in presets', () => {
     expect(themePresetNames()).toEqual([
       'blueprint',
       'crimson-press',
       'data-console',
       'editorial',
       'executive-report',
+      'newspaper',
       'paper-ink',
       'product-studio',
       'research-notebook',

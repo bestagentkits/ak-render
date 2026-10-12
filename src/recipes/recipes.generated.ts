@@ -501,6 +501,59 @@ blocks:
 `,
   },
   {
+    name: 'newspaper',
+    summary:
+      'Broadsheet front page: masthead, section nav, lead and secondary stories, and a diary rail.',
+    useCases: [
+      'daily news digest',
+      'editorial front page',
+      'curated link journal',
+      'press-style briefing',
+    ],
+    blocks: ['digest-list', 'editorial-layout', 'publication-header', 'story'],
+    spec: `version: 1
+meta:
+  title: Replace with the publication name
+  description: Replace with one line on what this edition covers.
+theme:
+  preset: newspaper
+policy:
+  network: deny
+blocks:
+  - type: publication-header
+    name: Replace with the publication name
+    date: '2026-01-01'
+    issue: No. 1
+    tagline: Replace with a one-line tagline
+    sections:
+      - Technology
+      - Business
+      - Culture
+  - type: editorial-layout
+    lead:
+      - type: story
+        prominence: lead
+        category: Replace with a section
+        title: Replace with the lead headline
+        byline: Replace with a byline
+        summary: Replace with a one-sentence standfirst.
+        body: |
+          Replace with the opening paragraph of the lead story.
+
+          Blank lines split paragraphs.
+    secondary:
+      - type: story
+        category: Replace with a section
+        title: Replace with a second story headline
+        summary: Replace with a short summary.
+    aside:
+      - type: digest-list
+        title: Diary
+        items:
+          - { date: '2026-01-01', title: Replace with an item, text: Replace with one line. }
+`,
+  },
+  {
     name: 'product-showcase',
     summary:
       'Launch page with hero, feature bento, plan comparison, pricing, quotes and a call to action.',

@@ -142,6 +142,11 @@ rendering never needs the token or the network.
   similar schemes are rejected.
 - Use semantic blocks (`hero`, `steps`, `timeline`, `comparison`, `kpi`,
   `data-table`, `cta`) before primitives; they carry the design for you.
+- For a news or journal page use `preset: newspaper` with `publication-header`
+  and `editorial-layout` (`lead`, `secondary`, `aside` slots holding `story` and
+  `digest-list`). Say what each story is (`prominence`, `category`, `byline`,
+  `summary`, `body`); the compiler picks the columns, rules and drop cap. Start
+  from `ak-render recipe newspaper`.
 - Put shared numbers in `datasets` once and bind blocks with `dataRef`, instead
   of repeating rows in a chart and a table. A field a block names that the rows
   lack comes back with `details.allowed`. `percent` takes `87` for "87%". See

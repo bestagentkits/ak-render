@@ -35,7 +35,7 @@ const MAX_USE_CASES = 4;
 const MAX_USE_CASE_LENGTH = 48;
 
 /** Props whose value is a list of child blocks (the slot props of layout blocks). */
-const BLOCK_LIST_KEYS = new Set(['blocks', 'sidebar', 'aside', 'rail']);
+const BLOCK_LIST_KEYS = new Set(['blocks', 'sidebar', 'aside', 'rail', 'lead', 'secondary']);
 
 function fail(file, message) {
   throw new Error(`${file}: ${message}`);
