@@ -20,6 +20,7 @@ import {
 export const DIALECT_PRESETS: Readonly<Record<string, PresetDefinition>> = {
   'crimson-press': preset({
     name: 'crimson-press',
+    icons: 'phosphor',
     description:
       'Workshop broadsheet: cream paper, black ink and a crimson accent, serif display, square ledger rules.',
     typing: {
@@ -76,6 +77,7 @@ export const DIALECT_PRESETS: Readonly<Record<string, PresetDefinition>> = {
 
   'data-console': preset({
     name: 'data-console',
+    icons: 'codicons',
     description:
       'Dense operations console: slate surfaces, a cyan accent, ledger tables and quiet charts.',
     typing: {

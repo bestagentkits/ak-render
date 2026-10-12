@@ -13,6 +13,12 @@
 
 import { type Diagnostic, DiagnosticBag } from '../diagnostics.js';
 import { RenderError } from '../errors.js';
+import {
+  DEFAULT_ICON_PROFILE,
+  ICON_PROFILE_NAMES,
+  type IconProfileName,
+  isIconProfileName,
+} from '../icons/icon-packs.js';
 import { DEFAULT_PRESET } from './presets.js';
 import { defaultRecipes, type ThemeRecipes, validateThemeRecipes } from './recipes.js';
 import { builtinThemeCatalog, catalogPresetNames, type ThemeCatalog } from './theme-catalog.js';
@@ -31,6 +37,8 @@ export interface ThemeInput {
   dark?: Record<string, unknown>;
   /** Component recipe per surface; overrides the preset chain's choices. */
   recipes?: Record<string, unknown>;
+  /** Icon profile: which pack and weight draw this theme's icons. */
+  icons?: string;
 }
 
 export interface ResolvedTheme {
@@ -52,6 +60,8 @@ export interface ResolvedTheme {
    * its root, then the preset itself, then the input's own `recipes`.
    */
   recipes: ThemeRecipes;
+  /** Icon profile every semantic icon resolves through; the block's own pack wins. */
+  icons: IconProfileName;
 }
 
 function declarations(tokens: Tokens): string {
@@ -90,6 +100,7 @@ interface ChainResult {
   tokens: Tokens;
   dark: Tokens;
   recipes: Record<string, string>;
+  icons?: IconProfileName;
   description: string;
   version: number;
   chain: string[];
@@ -192,6 +203,11 @@ function resolveChain(
         ? {}
         : validateThemeRecipes(entry.recipes, 'theme.recipes', bag)),
     },
+    ...(entry.icons !== undefined
+      ? { icons: entry.icons }
+      : inherited.icons === undefined
+        ? {}
+        : { icons: inherited.icons }),
     description: entry.description === '' ? inherited.description : entry.description,
     version: entry.version,
     chain: [...inherited.chain, entry.name],
@@ -318,6 +334,19 @@ export function resolveTheme(
       ? {}
       : validateThemeRecipes(themeInput.recipes, 'theme.recipes', bag);
   const recipes: ThemeRecipes = { ...defaultRecipes(), ...root.recipes, ...authoredRecipes };
+  // Precedence: the spec's own `icons`, then the preset chain, then the default.
+  let icons: IconProfileName = root.icons ?? DEFAULT_ICON_PROFILE;
+  if (themeInput.icons !== undefined) {
+    if (isIconProfileName(themeInput.icons)) icons = themeInput.icons;
+    else {
+      bag.add({
+        code: 'SPEC_VALIDATION_ERROR',
+        path: 'theme.icons',
+        message: `"${String(themeInput.icons)}" is not an icon profile`,
+        details: { allowed: [...ICON_PROFILE_NAMES] },
+      });
+    }
+  }
 
   return {
     name: resolvedName,
@@ -331,6 +360,7 @@ export function resolveTheme(
     motionPolicy,
     density: light.density ?? 'comfortable',
     recipes,
+    icons,
   };
 }
 

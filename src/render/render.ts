@@ -13,6 +13,7 @@ import { type Diagnostic, DiagnosticBag } from '../diagnostics.js';
 import type { DiagramAdapter } from '../diagram/adapter.js';
 import { RenderError } from '../errors.js';
 import { stableHash } from '../hash.js';
+import { ICON_CSS, type IconCollector, renderIconSprite } from '../icons/icon-render.js';
 import type { IrDocument, IrNode } from '../ir.js';
 import type { BlockRegistry, FeatureModule } from '../registry/block-module.js';
 import { DEFAULT_REGISTRY } from '../registry/registry.js';
@@ -128,6 +129,7 @@ function buildCss(
   moduleFeatures: readonly FeatureModule[],
   theme: ResolvedTheme,
   ir: IrDocument,
+  usesIcons: boolean,
 ): string {
   const sheets = [BASE_CSS];
   for (const feature of FEATURE_ORDER) {
@@ -136,6 +138,7 @@ function buildCss(
     if (sheet !== undefined) sheets.push(sheet);
   }
   for (const feature of moduleFeatures) sheets.push(feature.css);
+  if (usesIcons) sheets.push(ICON_CSS);
   // Recipes restyle feature surfaces, so they follow every feature sheet.
   const recipes = recipeCss(theme.recipes, features);
   if (recipes !== '') sheets.push(recipes);
@@ -190,7 +193,7 @@ function renderBody(
     diagramAdapter?: DiagramAdapter;
     warnings: Diagnostic[];
   },
-): string {
+): { body: string; usesIcons: boolean } {
   const byId = nodeIndex(ir);
   const renderList = (ids: readonly string[]): string =>
     ids
@@ -198,12 +201,14 @@ function renderBody(
       .filter((child): child is IrNode => child !== undefined)
       .map((child) => `<!-- ak:${child.id} -->${renderVisible(child, context)}`)
       .join('\n');
+  const icons: IconCollector = new Map();
   const context: RenderContext = {
     ir,
     theme,
     features,
     registry: renderOptions.registry,
     warnings: renderOptions.warnings,
+    icons,
     ...(renderOptions.diagramAdapter === undefined
       ? {}
       : { diagramAdapter: renderOptions.diagramAdapter }),
@@ -217,7 +222,8 @@ function renderBody(
   }
   // The root is rendered as a node, not as its children: the page renderer owns
   // the `<main>` landmark and the h1 fallback.
-  return renderNode(root, context);
+  const page = renderNode(root, context);
+  return { body: `${page}${renderIconSprite(icons)}`, usesIcons: icons.size > 0 };
 }
 
 /** Run the full pipeline and return everything it produced. */
@@ -269,14 +275,14 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
   }
 
   const renderWarnings: Diagnostic[] = [];
-  const body = renderBody(ir, resolved, features, {
+  const { body, usesIcons } = renderBody(ir, resolved, features, {
     registry,
     warnings: renderWarnings,
     ...(options.diagramAdapter === undefined ? {} : { diagramAdapter: options.diagramAdapter }),
   });
   // Faces come first and need the rendered text, which decides their subsets.
   const fonts = embeddedFontCss(resolved, `${ir.meta.title}\n${body}`);
-  const css = [fonts, buildCss(features, moduleFeatures, resolved, ir)]
+  const css = [fonts, buildCss(features, moduleFeatures, resolved, ir, usesIcons)]
     .filter((sheet) => sheet !== '')
     .join('\n');
   const runtimeNeeded = features.size > 0 || bodyNeedsRuntime(body);

@@ -20,6 +20,7 @@ import {
   bool,
   define,
   enumStr,
+  iconProp,
   idProp,
   itemsOf,
   LABEL,
@@ -309,6 +310,21 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
   }),
 
   // --- information --------------------------------------------------------
+  semantic({
+    type: 'icon',
+    category: 'content',
+    tags: ['glyph', 'symbol', 'icon'],
+    useCases: ['labelled feature mark', 'status symbol with a caption'],
+    purpose: 'A single icon with a visible caption.',
+    summary: 'Icon: a glyph by meaning with a visible caption; the theme picks the pack.',
+    props: {
+      icon: iconProp(undefined, true),
+      label: LABEL,
+      tone: enumStr(['info', 'success', 'warning', 'danger'], {}),
+      ...anchorProps,
+    },
+    a11y: 'The caption is visible text and names the block; the glyph itself is decorative unless the icon value carries its own label.',
+  }),
   define({
     type: 'card',
     category: 'layout',
@@ -316,7 +332,7 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
     useCases: ['boxed summary', 'feature card'],
     purpose: 'Bounded content container.',
     summary: 'Card: titled container that holds child blocks.',
-    props: { title: OPTIONAL_TITLE, text: txt(), ...anchorProps },
+    props: { title: OPTIONAL_TITLE, text: txt(), icon: iconProp(), ...anchorProps },
     slots: { children: { accepts: '*', min: 0, max: 40 } },
   }),
   define({
@@ -330,6 +346,7 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
       tone: enumStr(['info', 'success', 'warning', 'danger'], { default: 'info' }),
       title: TITLE,
       text: txt({ required: true }),
+      icon: iconProp(),
       ...anchorProps,
     },
     a11y: 'Danger and warning tones use role="alert"; informational tones are not announced.',
@@ -345,6 +362,7 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
       tone: enumStr(['info', 'success', 'warning', 'danger'], { default: 'info' }),
       title: TITLE,
       text: txt({ required: true }),
+      icon: iconProp(),
       ...anchorProps,
     },
   }),
@@ -391,7 +409,11 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
     summary: 'Stats: labeled values as a figure list.',
     props: {
       title: OPTIONAL_TITLE,
-      items: itemsOf({ label: LABEL, value: str({ required: true, maxLength: 60 }) }),
+      items: itemsOf({
+        label: LABEL,
+        value: str({ required: true, maxLength: 60 }),
+        icon: iconProp(),
+      }),
       ...anchorProps,
     },
     a11y: 'Each figure pairs its label and value as text; no color-only meaning.',
@@ -421,7 +443,7 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
     summary: 'Steps: numbered sequence of titled steps.',
     props: {
       title: OPTIONAL_TITLE,
-      items: itemsOf({ title: LABEL, text: txt() }),
+      items: itemsOf({ title: LABEL, text: txt(), icon: iconProp() }),
       ...anchorProps,
     },
     a11y: 'Renders an ordered list so sequence is conveyed without numbering characters.',
@@ -436,7 +458,12 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
     summary: 'Timeline: ordered entries with a when/title/body shape.',
     props: {
       title: OPTIONAL_TITLE,
-      items: itemsOf({ when: str({ required: true, maxLength: 80 }), title: LABEL, text: txt() }),
+      items: itemsOf({
+        when: str({ required: true, maxLength: 80 }),
+        title: LABEL,
+        text: txt(),
+        icon: iconProp(),
+      }),
       ...anchorProps,
     },
     a11y: 'Ordered list; the `when` value is text, not a colour or position cue.',
@@ -896,6 +923,7 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
     props: {
       label: LABEL,
       variant: enumStr(['primary', 'secondary', 'ghost'], { default: 'secondary' }),
+      icon: iconProp(),
       on: onProp('Action bindings; a button without bindings is a diagnostic.'),
       ...anchorProps,
     },

@@ -7,6 +7,7 @@
  * sets the resolver consumes.
  */
 
+import type { IconProfileName } from '../icons/icon-packs.js';
 import type { ThemeRecipeSurface } from './recipes.js';
 import type { Tokens } from './tokens.js';
 
@@ -17,6 +18,8 @@ export interface PresetDefinition {
   dark: Tokens;
   /** Component recipes this preset selects; unset surfaces keep their default. */
   recipes?: Partial<Record<ThemeRecipeSurface, string>>;
+  /** Icon profile this preset draws with; unset inherits the default. */
+  icons?: IconProfileName;
 }
 
 /** Structural defaults shared by every preset; each preset overrides colours and voice. */
@@ -52,6 +55,7 @@ export interface PresetInput {
   typing?: Tokens;
   structure?: Tokens;
   recipes?: Partial<Record<ThemeRecipeSurface, string>>;
+  icons?: IconProfileName;
 }
 
 export function preset(input: PresetInput): PresetDefinition {
@@ -70,5 +74,6 @@ export function preset(input: PresetInput): PresetDefinition {
     dark: { ...shared, ...input.colors.dark },
   };
   if (input.recipes !== undefined) definition.recipes = { ...input.recipes };
+  if (input.icons !== undefined) definition.icons = input.icons;
   return definition;
 }
