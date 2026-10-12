@@ -44,6 +44,7 @@
     "README.md",
     "CHANGELOG.md",
     "llms.txt",
+    "THIRD_PARTY_NOTICES.md",
     "assets/fonts/*/OFL.txt"
   ],
   "sideEffects": false,
@@ -56,6 +57,8 @@
     "test:browser": "playwright test",
     "test:package": "node scripts/package-smoke.mjs",
     "test:clean-install": "node scripts/clean-install-verify.mjs",
+    "icons:generate": "node scripts/generate-icons.mjs",
+    "icons:check": "node scripts/generate-icons.mjs --check",
     "gallery:generate": "node scripts/generate-gallery.mjs",
     "gallery:check": "node scripts/generate-gallery.mjs --check",
     "bench:baseline": "node benchmarks/legacy-context-cost.mjs",
@@ -73,11 +76,16 @@
     "site:deploy": "pnpm site:build && wrangler deploy --config site/wrangler.jsonc",
     "recipes:generate": "node scripts/generate-recipes-module.mjs",
     "recipes:check": "node scripts/generate-recipes-module.mjs --check",
-    "verify": "pnpm lint && pnpm typecheck && pnpm fonts:check && pnpm recipes:check && pnpm test && pnpm build"
+    "verify": "pnpm lint && pnpm typecheck && pnpm fonts:check && pnpm recipes:check && pnpm icons:check && pnpm test && pnpm build"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
     "@biomejs/biome": "^2.4.12",
+    "@iconify-json/codicon": "1.2.74",
+    "@iconify-json/lucide": "1.2.143",
+    "@iconify-json/ph": "1.2.2",
+    "@iconify-json/pixelarticons": "1.2.10",
+    "@iconify-json/tabler": "1.2.42",
     "@playwright/test": "^1.56.0",
     "@types/node": "^22.15.0",
     "ajv": "^8.17.1",

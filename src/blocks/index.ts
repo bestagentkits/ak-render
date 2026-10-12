@@ -14,6 +14,7 @@ import { ENGINEERING_GROUP } from './engineering/index.js';
 import { EVIDENCE_GROUP } from './evidence/index.js';
 import { LAYOUT_GROUP } from './layout/index.js';
 import { PRODUCT_GROUP } from './product/index.js';
+import { REVIEW_GROUP } from './review/index.js';
 
 export const BLOCK_GROUPS: readonly BlockGroup[] = [
   COMPOSITION_GROUP,
@@ -24,5 +25,6 @@ export const BLOCK_GROUPS: readonly BlockGroup[] = [
   EVIDENCE_GROUP,
   PRODUCT_GROUP,
   CONTROLS_GROUP,
+  REVIEW_GROUP,
   EDITORIAL_GROUP,
 ];

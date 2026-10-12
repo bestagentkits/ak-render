@@ -26,10 +26,10 @@
       "specBytes": 5517,
       "expandedSpecBytes": 7703,
       "datasetSavingBytes": 2186,
-      "htmlBytes": 183479,
-      "catalogBytes": 7228,
-      "compactDescribeBytes": 4717,
-      "readBytes": 11945,
+      "htmlBytes": 183754,
+      "catalogBytes": 7312,
+      "compactDescribeBytes": 4869,
+      "readBytes": 12181,
       "htmlPerSpecByte": 33.3
     },
     {
@@ -51,10 +51,10 @@
       "specBytes": 5762,
       "expandedSpecBytes": 7847,
       "datasetSavingBytes": 2085,
-      "htmlBytes": 213722,
-      "catalogBytes": 7228,
-      "compactDescribeBytes": 4617,
-      "readBytes": 11845,
+      "htmlBytes": 213997,
+      "catalogBytes": 7312,
+      "compactDescribeBytes": 4807,
+      "readBytes": 12119,
       "htmlPerSpecByte": 37.1
     },
     {
@@ -75,11 +75,11 @@
       "specBytes": 5845,
       "expandedSpecBytes": 6519,
       "datasetSavingBytes": 674,
-      "htmlBytes": 167873,
-      "catalogBytes": 7228,
-      "compactDescribeBytes": 4342,
-      "readBytes": 11570,
-      "htmlPerSpecByte": 28.7
+      "htmlBytes": 168148,
+      "catalogBytes": 7312,
+      "compactDescribeBytes": 4555,
+      "readBytes": 11867,
+      "htmlPerSpecByte": 28.8
     },
     {
       "fixture": "interactive-data-explorer.yaml",
@@ -98,11 +98,11 @@
       "specBytes": 4252,
       "expandedSpecBytes": 5413,
       "datasetSavingBytes": 1161,
-      "htmlBytes": 176587,
-      "catalogBytes": 7228,
-      "compactDescribeBytes": 4469,
-      "readBytes": 11697,
-      "htmlPerSpecByte": 41.5
+      "htmlBytes": 176862,
+      "catalogBytes": 7312,
+      "compactDescribeBytes": 4621,
+      "readBytes": 11933,
+      "htmlPerSpecByte": 41.6
     },
     {
       "fixture": "product-case-study.yaml",
@@ -121,11 +121,11 @@
       "specBytes": 5696,
       "expandedSpecBytes": 6172,
       "datasetSavingBytes": 476,
-      "htmlBytes": 135659,
-      "catalogBytes": 7228,
-      "compactDescribeBytes": 2970,
-      "readBytes": 10198,
-      "htmlPerSpecByte": 23.8
+      "htmlBytes": 135934,
+      "catalogBytes": 7312,
+      "compactDescribeBytes": 3145,
+      "readBytes": 10457,
+      "htmlPerSpecByte": 23.9
     },
     {
       "fixture": "research-report.yaml",
@@ -149,18 +149,18 @@
       "specBytes": 5655,
       "expandedSpecBytes": 5908,
       "datasetSavingBytes": 253,
-      "htmlBytes": 139346,
-      "catalogBytes": 7228,
-      "compactDescribeBytes": 4136,
-      "readBytes": 11364,
-      "htmlPerSpecByte": 24.6
+      "htmlBytes": 139621,
+      "catalogBytes": 7312,
+      "compactDescribeBytes": 4349,
+      "readBytes": 11661,
+      "htmlPerSpecByte": 24.7
     }
   ],
   "totals": {
     "specBytes": 32727,
     "expandedSpecBytes": 39562,
     "datasetSavingBytes": 6835,
-    "htmlBytes": 1016666,
-    "compactDescribeBytes": 25251
+    "htmlBytes": 1018316,
+    "compactDescribeBytes": 26346
   }
 }

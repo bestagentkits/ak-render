@@ -13,6 +13,7 @@ import {
   DATA_JSON_SCHEMA_DEFS,
 } from '../data/data-json-schema.js';
 import { RenderError } from '../errors.js';
+import { ICON_PROFILE_NAMES } from '../icons/icon-packs.js';
 import { LIMITS } from '../spec/bounds.js';
 import { CONDITION_JSON_SCHEMA } from '../spec/conditions.js';
 import { THEME_RECIPES_JSON_SCHEMA } from '../theme/recipes.js';
@@ -267,6 +268,11 @@ export function buildPageSpecJsonSchema(): Record<string, unknown> {
           tokens: { type: 'object' },
           dark: { type: 'object', description: 'Token overrides for the dark scheme.' },
           recipes: THEME_RECIPES_JSON_SCHEMA,
+          icons: {
+            enum: [...ICON_PROFILE_NAMES],
+            description:
+              'Icon pack and weight for semantic icons; the first value is the default and a preset may choose another.',
+          },
         },
       },
       policy: {

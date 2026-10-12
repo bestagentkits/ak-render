@@ -108,6 +108,13 @@ keeps every default renders the same bytes as one without recipes.
 An unknown surface or value is a `SPEC_VALIDATION_ERROR` whose
 `details.allowed` lists the valid choices.
 
+## Icons
+
+A preset may set `icons`, the pack and variant that draw icons named by meaning:
+`lucide` (default), `phosphor`, `phosphor-bold`, `phosphor-fill`, `tabler`,
+`pixelarticons` or `codicons`. It is inherited through `extends`, and an inline
+theme can set it directly. See [icons.md](./icons.md).
+
 ## Defining a preset inline
 
 ```yaml

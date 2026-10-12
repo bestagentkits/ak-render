@@ -27,7 +27,12 @@ export const str = (o: Omit<PropSchema & { kind: 'string' }, 'kind'> = {}): Prop
  * prop, so it stays short.
  */
 export const PROSE_DESCRIPTION = 'Plain text; `code` and **bold** spans render inline.';
+export const ICON_DESCRIPTION =
+  'An icon by meaning (`gauge`) or `pack:name`; or {name, pack?, size?, label?}. Find names with search-icons.';
 export const VERBATIM_DESCRIPTION = 'Emitted verbatim; backticks stay literal.';
+
+export const LANGUAGE_DESCRIPTION =
+  'Highlighted: php, javascript, typescript, python, go, rust, java, kotlin, csharp, c, cpp, swift, ruby, bash, sql, json, yaml, diff. Any other value renders plain.';
 
 export const txt = (
   o: { required?: boolean; default?: string; maxLength?: number; description?: string } = {},
@@ -114,6 +119,12 @@ export const onProp = (description = 'Declarative action bindings for this block
 export const anchorProps: Record<string, PropSchema> = {
   id: idProp('Stable node id. Author-provided ids are used verbatim and must be unique.'),
 };
+
+export const iconProp = (description = ICON_DESCRIPTION, required = false): PropSchema => ({
+  kind: 'icon',
+  description,
+  ...(required ? { required: true } : {}),
+});
 
 export const itemsOf = (
   fields: Record<string, PropSchema>,

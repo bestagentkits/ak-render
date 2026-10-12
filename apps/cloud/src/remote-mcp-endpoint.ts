@@ -42,13 +42,16 @@ import {
 import {
   BUILTIN_THEMES_TOOL,
   CATALOG_TOOL,
+  DESCRIBE_ICON_TOOL,
   DESCRIBE_TOOL,
+  ICON_PACKS_TOOL,
   type McpTool,
   optionalTheme,
   RECIPE_TOOL,
   RECIPES_TOOL,
   REMOTE_RENDER_DEFINITION,
   SEARCH_CATALOG_TOOL,
+  SEARCH_ICONS_TOOL,
   VALIDATE_TOOL,
 } from '../../../src/mcp/mcp-tool-definitions.js';
 import {
@@ -67,7 +70,7 @@ import { renderArtifact } from './render.js';
 import { createArtifact, createShare } from './share.js';
 
 export const REMOTE_INSTRUCTIONS = `AK Render compiles a Page Spec (YAML or JSON) into one self-contained, offline HTML file.
-Loop: call catalog once (or search-catalog with a few words), describe only the block types you plan to use (several at once with types, compact: true for the short form), optionally start from a recipe (list them with recipes), validate the spec and fix every diagnostic by its JSON path, then render.
+Loop: call catalog once (or search-catalog with a few words), describe only the block types you plan to use (several at once with types, compact: true for the short form), find icons by meaning with search-icons (describe-icon, icon-packs for detail), optionally start from a recipe (list them with recipes), validate the spec and fix every diagnostic by its JSON path, then render.
 On this remote server render stores the page and returns its artifactUrl and a short summary, never the HTML. Pass share: true for a longer-lived share link.
 validate and render need an AgentKit API key or OAuth access token as the bearer in the Authorization header.
 Describe meaning, not presentation: the compiler owns layout, colour, typography and motion.`;
@@ -180,6 +183,9 @@ export const REMOTE_TOOLS: readonly RemoteTool[] = [
   anonymous(CATALOG_TOOL),
   anonymous(SEARCH_CATALOG_TOOL),
   anonymous(DESCRIBE_TOOL),
+  anonymous(SEARCH_ICONS_TOOL),
+  anonymous(DESCRIBE_ICON_TOOL),
+  anonymous(ICON_PACKS_TOOL),
   anonymous(RECIPES_TOOL),
   anonymous(RECIPE_TOOL),
   REMOTE_VALIDATE_TOOL,

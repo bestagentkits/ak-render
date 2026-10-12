@@ -292,6 +292,7 @@ describe('media policy: video poster', () => {
       theme: loadTheme(),
       features: new Set(),
       registry: DEFAULT_REGISTRY,
+      icons: new Map(),
       renderChildren: () => '',
       renderSlot: () => '',
       byId: () => undefined,

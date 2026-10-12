@@ -1,4 +1,6 @@
 import { runDiagramAdapter } from '../diagram/adapter.js';
+import type { IconSize } from '../icons/icon-packs.js';
+import { renderIcon } from '../icons/icon-render.js';
 import type { IrNode } from '../ir.js';
 import { isPlainObject, type JsonValue } from '../json.js';
 import type { BlockRegistry } from '../registry/block-module.js';
@@ -31,6 +33,7 @@ import {
 } from './escape.js';
 import type { RenderContext } from './render-context.js';
 import { actionLinks, browserShot, SHOWCASE_RENDERERS } from './showcase-blocks.js';
+import { codeLines } from './syntax-highlight.js';
 import { toneBadge, valueTone } from './tone.js';
 
 export type { RenderContext } from './render-context.js';
@@ -77,12 +80,6 @@ function lineCountCell(value: number, kind: 'add' | 'del'): string {
   return `<td class="ak-num ${tone}">${sign}${escapeText(String(value))}</td>`;
 }
 
-/** Split code into one span per line so the stylesheet can number lines; newlines stay in the text. */
-function codeLines(text: string): string {
-  const lines = text.replace(/\n$/u, '').split('\n');
-  return lines.map((line) => `<span class="ak-line">${escapeText(line)}</span>`).join('\n');
-}
-
 /**
  * Wrap each word of the hero title so it can rise into view on its own beat.
  * The spaces stay as text between the wrappers, so the heading's text content
@@ -124,6 +121,23 @@ function mediaFallbackBody(
   ]
     .filter((part) => part !== '')
     .join('');
+}
+
+function nodeIcon(context: RenderContext, node: IrNode, size: IconSize): string {
+  return renderIcon(context, node.props.icon, { size, path: `${node.path}.icon`, nodeId: node.id });
+}
+
+function itemIcon(
+  context: RenderContext,
+  node: IrNode,
+  index: number,
+  item: Record<string, JsonValue>,
+): string {
+  return renderIcon(context, item.icon, {
+    size: 'sm',
+    path: `${node.path}.items[${index}].icon`,
+    nodeId: node.id,
+  });
 }
 
 const RENDERERS: Record<string, Renderer> = {
@@ -182,7 +196,7 @@ const RENDERERS: Record<string, Renderer> = {
 
   heading: (node) => {
     const level = Math.min(Math.max(numberProp(node, 'level', 2), 1), 6);
-    return `<h${level}${renderAttributes(nodeAttributes(node, { class: 'ak-block' }))}>${escapeText(
+    return `<h${level}${renderAttributes(nodeAttributes(node, { class: 'ak-block' }))}>${escapeInlineText(
       stringProp(node, 'text'),
     )}</h${level}>`;
   },
@@ -241,7 +255,7 @@ const RENDERERS: Record<string, Renderer> = {
       '</div>',
       `<pre${renderAttributes({ 'data-ak-id': node.id })}><code${renderAttributes({
         class: `language-${language}`,
-      })}>${codeLines(stringProp(node, 'text'))}</code></pre>`,
+      })}>${codeLines(stringProp(node, 'text'), language)}</code></pre>`,
       '</div>',
     ]
       .filter((part) => part !== '')
@@ -268,17 +282,30 @@ const RENDERERS: Record<string, Renderer> = {
       nodeAttributes(node, { class: 'ak-block' }),
       `${titleHeader(node)}<dl class="ak-kv">${objectListProp(node, 'items')
         .map(
-          (item) => `<dt>${escapeText(str(item.key))}</dt><dd>${escapeText(str(item.value))}</dd>`,
+          (item) =>
+            `<dt>${escapeText(str(item.key))}</dt><dd>${escapeInlineText(str(item.value))}</dd>`,
         )
         .join('')}</dl>`,
     ),
 
+  icon: (node, context) =>
+    element(
+      'div',
+      nodeAttributes(node, {
+        class: 'ak-block ak-icon-block',
+        'data-tone': stringProp(node, 'tone') === '' ? undefined : stringProp(node, 'tone'),
+      }),
+      `${nodeIcon(context, node, 'lg')}<span>${escapeText(stringProp(node, 'label'))}</span>`,
+    ),
+
   card: (node, context) => {
     const text = stringProp(node, 'text');
+    const icon = nodeIcon(context, node, 'md');
     return element(
       'div',
       nodeAttributes(node, { class: 'ak-block ak-card ak-card--elevated' }),
       [
+        icon === '' ? '' : `<span class="ak-card-icon">${icon}</span>`,
         stringProp(node, 'title') === ''
           ? ''
           : heading(3, stringProp(node, 'title'), 'ak-card-title'),
@@ -288,20 +315,22 @@ const RENDERERS: Record<string, Renderer> = {
     );
   },
 
-  alert: (node) => {
+  alert: (node, context) => {
+    const icon = nodeIcon(context, node, 'md');
     const tone = stringProp(node, 'tone', 'info');
     const role = tone === 'danger' || tone === 'warning' ? ' role="alert"' : '';
     return [
       `<div${renderAttributes(nodeAttributes(node, { class: 'ak-block ak-alert', ...toneAttribute(node) }))}${role}>`,
-      `<p><strong>${escapeText(stringProp(node, 'title'))}</strong></p>`,
+      `<p>${icon}<strong>${escapeInlineText(stringProp(node, 'title'))}</strong></p>`,
       `<p>${escapeInlineText(stringProp(node, 'text'))}</p>`,
       '</div>',
     ].join('');
   },
 
-  callout: (node) => {
+  callout: (node, context) => {
+    const icon = nodeIcon(context, node, 'sm');
     const tone = stringProp(node, 'tone', 'info');
-    const icon =
+    const word =
       tone === 'danger'
         ? 'Danger'
         : tone === 'warning'
@@ -311,8 +340,8 @@ const RENDERERS: Record<string, Renderer> = {
             : 'Note';
     return [
       `<aside${renderAttributes(nodeAttributes(node, { class: 'ak-block ak-callout', ...toneAttribute(node) }))}>`,
-      `<p class="ak-label">${escapeText(icon)}</p>`,
-      `<p><strong>${escapeText(stringProp(node, 'title'))}</strong></p>`,
+      `<p class="ak-label">${icon}${escapeText(word)}</p>`,
+      `<p><strong>${escapeInlineText(stringProp(node, 'title'))}</strong></p>`,
       `<p>${escapeInlineText(stringProp(node, 'text'))}</p>`,
       '</aside>',
     ].join('');
@@ -349,7 +378,7 @@ const RENDERERS: Record<string, Renderer> = {
     ].join('');
   },
 
-  stats: (node) => {
+  stats: (node, context) => {
     const items = objectListProp(node, 'items');
     return element(
       'section',
@@ -360,8 +389,8 @@ const RENDERERS: Record<string, Renderer> = {
           ? ''
           : `<dl class="ak-stats">${items
               .map(
-                (item) =>
-                  `<div class="ak-stat"><dt>${escapeText(str(item.label))}</dt><dd>${escapeText(
+                (item, index) =>
+                  `<div class="ak-stat"><dt>${itemIcon(context, node, index, item)}${escapeText(str(item.label))}</dt><dd>${escapeText(
                     str(item.value),
                   )}</dd></div>`,
               )
@@ -386,7 +415,7 @@ const RENDERERS: Record<string, Renderer> = {
     );
   },
 
-  steps: (node) => {
+  steps: (node, context) => {
     const items = objectListProp(node, 'items');
     return element(
       'section',
@@ -394,9 +423,9 @@ const RENDERERS: Record<string, Renderer> = {
       [
         titleHeader(node),
         `<ol class="ak-steps">${items
-          .map((item) => {
+          .map((item, index) => {
             const text = str(item.text);
-            return `<li><p><strong>${escapeText(str(item.title))}</strong></p>${
+            return `<li><p>${itemIcon(context, node, index, item)}<strong>${escapeInlineText(str(item.title))}</strong></p>${
               text === '' ? '' : `<p>${escapeInlineText(text)}</p>`
             }</li>`;
           })
@@ -405,7 +434,7 @@ const RENDERERS: Record<string, Renderer> = {
     );
   },
 
-  timeline: (node) => {
+  timeline: (node, context) => {
     const items = objectListProp(node, 'items');
     return element(
       'section',
@@ -413,9 +442,9 @@ const RENDERERS: Record<string, Renderer> = {
       [
         titleHeader(node),
         `<ol class="ak-timeline">${items
-          .map((item) => {
+          .map((item, index) => {
             const text = str(item.text);
-            return `<li><time>${escapeText(str(item.when))}</time><p><strong>${escapeText(
+            return `<li><time>${escapeText(str(item.when))}</time><p>${itemIcon(context, node, index, item)}<strong>${escapeInlineText(
               str(item.title),
             )}</strong></p>${text === '' ? '' : `<p>${escapeInlineText(text)}</p>`}</li>`;
           })
@@ -455,7 +484,7 @@ const RENDERERS: Record<string, Renderer> = {
         `<ul class="ak-grid" data-ak-columns="3">${items
           .map((item) => {
             const text = str(item.text);
-            return `<li class="ak-card ak-card--elevated"><p><strong>${escapeText(
+            return `<li class="ak-card ak-card--elevated"><p><strong>${escapeInlineText(
               str(item.title),
             )}</strong></p>${text === '' ? '' : `<p>${escapeInlineText(text)}</p>`}</li>`;
           })
@@ -476,7 +505,7 @@ const RENDERERS: Record<string, Renderer> = {
     const body = rows
       .map((row) => {
         const cells = (Array.isArray(row) ? row : [])
-          .map((cell, index) => `<td${align(index)}>${escapeText(str(cell))}</td>`)
+          .map((cell, index) => `<td${align(index)}>${escapeInlineText(str(cell))}</td>`)
           .join('');
         return `<tr>${cells}</tr>`;
       })
@@ -503,7 +532,7 @@ const RENDERERS: Record<string, Renderer> = {
         ? sideValue.items
         : []
       )
-        .map((item) => `<li>${escapeText(str(item))}</li>`)
+        .map((item) => `<li>${escapeInlineText(str(item))}</li>`)
         .join('')}</ul></div>`;
     return element(
       'section',
@@ -522,7 +551,7 @@ const RENDERERS: Record<string, Renderer> = {
         `<div class="ak-table-wrap"><table><caption>Risk by impact and likelihood</caption><thead><tr><th scope="col">Area</th><th scope="col">Impact</th><th scope="col">Likelihood</th><th scope="col">Note</th></tr></thead><tbody>${items
           .map(
             (item) =>
-              `<tr><th scope="row">${escapeText(str(item.area))}</th><td>${toneBadge(
+              `<tr><th scope="row">${escapeInlineText(str(item.area))}</th><td>${toneBadge(
                 str(item.impact),
               )}</td><td>${toneBadge(str(item.likelihood))}</td><td>${escapeInlineText(
                 str(item.note),
@@ -813,14 +842,15 @@ const RENDERERS: Record<string, Renderer> = {
     ].join('');
   },
 
-  button: (node) => {
+  button: (node, context) => {
+    const icon = nodeIcon(context, node, 'sm');
     const variant = stringProp(node, 'variant', 'secondary');
     return `<button type="button"${renderAttributes({
       class: 'ak-btn',
       'data-variant': variant,
       ...nodeAttributes(node, {}),
       ...clickAttribute(node.bindings),
-    })}>${escapeText(stringProp(node, 'label'))}</button>`;
+    })}>${icon}${escapeText(stringProp(node, 'label'))}</button>`;
   },
 
   link: (node) => {

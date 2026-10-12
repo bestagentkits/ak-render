@@ -22,7 +22,7 @@ spec from stdin (`-`) and the `mcp` command need version 0.2.0 or later, and
 ## The loop
 
 1. **Find the blocks.** Search by intent, or list one category. The full
-   catalog of 83 block types and every action is about 7 kB:
+   catalog of 85 block types and every action is about 7 kB:
 
    ```bash
    npx -y @bestagentkits/render search-catalog sortable table
@@ -70,9 +70,13 @@ spec from stdin (`-`) and the `mcp` command need version 0.2.0 or later, and
    `warnings`. Don't read the HTML back into context, because the summary is
    enough.
 
-6. **Open it** with the platform opener: `open page.html` on macOS,
-   `xdg-open page.html` on Linux, or `start page.html` on Windows. Then tell the
-   user the path.
+6. **Open it once.** Before you compile, check whether the `--out` file
+   exists. If it does not, open the new page with the platform opener:
+   `open page.html` on macOS, `xdg-open page.html` on Linux, or
+   `start page.html` on Windows. Then tell the user the path. If it exists,
+   don't open it again, because the user probably has it open already and
+   every opener call adds one more tab. Tell the user to refresh the page to
+   see the update.
 
 ## Minimal spec
 
@@ -110,7 +114,7 @@ block with `describe` before you use it.
 
 | Page | Start with |
 | --- | --- |
-| Plan or roadmap | `hero`, `steps`, `timeline`, `risk-matrix`, `checklist`, `callout` |
+| Plan or roadmap | `hero`, `steps`, `timeline`, `risk-matrix`, `checklist`, `callout`, `decision`, `feedback` |
 | Recap or status | `hero`, `stats`, `timeline`, `checklist`, `list` |
 | Diff or code review | `diff-summary`, `code-review`, `file-tree`, `code` |
 | Dashboard | `kpi`, `chart`, `data-table`, `filter-bar`, `grid-item`, `main-aside` |
@@ -119,6 +123,11 @@ block with `describe` before you use it.
 | Product page | `hero`, `pricing`, `feature-matrix`, `testimonial`, `logo-cloud`, `people` |
 | Explainer | `hero`, `card-grid`, `tabs`, `accordion`, `code`, `callout` |
 | Comparison or decision | `comparison`, `table`, `before-after`, `callout` |
+
+For a plan the user must approve, put each open question in a `decision` and
+mark the option you would pick `recommended`. End the page with one `feedback`
+block: the user comments on any text, answers the decisions, and copies it all
+back to you as one prompt. Act on that prompt before you build.
 
 Group blocks with `section`. Tabs, accordion sections, carousel slides, and
 bento tiles can hold blocks in `items[i].blocks`. Use `grid`, `split`, and
@@ -152,7 +161,8 @@ project or user presets it finds. Use only a name it lists. Don't try to restyle
   (a `text`, a step or list item's `text`, a `description`, a `caption`), a
   pair of backticks renders as inline code, so write `` `ak-render validate` ``
   for a command, path or URL, and `**key phrase**` renders as bold. Use bold
-  sparingly. Titles, `code` blocks, and `terminal` lines stay literal.
+  sparingly. Block titles, table cells and comparison items render the same
+  spans. `meta.title`, `code` blocks, and `terminal` lines stay literal.
 - **Never invent data.** Every number, date, name, path, and finding must come
   from the conversation, the repository, or tool output. If a value is
   unknown, leave the block out or ask. Don't fill it with a plausible guess.
@@ -171,7 +181,7 @@ project or user presets it finds. Use only a name it lists. Don't try to restyle
 
 `npx -y @bestagentkits/render mcp` serves the same loop over stdio as the tools
 `catalog` (optional `category`), `search-catalog` (`query`), `describe`
-(`type`, or `types` with optional `compact`), `recipes`, `recipe` (`name`),
+(`type`, or `types` with optional `compact`), `search-icons` (`query`), `describe-icon`, `icon-packs`, `recipes`, `recipe` (`name`),
 `validate` (`spec`), `render` (`spec`, `out`, optional `theme`), and `themes`. `spec` may be YAML or JSON text, or the parsed
 object. `render` writes the file to `out` and returns only the summary. When
 these tools are available, use them instead of the shell commands.

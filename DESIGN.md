@@ -131,6 +131,7 @@ Images in these blocks go through the same network gate as `image` and use the `
 - A 3px reading-progress rail is driven by `animation-timeline: scroll(root)`. Browsers without scroll timelines do not show it.
 - Every page ends with a colophon: the title, the generator version and "Back to top". It contains no dates, so output stays deterministic.
 - Code blocks number their lines when there are two or more, show the language as a pill, and have a Copy button that shows a ✓ for 1.6s.
+- Code in a known language is highlighted at compile time (`src/render/syntax-highlight.ts`, feature `syntax`, emitted only when a token is). Keywords use the accent at weight 600, because the accent equals another tone in several presets. Strings use success, numbers, literals and attributes warning, types info, variables danger, functions the accent mixed 55% with text, and comments muted italic. Diff lines use success, danger and info. Every token colour keeps 4.5:1 on the code background in every preset and scheme (`tests/unit/theme-contrast.test.ts`). An unknown language stays plain.
 - Numeric table columns align right.
 - A table wider than the column scrolls inside its frame, never the page. A soft shade marks each edge that has more beyond it, driven by a scroll timeline, so a table that fits shows none.
 - Status values map to toned badges: diff status, risk level, and review kind. Diff line counts are signed and colored, and zero stays muted.
@@ -214,6 +215,21 @@ Each widget ships its own CSS-only feature sheet, so a page carries only the she
 | `people` | `src/blocks/product/` | Cards with a 56px avatar, or initials on an accent disc when there is none or it is blocked. |
 | `calendar` | `src/blocks/product/` | A 7-column hairline grid with tinted weekends and tone chips (no side stripe). An agenda at ≤560px. Integer date math; nothing depends on the current date. |
 | `gallery` | `src/blocks/product/` | Every thumbnail links to its full-size figure; the compiler always offers it because the grid crops to 16:9. Without scripts a `:target` overlay shows it; with scripts the figures move into a `<dialog>` with Previous/Next and arrow keys, entering with `@starting-style` when motion is allowed. Print shows the grid only. |
+
+## Review
+
+`decision` and `feedback` (`src/blocks/review/`, feature `review`) let a reader answer a plan inside the page.
+
+- A decision is a card (`--ak-fill`, radius-large, card elevation) with the question as its `<legend>`, optional context, and one bordered row per option. The whole row is the click target. The checked row takes the accent border and `--ak-tint`. The recommended option starts checked and carries an info badge, so the choice is also text.
+- The feedback panel is the same card: title, intro, the saved comments, a "General notes" field, and **Copy feedback** (primary) with a two-click **Clear** (ghost). Clear never opens a browser dialog.
+- With scripts on, the runtime adds a mono uppercase pill **Comment** button at the right of every top-level section head, a primary **Comment** button under a text selection inside `main`, and a pill at the bottom right that counts comments and scrolls to the panel. It hides while the panel is on screen.
+- The comment editor is a popover card at `elevation-popover` under its anchor. At ≤768px it is a sheet fixed to the bottom of the viewport. Escape cancels and returns focus; Ctrl or Cmd+Enter saves.
+- Commented text is marked with `::highlight(ak-review)`, a 22% accent wash, where the CSS Custom Highlight API exists. The DOM is never changed to mark it. After a reload the runtime finds the quote again inside its block. Clicking marked text opens its comment.
+- A section with a comment shows **Edit comment** in the accent with `--ak-tint`, and the button opens that comment. A section has at most one comment of its own.
+- In the panel, each comment's location is a link with an accent ↑. It scrolls to the commented text (a 45% accent wash for 1.6s) or to the block (an accent outline for 1.6s) and moves focus there.
+- A comment points at the top-level section, the block's own title, and code line numbers. The copied text is plain Markdown-like prose with numbered decisions and comments.
+- Without scripts every input is disabled at its initial value with a muted note, and no Comment button exists. Print hides every control and keeps the questions, the answers and the saved comments; unchosen options print at 60% opacity.
+- Comments, notes and answers are kept in `localStorage` under a key hashed from the page's IR, so a reload keeps them and changed content starts empty.
 
 ## Recipes
 

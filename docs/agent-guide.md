@@ -23,6 +23,8 @@ do not try to position or style blocks: there is no field for it.
    `{ ok, diagnostics[] }`. Each diagnostic has a stable `code` and the JSON
    `path` to fix (for example `$.blocks[0].titl`); an unknown prop lists the
    allowed ones in `details.allowed`. Exit code 1 means "fix and retry".
+   Icons are named by meaning (`icon: gauge`); find names with
+   `ak-render icons search <words>` and see [icons.md](./icons.md).
 5. **Compile.** `ak-render page.yaml --out page.html --json` writes the file and
    prints a summary (bytes, hash, features, warnings).
 
@@ -71,7 +73,8 @@ Check every block's real props with `describe` before relying on this shape.
 
 `ak-render mcp` serves the same loop as MCP tools over stdio: `catalog`
 (optional `category`), `search-catalog` (`query`), `describe` (`type`, or
-`types` with optional `compact`), `recipes`, `recipe` (`name`), `validate`,
+`types` with optional `compact`), `search-icons` (`query`, optional `pack`, `limit`),
+`describe-icon` (`icon`), `icon-packs`, `recipes`, `recipe` (`name`), `validate`,
 `render` and `themes`. `render` writes the HTML to the
 `out` path and returns only the summary, so the page never enters your context.
 `out` must end in `.html` or `.htm`. A relative path resolves against the
@@ -90,7 +93,7 @@ it points, so review it like any file write. `spec` may be YAML/JSON text or the
 
 Without Node, use the hosted server at `https://render.agentkit.best/mcp` (MCP
 Streamable HTTP). It serves `catalog`, `search-catalog`, `describe`,
-`recipes`, `recipe`, `validate`, `render` and `themes` with the same names and
+`search-icons`, `describe-icon`, `icon-packs`, `recipes`, `recipe`, `validate`, `render` and `themes` with the same names and
 contracts, and the
 loop is the same. Two things differ:
 
@@ -137,11 +140,16 @@ rendering never needs the token or the network.
 - Write commands, paths, URLs and identifiers in prose between backticks:
   `` `ak-render catalog` `` renders as inline code. Wrap a key phrase in double
   asterisks for bold: `**AgentKit customers**`. Those two are the only markup
-  text props understand; titles, `code` and `terminal` text stay literal.
+  text props understand. Block titles, table cells and comparison items render
+  them too; `meta.title`, `code` and `terminal` text stay literal.
 - URLs accept `https`, `http`, `mailto` and relative paths; `javascript:` and
   similar schemes are rejected.
 - Use semantic blocks (`hero`, `steps`, `timeline`, `comparison`, `kpi`,
   `data-table`, `cta`) before primitives; they carry the design for you.
+- For a plan the user has to approve, put each open question in a `decision`
+  (mark the option you would pick `recommended`) and end the page with one
+  `feedback` block. The user copies their answers and comments back to you as
+  one prompt. A `decision` without a `feedback` block fails validation.
 - For a news or journal page use `preset: newspaper` with `publication-header`
   and `editorial-layout` (`lead`, `secondary`, `aside` slots holding `story` and
   `digest-list`). Say what each story is (`prominence`, `category`, `byline`,

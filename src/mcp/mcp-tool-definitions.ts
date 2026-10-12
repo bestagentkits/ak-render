@@ -12,6 +12,16 @@
  * No Node-only import is allowed here; the Worker bundles this module.
  */
 
+import {
+  describeIcon,
+  iconPackSummaries,
+  isIconProblem,
+  SEARCH_DEFAULT_LIMIT,
+  SEARCH_MAX_LIMIT,
+  SEARCH_MAX_QUERY_LENGTH,
+  searchIcons,
+} from '../icons/icon-catalog.js';
+import { ICON_PACK_IDS, type IconPackId, isIconPack } from '../icons/icon-packs.js';
 import { recipe, recipes } from '../recipes/index.js';
 import { BLOCK_CATEGORIES } from '../registry/block-module.js';
 import { CATALOG_SEARCH_LIMITS, searchCatalog } from '../registry/catalog-search.js';
@@ -111,6 +121,85 @@ export const SEARCH_CATALOG_TOOL: McpTool<unknown> = {
     additionalProperties: false,
   },
   run: (args) => text(searchCatalog(requireString(args, 'query'))),
+};
+
+export const SEARCH_ICONS_TOOL: McpTool<unknown> = {
+  name: 'search-icons',
+  description: `Find icons by meaning, in English or Vietnamese, e.g. "gauge" or "bieu do". Returns up to ${SEARCH_DEFAULT_LIMIT} short hits (id, packs); pass limit up to ${SEARCH_MAX_LIMIT}. Use the id as an icon prop. Never returns SVG.`,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      query: {
+        type: 'string',
+        maxLength: SEARCH_MAX_QUERY_LENGTH,
+        description: 'A few words for the meaning, in English or Vietnamese.',
+      },
+      pack: { enum: [...ICON_PACK_IDS], description: 'Only icons this pack can draw.' },
+      limit: { type: 'integer', minimum: 1, maximum: SEARCH_MAX_LIMIT },
+    },
+    required: ['query'],
+    additionalProperties: false,
+  },
+  run: (args) => {
+    const query = requireString(args, 'query');
+    if (query.length > SEARCH_MAX_QUERY_LENGTH) {
+      throw new ToolArgumentError(`"query" is longer than ${SEARCH_MAX_QUERY_LENGTH} characters`);
+    }
+    return text(searchIcons(query, iconSearchOptions(args)));
+  },
+};
+
+function iconSearchOptions(args: Record<string, unknown>): { pack?: IconPackId; limit?: number } {
+  const options: { pack?: IconPackId; limit?: number } = {};
+  const pack = optionalString(args, 'pack');
+  if (pack !== undefined) {
+    if (!isIconPack(pack)) {
+      throw new ToolArgumentError(`"pack" must be one of ${ICON_PACK_IDS.join(', ')}`);
+    }
+    options.pack = pack;
+  }
+  if (args.limit !== undefined) {
+    if (
+      typeof args.limit !== 'number' ||
+      !Number.isInteger(args.limit) ||
+      args.limit < 1 ||
+      args.limit > SEARCH_MAX_LIMIT
+    ) {
+      throw new ToolArgumentError(`"limit" must be an integer from 1 to ${SEARCH_MAX_LIMIT}`);
+    }
+    options.limit = args.limit;
+  }
+  return options;
+}
+
+export const DESCRIBE_ICON_TOOL: McpTool<unknown> = {
+  name: 'describe-icon',
+  description:
+    'Describe one icon id (a meaning like "gauge" or "pack:name"): packs, variants, fallback order, license, examples. Unknown ids get close suggestions. Never returns SVG.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      icon: { type: 'string', maxLength: 80, description: 'An icon id from search-icons.' },
+    },
+    required: ['icon'],
+    additionalProperties: false,
+  },
+  run: (args) => {
+    const id = requireString(args, 'icon');
+    if (id.length > 80) throw new ToolArgumentError('"icon" is longer than 80 characters');
+    const described = describeIcon(id);
+    return isIconProblem(described)
+      ? failure({ code: 'UNKNOWN_ICON', ...described })
+      : text(described);
+  },
+};
+
+export const ICON_PACKS_TOOL: McpTool<unknown> = {
+  name: 'icon-packs',
+  description:
+    'List the bundled icon packs with their role, variants, glyph count, license, version and the theme icon profiles that use them.',
+  inputSchema: NO_INPUT,
+  run: () => text(iconPackSummaries()),
 };
 
 /** The `types` argument: a non-empty list of non-empty strings. */

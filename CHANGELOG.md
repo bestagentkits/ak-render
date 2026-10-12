@@ -11,6 +11,41 @@ Release mechanics and the compatibility contract live in
 
 ### Added
 
+- Code blocks and `api-endpoint` bodies are syntax highlighted at compile
+  time for php, javascript, typescript, python, go, rust, java, kotlin,
+  csharp, c, cpp, swift, ruby, bash, sql, json, yaml and diff, plus common
+  aliases such as `ts`, `py`, `sh` and `yml`. Colours come from theme tokens
+  through the new `syntax` feature sheet, which ships only on pages with a
+  highlighted token, and keep WCAG AA contrast in every preset. Other
+  languages render plain, as before. The `language` prop's description lists
+  the highlighted languages.
+- `decision` and `feedback` blocks let a reader answer a plan inside the
+  page. A `decision` is a question with up to six options, one of which may
+  be `recommended` (it starts checked), and a note. One `feedback` block per
+  page turns on commenting: select any text, or use the Comment button on a
+  top-level section, and a comment records where it points, including code
+  line numbers. A section's button turns into **Edit comment** once it has
+  one, clicking commented text reopens its comment, and each comment in the
+  panel links back to its place. **Copy feedback** copies every answer, comment and general
+  note as one prompt to paste back to the agent. Comments survive a reload
+  and reset when the content changes. Without scripts both blocks read
+  completely, with the inputs disabled. A `decision` needs a `feedback` block
+  on the page. The new `plan-review` gallery page shows both, and the skill
+  and agent guide tell agents to use them for plans.
+- Icons by meaning. Cards, callouts, alerts, buttons and the items of `stats`,
+  `steps` and `timeline` take an `icon` (`gauge`, `phosphor:rocket`, or
+  `{ name, pack, size, label }`), and a new `icon` block shows one glyph with a
+  caption. Lucide, Phosphor, Tabler, Pixelarticons and Codicons are bundled as
+  curated, pinned, license-tracked subsets; the theme's new `icons` profile
+  picks the pack (`blueprint` tabler, `editorial` lucide, `paper-ink` and
+  `crimson-press` phosphor, `terminal-mono` and `data-console` codicons), with
+  ordered fallback and a warning. A page embeds only the glyphs it uses as
+  same-document SVG symbols: offline, deterministic, no inline style. Codicons
+  attribution ships in `THIRD_PARTY_NOTICES.md`. See `docs/icons.md`.
+- `ak-render icons search|describe|packs` and the `search-icons`,
+  `describe-icon` and `icon-packs` MCP tools, on the local and hosted servers,
+  with English and Vietnamese search and size-limited replies that never
+  contain SVG.
 - Editorial blocks for publication-quality pages: `publication-header`
   (masthead with date, issue, edition and a section nav), `story` (lead,
   feature or brief, with an optional photo, byline, summary and body),
@@ -24,10 +59,16 @@ Release mechanics and the compatibility contract live in
 - `hero` takes optional `actions`: up to three link buttons (`label`, `href`,
   `variant`), the same shape as the `cta` band, rendered under the description.
 - Prose text renders a `**double-asterisk**` pair as bold, alongside backtick
-  inline code. Code spans keep their asterisks literal, a marker that is
-  unpaired, empty, or padded with whitespace (`2 ** 8`) stays literal, and the
-  content is escaped like any other text. A prose prop's description now reads
-  "Plain text; `code` and **bold** spans render inline."
+  inline code. A bold pair can wrap code spans, code spans keep their
+  asterisks literal, and a marker inside a code span never pairs with one
+  outside it. A marker that is unpaired, empty, or padded with whitespace
+  (`2 ** 8`) stays literal, and the content is escaped like any other text. A
+  prose prop's description now reads "Plain text; `code` and **bold** spans
+  render inline." Block titles (and the page outline), step, timeline, card
+  and callout titles, `heading` text, table cells, comparison items, risk
+  areas and key-value values render the same spans, so a class or path name
+  in a title or a cell reads as code. `meta.title`, code blocks and terminal
+  lines stay literal.
 - `crimson-press` built-in preset: cream paper, black ink and a crimson
   accent, Fraunces display over Inter Tight body and JetBrains Mono labels,
   square corners, no card shadow, and the `cards: flat`, `tables: ledger`,
@@ -65,6 +106,9 @@ Release mechanics and the compatibility contract live in
 
 ### Changed
 
+- The `ak-render` skill opens a page only when it writes the file for the
+  first time. On a recompile it tells the user to refresh instead, so an
+  updated page no longer opens one more browser tab.
 - **Breaking for anonymous remote MCP use.** With OAuth enabled
   (`OAUTH_RESOURCE`, as on `render.agentkit.best`), a remote MCP request without a bearer
   gets HTTP 401 with a `resource_metadata` challenge, which is what starts

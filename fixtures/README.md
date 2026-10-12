@@ -20,6 +20,7 @@ every milestone adds to this corpus rather than to a private scratch file.
 | `data-tables.yaml` | Typed tables | `data-table` columns of every type bound to a shared dataset, sort, search, sticky header, phone cards |
 | `charts-v2.yaml` | Bound charts | Every chart kind from shared datasets through encodings, with markers, annotations and axis formats |
 | `controls.yaml` | State and controls | Every native control bound to `state`, `visibleWhen` view switching, script-off initial view |
+| `icons.yaml` | Icons by meaning | `icon` on card, callout, alert, button, stats, steps and timeline, the `icon` block, explicit packs, sizes, accessible names, one deduplicated sprite |
 | `engineering-widgets.yaml` | Engineering status | Kanban, roadmap, test results, log viewer, API endpoint, schema viewer |
 | `evidence-widgets.yaml` | Evidence report | Benchmark comparison, metric breakdown, annotated image, references |
 | `product-widgets.yaml` | Product page | Pricing, feature matrix, testimonials, logo cloud, people, calendar, gallery lightbox |

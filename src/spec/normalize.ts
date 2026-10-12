@@ -15,6 +15,7 @@ import { validateDatasets } from '../data/validate-datasets.js';
 import { type Diagnostic, DiagnosticBag, pathIndex, pathKey } from '../diagnostics.js';
 import { isRenderError, RenderError } from '../errors.js';
 import { derivedNodeId } from '../hash.js';
+import { ICON_PROFILE_NAMES, isIconProfileName } from '../icons/icon-packs.js';
 import type { IrDocument, IrNode, IrTheme, NetworkPolicy } from '../ir.js';
 import { isPlainObject, type JsonValue } from '../json.js';
 import type { BlockRegistry, CheckContext } from '../registry/block-module.js';
@@ -43,7 +44,7 @@ export interface NormalizeResult {
 const THEME_PRESET_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const LOCALE_PATTERN = /^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/;
 const DEFAULT_THEME_PRESET = 'editorial';
-const THEME_FIELDS: readonly string[] = ['preset', 'extends', 'tokens', 'dark', 'recipes'];
+const THEME_FIELDS: readonly string[] = ['preset', 'extends', 'tokens', 'dark', 'recipes', 'icons'];
 export const NETWORK_CAPABILITIES = ['media', 'fonts', 'images'] as const;
 
 interface BuildContext {
@@ -179,6 +180,17 @@ function normalizeEnvelope(
       if (themeValue.recipes !== undefined) {
         const recipes = validateThemeRecipes(themeValue.recipes, '$.theme.recipes', bag);
         if (Object.keys(recipes).length > 0) theme.recipes = recipes;
+      }
+      if (themeValue.icons !== undefined) {
+        if (isIconProfileName(themeValue.icons)) theme.icons = themeValue.icons;
+        else {
+          bag.add({
+            code: 'SPEC_VALIDATION_ERROR',
+            path: '$.theme.icons',
+            message: `"${String(themeValue.icons)}" is not an icon profile`,
+            details: { allowed: [...ICON_PROFILE_NAMES] },
+          });
+        }
       }
       for (const key of Object.keys(themeValue)) {
         if (!THEME_FIELDS.includes(key)) {

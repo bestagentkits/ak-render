@@ -67,7 +67,7 @@ Requires Node.js >= 20.11.
 
 ### Find the blocks you need
 
-There are 83 block types in eight categories (layout, content, data,
+There are 86 block types in eight categories (layout, content, data,
 interaction, media, showcase, engineering, product), from primitives (`section`,
 `grid`, `split`, `text`) to semantic blocks that carry the design for you
 (`hero`, `steps`, `timeline`, `kpi`, `data-table`, `chart`, `kanban`,
@@ -81,6 +81,23 @@ ak-render describe kpi chart --compact   # one line per prop, for several types
 ak-render describe timeline --json       # one full contract: defaults, bounds, a11y notes
 ```
 
+### Icons
+
+Blocks take an `icon` by meaning, never as markup. `icon: gauge` names a
+concept and the theme's icon profile decides which pack draws it; `icon:
+phosphor:rocket` pins an exact glyph; `icon: { name: gauge, size: lg, label:
+Speed }` sets a size (`xs`–`xl`) and an accessible name. Five packs are bundled
+as a curated, license-tracked subset (Lucide, Phosphor, Tabler, Pixelarticons,
+Codicons); a page embeds only the glyphs it uses, once each, as same-document
+SVG symbols, so the output stays offline and deterministic. See
+[docs/icons.md](./docs/icons.md).
+
+```bash
+ak-render icons search gauge          # English or Vietnamese, up to 8 hits
+ak-render icons describe gauge        # packs, variants, license; never SVG
+ak-render icons packs                 # bundled packs and their licenses
+```
+
 Containers (`section`, `grid`, `split`, `stack` and the page layouts
 `sidebar-layout`, `main-aside`, `rail-layout`) take their children under
 `blocks:`. Tabs, accordion sections, carousel slides and bento tiles hold
@@ -89,9 +106,11 @@ blocks too, under `items[i].blocks`.
 Text is plain text, with one exception: in prose props such as `text`, a step's
 or list item's `text`, a `description` or a `caption`, a pair of backticks
 renders as inline code, so `` `ak-render catalog` `` reads as a command, and a
-pair of double asterisks renders as bold, so `**required**` stands out. Nothing
-else is parsed as markup, an unpaired marker stays literal, and titles, code
-and terminal lines are never changed. `describe` marks each prop that does this.
+pair of double asterisks renders as bold, so `**required**` stands out. Block
+titles, step, timeline and card titles, table cells, comparison items and
+key-value values render the same spans. Nothing else is parsed as markup, an
+unpaired marker stays literal, and the document title, code blocks and
+terminal lines are never changed. `describe` marks each prose prop.
 
 ### Start from a page recipe
 
@@ -163,6 +182,26 @@ set of declarative actions (`ak-render catalog` lists them); there is no
 JavaScript field. Every page reads completely with scripts off, with motion
 reduced, in print and in a screenshot.
 
+### Review a plan in the page
+
+End a plan with a `feedback` block and put each open question in a `decision`
+block. The reader selects any text, or uses a section's Comment button, to
+leave a comment, picks an answer for each decision, and presses **Copy
+feedback**. That copies one plain-text prompt with every answer and comment,
+each pointing at its section, block or code lines, to paste back to the agent.
+Comments survive a reload and reset when the page is recompiled with new
+content. Nothing leaves the browser.
+
+```yaml
+- type: decision
+  question: How do we roll back a failed switch?
+  options:
+    - label: Flip the routing flag
+      recommended: true
+    - label: Point DNS back to the old gateway
+- type: feedback
+```
+
 ### Images, video and the network
 
 Local paths (`assets/shot.png`) always work. A remote URL renders as a labelled
@@ -229,7 +268,7 @@ that cannot install Node or need a URL to hand someone.
 **Local CLI.** The loop above, with `ak-render` on the path or through `npx`.
 
 **Local MCP over stdio.** `ak-render mcp` serves `catalog`, `search-catalog`,
-`describe`, `recipes`, `recipe`, `validate`, `render` and `themes` as MCP
+`describe`, `search-icons`, `describe-icon`, `icon-packs`, `recipes`, `recipe`, `validate`, `render` and `themes` as MCP
 tools. `render` writes the HTML to disk
 and returns only a summary, so the page never enters the agent's context.
 
@@ -242,7 +281,7 @@ and returns only a summary, so the page never enters the agent's context.
 ```
 
 **Remote MCP over Streamable HTTP.** `https://render.agentkit.best/mcp` serves
-`catalog`, `search-catalog`, `describe`, `recipes`, `recipe`, `validate`,
+`catalog`, `search-catalog`, `describe`, `search-icons`, `describe-icon`, `icon-packs`, `recipes`, `recipe`, `validate`,
 `render` and `themes` with the same contracts. A remote server cannot write into your filesystem, so
 `render` takes no `out`: it stores the page and returns the same summary plus an
 `artifactUrl` that lives for one hour, or a share link that lives for 30 days
@@ -377,6 +416,7 @@ ak-render - --out page.html < page.yaml   # read the spec from stdin
 ak-render validate page.json
 ak-render catalog [--category <c>]
 ak-render search-catalog <terms...>
+ak-render icons <search <terms...>|describe <icon>|packs>
 ak-render describe <type...> [--compact]
 ak-render recipes
 ak-render recipe <name>                   # YAML by default
