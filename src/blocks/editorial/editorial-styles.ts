@@ -87,7 +87,7 @@ const BROADSHEET_CSS = [
   // Tablet: lead and secondary side by side, the aside below as a wide strip.
   `@media (min-width:700px){`,
   `.ak-broadsheet:is([data-regions~="secondary"],[data-regions~="aside"]){grid-template-columns:minmax(0,3fr) minmax(0,2fr)}`,
-  `.ak-bs-lead{padding-right:${unit(3)}}`,
+  `.ak-broadsheet:is([data-regions~="secondary"],[data-regions~="aside"]) .ak-bs-lead{padding-right:${unit(3)}}`,
   `.ak-bs-secondary,.ak-bs-lead + .ak-bs-aside{padding:0 0 0 ${unit(3)};border-top:0;border-left:${HAIRLINE}}`,
   `.ak-broadsheet[data-regions~="secondary"] .ak-bs-aside{grid-column:1 / -1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:var(--ak-gap) ${unit(3)};margin-top:${unit(3)};padding:${unit(3)} 0 0;border-top:${DOUBLE};border-left:0}`,
   `}`,
@@ -95,7 +95,7 @@ const BROADSHEET_CSS = [
   `@media (min-width:1100px){`,
   `.ak-broadsheet[data-regions~="secondary"][data-regions~="aside"]{grid-template-columns:minmax(0,46fr) minmax(0,30fr) minmax(0,24fr)}`,
   `.ak-broadsheet[data-regions~="secondary"] .ak-bs-aside{grid-column:auto;display:flex;flex-direction:column;margin-top:0;padding:0 0 0 ${unit(3)};border-top:0;border-left:${HAIRLINE}}`,
-  `.ak-bs-secondary{padding-right:${unit(3)}}`,
+  `.ak-broadsheet[data-regions~="aside"] .ak-bs-secondary{padding-right:${unit(3)}}`,
   `}`,
 ].join('\n');
 

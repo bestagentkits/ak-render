@@ -101,7 +101,8 @@ describe('editorial blocks', () => {
 `),
       ),
     );
-    expect(JSON.stringify(result)).toMatch(/alt/);
+    expect(result.ok).toBe(false);
+    expect(JSON.stringify(result)).toContain('$.blocks[0].alt');
   });
 
   it('keeps the editorial recipe CSS out of pages that do not use the newspaper preset', () => {
@@ -129,5 +130,40 @@ blocks:
     const { html } = compile(page(FULL));
     expect(html).toContain('data-r-atmosphere="print"');
     expect(html).toMatch(/html\[data-r-atmosphere="print"\][^{]*\.ak-word/);
+  });
+});
+
+describe('editorial page heading', () => {
+  const header = '  - type: publication-header\n    name: The Chronicle\n';
+
+  it.each([
+    ['a hero', '  - type: hero\n    title: Another banner\n'],
+    ['a level-1 heading', '  - type: heading\n    level: 1\n    text: Another\n'],
+    ['a second masthead', header],
+  ])('rejects %s next to a masthead with a pointed diagnostic', (_name, extra) => {
+    const result = validate(parseSpec(page(header + extra)));
+    expect(result.ok).toBe(false);
+    expect(JSON.stringify(result)).toContain('$.blocks[1]');
+  });
+
+  it('does not warn about the first heading after a masthead', () => {
+    const result = validate(
+      parseSpec(page(`${header}  - type: heading\n    level: 2\n    text: Section\n`)),
+    );
+    expect(result.ok).toBe(true);
+    expect(JSON.stringify(result)).not.toContain('first heading');
+  });
+
+  it('keeps the photo after the headline in the DOM', () => {
+    const { html } = compile(
+      page(`  - type: story
+    title: Cranes
+    image: https://example.org/a.png
+    alt: Cranes
+`),
+    );
+    expect(html.indexOf('<h2 class="ak-story-title"')).toBeLessThan(
+      html.indexOf('<figure class="ak-story-photo">'),
+    );
   });
 });

@@ -120,13 +120,13 @@ export const storyBlock: BlockModule = {
         'aria-labelledby': titleId,
       }),
       [
-        photo(node, context),
         category === '' ? '' : `<p class="ak-story-kicker">${escapeText(category)}</p>`,
         `<h2 class="ak-story-title" id="${escapeAttribute(titleId)}">${href === '' ? title : anchor(href, title)}</h2>`,
         byLine.length === 0
           ? ''
           : `<p class="ak-story-meta">${byLine.map((part) => `<span>${escapeText(part)}</span>`).join('')}</p>`,
         summary === '' ? '' : `<p class="ak-story-summary">${escapeInlineText(summary)}</p>`,
+        photo(node, context),
         paragraphs.length === 0
           ? ''
           : `<div class="ak-story-body">${paragraphs
