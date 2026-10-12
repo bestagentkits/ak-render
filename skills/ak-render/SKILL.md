@@ -181,7 +181,7 @@ project or user presets it finds. Use only a name it lists. Don't try to restyle
 
 `npx -y @bestagentkits/render mcp` serves the same loop over stdio as the tools
 `catalog` (optional `category`), `search-catalog` (`query`), `describe`
-(`type`, or `types` with optional `compact`), `recipes`, `recipe` (`name`),
+(`type`, or `types` with optional `compact`), `search-icons` (`query`), `describe-icon`, `icon-packs`, `recipes`, `recipe` (`name`),
 `validate` (`spec`), `render` (`spec`, `out`, optional `theme`), and `themes`. `spec` may be YAML or JSON text, or the parsed
 object. `render` writes the file to `out` and returns only the summary. When
 these tools are available, use them instead of the shell commands.

@@ -15,6 +15,14 @@ import { homedir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isRenderError, type RenderError } from './errors.js';
+import {
+  describeIcon,
+  iconPackSummaries,
+  isIconProblem,
+  SEARCH_MAX_LIMIT,
+  searchIcons,
+} from './icons/icon-catalog.js';
+import { ICON_PACK_IDS, isIconPack } from './icons/icon-packs.js';
 import { serveMcp } from './mcp-server.js';
 import { type PageRecipe, recipe, recipes } from './recipes/index.js';
 import { BLOCK_CATEGORIES } from './registry/block-module.js';
@@ -52,6 +60,8 @@ interface Flags {
   json: boolean;
   compact: boolean;
   category?: string;
+  pack?: string;
+  limit?: string;
   out?: string;
   theme?: string;
   themeFile?: string;
@@ -227,6 +237,77 @@ function compactContractText(contract: CompactBlockDescription): string {
   return `${lines.join('\n')}\n`;
 }
 
+function iconsCommand(args: string[], io: CliIo, flags: Flags): number {
+  const [action, ...rest] = args;
+  if (action === 'packs') {
+    const packs = iconPackSummaries();
+    if (flags.json) io.stdout(`${JSON.stringify(packs, null, 2)}\n`);
+    else {
+      for (const pack of packs) {
+        io.stdout(`${pack.pack} (${pack.glyphs} icons, ${pack.license}) — ${pack.role}\n`);
+        if (pack.attribution !== undefined) io.stdout(`  ${pack.attribution}\n`);
+      }
+    }
+    return 0;
+  }
+  if (action === 'search') {
+    if (rest.length === 0) {
+      io.stderr('ak-render: icons search requires search terms\n');
+      return 2;
+    }
+    if (flags.pack !== undefined && !isIconPack(flags.pack)) {
+      io.stderr(`ak-render: --pack must be one of ${ICON_PACK_IDS.join(', ')}\n`);
+      return 2;
+    }
+    const limit = flags.limit === undefined ? undefined : Number(flags.limit);
+    if (
+      limit !== undefined &&
+      (!Number.isInteger(limit) || limit < 1 || limit > SEARCH_MAX_LIMIT)
+    ) {
+      io.stderr(`ak-render: --limit must be an integer from 1 to ${SEARCH_MAX_LIMIT}\n`);
+      return 2;
+    }
+    const query = rest.join(' ');
+    const hits = searchIcons(query, {
+      ...(flags.pack === undefined || !isIconPack(flags.pack) ? {} : { pack: flags.pack }),
+      ...(limit === undefined ? {} : { limit }),
+    });
+    if (flags.json) io.stdout(`${JSON.stringify(hits, null, 2)}\n`);
+    else if (hits.length === 0) io.stdout(`no icons match "${query}"\n`);
+    else for (const hit of hits) io.stdout(`${hit.icon}  [${hit.packs.join(', ')}]\n`);
+    return 0;
+  }
+  if (action === 'describe') {
+    const id = rest[0];
+    if (id === undefined) {
+      io.stderr('ak-render: icons describe requires an icon id\n');
+      return 2;
+    }
+    const described = describeIcon(id);
+    if (isIconProblem(described)) {
+      io.stderr(`ak-render: ${described.message}\n`);
+      const suggestions = (described.details as { suggestions?: string[] } | undefined)
+        ?.suggestions;
+      if (suggestions !== undefined && suggestions.length > 0) {
+        io.stderr(`did you mean: ${suggestions.join(', ')}\n`);
+      }
+      return 1;
+    }
+    if (flags.json) io.stdout(`${JSON.stringify(described, null, 2)}\n`);
+    else {
+      io.stdout(`${described.icon} (${described.kind})\n`);
+      for (const pack of described.packs) {
+        io.stdout(
+          `  ${pack.pack}: ${pack.glyph}  [${pack.variants.join(', ')}]  ${pack.license}\n`,
+        );
+      }
+    }
+    return 0;
+  }
+  io.stderr('ak-render: icons takes search, describe or packs\n');
+  return 2;
+}
+
 const COMMANDS: Record<string, Command> = {
   compile: {
     summary: 'Compile a Page Spec to a standalone HTML artifact.',
@@ -292,6 +373,11 @@ const COMMANDS: Record<string, Command> = {
       }
       return 0;
     },
+  },
+  icons: {
+    summary: 'Find and describe icons: search <query>, describe <icon>, packs.',
+    usage: `ak-render icons <search <query...> [--pack <${ICON_PACK_IDS.join('|')}>] [--limit <n>]|describe <icon>|packs> [--json]`,
+    run: (args, io, flags) => iconsCommand(args, io, flags),
   },
   describe: {
     summary: 'Show the machine-readable contract for one or more block types.',
@@ -429,7 +515,14 @@ command prompts, and every command except mcp accepts --json.
 `;
 }
 
-const VALUE_FLAGS = ['--out', '--theme', '--theme-file', '--category'] as const;
+const VALUE_FLAGS = [
+  '--out',
+  '--theme',
+  '--theme-file',
+  '--category',
+  '--pack',
+  '--limit',
+] as const;
 
 /** Build the preset catalog for this invocation from flags and discovery. */
 function themeCatalogFor(flags: Flags, io: CliIo): ThemeCatalog {
@@ -470,6 +563,8 @@ function parseArgs(args: string[]): ParsedArgs | { error: string } {
       if (valueFlag === '--out') flags.out = value;
       else if (valueFlag === '--theme') flags.theme = value;
       else if (valueFlag === '--category') flags.category = value;
+      else if (valueFlag === '--pack') flags.pack = value;
+      else if (valueFlag === '--limit') flags.limit = value;
       else flags.themeFile = value;
       index += 1;
       continue;

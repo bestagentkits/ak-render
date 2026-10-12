@@ -32,6 +32,20 @@ Release mechanics and the compatibility contract live in
   completely, with the inputs disabled. A `decision` needs a `feedback` block
   on the page. The new `plan-review` gallery page shows both, and the skill
   and agent guide tell agents to use them for plans.
+- Icons by meaning. Cards, callouts, alerts, buttons and the items of `stats`,
+  `steps` and `timeline` take an `icon` (`gauge`, `phosphor:rocket`, or
+  `{ name, pack, size, label }`), and a new `icon` block shows one glyph with a
+  caption. Lucide, Phosphor, Tabler, Pixelarticons and Codicons are bundled as
+  curated, pinned, license-tracked subsets; the theme's new `icons` profile
+  picks the pack (`blueprint` tabler, `editorial` lucide, `paper-ink` and
+  `crimson-press` phosphor, `terminal-mono` and `data-console` codicons), with
+  ordered fallback and a warning. A page embeds only the glyphs it uses as
+  same-document SVG symbols: offline, deterministic, no inline style. Codicons
+  attribution ships in `THIRD_PARTY_NOTICES.md`. See `docs/icons.md`.
+- `ak-render icons search|describe|packs` and the `search-icons`,
+  `describe-icon` and `icon-packs` MCP tools, on the local and hosted servers,
+  with English and Vietnamese search and size-limited replies that never
+  contain SVG.
 - `hero` takes optional `actions`: up to three link buttons (`label`, `href`,
   `variant`), the same shape as the `cta` band, rendered under the description.
 - Prose text renders a `**double-asterisk**` pair as bold, alongside backtick

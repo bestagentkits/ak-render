@@ -7,6 +7,7 @@
 
 import type { Diagnostic } from '../diagnostics.js';
 import type { DiagramAdapter } from '../diagram/adapter.js';
+import type { IconCollector } from '../icons/icon-render.js';
 import type { IrDocument, IrNode } from '../ir.js';
 import type { BlockRegistry } from '../registry/block-module.js';
 import type { RuntimeFeature } from '../registry/roster.js';
@@ -23,6 +24,8 @@ export interface RenderContext {
    * structured semantic fallback, which is the Core and Marketing behavior.
    */
   diagramAdapter?: DiagramAdapter;
+  /** Glyphs used by icons on this page; the sprite is built from it once. */
+  icons: IconCollector;
   /** Diagnostics raised while rendering, such as a rejected adapter output. */
   warnings?: Diagnostic[];
   renderChildren(node: IrNode): string;

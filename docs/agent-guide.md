@@ -23,6 +23,8 @@ do not try to position or style blocks: there is no field for it.
    `{ ok, diagnostics[] }`. Each diagnostic has a stable `code` and the JSON
    `path` to fix (for example `$.blocks[0].titl`); an unknown prop lists the
    allowed ones in `details.allowed`. Exit code 1 means "fix and retry".
+   Icons are named by meaning (`icon: gauge`); find names with
+   `ak-render icons search <words>` and see [icons.md](./icons.md).
 5. **Compile.** `ak-render page.yaml --out page.html --json` writes the file and
    prints a summary (bytes, hash, features, warnings).
 
@@ -71,7 +73,8 @@ Check every block's real props with `describe` before relying on this shape.
 
 `ak-render mcp` serves the same loop as MCP tools over stdio: `catalog`
 (optional `category`), `search-catalog` (`query`), `describe` (`type`, or
-`types` with optional `compact`), `recipes`, `recipe` (`name`), `validate`,
+`types` with optional `compact`), `search-icons` (`query`, optional `pack`, `limit`),
+`describe-icon` (`icon`), `icon-packs`, `recipes`, `recipe` (`name`), `validate`,
 `render` and `themes`. `render` writes the HTML to the
 `out` path and returns only the summary, so the page never enters your context.
 `out` must end in `.html` or `.htm`. A relative path resolves against the
@@ -90,7 +93,7 @@ it points, so review it like any file write. `spec` may be YAML/JSON text or the
 
 Without Node, use the hosted server at `https://render.agentkit.best/mcp` (MCP
 Streamable HTTP). It serves `catalog`, `search-catalog`, `describe`,
-`recipes`, `recipe`, `validate`, `render` and `themes` with the same names and
+`search-icons`, `describe-icon`, `icon-packs`, `recipes`, `recipe`, `validate`, `render` and `themes` with the same names and
 contracts, and the
 loop is the same. Two things differ:
 

@@ -24,6 +24,10 @@ export {
 } from './diagram/adapter.js';
 export type { RenderErrorCode, RenderErrorOptions } from './errors.js';
 export { isRenderError, RenderError } from './errors.js';
+export type { IconDescription, IconHit, IconPackSummary } from './icons/icon-catalog.js';
+export { describeIcon, iconPackSummaries, searchIcons } from './icons/icon-catalog.js';
+export type { IconPackId, IconProfileName, IconSize } from './icons/icon-packs.js';
+export { ICON_PACK_IDS, ICON_PROFILE_NAMES, ICON_SIZES } from './icons/icon-packs.js';
 export type { IrDocument, IrNode, IrTheme, NetworkPolicy } from './ir.js';
 export type { JsonValue } from './json.js';
 export type { PageRecipe, PageRecipeSummary } from './recipes/index.js';

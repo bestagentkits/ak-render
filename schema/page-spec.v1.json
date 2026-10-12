@@ -117,6 +117,18 @@
               ]
             }
           }
+        },
+        "icons": {
+          "enum": [
+            "lucide",
+            "phosphor",
+            "phosphor-bold",
+            "phosphor-fill",
+            "tabler",
+            "pixelarticons",
+            "codicons"
+          ],
+          "description": "Icon pack and weight for semantic icons; the first value is the default and a preset may choose another."
         }
       }
     },
@@ -216,6 +228,9 @@
         },
         {
           "$ref": "#/$defs/block-key-value"
+        },
+        {
+          "$ref": "#/$defs/block-icon"
         },
         {
           "$ref": "#/$defs/block-card"
@@ -1232,6 +1247,89 @@
       },
       "description": "KeyValue: label/value pairs rendered as a description list."
     },
+    "block-icon": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "icon",
+        "label"
+      ],
+      "properties": {
+        "type": {
+          "const": "icon"
+        },
+        "icon": {
+          "oneOf": [
+            {
+              "type": "string",
+              "maxLength": 129,
+              "pattern": "^[a-z0-9][a-z0-9-]{0,63}(:[a-z0-9][a-z0-9-]{0,63})?$",
+              "description": "A meaning such as \"gauge\", or an exact glyph such as \"tabler:brand-github\". Find names with the search-icons tool."
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+                },
+                "pack": {
+                  "enum": [
+                    "lucide",
+                    "phosphor",
+                    "tabler",
+                    "pixelarticons",
+                    "codicons"
+                  ]
+                },
+                "size": {
+                  "enum": [
+                    "xs",
+                    "sm",
+                    "md",
+                    "lg",
+                    "xl"
+                  ]
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                }
+              }
+            }
+          ]
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "tone": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "info",
+            "success",
+            "warning",
+            "danger"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Icon: a glyph by meaning with a visible caption; the theme picks the pack."
+    },
     "block-card": {
       "type": "object",
       "additionalProperties": false,
@@ -1250,6 +1348,52 @@
           "type": "string",
           "maxLength": 50000,
           "description": "Plain text; `code` and **bold** spans render inline."
+        },
+        "icon": {
+          "oneOf": [
+            {
+              "type": "string",
+              "maxLength": 129,
+              "pattern": "^[a-z0-9][a-z0-9-]{0,63}(:[a-z0-9][a-z0-9-]{0,63})?$",
+              "description": "A meaning such as \"gauge\", or an exact glyph such as \"tabler:brand-github\". Find names with the search-icons tool."
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+                },
+                "pack": {
+                  "enum": [
+                    "lucide",
+                    "phosphor",
+                    "tabler",
+                    "pixelarticons",
+                    "codicons"
+                  ]
+                },
+                "size": {
+                  "enum": [
+                    "xs",
+                    "sm",
+                    "md",
+                    "lg",
+                    "xl"
+                  ]
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                }
+              }
+            }
+          ]
         },
         "id": {
           "type": "string",
@@ -1296,6 +1440,52 @@
           "maxLength": 50000,
           "description": "Plain text; `code` and **bold** spans render inline."
         },
+        "icon": {
+          "oneOf": [
+            {
+              "type": "string",
+              "maxLength": 129,
+              "pattern": "^[a-z0-9][a-z0-9-]{0,63}(:[a-z0-9][a-z0-9-]{0,63})?$",
+              "description": "A meaning such as \"gauge\", or an exact glyph such as \"tabler:brand-github\". Find names with the search-icons tool."
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+                },
+                "pack": {
+                  "enum": [
+                    "lucide",
+                    "phosphor",
+                    "tabler",
+                    "pixelarticons",
+                    "codicons"
+                  ]
+                },
+                "size": {
+                  "enum": [
+                    "xs",
+                    "sm",
+                    "md",
+                    "lg",
+                    "xl"
+                  ]
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                }
+              }
+            }
+          ]
+        },
         "id": {
           "type": "string",
           "maxLength": 2000,
@@ -1337,6 +1527,52 @@
           "type": "string",
           "maxLength": 50000,
           "description": "Plain text; `code` and **bold** spans render inline."
+        },
+        "icon": {
+          "oneOf": [
+            {
+              "type": "string",
+              "maxLength": 129,
+              "pattern": "^[a-z0-9][a-z0-9-]{0,63}(:[a-z0-9][a-z0-9-]{0,63})?$",
+              "description": "A meaning such as \"gauge\", or an exact glyph such as \"tabler:brand-github\". Find names with the search-icons tool."
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+                },
+                "pack": {
+                  "enum": [
+                    "lucide",
+                    "phosphor",
+                    "tabler",
+                    "pixelarticons",
+                    "codicons"
+                  ]
+                },
+                "size": {
+                  "enum": [
+                    "xs",
+                    "sm",
+                    "md",
+                    "lg",
+                    "xl"
+                  ]
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                }
+              }
+            }
+          ]
         },
         "id": {
           "type": "string",
@@ -1461,6 +1697,52 @@
               "value": {
                 "type": "string",
                 "maxLength": 60
+              },
+              "icon": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 129,
+                    "pattern": "^[a-z0-9][a-z0-9-]{0,63}(:[a-z0-9][a-z0-9-]{0,63})?$",
+                    "description": "A meaning such as \"gauge\", or an exact glyph such as \"tabler:brand-github\". Find names with the search-icons tool."
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+                      },
+                      "pack": {
+                        "enum": [
+                          "lucide",
+                          "phosphor",
+                          "tabler",
+                          "pixelarticons",
+                          "codicons"
+                        ]
+                      },
+                      "size": {
+                        "enum": [
+                          "xs",
+                          "sm",
+                          "md",
+                          "lg",
+                          "xl"
+                        ]
+                      },
+                      "label": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 120
+                      }
+                    }
+                  }
+                ]
               }
             },
             "additionalProperties": false,
@@ -1548,6 +1830,52 @@
                 "type": "string",
                 "maxLength": 50000,
                 "description": "Plain text; `code` and **bold** spans render inline."
+              },
+              "icon": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 129,
+                    "pattern": "^[a-z0-9][a-z0-9-]{0,63}(:[a-z0-9][a-z0-9-]{0,63})?$",
+                    "description": "A meaning such as \"gauge\", or an exact glyph such as \"tabler:brand-github\". Find names with the search-icons tool."
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+                      },
+                      "pack": {
+                        "enum": [
+                          "lucide",
+                          "phosphor",
+                          "tabler",
+                          "pixelarticons",
+                          "codicons"
+                        ]
+                      },
+                      "size": {
+                        "enum": [
+                          "xs",
+                          "sm",
+                          "md",
+                          "lg",
+                          "xl"
+                        ]
+                      },
+                      "label": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 120
+                      }
+                    }
+                  }
+                ]
               }
             },
             "additionalProperties": false,
@@ -1601,6 +1929,52 @@
                 "type": "string",
                 "maxLength": 50000,
                 "description": "Plain text; `code` and **bold** spans render inline."
+              },
+              "icon": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 129,
+                    "pattern": "^[a-z0-9][a-z0-9-]{0,63}(:[a-z0-9][a-z0-9-]{0,63})?$",
+                    "description": "A meaning such as \"gauge\", or an exact glyph such as \"tabler:brand-github\". Find names with the search-icons tool."
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "name"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+                      },
+                      "pack": {
+                        "enum": [
+                          "lucide",
+                          "phosphor",
+                          "tabler",
+                          "pixelarticons",
+                          "codicons"
+                        ]
+                      },
+                      "size": {
+                        "enum": [
+                          "xs",
+                          "sm",
+                          "md",
+                          "lg",
+                          "xl"
+                        ]
+                      },
+                      "label": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 120
+                      }
+                    }
+                  }
+                ]
               }
             },
             "additionalProperties": false,
@@ -2797,6 +3171,52 @@
             "primary",
             "secondary",
             "ghost"
+          ]
+        },
+        "icon": {
+          "oneOf": [
+            {
+              "type": "string",
+              "maxLength": 129,
+              "pattern": "^[a-z0-9][a-z0-9-]{0,63}(:[a-z0-9][a-z0-9-]{0,63})?$",
+              "description": "A meaning such as \"gauge\", or an exact glyph such as \"tabler:brand-github\". Find names with the search-icons tool."
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+                },
+                "pack": {
+                  "enum": [
+                    "lucide",
+                    "phosphor",
+                    "tabler",
+                    "pixelarticons",
+                    "codicons"
+                  ]
+                },
+                "size": {
+                  "enum": [
+                    "xs",
+                    "sm",
+                    "md",
+                    "lg",
+                    "xl"
+                  ]
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                }
+              }
+            }
           ]
         },
         "on": {

@@ -29,6 +29,7 @@ describe('fixture corpus', () => {
       'engineering-widgets.yaml',
       'evidence-widgets.yaml',
       'explain.yaml',
+      'icons.yaml',
       'incident-report.yaml',
       'interactive-data-explorer.yaml',
       'interactive.yaml',
