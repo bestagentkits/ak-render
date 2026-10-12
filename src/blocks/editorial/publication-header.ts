@@ -68,6 +68,7 @@ export const publicationHeaderBlock: BlockModule = {
       ),
       ...anchorProps,
     },
+    parents: ['page'],
     runtimeFeatures: ['masthead'],
     a11y: 'The name is the page <h1>; the date is a <time>; sections are a labelled <nav> list of real links.',
   }),

@@ -167,3 +167,28 @@ describe('editorial page heading', () => {
     );
   });
 });
+
+describe('editorial placement and dates', () => {
+  it('keeps the masthead at the top level of the page', () => {
+    const nested = validate(
+      parseSpec(
+        page(`  - type: editorial-layout
+    lead:
+      - type: publication-header
+        name: Nested
+`),
+      ),
+    );
+    expect(nested.ok).toBe(false);
+    expect(JSON.stringify(nested)).toContain('$.blocks[0].lead[0].type');
+  });
+
+  it('adds datetime only for a real calendar date', () => {
+    const header = (date: string) =>
+      compile(page(`  - type: publication-header\n    name: Dates\n    date: '${date}'\n`)).html;
+    expect(header('2026-10-12')).toContain('datetime="2026-10-12"');
+    expect(header('2026-13-45')).not.toContain('datetime=');
+    expect(header('2026-02-30')).not.toContain('datetime=');
+    expect(header('2028-02-29')).toContain('datetime="2028-02-29"');
+  });
+});
