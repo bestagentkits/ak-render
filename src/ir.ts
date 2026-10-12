@@ -68,6 +68,8 @@ export interface IrTheme {
   dark?: JsonValue;
   /** Presentation recipe per surface, e.g. `{ cards: 'flat' }`. */
   recipes?: Record<string, string>;
+  /** Icon profile name, e.g. `phosphor-bold`. */
+  icons?: string;
 }
 
 export interface IrDocument {

@@ -11,6 +11,7 @@
  * custom stack that names no bundled face embeds nothing.
  */
 
+import type { IconProfileName } from '../icons/icon-packs.js';
 import { DIALECT_PRESETS } from './dialect-presets.js';
 import {
   face,
@@ -32,6 +33,7 @@ export type { PresetDefinition } from './preset-builder.js';
 export const PRESETS: Readonly<Record<string, PresetDefinition>> = {
   blueprint: preset({
     name: 'blueprint',
+    icons: 'tabler',
     description:
       'Technical drawing: warm drafting paper, cobalt ink, precise borders, monospace labels.',
     typing: { 'font-heading': face('Geist', SYSTEM_SANS), 'font-body': face('Geist', SYSTEM_SANS) },
@@ -69,6 +71,7 @@ export const PRESETS: Readonly<Record<string, PresetDefinition>> = {
 
   editorial: preset({
     name: 'editorial',
+    icons: 'lucide',
     description: 'Serif headlines, generous whitespace, deep navy with gold accents.',
     typing: {
       'font-heading': face('Fraunces', SYSTEM_SERIF),
@@ -110,6 +113,7 @@ export const PRESETS: Readonly<Record<string, PresetDefinition>> = {
 
   'paper-ink': preset({
     name: 'paper-ink',
+    icons: 'phosphor',
     description: 'Warm cream paper with terracotta and sage; informal and readable.',
     typing: { 'font-heading': face('Bricolage Grotesque', SYSTEM_SANS), 'font-body': SYSTEM_SANS },
     colors: {
@@ -146,6 +150,7 @@ export const PRESETS: Readonly<Record<string, PresetDefinition>> = {
 
   'terminal-mono': preset({
     name: 'terminal-mono',
+    icons: 'codicons',
     description: 'Near-black terminal with green and amber, monospace throughout.',
     typing: {
       'font-heading': face('JetBrains Mono', SYSTEM_MONO),
@@ -305,6 +310,8 @@ export interface PresetEntry {
   dark: Record<string, string>;
   /** Component recipes the preset selects; unset surfaces inherit. */
   recipes?: Record<string, string>;
+  /** Icon profile the preset draws with; unset inherits. */
+  icons?: IconProfileName;
   origin: 'built-in' | 'user' | 'project' | 'file';
   file?: string;
 }
@@ -322,6 +329,7 @@ export function builtinPresetEntries(): Record<string, PresetEntry> {
       origin: 'built-in',
     };
     if (definition.recipes !== undefined) entry.recipes = { ...definition.recipes };
+    if (definition.icons !== undefined) entry.icons = definition.icons;
     entries[definition.name] = entry;
   }
   return entries;

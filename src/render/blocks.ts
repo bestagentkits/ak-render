@@ -1,4 +1,6 @@
 import { runDiagramAdapter } from '../diagram/adapter.js';
+import type { IconSize } from '../icons/icon-packs.js';
+import { renderIcon } from '../icons/icon-render.js';
 import type { IrNode } from '../ir.js';
 import { isPlainObject, type JsonValue } from '../json.js';
 import type { BlockRegistry } from '../registry/block-module.js';
@@ -124,6 +126,23 @@ function mediaFallbackBody(
   ]
     .filter((part) => part !== '')
     .join('');
+}
+
+function nodeIcon(context: RenderContext, node: IrNode, size: IconSize): string {
+  return renderIcon(context, node.props.icon, { size, path: `${node.path}.icon`, nodeId: node.id });
+}
+
+function itemIcon(
+  context: RenderContext,
+  node: IrNode,
+  index: number,
+  item: Record<string, JsonValue>,
+): string {
+  return renderIcon(context, item.icon, {
+    size: 'sm',
+    path: `${node.path}.items[${index}].icon`,
+    nodeId: node.id,
+  });
 }
 
 const RENDERERS: Record<string, Renderer> = {
@@ -272,12 +291,24 @@ const RENDERERS: Record<string, Renderer> = {
         .join('')}</dl>`,
     ),
 
+  icon: (node, context) =>
+    element(
+      'div',
+      nodeAttributes(node, {
+        class: 'ak-block ak-icon-block',
+        'data-tone': stringProp(node, 'tone') === '' ? undefined : stringProp(node, 'tone'),
+      }),
+      `${nodeIcon(context, node, 'lg')}<span>${escapeText(stringProp(node, 'label'))}</span>`,
+    ),
+
   card: (node, context) => {
     const text = stringProp(node, 'text');
+    const icon = nodeIcon(context, node, 'md');
     return element(
       'div',
       nodeAttributes(node, { class: 'ak-block ak-card ak-card--elevated' }),
       [
+        icon === '' ? '' : `<span class="ak-card-icon">${icon}</span>`,
         stringProp(node, 'title') === ''
           ? ''
           : heading(3, stringProp(node, 'title'), 'ak-card-title'),
@@ -287,20 +318,22 @@ const RENDERERS: Record<string, Renderer> = {
     );
   },
 
-  alert: (node) => {
+  alert: (node, context) => {
+    const icon = nodeIcon(context, node, 'md');
     const tone = stringProp(node, 'tone', 'info');
     const role = tone === 'danger' || tone === 'warning' ? ' role="alert"' : '';
     return [
       `<div${renderAttributes(nodeAttributes(node, { class: 'ak-block ak-alert', ...toneAttribute(node) }))}${role}>`,
-      `<p><strong>${escapeText(stringProp(node, 'title'))}</strong></p>`,
+      `<p>${icon}<strong>${escapeText(stringProp(node, 'title'))}</strong></p>`,
       `<p>${escapeInlineText(stringProp(node, 'text'))}</p>`,
       '</div>',
     ].join('');
   },
 
-  callout: (node) => {
+  callout: (node, context) => {
+    const icon = nodeIcon(context, node, 'sm');
     const tone = stringProp(node, 'tone', 'info');
-    const icon =
+    const word =
       tone === 'danger'
         ? 'Danger'
         : tone === 'warning'
@@ -310,7 +343,7 @@ const RENDERERS: Record<string, Renderer> = {
             : 'Note';
     return [
       `<aside${renderAttributes(nodeAttributes(node, { class: 'ak-block ak-callout', ...toneAttribute(node) }))}>`,
-      `<p class="ak-label">${escapeText(icon)}</p>`,
+      `<p class="ak-label">${icon}${escapeText(word)}</p>`,
       `<p><strong>${escapeText(stringProp(node, 'title'))}</strong></p>`,
       `<p>${escapeInlineText(stringProp(node, 'text'))}</p>`,
       '</aside>',
@@ -348,7 +381,7 @@ const RENDERERS: Record<string, Renderer> = {
     ].join('');
   },
 
-  stats: (node) => {
+  stats: (node, context) => {
     const items = objectListProp(node, 'items');
     return element(
       'section',
@@ -359,8 +392,8 @@ const RENDERERS: Record<string, Renderer> = {
           ? ''
           : `<dl class="ak-stats">${items
               .map(
-                (item) =>
-                  `<div class="ak-stat"><dt>${escapeText(str(item.label))}</dt><dd>${escapeText(
+                (item, index) =>
+                  `<div class="ak-stat"><dt>${itemIcon(context, node, index, item)}${escapeText(str(item.label))}</dt><dd>${escapeText(
                     str(item.value),
                   )}</dd></div>`,
               )
@@ -385,7 +418,7 @@ const RENDERERS: Record<string, Renderer> = {
     );
   },
 
-  steps: (node) => {
+  steps: (node, context) => {
     const items = objectListProp(node, 'items');
     return element(
       'section',
@@ -393,9 +426,9 @@ const RENDERERS: Record<string, Renderer> = {
       [
         titleHeader(node),
         `<ol class="ak-steps">${items
-          .map((item) => {
+          .map((item, index) => {
             const text = str(item.text);
-            return `<li><p><strong>${escapeText(str(item.title))}</strong></p>${
+            return `<li><p>${itemIcon(context, node, index, item)}<strong>${escapeText(str(item.title))}</strong></p>${
               text === '' ? '' : `<p>${escapeInlineText(text)}</p>`
             }</li>`;
           })
@@ -404,7 +437,7 @@ const RENDERERS: Record<string, Renderer> = {
     );
   },
 
-  timeline: (node) => {
+  timeline: (node, context) => {
     const items = objectListProp(node, 'items');
     return element(
       'section',
@@ -412,9 +445,9 @@ const RENDERERS: Record<string, Renderer> = {
       [
         titleHeader(node),
         `<ol class="ak-timeline">${items
-          .map((item) => {
+          .map((item, index) => {
             const text = str(item.text);
-            return `<li><time>${escapeText(str(item.when))}</time><p><strong>${escapeText(
+            return `<li><time>${escapeText(str(item.when))}</time><p>${itemIcon(context, node, index, item)}<strong>${escapeText(
               str(item.title),
             )}</strong></p>${text === '' ? '' : `<p>${escapeInlineText(text)}</p>`}</li>`;
           })
@@ -812,14 +845,15 @@ const RENDERERS: Record<string, Renderer> = {
     ].join('');
   },
 
-  button: (node) => {
+  button: (node, context) => {
+    const icon = nodeIcon(context, node, 'sm');
     const variant = stringProp(node, 'variant', 'secondary');
     return `<button type="button"${renderAttributes({
       class: 'ak-btn',
       'data-variant': variant,
       ...nodeAttributes(node, {}),
       ...clickAttribute(node.bindings),
-    })}>${escapeText(stringProp(node, 'label'))}</button>`;
+    })}>${icon}${escapeText(stringProp(node, 'label'))}</button>`;
   },
 
   link: (node) => {

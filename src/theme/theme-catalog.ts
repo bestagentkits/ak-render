@@ -13,6 +13,11 @@ import { homedir } from 'node:os';
 import { basename, extname, join } from 'node:path';
 import { DiagnosticBag } from '../diagnostics.js';
 import { RenderError } from '../errors.js';
+import {
+  ICON_PROFILE_NAMES,
+  type IconProfileName,
+  isIconProfileName,
+} from '../icons/icon-packs.js';
 import { isPlainObject } from '../json.js';
 import { parseSpec } from '../spec/parse.js';
 import { builtinPresetEntries, type PresetEntry } from './presets.js';
@@ -30,6 +35,7 @@ const ALLOWED_PRESET_KEYS = [
   'tokens',
   'dark',
   'recipes',
+  'icons',
 ] as const;
 
 export interface PresetSource {
@@ -151,6 +157,17 @@ export function parsePresetDocument(
     }
   }
 
+  // Icon profiles are a closed list too: a preset picks a pack and weight, never a glyph.
+  let icons: IconProfileName | undefined;
+  if (value.icons !== undefined) {
+    if (!isIconProfileName(value.icons)) {
+      fail(`"${String(value.icons)}" is not an icon profile`, `${path}#icons`, {
+        allowed: [...ICON_PROFILE_NAMES],
+      });
+    }
+    icons = value.icons;
+  }
+
   const entry: PresetEntry = {
     name,
     version: typeof version === 'number' ? version : 1,
@@ -162,6 +179,7 @@ export function parsePresetDocument(
   if (options.file !== undefined) entry.file = options.file;
   if (typeof extendsValue === 'string') entry.extends = extendsValue;
   if (recipes !== undefined && Object.keys(recipes).length > 0) entry.recipes = recipes;
+  if (icons !== undefined) entry.icons = icons;
   return entry;
 }
 

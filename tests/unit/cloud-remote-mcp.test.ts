@@ -111,7 +111,7 @@ describe('remote MCP: discovery', () => {
       { cwd: '/', home: '/' },
     );
     const local = (stdio?.result as { tools: { name: string }[] } | undefined)?.tools ?? [];
-    expect(local.length).toBe(8);
+    expect(local.length).toBe(11);
     expect(remote.map((entry) => entry.name)).toEqual(local.map((entry) => entry.name));
     // Discovery never reaches the entitlements endpoint.
     expect(fetchMock).not.toHaveBeenCalled();

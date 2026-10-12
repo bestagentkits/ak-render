@@ -8,6 +8,8 @@
  */
 
 import { DiagnosticBag, pathIndex, pathKey } from '../diagnostics.js';
+import { checkIconRequest, parseIconValue } from '../icons/icon-catalog.js';
+import { ICON_PACK_IDS, ICON_SIZES } from '../icons/icon-packs.js';
 import { isPlainObject, type JsonValue } from '../json.js';
 
 export type PropSchema =
@@ -21,7 +23,8 @@ export type PropSchema =
   | RecordPropSchema
   | OneOfPropSchema
   | JsonPropSchema
-  | BlocksPropSchema;
+  | BlocksPropSchema
+  | IconPropSchema;
 
 interface PropSchemaBase {
   /** Reject the document when the property is absent. */
@@ -133,6 +136,15 @@ export interface BlocksPropSchema extends PropSchemaBase {
   accepts?: readonly string[] | '*';
 }
 
+/**
+ * An icon reference: a meaning (`gauge`), an exact glyph (`tabler:brand-github`),
+ * or an object with `name`, optional `pack`, `size` and `label`. Resolved at
+ * compile time against the bundled packs; a raw SVG is never accepted.
+ */
+export interface IconPropSchema extends PropSchemaBase {
+  kind: 'icon';
+}
+
 export const BLOCKS_PROP_DEFAULTS = { minItems: 1, maxItems: 40 } as const;
 
 export const DEFAULT_URL_SCHEMES = ['https', 'http', 'mailto'] as const;
@@ -242,6 +254,8 @@ function schemaShapes(schema: PropSchema): readonly JsonShape[] | undefined {
     }
     case 'json':
       return undefined;
+    case 'icon':
+      return ['string', 'object'];
   }
 }
 
@@ -379,6 +393,29 @@ export function validateProp(
         return undefined;
       }
       return value;
+    }
+    case 'icon': {
+      const parsed = parseIconValue(value);
+      if (!parsed.ok) {
+        bag.add({
+          code: 'SPEC_VALIDATION_ERROR',
+          path,
+          message: parsed.message,
+          ...(parsed.details === undefined ? {} : { details: parsed.details }),
+        });
+        return undefined;
+      }
+      const problem = checkIconRequest(parsed.request);
+      if (problem !== undefined) {
+        bag.add({
+          code: 'SPEC_VALIDATION_ERROR',
+          path,
+          message: problem.message,
+          ...(problem.details === undefined ? {} : { details: problem.details }),
+        });
+        return undefined;
+      }
+      return value as JsonValue;
     }
     case 'url': {
       if (typeof value !== 'string') {
@@ -623,6 +660,29 @@ export function propSchemaToJsonSchema(schema: PropSchema): Record<string, unkno
       return { type: 'object', additionalProperties: propSchemaToJsonSchema(schema.of) };
     case 'oneOf':
       return { oneOf: schema.options.map((option) => propSchemaToJsonSchema(option)) };
+    case 'icon':
+      return {
+        oneOf: [
+          {
+            type: 'string',
+            maxLength: 129,
+            pattern: '^[a-z0-9][a-z0-9-]{0,63}(:[a-z0-9][a-z0-9-]{0,63})?$',
+            description:
+              'A meaning such as "gauge", or an exact glyph such as "tabler:brand-github". Find names with the search-icons tool.',
+          },
+          {
+            type: 'object',
+            additionalProperties: false,
+            required: ['name'],
+            properties: {
+              name: { type: 'string', pattern: '^[a-z0-9][a-z0-9-]{0,63}$' },
+              pack: { enum: [...ICON_PACK_IDS] },
+              size: { enum: [...ICON_SIZES] },
+              label: { type: 'string', minLength: 1, maxLength: 120 },
+            },
+          },
+        ],
+      };
     case 'blocks':
       return {
         type: 'array',

@@ -67,7 +67,7 @@ Requires Node.js >= 20.11.
 
 ### Find the blocks you need
 
-There are 83 block types in eight categories (layout, content, data,
+There are 84 block types in eight categories (layout, content, data,
 interaction, media, showcase, engineering, product), from primitives (`section`,
 `grid`, `split`, `text`) to semantic blocks that carry the design for you
 (`hero`, `steps`, `timeline`, `kpi`, `data-table`, `chart`, `kanban`,
@@ -79,6 +79,23 @@ ak-render catalog --category data        # one category
 ak-render search-catalog sortable table  # rank block types by intent words
 ak-render describe kpi chart --compact   # one line per prop, for several types
 ak-render describe timeline --json       # one full contract: defaults, bounds, a11y notes
+```
+
+### Icons
+
+Blocks take an `icon` by meaning, never as markup. `icon: gauge` names a
+concept and the theme's icon profile decides which pack draws it; `icon:
+phosphor:rocket` pins an exact glyph; `icon: { name: gauge, size: lg, label:
+Speed }` sets a size (`xs`–`xl`) and an accessible name. Five packs are bundled
+as a curated, license-tracked subset (Lucide, Phosphor, Tabler, Pixelarticons,
+Codicons); a page embeds only the glyphs it uses, once each, as same-document
+SVG symbols, so the output stays offline and deterministic. See
+[docs/icons.md](./docs/icons.md).
+
+```bash
+ak-render icons search gauge          # English or Vietnamese, up to 8 hits
+ak-render icons describe gauge        # packs, variants, license; never SVG
+ak-render icons packs                 # bundled packs and their licenses
 ```
 
 Containers (`section`, `grid`, `split`, `stack` and the page layouts
@@ -229,7 +246,7 @@ that cannot install Node or need a URL to hand someone.
 **Local CLI.** The loop above, with `ak-render` on the path or through `npx`.
 
 **Local MCP over stdio.** `ak-render mcp` serves `catalog`, `search-catalog`,
-`describe`, `recipes`, `recipe`, `validate`, `render` and `themes` as MCP
+`describe`, `search-icons`, `describe-icon`, `icon-packs`, `recipes`, `recipe`, `validate`, `render` and `themes` as MCP
 tools. `render` writes the HTML to disk
 and returns only a summary, so the page never enters the agent's context.
 
@@ -242,7 +259,7 @@ and returns only a summary, so the page never enters the agent's context.
 ```
 
 **Remote MCP over Streamable HTTP.** `https://render.agentkit.best/mcp` serves
-`catalog`, `search-catalog`, `describe`, `recipes`, `recipe`, `validate`,
+`catalog`, `search-catalog`, `describe`, `search-icons`, `describe-icon`, `icon-packs`, `recipes`, `recipe`, `validate`,
 `render` and `themes` with the same contracts. A remote server cannot write into your filesystem, so
 `render` takes no `out`: it stores the page and returns the same summary plus an
 `artifactUrl` that lives for one hour, or a share link that lives for 30 days
@@ -377,6 +394,7 @@ ak-render - --out page.html < page.yaml   # read the spec from stdin
 ak-render validate page.json
 ak-render catalog [--category <c>]
 ak-render search-catalog <terms...>
+ak-render icons <search <terms...>|describe <icon>|packs>
 ak-render describe <type...> [--compact]
 ak-render recipes
 ak-render recipe <name>                   # YAML by default

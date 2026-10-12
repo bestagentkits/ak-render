@@ -108,7 +108,7 @@ describe('MCP server', () => {
     expect(result?.protocolVersion).toBe('2025-11-25');
   });
 
-  it('lists the eight tools in loop order, each described in at most 200 characters', () => {
+  it('lists the tools in loop order, each described in at most 200 characters', () => {
     const response = handleMcpMessage({ jsonrpc: '2.0', id: 2, method: 'tools/list' }, context);
     const result = response?.result as
       | { tools: { name: string; description: string }[] }
@@ -120,12 +120,35 @@ describe('MCP server', () => {
       'catalog',
       'search-catalog',
       'describe',
+      'search-icons',
+      'describe-icon',
+      'icon-packs',
       'recipes',
       'recipe',
       'validate',
       'render',
       'themes',
     ]);
+  });
+
+  it('serves icon discovery with limited, SVG-free replies', () => {
+    const hits = JSON.parse(
+      call('search-icons', { query: 'bieu do', limit: 3 }).content[0]?.text ?? '',
+    );
+    expect(hits.length).toBeGreaterThan(0);
+    expect(hits.length).toBeLessThanOrEqual(3);
+    const described = call('describe-icon', { icon: 'gauge' }).content[0]?.text ?? '';
+    expect(JSON.parse(described).icon).toBe('gauge');
+    expect(described).not.toContain('<path');
+    const packs = JSON.parse(call('icon-packs').content[0]?.text ?? '');
+    expect(packs.map((pack: { pack: string }) => pack.pack)).toContain('codicons');
+    const unknown = call('describe-icon', { icon: 'gaugee' });
+    expect(unknown.isError).toBe(true);
+    expect(unknown.content[0]?.text).toContain('UNKNOWN_ICON');
+    expect(call('search-icons', { query: 'x', pack: 'nope' }).isError).toBe(true);
+    expect(call('search-icons', { query: 'x', limit: 0 }).isError).toBe(true);
+    expect(call('search-icons', { query: 'x', limit: 21 }).isError).toBe(true);
+    expect(call('search-icons', { query: 'x'.repeat(201) }).isError).toBe(true);
   });
 
   it('serves catalog and describe', () => {
