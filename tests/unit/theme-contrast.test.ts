@@ -40,6 +40,33 @@ const PAIRS: [foreground: string, background: string, minimum: number][] = [
   ),
 ];
 
+/** `color-mix(in srgb, first weight%, second)` as `#rrggbb`. */
+function mix(first: string, weight: number, second: string): string {
+  const channels = (hex: string): number[] =>
+    [1, 3, 5].map((offset) => Number.parseInt(hex.slice(offset, offset + 2), 16));
+  const [a, b] = [channels(first), channels(second)];
+  return `#${a
+    .map((channel, index) =>
+      Math.round(channel * weight + (b[index] ?? 0) * (1 - weight))
+        .toString(16)
+        .padStart(2, '0'),
+    )
+    .join('')}`;
+}
+
+/** Syntax token colours drawn on the code block background, as the `syntax` sheet mixes them. */
+function syntaxFailures(tokens: Tokens): string[] {
+  const background = mix(color(tokens, 'text'), 0.04, color(tokens, 'surface'));
+  const foregrounds: [string, string][] = [
+    ...[...TONES, 'text-muted'].map((name): [string, string] => [name, color(tokens, name)]),
+    ['function', mix(color(tokens, 'accent'), 0.55, color(tokens, 'text'))],
+  ];
+  return foregrounds.flatMap(([name, foreground]) => {
+    const ratio = contrast(foreground, background);
+    return ratio < 4.5 ? [`syntax ${name} on code: ${ratio.toFixed(2)} < 4.5`] : [];
+  });
+}
+
 function color(tokens: Tokens, name: string): string {
   const value = tokens[`color-${name}`];
   if (value === undefined) throw new Error(`missing color-${name}`);
@@ -63,7 +90,7 @@ describe('preset contrast (WCAG 2.2 AA)', () => {
             ? [`${foreground} on ${background}: ${ratio.toFixed(2)} < ${minimum}`]
             : [];
         });
-        expect(failures).toEqual([]);
+        expect([...failures, ...syntaxFailures(tokens)]).toEqual([]);
       });
     }
   }

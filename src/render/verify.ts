@@ -37,6 +37,7 @@ const FEATURE_MARKERS: Readonly<Partial<Record<RuntimeFeature, string>>> = {
   slider: '.ak-slider',
   dialog: 'dialog.ak-dialog',
   filter: '.ak-search',
+  syntax: '.ak-tk-',
   theme: '.ak-theme-toggle',
   chart: '.ak-chart',
   diagram: '.ak-diagram',

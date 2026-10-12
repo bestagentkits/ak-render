@@ -16,6 +16,7 @@ import {
   bool,
   define,
   enumStr,
+  LANGUAGE_DESCRIPTION,
   list,
   num,
   obj,
@@ -166,7 +167,7 @@ function checkPathParams(node: IrNode, bag: DiagnosticBag): void {
 }
 
 const CODE = txt({ maxLength: 8_000, description: 'Emitted verbatim.' });
-const LANGUAGE = strProp({ maxLength: 20, default: 'json' });
+const LANGUAGE = strProp({ maxLength: 20, default: 'json', description: LANGUAGE_DESCRIPTION });
 
 export const apiEndpointBlock: BlockModule = {
   definition: define({

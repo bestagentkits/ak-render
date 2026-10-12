@@ -31,6 +31,7 @@ import {
 } from './escape.js';
 import type { RenderContext } from './render-context.js';
 import { actionLinks, browserShot, SHOWCASE_RENDERERS } from './showcase-blocks.js';
+import { codeLines } from './syntax-highlight.js';
 import { toneBadge, valueTone } from './tone.js';
 
 export type { RenderContext } from './render-context.js';
@@ -75,12 +76,6 @@ function lineCountCell(value: number, kind: 'add' | 'del'): string {
   const sign = kind === 'add' ? '+' : '\u2212';
   const tone = value === 0 ? 'ak-zero' : `ak-${kind}`;
   return `<td class="ak-num ${tone}">${sign}${escapeText(String(value))}</td>`;
-}
-
-/** Split code into one span per line so the stylesheet can number lines; newlines stay in the text. */
-function codeLines(text: string): string {
-  const lines = text.replace(/\n$/u, '').split('\n');
-  return lines.map((line) => `<span class="ak-line">${escapeText(line)}</span>`).join('\n');
 }
 
 /**
@@ -240,7 +235,7 @@ const RENDERERS: Record<string, Renderer> = {
       '</div>',
       `<pre${renderAttributes({ 'data-ak-id': node.id })}><code${renderAttributes({
         class: `language-${language}`,
-      })}>${codeLines(stringProp(node, 'text'))}</code></pre>`,
+      })}>${codeLines(stringProp(node, 'text'), language)}</code></pre>`,
       '</div>',
     ]
       .filter((part) => part !== '')
