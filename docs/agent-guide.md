@@ -140,11 +140,16 @@ rendering never needs the token or the network.
 - Write commands, paths, URLs and identifiers in prose between backticks:
   `` `ak-render catalog` `` renders as inline code. Wrap a key phrase in double
   asterisks for bold: `**AgentKit customers**`. Those two are the only markup
-  text props understand; titles, `code` and `terminal` text stay literal.
+  text props understand. Block titles, table cells and comparison items render
+  them too; `meta.title`, `code` and `terminal` text stay literal.
 - URLs accept `https`, `http`, `mailto` and relative paths; `javascript:` and
   similar schemes are rejected.
 - Use semantic blocks (`hero`, `steps`, `timeline`, `comparison`, `kpi`,
   `data-table`, `cta`) before primitives; they carry the design for you.
+- For a plan the user has to approve, put each open question in a `decision`
+  (mark the option you would pick `recommended`) and end the page with one
+  `feedback` block. The user copies their answers and comments back to you as
+  one prompt. A `decision` without a `feedback` block fails validation.
 - Put shared numbers in `datasets` once and bind blocks with `dataRef`, instead
   of repeating rows in a chart and a table. A field a block names that the rows
   lack comes back with `details.allowed`. `percent` takes `87` for "87%". See

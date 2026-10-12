@@ -34,6 +34,7 @@ describe('fixture corpus', () => {
       'interactive-data-explorer.yaml',
       'interactive.yaml',
       'media.yaml',
+      'plan-review.yaml',
       'plan.yaml',
       'product-case-study.yaml',
       'product-widgets.yaml',

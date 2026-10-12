@@ -31,6 +31,9 @@ export const ICON_DESCRIPTION =
   'An icon by meaning (`gauge`) or `pack:name`; or {name, pack?, size?, label?}. Find names with search-icons.';
 export const VERBATIM_DESCRIPTION = 'Emitted verbatim; backticks stay literal.';
 
+export const LANGUAGE_DESCRIPTION =
+  'Highlighted: php, javascript, typescript, python, go, rust, java, kotlin, csharp, c, cpp, swift, ruby, bash, sql, json, yaml, diff. Any other value renders plain.';
+
 export const txt = (
   o: { required?: boolean; default?: string; maxLength?: number; description?: string } = {},
 ): PropSchema => ({
