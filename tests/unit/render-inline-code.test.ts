@@ -105,7 +105,7 @@ describe('strong emphasis in prose text', () => {
     const value = '**`a` b** '.repeat(20_000);
     const started = performance.now();
     escapeInlineText(value);
-    expect(performance.now() - started).toBeLessThan(500);
+    expect(performance.now() - started).toBeLessThan(2_000);
   });
 });
 

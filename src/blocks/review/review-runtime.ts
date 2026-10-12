@@ -15,7 +15,19 @@ function wireReview() {
   var store = { comments: [], general: '', decisions: {} };
   try {
     var saved = JSON.parse(window.localStorage.getItem(storeKey) || 'null');
-    if (saved && saved.comments && saved.decisions) store = saved;
+    // Storage is user-controlled and may be stale or corrupted. Do not let
+    // malformed saved feedback disable every review control on the page.
+    if (saved && Array.isArray(saved.comments) && saved.comments.length <= 500 &&
+        saved.comments.every(function (comment) {
+          return comment && typeof comment.id === 'string' && typeof comment.where === 'string' &&
+            typeof comment.quote === 'string' && typeof comment.anchor === 'string' &&
+            typeof comment.text === 'string';
+        }) && typeof saved.general === 'string' &&
+        saved.decisions && typeof saved.decisions === 'object' && !Array.isArray(saved.decisions) &&
+        Object.keys(saved.decisions).every(function (key) {
+          var answer = saved.decisions[key];
+          return answer && typeof answer.choice === 'string' && typeof answer.note === 'string';
+        })) store = saved;
   } catch (error) {}
   var save = function () {
     try { window.localStorage.setItem(storeKey, JSON.stringify(store)); } catch (error) {}

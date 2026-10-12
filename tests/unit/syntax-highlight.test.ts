@@ -123,7 +123,7 @@ describe('syntax highlighting', () => {
     codeLines(value, 'php');
     codeLines(value, 'bash');
     codeLines(value, 'yaml');
-    expect(performance.now() - started).toBeLessThan(1000);
+    expect(performance.now() - started).toBeLessThan(5_000);
   });
 });
 

@@ -108,6 +108,27 @@ test.describe('review', () => {
     await expect(page.getByLabel('Seven days')).toBeChecked();
   });
 
+  test('ignores corrupted localStorage and still enables review controls', async ({ page }) => {
+    await page.goto(planReview());
+    await page.evaluate(() => {
+      const panel = document.querySelector('[data-ak-feedback]');
+      const key = panel?.getAttribute('data-ak-review-key');
+      localStorage.setItem(
+        'ak-render-review:' + key,
+        JSON.stringify({
+          comments: { not: 'an array' },
+          general: 'should not load',
+          decisions: {},
+        }),
+      );
+    });
+    await page.reload();
+    await expect(page.locator('[data-ak-review-ready]')).toHaveCount(1);
+    await expect(page.getByRole('button', { name: 'Comment on Steps' })).toBeEnabled();
+    await expect(page.locator('[data-ak-feedback-general]')).toHaveValue('');
+    await expect(page.locator('[data-ak-feedback-copy]')).toBeEnabled();
+  });
+
   test('a section button knows its comment and opens it for editing', async ({ page }) => {
     await page.goto(planReview());
     await page.getByRole('button', { name: 'Comment on Steps' }).click();
