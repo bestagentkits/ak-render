@@ -66,6 +66,20 @@ describe('strong emphasis in prose text', () => {
     expect(escapeInlineText('`a ** b ** c`')).toBe('<code>a ** b ** c</code>');
   });
 
+  it('wraps a pair that holds code spans, at either end or inside', () => {
+    expect(escapeInlineText('**All code goes in `domains/Order`.** Rest')).toBe(
+      '<strong>All code goes in <code>domains/Order</code>.</strong> Rest',
+    );
+    expect(escapeInlineText('**`OrderLine`** and **`a` or `b`**')).toBe(
+      '<strong><code>OrderLine</code></strong> and <strong><code>a</code> or <code>b</code></strong>',
+    );
+  });
+
+  it('never pairs a marker inside a code span with one outside it', () => {
+    expect(escapeInlineText('**a `b** c`')).toBe('**a <code>b** c</code>');
+    expect(escapeInlineText('`a **` b**')).toBe('<code>a **</code> b**');
+  });
+
   it('keeps unpaired, empty, spaced and multi-line markers literal', () => {
     expect(escapeInlineText('a **b')).toBe('a **b');
     expect(escapeInlineText('a **** b')).toBe('a **** b');
@@ -82,6 +96,13 @@ describe('strong emphasis in prose text', () => {
 
   it('stays linear on a long run of unclosed markers', () => {
     const value = `**${'a'.repeat(25_000)} ${'** '.repeat(10_000)}`;
+    const started = performance.now();
+    escapeInlineText(value);
+    expect(performance.now() - started).toBeLessThan(500);
+  });
+
+  it('stays linear on many strong pairs that hold code spans', () => {
+    const value = '**`a` b** '.repeat(20_000);
     const started = performance.now();
     escapeInlineText(value);
     expect(performance.now() - started).toBeLessThan(500);
@@ -121,7 +142,7 @@ describe('inline code in compiled pages', () => {
     expect(html).not.toContain('<script>alert(1)');
   });
 
-  it('leaves titles, the document title and code blocks literal', () => {
+  it('renders spans in block titles but leaves the document title and code blocks literal', () => {
     const { html } = compile(
       page(`  - type: callout
     title: The \`ak\` CLI
@@ -132,10 +153,36 @@ describe('inline code in compiled pages', () => {
 `).replace('title: Inline code', 'title: About `ak`'),
     );
     expect(html).toContain('<title>About `ak`</title>');
-    expect(html).toContain('<strong>The `ak` CLI</strong>');
+    expect(html).toContain('<strong>The <code>ak</code> CLI</strong>');
     expect(html).toContain('echo `date`');
-    expect(html).not.toContain('<code>ak</code>');
     expect(html).not.toContain('<code>date</code>');
+  });
+
+  it('renders spans in section titles, the outline, table cells, comparison items and key-value values', () => {
+    const sections = ['One', 'Two', 'Three']
+      .map(
+        (name) =>
+          `  - type: section\n    title: ${name} \`${name}Domain\`\n    blocks:\n      - type: text\n        text: x\n`,
+      )
+      .join('');
+    const { html } = compile(
+      page(`${sections}  - type: table
+    columns: [Name, Note]
+    rows:
+      - ["\`OrderLine\`", "**not** priced"]
+  - type: comparison
+    left: { label: For, items: ["One call to \`price()\`"] }
+    right: { label: Against, items: [Two jobs] }
+  - type: key-value
+    items:
+      - { key: Path, value: "\`docs/plan.md\`" }
+`),
+    );
+    expect(html).toContain('<h2>One <code>OneDomain</code></h2>');
+    expect(html).toContain('data-ak-outline-link>Two <code>TwoDomain</code></a>');
+    expect(html).toContain('<td><code>OrderLine</code></td><td><strong>not</strong> priced</td>');
+    expect(html).toContain('<li>One call to <code>price()</code></li>');
+    expect(html).toContain('<dd><code>docs/plan.md</code></dd>');
   });
 
   it('is deterministic', () => {

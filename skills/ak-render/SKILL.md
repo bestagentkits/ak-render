@@ -152,7 +152,8 @@ project or user presets it finds. Use only a name it lists. Don't try to restyle
   (a `text`, a step or list item's `text`, a `description`, a `caption`), a
   pair of backticks renders as inline code, so write `` `ak-render validate` ``
   for a command, path or URL, and `**key phrase**` renders as bold. Use bold
-  sparingly. Titles, `code` blocks, and `terminal` lines stay literal.
+  sparingly. Block titles, table cells and comparison items render the same
+  spans. `meta.title`, `code` blocks, and `terminal` lines stay literal.
 - **Never invent data.** Every number, date, name, path, and finding must come
   from the conversation, the repository, or tool output. If a value is
   unknown, leave the block out or ask. Don't fill it with a plausible guess.

@@ -137,7 +137,8 @@ rendering never needs the token or the network.
 - Write commands, paths, URLs and identifiers in prose between backticks:
   `` `ak-render catalog` `` renders as inline code. Wrap a key phrase in double
   asterisks for bold: `**AgentKit customers**`. Those two are the only markup
-  text props understand; titles, `code` and `terminal` text stay literal.
+  text props understand. Block titles, table cells and comparison items render
+  them too; `meta.title`, `code` and `terminal` text stay literal.
 - URLs accept `https`, `http`, `mailto` and relative paths; `javascript:` and
   similar schemes are rejected.
 - Use semantic blocks (`hero`, `steps`, `timeline`, `comparison`, `kpi`,

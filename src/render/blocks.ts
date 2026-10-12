@@ -181,7 +181,7 @@ const RENDERERS: Record<string, Renderer> = {
 
   heading: (node) => {
     const level = Math.min(Math.max(numberProp(node, 'level', 2), 1), 6);
-    return `<h${level}${renderAttributes(nodeAttributes(node, { class: 'ak-block' }))}>${escapeText(
+    return `<h${level}${renderAttributes(nodeAttributes(node, { class: 'ak-block' }))}>${escapeInlineText(
       stringProp(node, 'text'),
     )}</h${level}>`;
   },
@@ -267,7 +267,8 @@ const RENDERERS: Record<string, Renderer> = {
       nodeAttributes(node, { class: 'ak-block' }),
       `${titleHeader(node)}<dl class="ak-kv">${objectListProp(node, 'items')
         .map(
-          (item) => `<dt>${escapeText(str(item.key))}</dt><dd>${escapeText(str(item.value))}</dd>`,
+          (item) =>
+            `<dt>${escapeText(str(item.key))}</dt><dd>${escapeInlineText(str(item.value))}</dd>`,
         )
         .join('')}</dl>`,
     ),
@@ -292,7 +293,7 @@ const RENDERERS: Record<string, Renderer> = {
     const role = tone === 'danger' || tone === 'warning' ? ' role="alert"' : '';
     return [
       `<div${renderAttributes(nodeAttributes(node, { class: 'ak-block ak-alert', ...toneAttribute(node) }))}${role}>`,
-      `<p><strong>${escapeText(stringProp(node, 'title'))}</strong></p>`,
+      `<p><strong>${escapeInlineText(stringProp(node, 'title'))}</strong></p>`,
       `<p>${escapeInlineText(stringProp(node, 'text'))}</p>`,
       '</div>',
     ].join('');
@@ -311,7 +312,7 @@ const RENDERERS: Record<string, Renderer> = {
     return [
       `<aside${renderAttributes(nodeAttributes(node, { class: 'ak-block ak-callout', ...toneAttribute(node) }))}>`,
       `<p class="ak-label">${escapeText(icon)}</p>`,
-      `<p><strong>${escapeText(stringProp(node, 'title'))}</strong></p>`,
+      `<p><strong>${escapeInlineText(stringProp(node, 'title'))}</strong></p>`,
       `<p>${escapeInlineText(stringProp(node, 'text'))}</p>`,
       '</aside>',
     ].join('');
@@ -395,7 +396,7 @@ const RENDERERS: Record<string, Renderer> = {
         `<ol class="ak-steps">${items
           .map((item) => {
             const text = str(item.text);
-            return `<li><p><strong>${escapeText(str(item.title))}</strong></p>${
+            return `<li><p><strong>${escapeInlineText(str(item.title))}</strong></p>${
               text === '' ? '' : `<p>${escapeInlineText(text)}</p>`
             }</li>`;
           })
@@ -414,7 +415,7 @@ const RENDERERS: Record<string, Renderer> = {
         `<ol class="ak-timeline">${items
           .map((item) => {
             const text = str(item.text);
-            return `<li><time>${escapeText(str(item.when))}</time><p><strong>${escapeText(
+            return `<li><time>${escapeText(str(item.when))}</time><p><strong>${escapeInlineText(
               str(item.title),
             )}</strong></p>${text === '' ? '' : `<p>${escapeInlineText(text)}</p>`}</li>`;
           })
@@ -454,7 +455,7 @@ const RENDERERS: Record<string, Renderer> = {
         `<ul class="ak-grid" data-ak-columns="3">${items
           .map((item) => {
             const text = str(item.text);
-            return `<li class="ak-card ak-card--elevated"><p><strong>${escapeText(
+            return `<li class="ak-card ak-card--elevated"><p><strong>${escapeInlineText(
               str(item.title),
             )}</strong></p>${text === '' ? '' : `<p>${escapeInlineText(text)}</p>`}</li>`;
           })
@@ -475,7 +476,7 @@ const RENDERERS: Record<string, Renderer> = {
     const body = rows
       .map((row) => {
         const cells = (Array.isArray(row) ? row : [])
-          .map((cell, index) => `<td${align(index)}>${escapeText(str(cell))}</td>`)
+          .map((cell, index) => `<td${align(index)}>${escapeInlineText(str(cell))}</td>`)
           .join('');
         return `<tr>${cells}</tr>`;
       })
@@ -502,7 +503,7 @@ const RENDERERS: Record<string, Renderer> = {
         ? sideValue.items
         : []
       )
-        .map((item) => `<li>${escapeText(str(item))}</li>`)
+        .map((item) => `<li>${escapeInlineText(str(item))}</li>`)
         .join('')}</ul></div>`;
     return element(
       'section',
@@ -521,7 +522,7 @@ const RENDERERS: Record<string, Renderer> = {
         `<div class="ak-table-wrap"><table><caption>Risk by impact and likelihood</caption><thead><tr><th scope="col">Area</th><th scope="col">Impact</th><th scope="col">Likelihood</th><th scope="col">Note</th></tr></thead><tbody>${items
           .map(
             (item) =>
-              `<tr><th scope="row">${escapeText(str(item.area))}</th><td>${toneBadge(
+              `<tr><th scope="row">${escapeInlineText(str(item.area))}</th><td>${toneBadge(
                 str(item.impact),
               )}</td><td>${toneBadge(str(item.likelihood))}</td><td>${escapeInlineText(
                 str(item.note),
