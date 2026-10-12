@@ -18,6 +18,7 @@ import {
   isIconProblem,
   SEARCH_DEFAULT_LIMIT,
   SEARCH_MAX_LIMIT,
+  SEARCH_MAX_QUERY_LENGTH,
   searchIcons,
 } from '../icons/icon-catalog.js';
 import { ICON_PACK_IDS, type IconPackId, isIconPack } from '../icons/icon-packs.js';
@@ -130,7 +131,7 @@ export const SEARCH_ICONS_TOOL: McpTool<unknown> = {
     properties: {
       query: {
         type: 'string',
-        maxLength: CATALOG_SEARCH_LIMITS.maxQueryLength,
+        maxLength: SEARCH_MAX_QUERY_LENGTH,
         description: 'A few words for the meaning, in English or Vietnamese.',
       },
       pack: { enum: [...ICON_PACK_IDS], description: 'Only icons this pack can draw.' },
@@ -139,7 +140,13 @@ export const SEARCH_ICONS_TOOL: McpTool<unknown> = {
     required: ['query'],
     additionalProperties: false,
   },
-  run: (args) => text(searchIcons(requireString(args, 'query'), iconSearchOptions(args))),
+  run: (args) => {
+    const query = requireString(args, 'query');
+    if (query.length > SEARCH_MAX_QUERY_LENGTH) {
+      throw new ToolArgumentError(`"query" is longer than ${SEARCH_MAX_QUERY_LENGTH} characters`);
+    }
+    return text(searchIcons(query, iconSearchOptions(args)));
+  },
 };
 
 function iconSearchOptions(args: Record<string, unknown>): { pack?: IconPackId; limit?: number } {
@@ -152,8 +159,13 @@ function iconSearchOptions(args: Record<string, unknown>): { pack?: IconPackId; 
     options.pack = pack;
   }
   if (args.limit !== undefined) {
-    if (typeof args.limit !== 'number' || !Number.isInteger(args.limit) || args.limit < 1) {
-      throw new ToolArgumentError('"limit" must be a positive integer');
+    if (
+      typeof args.limit !== 'number' ||
+      !Number.isInteger(args.limit) ||
+      args.limit < 1 ||
+      args.limit > SEARCH_MAX_LIMIT
+    ) {
+      throw new ToolArgumentError(`"limit" must be an integer from 1 to ${SEARCH_MAX_LIMIT}`);
     }
     options.limit = args.limit;
   }
@@ -166,12 +178,16 @@ export const DESCRIBE_ICON_TOOL: McpTool<unknown> = {
     'Describe one icon id (a meaning like "gauge" or "pack:name"): packs, variants, fallback order, license, examples. Unknown ids get close suggestions. Never returns SVG.',
   inputSchema: {
     type: 'object',
-    properties: { icon: { type: 'string', description: 'An icon id from search-icons.' } },
+    properties: {
+      icon: { type: 'string', maxLength: 80, description: 'An icon id from search-icons.' },
+    },
     required: ['icon'],
     additionalProperties: false,
   },
   run: (args) => {
-    const described = describeIcon(requireString(args, 'icon'));
+    const id = requireString(args, 'icon');
+    if (id.length > 80) throw new ToolArgumentError('"icon" is longer than 80 characters');
+    const described = describeIcon(id);
     return isIconProblem(described)
       ? failure({ code: 'UNKNOWN_ICON', ...described })
       : text(described);

@@ -147,6 +147,8 @@ describe('MCP server', () => {
     expect(unknown.content[0]?.text).toContain('UNKNOWN_ICON');
     expect(call('search-icons', { query: 'x', pack: 'nope' }).isError).toBe(true);
     expect(call('search-icons', { query: 'x', limit: 0 }).isError).toBe(true);
+    expect(call('search-icons', { query: 'x', limit: 21 }).isError).toBe(true);
+    expect(call('search-icons', { query: 'x'.repeat(201) }).isError).toBe(true);
   });
 
   it('serves catalog and describe', () => {

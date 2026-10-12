@@ -143,7 +143,10 @@ export interface IconGlyph {
 }
 
 export function glyphOf(pack: IconPackId, name: string): IconGlyph | undefined {
-  const entry = ICON_GLYPHS[pack]?.[name];
+  const glyphs = ICON_GLYPHS[pack];
+  // Own keys only: a name such as `constructor` must not reach the prototype.
+  if (glyphs === undefined || !Object.hasOwn(glyphs, name)) return undefined;
+  const entry = glyphs[name];
   if (entry === undefined) return undefined;
   return typeof entry === 'string'
     ? { body: entry, size: ICON_PACKS[pack].viewBox }
@@ -204,7 +207,7 @@ export function suggestNames(name: string, candidates: readonly string[], limit 
     if (score > 0) scored.push({ candidate, score });
   }
   return scored
-    .sort((a, b) => b.score - a.score || a.candidate.localeCompare(b.candidate))
+    .sort((a, b) => b.score - a.score || byCodeUnit(a.candidate, b.candidate))
     .slice(0, limit)
     .map((entry) => entry.candidate);
 }
@@ -327,6 +330,8 @@ export interface IconHit {
   brand?: boolean;
 }
 
+export const SEARCH_MAX_QUERY_LENGTH = 200;
+const SEARCH_MAX_TOKENS = 8;
 export const SEARCH_DEFAULT_LIMIT = 8;
 export const SEARCH_MAX_LIMIT = 20;
 
@@ -336,10 +341,17 @@ const CONCEPT_GLYPHS: ReadonlySet<string> = new Set(
   ),
 );
 
+/** Code-unit order: the same on every runtime and locale. */
+function byCodeUnit(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+/** Query words, distinct and bounded, so a long query costs a fixed amount. */
 function tokens(text: string): string[] {
-  return normalizeText(text)
+  const words = normalizeText(text.slice(0, SEARCH_MAX_QUERY_LENGTH))
     .split(/[^a-z0-9]+/u)
     .filter((token) => token !== '');
+  return [...new Set(words)].slice(0, SEARCH_MAX_TOKENS);
 }
 
 function conceptScore(concept: IconConcept, query: string, queryTokens: readonly string[]): number {
@@ -399,7 +411,7 @@ export function searchIcons(
     }
   }
   return hits
-    .sort((a, b) => b.score - a.score || a.hit.icon.localeCompare(b.hit.icon))
+    .sort((a, b) => b.score - a.score || byCodeUnit(a.hit.icon, b.hit.icon))
     .slice(0, limit)
     .map((entry) => entry.hit);
 }

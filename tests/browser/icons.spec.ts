@@ -49,14 +49,21 @@ for (const viewport of VIEWPORTS) {
   });
 }
 
-test('icons follow the text colour in dark mode and print', async ({ page }) => {
+test('a toned icon block takes the tone colour, in dark mode and print', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.goto(open(readFileSync(fixturePath, 'utf8'), 'icons-dark'));
-  const dark = await page.evaluate(() => {
-    const icon = document.querySelector('.ak-card-icon svg.ak-icon') as SVGElement;
-    return getComputedStyle(icon).color;
+  const colours = await page.evaluate(() => {
+    const icon = document.querySelector(
+      '.ak-icon-block[data-tone="success"] svg.ak-icon',
+    ) as Element;
+    const probe = document.createElement('span');
+    probe.style.color = getComputedStyle(document.documentElement).getPropertyValue(
+      '--ak-color-success',
+    );
+    document.body.append(probe);
+    return { icon: getComputedStyle(icon).color, token: getComputedStyle(probe).color };
   });
-  expect(dark).not.toBe('');
+  expect(colours.icon).toBe(colours.token);
   await page.emulateMedia({ media: 'print', colorScheme: 'light' });
   expect(await page.locator('svg.ak-icon').first().isVisible()).toBe(true);
 });

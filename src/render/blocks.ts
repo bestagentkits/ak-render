@@ -294,7 +294,10 @@ const RENDERERS: Record<string, Renderer> = {
   icon: (node, context) =>
     element(
       'div',
-      nodeAttributes(node, { class: 'ak-block ak-icon-block', ...toneAttribute(node) }),
+      nodeAttributes(node, {
+        class: 'ak-block ak-icon-block',
+        'data-tone': stringProp(node, 'tone') === '' ? undefined : stringProp(node, 'tone'),
+      }),
       `${nodeIcon(context, node, 'lg')}<span>${escapeText(stringProp(node, 'label'))}</span>`,
     ),
 

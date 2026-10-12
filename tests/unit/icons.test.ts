@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { searchIcons } from '../../src/icons/icon-catalog.js';
 import { ICON_GLYPHS } from '../../src/icons/icon-data.generated.js';
 import { ICON_PACK_IDS, ICON_PACKS, ICON_PROFILES } from '../../src/icons/icon-packs.js';
 import { checkGlyphBody } from '../../src/icons/icon-sanitize.js';
@@ -147,5 +148,30 @@ describe('icon rendering', () => {
       theme: { icons: 'pixelarticons' },
     };
     expect(compile(spec).html).toContain('data-pack="pixelarticons"');
+  });
+
+  it('never resolves a prototype key as a glyph', () => {
+    for (const name of ['constructor']) {
+      expect(() => compile(page([{ type: 'icon', icon: `lucide:${name}`, label: 'X' }]))).toThrow(
+        /not bundled/u,
+      );
+    }
+  });
+
+  it('orders discovery by code unit and bounds a long query', () => {
+    expect(searchIcons('arrow', { limit: 20 }).map((hit) => hit.icon)).toEqual(
+      searchIcons('arrow', { limit: 20 }).map((hit) => hit.icon),
+    );
+    const long = Array.from({ length: 5000 }, (_, index) => `w${index}`).join(' ');
+    expect(Array.isArray(searchIcons(long))).toBe(true);
+  });
+
+  it('only sets a tone on the icon block when the author gave one', () => {
+    const plain = compile(page([{ type: 'icon', icon: 'gauge', label: 'A' }])).html;
+    expect(plain).not.toMatch(/ak-icon-block"[^>]*data-tone/u);
+    const toned = compile(
+      page([{ type: 'icon', icon: 'gauge', label: 'A', tone: 'success' }]),
+    ).html;
+    expect(toned).toMatch(/ak-icon-block"[^>]*data-tone="success"/u);
   });
 });
