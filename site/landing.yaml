@@ -78,7 +78,7 @@ blocks:
       - type: steps
         items:
           - title: Find
-            text: '`ak-render catalog` lists all **86 block types** and every action in estimated catalog size; run `ak-render catalog` for the exact current size. `search-catalog` ranks block types by intent words, and `catalog --category` lists one group.'
+            text: '`ak-render catalog` lists all **86 block types** and every action in 7,531 bytes. `search-catalog` ranks block types by intent words, and `catalog --category` lists one group.'
           - title: Describe
             text: '`ak-render describe <type...> --compact` returns one line per prop for several blocks at once. The full `hero` contract with `--json` is 2,612 bytes.'
           - title: Validate
@@ -800,8 +800,8 @@ blocks:
       - type: kpi
         items:
           - label: Catalog the agent reads once
-            value: Catalog
-            caption: ak-render catalog prints size varies by version
+            value: 7.5 kB
+            caption: ak-render catalog prints 7,531 bytes
           - label: Spec the agent writes
             value: 2.6 kB
             caption: explain.yaml; the compiled page is 127.0 kB
