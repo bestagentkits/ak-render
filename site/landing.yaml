@@ -78,7 +78,7 @@ blocks:
       - type: steps
         items:
           - title: Find
-            text: '`ak-render catalog` lists all **83 block types** and every action in 7,228 bytes. `search-catalog` ranks block types by intent words, and `catalog --category` lists one group.'
+            text: '`ak-render catalog` lists all **85 block types** and every action in 7,447 bytes. `search-catalog` ranks block types by intent words, and `catalog --category` lists one group.'
           - title: Describe
             text: '`ak-render describe <type...> --compact` returns one line per prop for several blocks at once. The full `hero` contract with `--json` is 2,612 bytes.'
           - title: Validate
@@ -93,7 +93,7 @@ blocks:
           - kind: command
             text: ak-render catalog | head -1
           - kind: output
-            text: Page Spec v1 — 83 blocks
+            text: Page Spec v1 — 85 blocks
           - kind: command
             text: ak-render describe hero --json | wc -c
           - kind: output
@@ -175,7 +175,7 @@ blocks:
         title: Where the savings come from
         items:
           - title: Context
-            text: The 7.2 kB catalog and per-block contracts replace pages of HTML style guidance.
+            text: The 7.4 kB catalog and per-block contracts replace pages of HTML style guidance.
           - title: Generation
             text: The agent stops writing CSS, script and markup. The median legacy page was 26% visible text.
           - title: Validation
@@ -204,7 +204,7 @@ blocks:
             src: assets/crop-chart.webp
             alt: A bar chart from the dashboard gallery page, cropped at twice the pixel density
           - title: Block types in the catalog
-            value: '83'
+            value: '85'
             text: From hero and bento to data tables, kanban boards and pricing, including the page root.
             size: small
           - title: Built-in theme presets
@@ -800,8 +800,8 @@ blocks:
       - type: kpi
         items:
           - label: Catalog the agent reads once
-            value: 7.2 kB
-            caption: ak-render catalog prints 7,228 bytes
+            value: 7.4 kB
+            caption: ak-render catalog prints 7,447 bytes
           - label: Spec the agent writes
             value: 2.6 kB
             caption: explain.yaml; the compiled page is 127.0 kB

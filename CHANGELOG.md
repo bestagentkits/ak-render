@@ -11,6 +11,7 @@ Release mechanics and the compatibility contract live in
 
 ### Added
 
+<<<<<<< HEAD
 - Code blocks and `api-endpoint` bodies are syntax highlighted at compile
   time for php, javascript, typescript, python, go, rust, java, kotlin,
   csharp, c, cpp, swift, ruby, bash, sql, json, yaml and diff, plus common
@@ -19,6 +20,21 @@ Release mechanics and the compatibility contract live in
   highlighted token, and keep WCAG AA contrast in every preset. Other
   languages render plain, as before. The `language` prop's description lists
   the highlighted languages.
+=======
+- `decision` and `feedback` blocks let a reader answer a plan inside the
+  page. A `decision` is a question with up to six options, one of which may
+  be `recommended` (it starts checked), and a note. One `feedback` block per
+  page turns on commenting: select any text, or use the Comment button on a
+  top-level section, and a comment records where it points, including code
+  line numbers. A section's button turns into **Edit comment** once it has
+  one, clicking commented text reopens its comment, and each comment in the
+  panel links back to its place. **Copy feedback** copies every answer, comment and general
+  note as one prompt to paste back to the agent. Comments survive a reload
+  and reset when the content changes. Without scripts both blocks read
+  completely, with the inputs disabled. A `decision` needs a `feedback` block
+  on the page. The new `plan-review` gallery page shows both, and the skill
+  and agent guide tell agents to use them for plans.
+>>>>>>> review/pr28
 - `hero` takes optional `actions`: up to three link buttons (`label`, `href`,
   `variant`), the same shape as the `cta` band, rendered under the description.
 - Prose text renders a `**double-asterisk**` pair as bold, alongside backtick
