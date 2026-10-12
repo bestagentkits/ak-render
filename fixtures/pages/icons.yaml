@@ -1,0 +1,85 @@
+version: 1
+
+meta:
+  title: Icons
+  description: Icons by meaning, drawn by the theme's pack, with explicit packs, sizes and accessible names
+  locale: en
+
+theme:
+  preset: editorial
+
+policy:
+  network: deny
+
+blocks:
+  - type: hero
+    eyebrow: Icons
+    title: Name the meaning, let the theme pick the pack
+    description: One icon prop on cards, callouts, buttons, stats, steps and timelines. The page embeds only the glyphs it uses.
+
+  - type: section
+    title: Cards
+    blocks:
+      - type: grid
+        columns: 3
+        blocks:
+          - type: card
+            title: Performance
+            text: Gauge, drawn by the theme pack.
+            icon: gauge
+          - type: card
+            title: Settings
+            text: A larger glyph with an accessible name.
+            icon: { name: settings, size: lg, label: Settings }
+          - type: card
+            title: Security
+            text: A pinned glyph from another pack.
+            icon: phosphor:shield
+
+  - type: section
+    title: Callouts and alerts
+    blocks:
+      - type: callout
+        tone: info
+        title: Heads up
+        text: The icon is decorative; the tone word carries the meaning.
+        icon: info
+      - type: alert
+        tone: warning
+        title: Check the budget
+        text: Alerts take the same icon prop.
+        icon: warning
+
+  - type: section
+    title: Stats, steps and timeline
+    blocks:
+      - type: stats
+        items:
+          - { label: Uptime, value: '99.98%', icon: activity }
+          - { label: Users, value: '12,400', icon: user }
+          - { label: Revenue, value: '$48k', icon: chart-line }
+      - type: steps
+        items:
+          - { title: Write the spec, text: Name icons by meaning., icon: edit }
+          - { title: Validate, text: Unknown names list close matches., icon: check }
+          - { title: Compile, text: One offline file., icon: rocket }
+      - type: timeline
+        items:
+          - { when: Day 1, title: Pick a theme, icon: palette }
+          - { when: Day 2, title: Ship, icon: send }
+
+  - type: section
+    title: Standalone and buttons
+    blocks:
+      - type: icon
+        icon: gauge
+        label: Speed
+        tone: success
+      - type: button
+        label: Open the docs
+        variant: primary
+        icon: arrow-right
+        on:
+          click:
+            action: open-url
+            url: https://render.agentkit.best

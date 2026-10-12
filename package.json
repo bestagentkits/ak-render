@@ -44,6 +44,7 @@
     "README.md",
     "CHANGELOG.md",
     "llms.txt",
+    "THIRD_PARTY_NOTICES.md",
     "assets/fonts/*/OFL.txt"
   ],
   "sideEffects": false,

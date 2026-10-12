@@ -12,7 +12,8 @@
       "!dist",
       "!node_modules",
       "!docs/artifacts",
-      "!src/render/embedded-fonts.generated.ts"
+      "!src/render/embedded-fonts.generated.ts",
+      "!src/icons/icon-data.generated.ts"
     ]
   },
   "formatter": {
