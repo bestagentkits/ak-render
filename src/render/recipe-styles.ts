@@ -104,6 +104,22 @@ const HERO_COMPACT = at('hero', 'compact');
 const METRICS_HEADLINE = at('metrics', 'headline');
 const MEDIA_FRAMED = at('media', 'framed');
 const CALLOUTS_OUTLINED = at('callouts', 'outlined');
+const CARDS_UNBOXED = at('cards', 'unboxed');
+const SECTIONS_NEWSPAPER = at('sections', 'newspaper');
+const MEDIA_PRESS = at('media', 'press-photo');
+const PAGE_WIDE = at('page', 'wide');
+const PAGE_BROADSHEET = at('page', 'broadsheet');
+const ATMOSPHERE_PRINT = at('atmosphere', 'print');
+
+/** A page-width profile; print drops the cap like the base sheet does. */
+function pageWidth(scope: string, width: string): RecipeSheet {
+  return {
+    css: `${scoped(scope, '.ak-shell', `max-width:${width}`)}\n@media print{${scoped(scope, '.ak-shell', 'max-width:none')}}`,
+  };
+}
+
+/** Hairline over a black-ink rule: the newspaper's double horizontal line. */
+const DOUBLE_RULE = 'calc(var(--ak-border-width) * 3) double var(--ak-color-text)';
 
 /** Surface → recipe value → sheets. Default values have no entry. */
 export const RECIPE_CSS: Readonly<
@@ -125,6 +141,24 @@ export const RECIPE_CSS: Readonly<
           CARDS_FLAT,
           '.ak-kpi-card',
           'background:var(--ak-color-surface-raised);border-color:transparent;box-shadow:none',
+        ),
+      },
+    ],
+    // Ink on stock: no fill, border, radius or shadow; a hairline rule opens the block.
+    unboxed: [
+      {
+        css: scoped(
+          CARDS_UNBOXED,
+          '.ak-card,.ak-surface,.ak-stats',
+          'background:transparent;border-color:transparent;border-top:var(--ak-border-width) solid var(--ak-color-text);border-radius:0;box-shadow:none;padding-left:0;padding-right:0',
+        ),
+      },
+      {
+        feature: 'kpi',
+        css: scoped(
+          CARDS_UNBOXED,
+          '.ak-kpi-card',
+          'background:transparent;border-color:transparent;border-top:var(--ak-border-width) solid var(--ak-color-text);border-radius:0;box-shadow:none',
         ),
       },
     ],
@@ -165,6 +199,32 @@ export const RECIPE_CSS: Readonly<
           scoped(SECTIONS_DIVIDED, SECTION_BREAK, 'margin-top:calc(var(--ak-gap) * 3.25)'),
           `@media (max-width:768px){${scoped(SECTIONS_DIVIDED, SECTION_BREAK, 'margin-top:calc(var(--ak-gap) * 2.5)')}}`,
         ].join('\n'),
+      },
+    ],
+    // A double rule and no accent tab: the section label of a printed page.
+    newspaper: [
+      {
+        css: [
+          scoped(
+            SECTIONS_NEWSPAPER,
+            SECTION_HEAD,
+            `padding-top:${unit(1.5)};border-top:${DOUBLE_RULE}`,
+          ),
+          scoped(SECTIONS_NEWSPAPER, `${SECTION_HEAD}::before`, 'content:none'),
+          scoped(
+            SECTIONS_NEWSPAPER,
+            `${SECTION_HEAD} h2`,
+            'font-size:calc(var(--ak-font-size-base) * 1.3);font-size:calc(var(--ak-font-size-base) * pow(var(--ak-font-scale),1.4));letter-spacing:.01em',
+          ),
+        ].join('\n'),
+      },
+      {
+        feature: 'story',
+        css: scoped(
+          SECTIONS_NEWSPAPER,
+          '.ak-story[data-prominence="lead"] .ak-story-body > p:first-child::first-letter',
+          'float:left;font-family:var(--ak-font-heading);font-size:3.6em;font-weight:700;line-height:.82;padding:.06em .1em 0 0',
+        ),
       },
     ],
     // No rule and no accent tab; whitespace alone separates sections.
@@ -275,6 +335,23 @@ export const RECIPE_CSS: Readonly<
     ],
   },
   media: {
+    // Black-and-white halftone stock: grayscale, a flat edge and a small caption.
+    'press-photo': [
+      {
+        css: [
+          scoped(
+            MEDIA_PRESS,
+            '.ak-media img,.ak-gallery img,.ak-story-photo img',
+            'filter:grayscale(1) contrast(1.06);border-radius:0;box-shadow:none;border-color:var(--ak-color-text)',
+          ),
+          scoped(
+            MEDIA_PRESS,
+            '.ak-media figcaption,.ak-gallery figcaption',
+            'font-size:.78rem;font-style:italic',
+          ),
+        ].join('\n'),
+      },
+    ],
     // An inset frame: padding on the surface, the caption inside the frame.
     framed: [
       {
@@ -294,6 +371,24 @@ export const RECIPE_CSS: Readonly<
             '.ak-media figcaption,.ak-gallery figcaption',
             `padding:0 ${unit(0.5)} ${unit(0.25)}`,
           ),
+        ].join('\n'),
+      },
+    ],
+  },
+  page: {
+    wide: [pageWidth(PAGE_WIDE, '1280px')],
+    broadsheet: [pageWidth(PAGE_BROADSHEET, '1480px')],
+  },
+  atmosphere: {
+    // Ink on paper: no aurora, spotlight, gloss, word reveal or page gradient. The paper grain stays.
+    print: [
+      {
+        css: [
+          scoped(ATMOSPHERE_PRINT, '.ak-hero::before', 'display:none'),
+          scoped(ATMOSPHERE_PRINT, '.ak-card::after,.ak-tile::after', 'display:none'),
+          scoped(ATMOSPHERE_PRINT, '.ak-btn[data-variant="primary"]::after', 'display:none'),
+          scoped(ATMOSPHERE_PRINT, '.ak-word > span', 'animation:none'),
+          scoped(ATMOSPHERE_PRINT, 'body', 'background:var(--ak-color-background)'),
         ].join('\n'),
       },
     ],

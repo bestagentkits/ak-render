@@ -149,6 +149,7 @@ const RENDERERS: Record<string, Renderer> = {
     const hasH1 = context.ir.nodes.some(
       (candidate) =>
         candidate.type === 'hero' ||
+        candidate.type === 'publication-header' ||
         (candidate.type === 'heading' && numberProp(candidate, 'level', 2) === 1),
     );
     const title = hasH1

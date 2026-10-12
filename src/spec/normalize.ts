@@ -683,12 +683,36 @@ function postChecks(
   checks: CheckContext,
 ): void {
   let previousHeadingLevel: number | undefined;
+  let hasPageHeading = false;
 
   for (const node of nodes) {
+    // The page has exactly one <h1>: a hero, a publication masthead or a
+    // level-1 heading. A second source would only fail document verification.
+    const emitsH1 =
+      node.type === 'hero' ||
+      node.type === 'publication-header' ||
+      (node.type === 'heading' && (numberProp(node, 'level') ?? 2) === 1);
+    if (emitsH1) {
+      if (hasPageHeading) {
+        bag.add({
+          code: 'SPEC_VALIDATION_ERROR',
+          severity: 'error',
+          message:
+            'a page has one level-1 heading; use only one of hero, publication-header or a level-1 heading',
+          path: node.path,
+          nodeId: node.id,
+        });
+      }
+      hasPageHeading = true;
+    }
+
     // A hero emits the document's <h1>, so a section heading that follows one is
     // measured against level 1 rather than treated as the first heading. Without
     // this, any hero-led page that also uses a heading block warns falsely.
-    if (node.type === 'hero' && previousHeadingLevel === undefined) {
+    if (
+      (node.type === 'hero' || node.type === 'publication-header') &&
+      previousHeadingLevel === undefined
+    ) {
       previousHeadingLevel = 1;
     }
 

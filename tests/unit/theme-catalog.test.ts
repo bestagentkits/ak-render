@@ -176,6 +176,7 @@ describe('preset discovery and precedence', () => {
       'data-console',
       'editorial',
       'executive-report',
+      'newspaper',
       'paper-ink',
       'product-studio',
       'research-notebook',

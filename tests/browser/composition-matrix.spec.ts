@@ -287,18 +287,27 @@ for (const name of FIXTURES) {
       expect(stops).toBeGreaterThanOrEqual(2);
       await installRing(page);
       const reached = new Map<string, string>();
+      // A script may hide a control while the walk scrolls (the review bar
+      // hides when the review panel is in view). Such a stop is legitimately
+      // out of the Tab order at that moment, so it is not counted as missed.
+      const hiddenDuringWalk = new Set<string>();
       // Generous bound: a page cannot have more Tab stops than this.
       for (let press = 0; press < stops + 40 && reached.size < stops; press += 1) {
         await page.keyboard.press('Tab');
-        const hit = await page.evaluate(() => {
+        const step = await page.evaluate(() => {
+          const hidden = Array.from(document.querySelectorAll('[data-matrix-stop]'))
+            .filter((element) => element.closest('[inert],[hidden]') !== null)
+            .map((element) => element.getAttribute('data-matrix-stop') ?? '');
           const active = document.activeElement;
           const stop = active?.getAttribute('data-matrix-stop');
           const ring = (window as RingWindow).matrixRing;
           if (active === null || stop === null || stop === undefined || ring === undefined) {
-            return null;
+            return { hidden, hit: null };
           }
-          return { stop, ring: ring(active) };
+          return { hidden, hit: { stop, ring: ring(active) } };
         });
+        for (const stop of step.hidden) hiddenDuringWalk.add(stop);
+        const hit = step.hit;
         if (hit !== null && !reached.has(hit.stop)) reached.set(hit.stop, hit.ring);
       }
       const missed = await page.evaluate(
@@ -306,7 +315,7 @@ for (const name of FIXTURES) {
           Array.from(document.querySelectorAll('[data-matrix-stop]'))
             .filter((element) => !seen.includes(element.getAttribute('data-matrix-stop') ?? ''))
             .map((element) => element.outerHTML.slice(0, 120)),
-        [...reached.keys()],
+        [...reached.keys(), ...hiddenDuringWalk],
       );
       expect(missed).toEqual([]);
 

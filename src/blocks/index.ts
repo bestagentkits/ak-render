@@ -9,6 +9,7 @@ import { CHART_GROUP } from './chart/index.js';
 import { COMPOSITION_GROUP } from './composition/index.js';
 import { CONTROLS_GROUP } from './controls/index.js';
 import { DATA_TABLE_GROUP } from './data-table/index.js';
+import { EDITORIAL_GROUP } from './editorial/index.js';
 import { ENGINEERING_GROUP } from './engineering/index.js';
 import { EVIDENCE_GROUP } from './evidence/index.js';
 import { LAYOUT_GROUP } from './layout/index.js';
@@ -25,4 +26,5 @@ export const BLOCK_GROUPS: readonly BlockGroup[] = [
   PRODUCT_GROUP,
   CONTROLS_GROUP,
   REVIEW_GROUP,
+  EDITORIAL_GROUP,
 ];

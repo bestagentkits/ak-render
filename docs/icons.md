@@ -58,10 +58,10 @@ stylesheet, and is inherited through `extends`.
 | `pixelarticons` | Pixelarticons |
 | `codicons` | Codicons |
 
-Built-in presets: `blueprint` uses `tabler`, `editorial` `lucide`, `paper-ink`
-and `crimson-press` `phosphor`, `terminal-mono` and `data-console` `codicons`.
+Built-in presets: `blueprint` uses `tabler`, `editorial` `lucide`, `paper-ink`,
+`crimson-press` and `newspaper` `phosphor`, `terminal-mono` and `data-console` `codicons`.
 Other presets use the default. There is no preset for pixel-art, neobrutalism,
-newspaper, cowboy or hacker looks yet; `icons: pixelarticons` in an inline theme
+cowboy or hacker looks yet; `icons: pixelarticons` in an inline theme
 gives the pixel set today.
 
 ```yaml

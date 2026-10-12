@@ -24,6 +24,7 @@ every milestone adds to this corpus rather than to a private scratch file.
 | `engineering-widgets.yaml` | Engineering status | Kanban, roadmap, test results, log viewer, API endpoint, schema viewer |
 | `evidence-widgets.yaml` | Evidence report | Benchmark comparison, metric breakdown, annotated image, references |
 | `product-widgets.yaml` | Product page | Pricing, feature matrix, testimonials, logo cloud, people, calendar, gallery lightbox |
+| `newspaper-frontpage.yaml` | Editorial front page | `newspaper` preset, `publication-header`, `editorial-layout` (lead, secondary, aside), stories of every prominence with a press photo, `digest-list`, English and Vietnamese text, long headlines, words and URLs, missing optional fields |
 | `theme-dialects.yaml` | Theme recipes | A preset's component recipes, with one recipe overridden in the spec |
 | `theme-showcase.yaml` | Theme coverage | One content spec compiled under every built-in preset into `fixtures/snapshots/` |
 | `showcase.yaml` | Landing page | Showcase blocks (bento, marquee, terminal, file tree, KPI, checklist) with real screenshots and a recording |

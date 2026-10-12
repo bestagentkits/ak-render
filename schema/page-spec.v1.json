@@ -69,14 +69,16 @@
               "enum": [
                 "raised",
                 "flat",
-                "outlined"
+                "outlined",
+                "unboxed"
               ]
             },
             "sections": {
               "enum": [
                 "ruled",
                 "divided",
-                "plain"
+                "plain",
+                "newspaper"
               ]
             },
             "tables": {
@@ -107,13 +109,27 @@
             "media": {
               "enum": [
                 "default",
-                "framed"
+                "framed",
+                "press-photo"
               ]
             },
             "callouts": {
               "enum": [
                 "tinted",
                 "outlined"
+              ]
+            },
+            "page": {
+              "enum": [
+                "standard",
+                "wide",
+                "broadsheet"
+              ]
+            },
+            "atmosphere": {
+              "enum": [
+                "default",
+                "print"
               ]
             }
           }
@@ -450,6 +466,18 @@
         },
         {
           "$ref": "#/$defs/block-feedback"
+        },
+        {
+          "$ref": "#/$defs/block-publication-header"
+        },
+        {
+          "$ref": "#/$defs/block-story"
+        },
+        {
+          "$ref": "#/$defs/block-digest-list"
+        },
+        {
+          "$ref": "#/$defs/block-editorial-layout"
         }
       ]
     },
@@ -7713,6 +7741,278 @@
         }
       },
       "description": "Feedback: one per page, last; turns on comments and copies them with decision answers."
+    },
+    "block-publication-header": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "name"
+      ],
+      "properties": {
+        "type": {
+          "const": "publication-header"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "date": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "issue": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "edition": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "tagline": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 400,
+          "description": "Edition blurb under the strapline."
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string",
+                    "maxLength": 40
+                  },
+                  "href": {
+                    "type": "string",
+                    "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "label"
+                ]
+              }
+            ]
+          },
+          "maxItems": 12
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Publication header: `name` (the h1), supplied `date`/`issue`/`edition`, `tagline`, `description`, `sections`."
+    },
+    "block-story": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "title"
+      ],
+      "properties": {
+        "type": {
+          "const": "story"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "prominence": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "lead",
+            "feature",
+            "brief"
+          ]
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "source": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "byline": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "meta": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 600,
+          "description": "Standfirst under the headline."
+        },
+        "body": {
+          "type": "string",
+          "maxLength": 6000,
+          "description": "Story text; blank lines split paragraphs. A lead story opens with a drop cap."
+        },
+        "href": {
+          "type": "string",
+          "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+        },
+        "image": {
+          "type": "string",
+          "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+        },
+        "alt": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "caption": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Plain text; `code` and **bold** spans render inline."
+        },
+        "credit": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Story: `title`, `prominence` lead|feature|brief, `category`, `source`, `byline`, `summary`, `body`, `image`."
+    },
+    "block-digest-list": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "items"
+      ],
+      "properties": {
+        "type": {
+          "const": "digest-list"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "date": {
+                "type": "string",
+                "maxLength": 40
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "text": {
+                "type": "string",
+                "maxLength": 300,
+                "description": "Plain text; `code` and **bold** spans render inline."
+              },
+              "href": {
+                "type": "string",
+                "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "title"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 30
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Digest list: optional `title`, `items` of `{date, title, text, href}`."
+    },
+    "block-editorial-layout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "lead"
+      ],
+      "properties": {
+        "type": {
+          "const": "editorial-layout"
+        },
+        "variant": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "broadsheet"
+          ]
+        },
+        "lead": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 6,
+          "items": {
+            "$ref": "#/$defs/block"
+          }
+        },
+        "secondary": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/block"
+          }
+        },
+        "aside": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": {
+            "$ref": "#/$defs/block"
+          }
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        }
+      },
+      "description": "Editorial layout: `lead`, `secondary` and `aside` block lists; three columns wide, one when narrow."
     }
   }
 }

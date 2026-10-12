@@ -22,6 +22,7 @@ const EXPECTED_NAMES = [
   'decision-memo',
   'implementation-plan',
   'incident-report',
+  'newspaper',
   'product-showcase',
   'release-recap',
   'research-report',

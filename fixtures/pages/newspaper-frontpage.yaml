@@ -1,0 +1,117 @@
+version: 1
+
+meta:
+  title: The Daily Chronicle
+  description: A broadsheet front page compiled from semantic stories, a masthead and a diary rail under the newspaper preset
+  locale: en
+
+theme:
+  preset: newspaper
+
+policy:
+  network: deny
+
+blocks:
+  - type: publication-header
+    name: The Daily Chronicle
+    date: '2026-10-12'
+    issue: No. 282
+    edition: Evening edition
+    tagline: A curated technology journal
+    description: Reported from the edge of the network. Every figure on this page is supplied by the desk that filed it.
+    sections:
+      - label: Technology
+        href: '#technology'
+      - label: Business
+        href: '#markets'
+      - Sport
+      - Culture
+      - Opinion
+
+  - type: editorial-layout
+    label: Briefs and diary
+    lead:
+      - type: story
+        prominence: lead
+        category: Infrastructure
+        title: The future of edge computing belongs to the teams who learn to ship small, boring, deterministic things
+        source: Technology desk
+        byline: Staff reporter
+        meta: 128 points · 41 comments
+        summary: Compact services that start in milliseconds are replacing monoliths at the network edge, and the operators running them say the trade is worth it.
+        body: |
+          Operators who moved their request handling out of a central region report the same pattern: latency fell first, and then the incident count followed. The savings were not the point, they say. Predictable behaviour was.
+
+          "We stopped debugging the cloud and started debugging our own code," said one engineer, speaking about a migration that touched forty services over two quarters. Their rollout plan was deliberately dull, with one region at a time and a written rollback for every step.
+
+          The harder lesson was about state. Anything that needed a global lock moved back to a single owner, and the edge kept only what it could rebuild from a cache in under a second. Supercalifragilisticexpialidocious-length release notes, one team joked, turned into one-line changelogs.
+        href: '#technology'
+      - type: story
+        prominence: feature
+        category: Reading list
+        title: Why the long URL should never break the page
+        summary: A reminder that a link such as https://example.org/archive/2026/10/12/an-exceedingly-long-path-with-no-natural-break-points-at-all-and-keeps-going wraps instead of overflowing.
+        source: Standards desk
+
+    secondary:
+      - type: story
+        prominence: feature
+        category: Photography
+        title: Cranes at dawn on the quay
+        source: Picture desk
+        summary: Port operators began the autumn shift before sunrise, with the first container ship in by six.
+        image: assets/press-harbour.svg
+        alt: Harbour cranes silhouetted against a pale sunrise over still water.
+        caption: Cranes line the quay as the morning shift begins.
+        credit: Chronicle archive
+        body: |
+          Nhân viên cảng bắt đầu ca làm việc mùa thu từ trước bình minh, khi con tàu container đầu tiên cập bến lúc sáu giờ.
+
+          Người điều hành cho biết lịch trình đúng giờ giúp giảm chi phí chờ đợi cho cả chuỗi cung ứng.
+      - type: story
+        prominence: feature
+        category: Thể thao
+        title: Đội tuyển giữ vững ngôi đầu sau trận hòa kịch tính
+        source: Ban Thể thao
+        summary: Một bàn thắng muộn ở phút bù giờ đã giữ cho đội chủ nhà không thua trong chuỗi mười trận liên tiếp.
+
+    aside:
+      - type: digest-list
+        title: Dates for the diary
+        items:
+          - date: '2026-10-15'
+            title: Developer conference opens
+            text: Three days of talks on edge runtimes.
+          - date: '2026-10-19'
+            title: Regional standards meeting
+          - date: '2026-10-22'
+            title: Quarterly earnings, infrastructure group
+          - date: '2026-10-27'
+            title: Open source maintainers' summit
+          - date: Late October
+            title: Release freeze for the stable channel
+      - type: story
+        prominence: brief
+        category: Brief
+        title: Registry accepts a new runtime after a staged rollout
+        summary: Staging first, then production, with the live registry confirmed before the release job ran.
+      - type: story
+        prominence: brief
+        category: Brief
+        title: Offline pages stay offline
+        summary: A page opened from disk made no network requests in every browser checked.
+        source: Quality desk
+      - type: story
+        prominence: brief
+        title: A brief with only a headline
+
+  - type: section
+    id: markets
+    title: Markets at the close
+    blocks:
+      - type: table
+        columns: [Index, Close, Change]
+        rows:
+          - [Edge 50, '4,218.40', '+0.8%']
+          - [Compute 100, '9,874.12', '-0.3%']
+          - [Storage 25, '1,302.77', '+1.4%']

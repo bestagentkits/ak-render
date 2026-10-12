@@ -21,6 +21,7 @@ constrained as a built-in one.
 | `product-studio` | Soft neutral surfaces, a violet accent, framed media and raised cards. |
 | `research-notebook` | Paper with an oxblood accent, serif reading type, ledger tables and outlined notes. |
 | `crimson-press` | Cream paper, black ink and a crimson accent, serif display, square ledger rules. |
+| `newspaper` | Broadsheet: newsprint paper, black ink, an oxblood accent, serif type, double rules, unboxed cards, greyscale press photos, no motion. |
 
 To compare them on the same content, open the
 [theme preview](https://render.agentkit.best/gallery/themes/) (or
@@ -67,14 +68,16 @@ the compiler owns the CSS behind each value. A recipe is never CSS.
 
 | Surface | Values (first is the default) | What a non-default value does |
 | --- | --- | --- |
-| `cards` | `raised`, `flat`, `outlined` | `flat`: a tonal fill with no border or shadow. `outlined`: a firm hairline, no shadow. |
-| `sections` | `ruled`, `divided`, `plain` | `divided`: a heavier full-width rule and a larger break. `plain`: no rule and no accent tab. |
+| `cards` | `raised`, `flat`, `outlined`, `unboxed` | `flat`: a tonal fill with no border or shadow. `outlined`: a firm hairline, no shadow. `unboxed`: no fill, border, radius or shadow; a hairline rule above. |
+| `sections` | `ruled`, `divided`, `plain`, `newspaper` | `divided`: a heavier full-width rule and a larger break. `plain`: no rule and no accent tab. `newspaper`: a double rule over a larger heading, and a drop cap on a lead story. |
 | `tables` | `default`, `ledger`, `minimal` | `ledger`: zebra rows, lining tabular figures, a strong header rule. `minimal`: no frame, a quiet header, compact rows. |
 | `charts` | `default`, `minimal` | Gridlines drop away except the baseline; axis labels lose weight but keep their contrast. |
 | `hero` | `default`, `compact` | Left-aligned, tighter, one step down the display scale. |
 | `metrics` | `default`, `headline` | Stats and KPI values grow, with the label above the value. |
-| `media` | `default`, `framed` | Images sit in an inset frame with the caption inside it. |
+| `media` | `default`, `framed`, `press-photo` | `framed`: images sit in an inset frame with the caption inside it. `press-photo`: greyscale, flat edge, small italic caption. |
 | `callouts` | `tinted`, `outlined` | A tone outline on the page instead of a tinted fill; the glyph stays. |
+| `page` | `standard`, `wide`, `broadsheet` | Widens the page shell to 1280px (`wide`) or 1480px (`broadsheet`); print resets it. |
+| `atmosphere` | `default`, `print` | Suppresses the aurora, spotlight, gloss and word animation, and flattens the page background. |
 
 Density is not a recipe: it stays the `density` token.
 
@@ -100,6 +103,7 @@ keeps every default renders the same bytes as one without recipes.
 | `product-studio` | `media: framed`, `cards: raised` |
 | `research-notebook` | `callouts: outlined`, `tables: ledger`, `hero: compact`, `cards: flat` |
 | `crimson-press` | `cards: flat`, `tables: ledger`, `metrics: headline`, `callouts: outlined` (and square corners, no card shadow) |
+| `newspaper` | `cards: unboxed`, `sections: newspaper`, `tables: ledger`, `hero: compact`, `metrics: headline`, `media: press-photo`, `callouts: outlined`, `page: broadsheet`, `atmosphere: print` (and square corners, no motion) |
 
 An unknown surface or value is a `SPEC_VALIDATION_ERROR` whose
 `details.allowed` lists the valid choices.
@@ -198,6 +202,7 @@ to a system stack that ends in a generic family:
 | `product-studio` | `AK Plus Jakarta Sans` | headings and body |
 | `research-notebook` | `AK Fraunces` | headings (body stays the system serif) |
 | `crimson-press` | `AK Fraunces`, `AK Inter Tight`, `AK JetBrains Mono` | headings; body; labels and code |
+| `newspaper` | `AK Fraunces`, `AK JetBrains Mono` | headings; labels and code (body stays the system serif) |
 
 The compiler inlines a face as a `data:` WOFF2 only when a resolved font stack
 names it (`src/render/font-faces.ts`). The Latin subset is always emitted; the

@@ -46,6 +46,16 @@ Release mechanics and the compatibility contract live in
   `describe-icon` and `icon-packs` MCP tools, on the local and hosted servers,
   with English and Vietnamese search and size-limited replies that never
   contain SVG.
+- Editorial blocks for publication-quality pages: `publication-header`
+  (masthead with date, issue, edition and a section nav), `story` (lead,
+  feature or brief, with an optional photo, byline, summary and body),
+  `digest-list` (a dated rail of short items) and `editorial-layout` (a
+  broadsheet grid: three columns from 1100px, two from 700px, one below, with
+  the DOM reading order kept). New `newspaper` built-in preset and recipe
+  values `cards: unboxed`, `sections: newspaper`, `media: press-photo`, plus
+  the `page` (`wide`, `broadsheet`) and `atmosphere` (`print`) surfaces.
+  `fixtures/pages/newspaper-frontpage.yaml` and the `newspaper` page recipe
+  show the whole page. Existing presets render the same bytes.
 - `hero` takes optional `actions`: up to three link buttons (`label`, `href`,
   `variant`), the same shape as the `cta` band, rendered under the description.
 - Prose text renders a `**double-asterisk**` pair as bold, alongside backtick

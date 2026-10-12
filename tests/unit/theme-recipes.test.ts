@@ -99,6 +99,8 @@ describe('recipe resolution', () => {
       metrics: 'default', // default
       media: 'default', // default
       callouts: 'tinted', // beta over alpha
+      page: 'standard', // default
+      atmosphere: 'default', // default
     });
   });
 
