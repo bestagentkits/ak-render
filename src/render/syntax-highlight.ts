@@ -649,10 +649,12 @@ function scanTag(text: string, index: number, sink: TokenSink): { name: string; 
   return { name: closing ? '' : name.toLowerCase(), end: Math.min(cursor + 1, text.length) };
 }
 
+const SCRIPT_CLOSE = /<\/script/giu;
+const STYLE_CLOSE = /<\/style/giu;
+
 /** HTML and XML, with `<script>` and `<style>` bodies highlighted as JavaScript and CSS. */
 function tokenizeMarkup(text: string): Token[] {
   const sink = new TokenSink();
-  const lower = text.toLowerCase();
   let index = 0;
   while (index < text.length) {
     const character = text[index] ?? '';
@@ -674,7 +676,10 @@ function tokenizeMarkup(text: string): Token[] {
       const tag = scanTag(text, index, sink);
       index = tag.end;
       if (tag.name === 'script' || tag.name === 'style') {
-        const close = lower.indexOf(`</${tag.name}`, index);
+        // A regex on the source itself: lowercasing can change string length (`İ`).
+        const closer = tag.name === 'style' ? STYLE_CLOSE : SCRIPT_CLOSE;
+        closer.lastIndex = index;
+        const close = closer.exec(text)?.index ?? -1;
         const end = close === -1 ? text.length : close;
         const body = text.slice(index, end);
         const tokens =
@@ -726,9 +731,17 @@ function tokenizeMarkdown(text: string): Token[] {
   let fence: string | null = null;
   text.split('\n').forEach((line, index) => {
     if (index > 0) sink.plain('\n');
-    const fenceMark = /^\s*(`{3,}|~{3,})/u.exec(line)?.[1];
-    if (fenceMark !== undefined && (fence === null || fenceMark.startsWith(fence))) {
-      fence = fence === null ? fenceMark : null;
+    // A fence opens with up to three spaces of indent; it closes with at least as long a run of the same character and nothing after.
+    const fenceMark = /^ {0,3}(`{3,}|~{3,})(.*)$/u.exec(line);
+    const opens = fence === null && fenceMark !== null;
+    const closes =
+      fence !== null &&
+      fenceMark !== null &&
+      fenceMark[1]?.startsWith(fence) === true &&
+      fenceMark[2]?.trim() === '';
+    if (fenceMark !== null && (opens || closes)) {
+      const mark = fenceMark[1] ?? '';
+      fence = fence === null ? mark : null;
       sink.push('meta', line);
       return;
     }

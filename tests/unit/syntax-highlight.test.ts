@@ -155,6 +155,14 @@ describe('syntax highlighting', () => {
       ['s', "'x'"],
       ['k', 'script'],
     ]);
+    const shifted = codeLines(`<p>${'İ'.repeat(30)}</p><script>go()</script><b>import</b>`, 'html');
+    expect(tokens(shifted).slice(-5)).toEqual([
+      ['k', 'script'],
+      ['f', 'go'],
+      ['k', 'script'],
+      ['k', 'b'],
+      ['k', 'b'],
+    ]);
     expect(isHighlighted('xml')).toBe(true);
     expect(isHighlighted('svg')).toBe(true);
   });
@@ -204,6 +212,15 @@ describe('syntax highlighting', () => {
       ['meta', '```js'],
       ['s', 'let a = 1;'],
       ['meta', '```'],
+    ]);
+  });
+
+  it('closes a Markdown fence only with a bare run at least as long', () => {
+    const html = codeLines(['````md', '```js', '````', 'after'].join('\n'), 'markdown');
+    expect(tokens(html)).toEqual([
+      ['meta', '````md'],
+      ['s', '```js'],
+      ['meta', '````'],
     ]);
   });
 
