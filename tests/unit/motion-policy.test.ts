@@ -70,6 +70,9 @@ describe('motion diagnostics', () => {
     expect(
       motionDiagnostics(`@media ${MOTION_ALLOWED} and (hover:hover){.a{animation:ak-x 1s}}`),
     ).toEqual([]);
+    expect(
+      motionDiagnostics(`@media not all and ${MOTION_ALLOWED}{.a{animation:ak-x 1s}}`),
+    ).toHaveLength(1);
   });
 
   it('requires unguarded transitions to use the duration token', () => {
@@ -87,6 +90,10 @@ describe('motion diagnostics', () => {
       motionDiagnostics('.a{transition:transform 600ms var(--ak-motion-easing)}'),
     ).toHaveLength(1);
     expect(motionDiagnostics('.a{transition-delay:2s}')).toHaveLength(1);
+    expect(motionDiagnostics('.a{transition-delay:0s}')).toEqual([]);
+    // Any other variable may hold a fixed time, directly or as its fallback.
+    expect(motionDiagnostics('.a{transition:translate var(--ak-marquee-time)}')).toHaveLength(1);
+    expect(motionDiagnostics('.a{transition:translate var(--ak-nope, 900ms)}')).toHaveLength(1);
     expect(motionDiagnostics(`@media ${MOTION_ALLOWED}{.a{transition:translate .9s}}`)).toEqual([]);
   });
 

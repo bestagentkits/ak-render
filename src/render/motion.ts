@@ -62,10 +62,13 @@ export const PRINT_STILL_CSS =
 /**
  * Restrained feedback changes colour, shadow and opacity but never moves
  * anything: a hover lift, an image zoom or a turning chevron jumps to its end
- * state, as WCAG 2.3.3 asks of motion a reader's interaction starts.
+ * state, as WCAG 2.3.3 asks of motion a reader's interaction starts. Every kept
+ * transition runs at the theme duration and easing with no delay, so authored
+ * per-property times cannot shift onto the wrong property. Screen only: print
+ * keeps `PRINT_STILL_CSS`.
  */
 export const RESTRAINED_CSS =
-  ':root[data-motion="reduced"] *,:root[data-motion="reduced"] *::before,:root[data-motion="reduced"] *::after{transition-property:color,background-color,border-color,outline-color,text-decoration-color,box-shadow,opacity,fill,stroke!important}';
+  '@media screen{:root[data-motion="reduced"] *,:root[data-motion="reduced"] *::before,:root[data-motion="reduced"] *::after{transition-property:color,background-color,border-color,outline-color,text-decoration-color,box-shadow,opacity,fill,stroke!important;transition-duration:var(--ak-motion-duration)!important;transition-timing-function:var(--ak-motion-easing)!important;transition-delay:0s!important}}';
 
 export function motionPolicyOf(value: string | undefined): MotionPolicy {
   return value === 'reduced' || value === 'none' ? value : 'full';
@@ -166,7 +169,9 @@ const isGuarded = (context: readonly string[]) =>
     const queries = layers(prelude.slice('@media'.length));
     return (
       queries.some((query) => query.includes(MOTION_ALLOWED)) &&
-      queries.every((query) => query.includes(MOTION_ALLOWED) || query === 'print')
+      queries.every(
+        (query) => (query.includes(MOTION_ALLOWED) && !/^not\b/u.test(query)) || query === 'print',
+      )
     );
   });
 
@@ -174,9 +179,20 @@ const isPrintOnly = (context: readonly string[]) =>
   context.some((prelude) => /^@media\s+print$/u.test(prelude));
 
 const TIME = /(?:^|[\s(])\d*\.?\d+m?s\b/u;
+const ZERO_TIME = /(?:^|[\s(])0*\.?0+m?s\b/gu;
 
-/** A time left once every `var()` is removed is fixed: the still state cannot zero it. */
-const hasFixedTime = (layer: string) => TIME.test(layer.replace(/var\([^()]*\)/gu, ''));
+/** Theme variables whose times the still state zeroes; easing carries no time. */
+const TOKEN_TIME = /var\(--ak-(?:motion-duration|motion-easing|transition)\)/gu;
+
+/**
+ * A time left once the token variables are removed is fixed: the still state
+ * cannot zero it. Any other `var()` counts as fixed too, since its value or
+ * fallback may be a fixed time. A zero time moves nothing.
+ */
+const hasFixedTime = (layer: string) => {
+  const rest = layer.replace(TOKEN_TIME, '').replace(ZERO_TIME, ' ');
+  return rest.includes('var(') || TIME.test(rest);
+};
 
 const contextKey = (context: readonly string[]) => context.join('{');
 

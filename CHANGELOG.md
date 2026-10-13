@@ -131,8 +131,8 @@ Release mechanics and the compatibility contract live in
   reduced-motion guard, a fixed-duration transition outside it, or a keyframes
   name defined twice.
 - Diagram adapter markup with SMIL animation (`animate`, `animateTransform`,
-  `animateMotion`, `set`, `discard`) is refused, since no stylesheet can stop
-  it under reduced motion or in print. Adapter motion belongs in its stylesheet.
+  `animateMotion`, `set`, `discard`) or a `marquee` is refused, since no
+  stylesheet can stop it under reduced motion or in print. Adapter motion belongs in its stylesheet.
 
 ## [0.3.0] - 2026-10-06
 

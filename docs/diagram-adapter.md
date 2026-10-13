@@ -47,10 +47,10 @@ compile: a broken or absent adapter degrades the page.
 ## Trust boundary
 
 Adapter output is verified before it is embedded. `checkAdapterMarkup` rejects
-script, iframe, object, embed, `foreignObject`, `base`, and `form` elements, SMIL
-animation elements (`animate`, `animateTransform`, `animateMotion`, `set`,
-`discard`; no stylesheet can stop them under reduced motion or in print), any
-`on*` handler, `javascript:` URLs, `data:text/html` URLs, `srcdoc`, CSS
+script, iframe, object, embed, `foreignObject`, `base`, and `form` elements,
+moving elements that no stylesheet can stop under reduced motion or in print
+(`marquee` and the SMIL `animate`, `animateTransform`, `animateMotion`, `set`
+and `discard`), any `on*` handler, `javascript:` URLs, `data:text/html` URLs, `srcdoc`, CSS
 `@import`, remote CSS `url()` references, empty output, and output over 256 KB.
 It also rejects markup that writes a `nonce` attribute or any `data-ak-*`
 attribute (the page and its runtime use those as hooks), an `href`,

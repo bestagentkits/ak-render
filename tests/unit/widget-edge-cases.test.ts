@@ -124,13 +124,15 @@ blocks:
     }
   });
 
-  it('refuses SMIL animation, which no stylesheet can stop under reduced motion', () => {
+  it('refuses SMIL animation and marquee, which no stylesheet can stop under reduced motion', () => {
     for (const element of ['animate', 'animateTransform', 'animateMotion', 'set', 'discard']) {
       const markup = `<svg><rect width="4" height="4"><${element} attributeName="x" to="2"/></rect></svg>`;
       const fitted = fitAdapterMarkup(markup, 'ak-diagram-x');
       expect(fitted.ok, element).toBe(false);
       expect(fitted.ok ? '' : fitted.reason, element).toContain(`${element.toLowerCase()} element`);
     }
+    const marquee = fitAdapterMarkup('<div><marquee>Moving</marquee></div>', 'ak-diagram-x');
+    expect(marquee.ok ? '' : marquee.reason).toContain('marquee element');
   });
 
   it('always labels the first and last category of a long axis', () => {

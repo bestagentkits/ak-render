@@ -123,13 +123,14 @@ const FORBIDDEN_ELEMENTS: ReadonlySet<string> = new Set([
   'meta',
   'link',
   'math',
-  // SMIL animation: no stylesheet can stop it under reduced motion or in
-  // print, so adapter motion must come from the adapter stylesheet instead.
+  // SMIL animation and marquee: no stylesheet can stop them under reduced
+  // motion or in print, so adapter motion must come from the adapter stylesheet.
   'animate',
   'animatemotion',
   'animatetransform',
   'set',
   'discard',
+  'marquee',
 ]);
 
 /** HTML elements that never have content or an end tag. */

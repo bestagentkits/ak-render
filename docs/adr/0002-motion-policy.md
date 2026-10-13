@@ -68,18 +68,20 @@ attribute only the runtime sets, and count-up figures are in the markup.
 3. **The root attribute.** `<html data-motion="reduced|none">` tells the runtime
    to skip script-driven motion, and adapter canvases stop their own animation
    and transitions under it. Under `reduced`, one rule (`RESTRAINED_CSS`)
-   limits every transition to colour, border, shadow, outline and opacity, so
-   nothing moves even when a feature sheet transitions `transform`, as WCAG
-   2.3.3 asks of motion that interaction starts.
+   limits every transition to colour, border, shadow, outline and opacity at
+   the theme duration and easing, so nothing moves even when a feature sheet
+   transitions `transform`, as WCAG 2.3.3 asks of motion that interaction
+   starts.
 4. **Adapters.** Adapter stylesheets are scoped to their canvas, which stops
    them in every still or restrained state and in print. SMIL animation
-   elements are refused at the adapter boundary, because no stylesheet can
-   stop them.
+   elements and `marquee` are refused at the adapter boundary, because no
+   stylesheet can stop them.
 5. **The check.** `motionDiagnostics` runs on the page stylesheet inside
    `verifyDocument` on every compile. It fails the compile when any animation
    layer outside the guard is not a scroll-position indicator on a scroll
    timeline, when an unguarded transition has a fixed duration or delay (only
-   `var()` times count as token-driven), when a media query list holds the
+   times from `--ak-motion-duration` count as token-driven; any other variable
+   counts as fixed), when a media query list holds the
    guard beside a query that matches without it, or when a keyframes name is
    defined twice.
 
@@ -88,7 +90,8 @@ attribute only the runtime sets, and count-up figures are in the markup.
 On screen, `full` and `none` are unchanged apart from the dialog fix. Print
 now settles every animation under every policy. `reduced` now restrains motion
 as its name promised; no built-in preset used it. Adapter markup with SMIL
-animation is now refused and falls back to the diagram's text description.
+animation or a `marquee` is now refused and falls back to the diagram's text
+description.
 Specs and themes need no change.
 
 ## Motion budget
