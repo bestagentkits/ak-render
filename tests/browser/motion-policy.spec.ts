@@ -136,12 +136,14 @@ test.describe('effective motion policy', () => {
       await open(page, 'interactive', policy, system);
       const used = await page.evaluate(() => {
         let called = false;
-        const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
-        doc.startViewTransition = (callback: () => void) => {
-          called = true;
-          callback();
-          return {};
-        };
+        Object.defineProperty(document, 'startViewTransition', {
+          configurable: true,
+          value: (callback: () => void) => {
+            called = true;
+            callback();
+            return {};
+          },
+        });
         (document.querySelector('[data-ak-theme-toggle]') as HTMLElement).click();
         return called;
       });
