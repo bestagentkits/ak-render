@@ -23,7 +23,7 @@ Themes are typed data (`src/theme/tokens.ts`); the stylesheet consumes these tok
 | Spacing | `space-unit`, `density` | The block gap `--ak-gap` is 2, 3 or 4 units (compact, comfortable or spacious). Top-level section breaks use 2.5× (2× at ≤768px), and titled blocks inside a section use 1.75×. |
 | Radius | `radius-small`, `radius-medium`, `radius-large` | Controls use small or medium, cards and charts use medium, and dialogs and carousel slides use large. |
 | Elevation | `elevation-card`, `elevation-popover` | Each maps to fixed two-layer shadows (none, subtle, medium or strong). |
-| Motion | `motion-duration`, `motion-easing`, `motion-policy` | Every transition uses these. Reduced motion and `motion-policy: none` set the duration to 0ms; `motion-policy: reduced` keeps state transitions and drops every animation. See `docs/adr/0002-motion-policy.md`. |
+| Motion | `motion-duration`, `motion-easing`, `motion-policy` | Every transition uses these. Reduced motion and `motion-policy: none` set the duration to 0ms; `motion-policy: reduced` keeps colour, shadow and opacity transitions and drops every animation and moving transition. See `docs/adr/0002-motion-policy.md`. |
 
 ## Charts
 
@@ -161,7 +161,7 @@ Tabs, accordion sections, carousel slides and bento tiles hold blocks in `items[
 ## Motion
 
 - Durations come from the token (160ms by default). State changes transition color, background, border, shadow, transform and opacity.
-- Press feedback is a 1px translate. The dialog enters with a 6px rise. Nothing blocks input.
+- Press feedback is a 1px translate. The dialog enters with an 8px rise when motion is allowed. Nothing blocks input.
 - Only three things loop: the hero aurora (a slow 18s drift), the CTA orb (16s), and the marquee (pauses on hover). Everything else plays once or follows scroll.
 - Every animation is gated on `prefers-reduced-motion: no-preference`; only the scroll-position indicators (progress rail, scroll-edge shades) run outside it, on a scroll timeline. `wireEffects()` does nothing under reduced motion or a `reduced`/`none` theme, and print turns every animation off. `verify.ts` fails the compile on an unguarded animation, a fixed-duration unguarded transition or a duplicated keyframes name (`src/render/motion.ts`).
 

@@ -7,6 +7,7 @@ import {
   motionDiagnostics,
   motionPolicyOf,
   PRINT_STILL_CSS,
+  RESTRAINED_CSS,
 } from '../../src/render/motion.js';
 import { compile } from '../../src/render/render.js';
 
@@ -53,9 +54,22 @@ describe('motion diagnostics', () => {
     ]);
   });
 
-  it('ignores adapter keyframes and animations inside their scoped canvas', () => {
-    const adapter = '@scope (.c){.n{animation:spin 1s infinite}@keyframes spin{}}';
-    expect(motionDiagnostics(`${adapter}${adapter}`)).toEqual([]);
+  it('checks every animation layer, not only the first', () => {
+    const rail =
+      '.r{animation:ak-reading linear both,ak-aurora 18s infinite;animation-timeline:scroll(root)}';
+    expect(motionDiagnostics(rail)).toEqual([
+      `animation ak-aurora on .r is not behind ${MOTION_ALLOWED}`,
+    ]);
+    expect(motionDiagnostics('.a{animation-name:ak-x,ak-y}')).toHaveLength(2);
+  });
+
+  it('does not accept the guard inside a media query list that matches without it', () => {
+    expect(
+      motionDiagnostics(`@media (min-width:0),${MOTION_ALLOWED}{.a{animation:ak-x 1s}}`),
+    ).toHaveLength(1);
+    expect(
+      motionDiagnostics(`@media ${MOTION_ALLOWED} and (hover:hover){.a{animation:ak-x 1s}}`),
+    ).toEqual([]);
   });
 
   it('requires unguarded transitions to use the duration token', () => {
@@ -68,6 +82,11 @@ describe('motion diagnostics', () => {
     expect(
       motionDiagnostics('.a{transition:color var(--ak-transition),transform 200ms ease}'),
     ).toHaveLength(1);
+    // Only the duration token makes a time zero in the still state; easing does not.
+    expect(
+      motionDiagnostics('.a{transition:transform 600ms var(--ak-motion-easing)}'),
+    ).toHaveLength(1);
+    expect(motionDiagnostics('.a{transition-delay:2s}')).toHaveLength(1);
     expect(motionDiagnostics(`@media ${MOTION_ALLOWED}{.a{transition:translate .9s}}`)).toEqual([]);
   });
 
@@ -123,10 +142,15 @@ describe('motion policy', () => {
     );
   });
 
-  it('settles every page in print and stops adapter motion under any policy', () => {
+  it('settles every page in print under any policy', () => {
     for (const policy of ['full', 'reduced', 'none']) {
-      const html = withPolicy(policy);
-      expect(html).toContain(PRINT_STILL_CSS);
+      expect(withPolicy(policy)).toContain(PRINT_STILL_CSS);
     }
+  });
+
+  it('limits restrained transitions to properties that do not move anything', () => {
+    expect(withPolicy('reduced')).toContain(RESTRAINED_CSS);
+    expect(withPolicy('full')).not.toContain(RESTRAINED_CSS);
+    expect(withPolicy('none')).not.toContain(RESTRAINED_CSS);
   });
 });

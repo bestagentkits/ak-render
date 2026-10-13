@@ -63,7 +63,7 @@ hex.
 | `motion-policy` | Reader allows motion | Reader asks for reduced motion |
 | --- | --- | --- |
 | `full` (default) | Every transition and animation | Still |
-| `reduced` | State feedback only: hover, focus and disclosure transitions; no entrance, loop, parallax, smooth scroll or count-up | Still |
+| `reduced` | State feedback only: colour, shadow and opacity transitions; hover lifts and zooms jump instead of moving; no entrance, loop, parallax, smooth scroll or count-up | Still |
 | `none` | Still | Still |
 
 A still page has a 0ms transition duration and no animation. The reading-progress

@@ -39,7 +39,7 @@ one matrix. The reader's setting always wins.
 | State | Keeps | Turns off |
 | --- | --- | --- |
 | full | Everything: state transitions, the hero entrance and aurora, block entrances, marquee, scroll-linked parallax, smooth scrolling, count-up, the pointer spotlight, the theme view transition and adapter animation. | Nothing. |
-| restrained | State feedback: hover, focus, press, disclosure and colour transitions at the theme's `motion-duration`. | Every keyframe animation, decorative transitions (the button sheen), smooth scrolling, script-driven motion (count-up, spotlight tracking, the view transition) and adapter motion. |
+| restrained | State feedback that does not move: colour, border, shadow, outline and opacity transitions at the theme's `motion-duration`. | Every keyframe animation; any transition that moves something (hover lifts, image zoom, a turning chevron, the button sheen), which jumps to its end state; smooth scrolling; script-driven motion (count-up, spotlight tracking, the view transition) and adapter motion. |
 | still | Nothing moves; `--ak-motion-duration` is `0ms`, so state changes are instant. | Everything above. |
 
 In every state the two **scroll-position indicators** keep working: the
@@ -67,17 +67,29 @@ attribute only the runtime sets, and count-up figures are in the markup.
    dark scheme and inline theme overrides cannot outrank it.
 3. **The root attribute.** `<html data-motion="reduced|none">` tells the runtime
    to skip script-driven motion, and adapter canvases stop their own animation
-   and transitions under it.
-4. **The check.** `motionDiagnostics` runs inside `verifyDocument` on every
-   compile. It fails the compile when an animation outside the guard is not a
-   scroll-position indicator on a scroll timeline, when an unguarded transition
-   uses a fixed duration instead of the token, or when a keyframes name is
+   and transitions under it. Under `reduced`, one rule (`RESTRAINED_CSS`)
+   limits every transition to colour, border, shadow, outline and opacity, so
+   nothing moves even when a feature sheet transitions `transform`, as WCAG
+   2.3.3 asks of motion that interaction starts.
+4. **Adapters.** Adapter stylesheets are scoped to their canvas, which stops
+   them in every still or restrained state and in print. SMIL animation
+   elements are refused at the adapter boundary, because no stylesheet can
+   stop them.
+5. **The check.** `motionDiagnostics` runs on the page stylesheet inside
+   `verifyDocument` on every compile. It fails the compile when any animation
+   layer outside the guard is not a scroll-position indicator on a scroll
+   timeline, when an unguarded transition has a fixed duration or delay (only
+   `var()` times count as token-driven), when a media query list holds the
+   guard beside a query that matches without it, or when a keyframes name is
    defined twice.
 
 ### Compatibility
 
-`full` and `none` are unchanged. `reduced` now restrains motion as its name
-promised; no built-in preset used it. Specs and themes need no change.
+On screen, `full` and `none` are unchanged apart from the dialog fix. Print
+now settles every animation under every policy. `reduced` now restrains motion
+as its name promised; no built-in preset used it. Adapter markup with SMIL
+animation is now refused and falls back to the diagram's text description.
+Specs and themes need no change.
 
 ## Motion budget
 

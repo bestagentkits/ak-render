@@ -12,9 +12,10 @@
  *
  * - **full**: every transition, entrance, ambient loop, scroll-linked parallax,
  *   smooth scroll, count-up and the theme view transition.
- * - **restrained**: state feedback only. Hover, focus, press and disclosure
- *   transitions keep the theme duration; every keyframe animation, smooth
- *   scroll and script-driven motion is off.
+ * - **restrained**: state feedback only. Colour, shadow and opacity
+ *   transitions keep the theme duration; anything that would move (a hover
+ *   lift, an image zoom, a turning chevron) jumps to its end state, and every
+ *   keyframe animation, smooth scroll and script-driven motion is off.
  * - **still**: the duration token is 0ms, so state changes are instant, and
  *   nothing animates.
  *
@@ -58,6 +59,14 @@ export const SCROLL_POSITION_KEYFRAMES: ReadonlySet<string> = new Set([
 export const PRINT_STILL_CSS =
   '@media print{*,*::before,*::after{animation:none!important;transition:none!important}}';
 
+/**
+ * Restrained feedback changes colour, shadow and opacity but never moves
+ * anything: a hover lift, an image zoom or a turning chevron jumps to its end
+ * state, as WCAG 2.3.3 asks of motion a reader's interaction starts.
+ */
+export const RESTRAINED_CSS =
+  ':root[data-motion="reduced"] *,:root[data-motion="reduced"] *::before,:root[data-motion="reduced"] *::after{transition-property:color,background-color,border-color,outline-color,text-decoration-color,box-shadow,opacity,fill,stroke!important}';
+
 export function motionPolicyOf(value: string | undefined): MotionPolicy {
   return value === 'reduced' || value === 'none' ? value : 'full';
 }
@@ -69,7 +78,11 @@ export function motionPolicyOf(value: string | undefined): MotionPolicy {
  */
 export function applyMotionPolicy(css: string, policy: MotionPolicy): string {
   if (policy === 'full') return css;
-  return css.replaceAll(MOTION_ALLOWED, `${MOTION_ALLOWED} and (prefers-reduced-motion:reduce)`);
+  const still = css.replaceAll(
+    MOTION_ALLOWED,
+    `${MOTION_ALLOWED} and (prefers-reduced-motion:reduce)`,
+  );
+  return policy === 'reduced' ? `${still}\n${RESTRAINED_CSS}` : still;
 }
 
 /** The `data-motion` value the root carries, or `undefined` under `full`. */
@@ -123,19 +136,7 @@ function parse(css: string): { found: Declaration[]; blocks: Declaration[] } {
   return { found, blocks };
 }
 
-const isGuarded = (context: readonly string[]) =>
-  context.some((prelude) => prelude.startsWith('@media') && prelude.includes(MOTION_ALLOWED));
-
-/** Adapter stylesheets are scoped to their canvas, which has its own still rules. */
-const isAdapterScoped = (context: readonly string[]) =>
-  context.some((prelude) => prelude.startsWith('@scope'));
-
-const isPrintOnly = (context: readonly string[]) =>
-  context.some((prelude) => /^@media\s+print\b/u.test(prelude));
-
-const TIME = /(?:^|[\s(])\d*\.?\d+m?s\b/u;
-
-/** Split a value on its top-level commas: one entry per transition. */
+/** Split a value or a media query list on its top-level commas. */
 function layers(value: string): string[] {
   const parts: string[] = [];
   let depth = 0;
@@ -144,34 +145,59 @@ function layers(value: string): string[] {
     if (character === '(') depth += 1;
     if (character === ')') depth -= 1;
     if (character === ',' && depth === 0) {
-      parts.push(current);
+      parts.push(current.trim());
       current = '';
     } else {
       current += character;
     }
   }
-  parts.push(current);
+  parts.push(current.trim());
   return parts;
 }
 
 /**
+ * True when some enclosing `@media` holds only queries that need the guard (or
+ * print): `(min-width:0),(prefers-reduced-motion:no-preference)` still matches
+ * under reduced motion, so it is not a guard.
+ */
+const isGuarded = (context: readonly string[]) =>
+  context.some((prelude) => {
+    if (!prelude.startsWith('@media')) return false;
+    const queries = layers(prelude.slice('@media'.length));
+    return (
+      queries.some((query) => query.includes(MOTION_ALLOWED)) &&
+      queries.every((query) => query.includes(MOTION_ALLOWED) || query === 'print')
+    );
+  });
+
+const isPrintOnly = (context: readonly string[]) =>
+  context.some((prelude) => /^@media\s+print$/u.test(prelude));
+
+const TIME = /(?:^|[\s(])\d*\.?\d+m?s\b/u;
+
+/** A time left once every `var()` is removed is fixed: the still state cannot zero it. */
+const hasFixedTime = (layer: string) => TIME.test(layer.replace(/var\([^()]*\)/gu, ''));
+
+const contextKey = (context: readonly string[]) => context.join('{');
+
+/**
  * Motion invariants of an emitted stylesheet, as human-readable messages:
  *
- * - every animation sits behind `MOTION_ALLOWED`, except a scroll-position
- *   indicator on a scroll timeline;
- * - every transition outside the guard is timed by the duration token, so the
- *   still state makes it instant;
+ * - every animation layer sits behind `MOTION_ALLOWED`, except a
+ *   scroll-position indicator on a scroll timeline;
+ * - every transition outside the guard is timed by the duration token, with no
+ *   fixed duration or delay, so the still state makes it instant;
  * - each keyframes name is defined once, because a later definition silently
  *   replaces an earlier one page-wide.
+ *
+ * Adapter stylesheets are not part of the page sheet; their canvas stops them
+ * under every still or restrained state and in print.
  */
 export function motionDiagnostics(css: string): string[] {
   const messages = new Set<string>();
   const { found: all, blocks } = parse(css);
   const counts = new Map<string, number>();
   for (const block of blocks) {
-    // Adapter keyframes cannot reuse a page name; that is the stylesheet
-    // filter's check, and two copies of one diagram may share theirs.
-    if (isAdapterScoped(block.context)) continue;
     const name = /^@keyframes\s+([\w-]+)/u.exec(block.property)?.[1];
     if (name !== undefined) counts.set(name, (counts.get(name) ?? 0) + 1);
   }
@@ -179,30 +205,33 @@ export function motionDiagnostics(css: string): string[] {
     if (count > 1) messages.add(`@keyframes ${name} is defined ${count} times`);
   }
 
+  const scrollTimelines = new Set(
+    all
+      .filter((item) => item.property === 'animation-timeline' && /^scroll\(/u.test(item.value))
+      .map((item) => contextKey(item.context)),
+  );
   for (const declaration of all) {
     const { property, value, context } = declaration;
-    if (isGuarded(context) || isAdapterScoped(context) || isPrintOnly(context)) continue;
+    if (isGuarded(context) || isPrintOnly(context)) continue;
     if (context.some((prelude) => prelude.startsWith('@keyframes'))) continue;
     const plain = value.replace(/!important$/u, '').trim();
+    const selector = context.at(-1) ?? '';
     if (property === 'animation' || property === 'animation-name') {
-      if (/^none\b/u.test(plain)) continue;
-      const name = /ak-[\w-]+/u.exec(plain)?.[0] ?? plain;
-      const selector = context.at(-1) ?? '';
-      const onScrollTimeline = all.some(
-        (other) =>
-          other.property === 'animation-timeline' &&
-          /^scroll\(/u.test(other.value) &&
-          other.context.join('{') === context.join('{'),
-      );
-      if (!SCROLL_POSITION_KEYFRAMES.has(name) || !onScrollTimeline) {
-        messages.add(`animation ${name} on ${selector} is not behind ${MOTION_ALLOWED}`);
+      const onScrollTimeline = scrollTimelines.has(contextKey(context));
+      for (const layer of layers(plain)) {
+        if (/^none\b/u.test(layer)) continue;
+        const name = /ak-[\w-]+/u.exec(layer)?.[0] ?? layer;
+        if (!SCROLL_POSITION_KEYFRAMES.has(name) || !onScrollTimeline) {
+          messages.add(`animation ${name} on ${selector} is not behind ${MOTION_ALLOWED}`);
+        }
       }
-    } else if (property === 'transition' || property === 'transition-duration') {
-      const fixed = layers(plain).some((layer) => !layer.includes('--ak-') && TIME.test(layer));
-      if (fixed) {
-        messages.add(
-          `transition on ${context.at(-1) ?? ''} has a fixed duration outside ${MOTION_ALLOWED}`,
-        );
+    } else if (
+      property === 'transition' ||
+      property === 'transition-duration' ||
+      property === 'transition-delay'
+    ) {
+      if (layers(plain).some(hasFixedTime)) {
+        messages.add(`${property} on ${selector} has a fixed time outside ${MOTION_ALLOWED}`);
       }
     }
   }

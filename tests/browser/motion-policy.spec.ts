@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { expect, type Page, test } from '@playwright/test';
+import { SCROLL_POSITION_KEYFRAMES } from '../../src/render/motion.js';
 import { compile } from '../../src/render/render.js';
 import { browserWorkspace } from './browser-workspace.js';
 
@@ -77,10 +78,19 @@ test.describe('effective motion policy', () => {
       else expect(await duration(page)).not.toMatch(STILL);
 
       const running = await timeAnimations(page);
+      const scrollLinked = await page.evaluate(() =>
+        document
+          .getAnimations()
+          .filter((animation) => animation.timeline !== document.timeline)
+          .map((animation) => (animation as CSSAnimation).animationName),
+      );
       if (state === 'full') {
         expect(running).toEqual(expect.arrayContaining(['ak-aurora', 'ak-marquee']));
+        expect(scrollLinked).toEqual(expect.arrayContaining(['ak-drift']));
       } else {
         expect(running).toEqual([]);
+        // Parallax and entrances on view timelines stop too; only position indicators remain.
+        for (const name of scrollLinked) expect([...SCROLL_POSITION_KEYFRAMES]).toContain(name);
       }
 
       const smooth = await page.evaluate(
@@ -111,6 +121,19 @@ test.describe('effective motion policy', () => {
     expect(await summaryDuration()).toMatch(/^0s(, 0s)*$/u);
     await open(page, 'interactive', 'none', 'no-preference');
     expect(await summaryDuration()).toMatch(/^0s(, 0s)*$/u);
+
+    // A hover lift is motion: restrained keeps the colour and shadow fade only.
+    const tileProperties = () =>
+      page
+        .locator('.ak-tile')
+        .first()
+        .evaluate((el) => getComputedStyle(el).transitionProperty);
+    await open(page, 'showcase', 'full', 'no-preference');
+    expect(await tileProperties()).toMatch(/all|translate|transform/u);
+    await open(page, 'showcase', 'reduced', 'no-preference');
+    const restrained = await tileProperties();
+    expect(restrained).toContain('box-shadow');
+    expect(restrained).not.toMatch(/all|translate|transform/u);
   });
 
   for (const [policy, system, state] of MATRIX) {

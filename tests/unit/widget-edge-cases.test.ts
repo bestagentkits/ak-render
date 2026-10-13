@@ -120,7 +120,16 @@ blocks:
     ]) {
       const fitted = fitAdapterMarkup(markup, 'ak-diagram-x');
       expect(fitted.ok, markup).toBe(false);
-      expect(fitted.ok ? '' : fitted.reason, markup).toMatch(/poster|href/u);
+      expect(fitted.ok ? '' : fitted.reason, markup).toMatch(/poster|href|set element/u);
+    }
+  });
+
+  it('refuses SMIL animation, which no stylesheet can stop under reduced motion', () => {
+    for (const element of ['animate', 'animateTransform', 'animateMotion', 'set', 'discard']) {
+      const markup = `<svg><rect width="4" height="4"><${element} attributeName="x" to="2"/></rect></svg>`;
+      const fitted = fitAdapterMarkup(markup, 'ak-diagram-x');
+      expect(fitted.ok, element).toBe(false);
+      expect(fitted.ok ? '' : fitted.reason, element).toContain(`${element.toLowerCase()} element`);
     }
   });
 
