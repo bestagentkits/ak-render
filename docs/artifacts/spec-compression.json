@@ -27,9 +27,9 @@
       "expandedSpecBytes": 7703,
       "datasetSavingBytes": 2186,
       "htmlBytes": 183754,
-      "catalogBytes": 7312,
+      "catalogBytes": 7991,
       "compactDescribeBytes": 4869,
-      "readBytes": 12181,
+      "readBytes": 12860,
       "htmlPerSpecByte": 33.3
     },
     {
@@ -52,9 +52,9 @@
       "expandedSpecBytes": 7847,
       "datasetSavingBytes": 2085,
       "htmlBytes": 213997,
-      "catalogBytes": 7312,
+      "catalogBytes": 7991,
       "compactDescribeBytes": 4807,
-      "readBytes": 12119,
+      "readBytes": 12798,
       "htmlPerSpecByte": 37.1
     },
     {
@@ -75,11 +75,11 @@
       "specBytes": 5845,
       "expandedSpecBytes": 6519,
       "datasetSavingBytes": 674,
-      "htmlBytes": 168148,
-      "catalogBytes": 7312,
+      "htmlBytes": 168782,
+      "catalogBytes": 7991,
       "compactDescribeBytes": 4555,
-      "readBytes": 11867,
-      "htmlPerSpecByte": 28.8
+      "readBytes": 12546,
+      "htmlPerSpecByte": 28.9
     },
     {
       "fixture": "interactive-data-explorer.yaml",
@@ -99,9 +99,9 @@
       "expandedSpecBytes": 5413,
       "datasetSavingBytes": 1161,
       "htmlBytes": 176862,
-      "catalogBytes": 7312,
+      "catalogBytes": 7991,
       "compactDescribeBytes": 4621,
-      "readBytes": 11933,
+      "readBytes": 12612,
       "htmlPerSpecByte": 41.6
     },
     {
@@ -122,9 +122,9 @@
       "expandedSpecBytes": 6172,
       "datasetSavingBytes": 476,
       "htmlBytes": 135934,
-      "catalogBytes": 7312,
+      "catalogBytes": 7991,
       "compactDescribeBytes": 3145,
-      "readBytes": 10457,
+      "readBytes": 11136,
       "htmlPerSpecByte": 23.9
     },
     {
@@ -150,9 +150,9 @@
       "expandedSpecBytes": 5908,
       "datasetSavingBytes": 253,
       "htmlBytes": 139621,
-      "catalogBytes": 7312,
+      "catalogBytes": 7991,
       "compactDescribeBytes": 4349,
-      "readBytes": 11661,
+      "readBytes": 12340,
       "htmlPerSpecByte": 24.7
     }
   ],
@@ -160,7 +160,7 @@
     "specBytes": 32727,
     "expandedSpecBytes": 39562,
     "datasetSavingBytes": 6835,
-    "htmlBytes": 1018316,
+    "htmlBytes": 1018950,
     "compactDescribeBytes": 26346
   }
 }

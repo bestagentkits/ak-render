@@ -149,7 +149,7 @@ blocks:
               - kind: command
                 text: ak-render explain.yaml --out explain.html
               - kind: output
-                text: wrote 124500 bytes to explain.html (4 runtime features, hash 0w5t9z60ka9un7)
+                text: wrote 128029 bytes to explain.html (5 runtime features, hash 1mr5qrn1f5jsae)
               - kind: command
                 text: ak-render themes
               - kind: output

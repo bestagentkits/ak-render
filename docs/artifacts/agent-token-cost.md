@@ -12,15 +12,15 @@ baseline. No tokenizer or live model run is involved.
 
 | Part | Hand-written HTML | AK Render |
 | --- | ---: | ---: |
-| Presentation guidance read | 25.0k (baseline mean) | 10.6k (shared contract, skill, catalog, describe) |
-| Written by the agent | 13.9k (median legacy page) | 7.2k (projected spec) |
+| Presentation guidance read | 25.0k (baseline mean) | 10.8k (shared contract, skill, catalog, describe) |
+| Written by the agent | 13.9k (median legacy page) | 7.0k (projected spec) |
 | Returned into context | written page stays in context | 0.1k (render summary) |
 | **Total** | **38.9k** | **17.9k** |
 
 Estimated reduction: **54%**. Excludes task context and narrative reasoning (equal on both paths), repairs and retries.
 
 With the compact workflow (`describe <types...> --compact`, which the agent
-guide recommends) the guidance read is 5.7k, the total 13.1k, and the
+guide recommends) the guidance read is 6.1k, the total 13.3k, and the
 estimated reduction **66%**. Output and returned context are the same on both rows.
 
 ## Legacy corpus (measured)
@@ -31,20 +31,20 @@ estimated reduction **66%**. Output and returned context are the same on both ro
 
 | Artifact | Chars | Visible text | CSS | JS | Projected spec saving |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| legacy-01 | 168392 | 13% | 17036 | 93582 | 76% |
-| legacy-02 | 39469 | 37% | 7476 | 675 | 31% |
-| legacy-03 | 71501 | 23% | 11843 | 10079 | 57% |
-| legacy-04 | 14875 | 53% | 2041 | 0 | 2% |
+| legacy-01 | 168392 | 13% | 17036 | 93582 | 77% |
+| legacy-02 | 39469 | 37% | 7476 | 675 | 33% |
+| legacy-03 | 71501 | 23% | 11843 | 10079 | 58% |
+| legacy-04 | 14875 | 53% | 2041 | 0 | 4% |
 | legacy-05 | 97003 | 17% | 16469 | 45784 | 69% |
-| legacy-06 | 93621 | 46% | 21165 | 0 | 14% |
-| legacy-07 | 15190 | 42% | 3731 | 329 | 22% |
-| legacy-08 | 34498 | 13% | 6509 | 10831 | 76% |
-| legacy-09 | 31264 | 27% | 7263 | 353 | 50% |
-| legacy-10 | 76814 | 73% | 6145 | 1985 | -35% |
+| legacy-06 | 93621 | 46% | 21165 | 0 | 17% |
+| legacy-07 | 15190 | 42% | 3731 | 329 | 24% |
+| legacy-08 | 34498 | 13% | 6509 | 10831 | 77% |
+| legacy-09 | 31264 | 27% | 7263 | 353 | 51% |
+| legacy-10 | 76814 | 73% | 6145 | 1985 | -32% |
 | legacy-11 | 366506 | 15% | 8064 | 1535 | 73% |
-| legacy-12 | 17356 | 24% | 5167 | 0 | 54% |
+| legacy-12 | 17356 | 24% | 5167 | 0 | 56% |
 
-Median projected output saving: **52%**. A page that is
+Median projected output saving: **54%**. A page that is
 mostly prose saves little or nothing on output; the saving comes from
 presentation code the agent no longer writes.
 
@@ -52,35 +52,38 @@ presentation code the agent no longer writes.
 
 | Fixture | Spec | Visible text | Spec / text | Page | Summary | Discovery | Compact discovery |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `all-components.yaml` | 18120 | 8990 | 2.02 | 245539 | 765 | 116201 | 29538 |
-| `benchmark-report.yaml` | 5515 | 4047 | 1.36 | 183462 | 543 | 45230 | 19593 |
-| `brainstorm.yaml` | 2355 | 1497 | 1.57 | 120893 | 479 | 26816 | 16543 |
-| `charts-v2.yaml` | 5452 | 9222 | 0.59 | 186192 | 484 | 28636 | 16640 |
-| `complex-dashboard.yaml` | 5761 | 3376 | 1.71 | 213713 | 560 | 46423 | 19487 |
-| `controls.yaml` | 3745 | 1315 | 2.85 | 130089 | 488 | 41310 | 18846 |
-| `dashboard.yaml` | 2109 | 2749 | 0.77 | 146898 | 455 | 31526 | 16985 |
-| `data-tables.yaml` | 9576 | 2795 | 3.43 | 181328 | 461 | 22930 | 16069 |
-| `diff.yaml` | 2614 | 1472 | 1.78 | 118138 | 434 | 28966 | 16943 |
-| `engineering-widgets.yaml` | 13450 | 6625 | 2.03 | 188880 | 634 | 37595 | 18873 |
-| `evidence-widgets.yaml` | 3615 | 1744 | 2.07 | 135706 | 511 | 33920 | 18173 |
-| `explain.yaml` | 2623 | 1578 | 1.66 | 126975 | 486 | 28739 | 16693 |
-| `incident-report.yaml` | 5843 | 3437 | 1.70 | 167866 | 625 | 40244 | 19216 |
-| `interactive-data-explorer.yaml` | 4251 | 2349 | 1.81 | 176586 | 561 | 45069 | 19345 |
-| `interactive.yaml` | 4282 | 1397 | 3.07 | 135784 | 543 | 38146 | 17830 |
-| `media.yaml` | 3403 | 1885 | 1.81 | 129917 | 525 | 33997 | 17787 |
-| `plan.yaml` | 2937 | 1533 | 1.92 | 111479 | 465 | 29383 | 16854 |
-| `product-case-study.yaml` | 5692 | 2961 | 1.92 | 135655 | 619 | 35294 | 17850 |
-| `product-widgets.yaml` | 5765 | 2532 | 2.28 | 162200 | 588 | 36221 | 18042 |
-| `recap.yaml` | 1923 | 1431 | 1.34 | 132378 | 450 | 33564 | 17321 |
-| `research-report.yaml` | 5654 | 2472 | 2.29 | 139334 | 583 | 42206 | 19004 |
-| `responsive-layouts.yaml` | 5394 | 2113 | 2.55 | 156904 | 581 | 56008 | 20663 |
-| `rich-composition.yaml` | 4256 | 1954 | 2.18 | 153621 | 561 | 48996 | 19594 |
-| `showcase.yaml` | 8767 | 4024 | 2.18 | 154449 | 620 | 42144 | 19235 |
-| `theme-dialects.yaml` | 2471 | 1555 | 1.59 | 178828 | 492 | 37683 | 17998 |
-| `theme-showcase.yaml` | 2631 | 1664 | 1.58 | 133133 | 499 | 40290 | 18222 |
+| `all-components.yaml` | 18120 | 8992 | 2.02 | 246332 | 707 | 119855 | 31432 |
+| `benchmark-report.yaml` | 5515 | 4047 | 1.36 | 183737 | 471 | 47431 | 21358 |
+| `brainstorm.yaml` | 2355 | 1497 | 1.57 | 121168 | 407 | 29190 | 18323 |
+| `charts-v2.yaml` | 5452 | 9222 | 0.59 | 186467 | 412 | 30840 | 18405 |
+| `complex-dashboard.yaml` | 5761 | 3376 | 1.71 | 213988 | 488 | 48998 | 21290 |
+| `controls.yaml` | 3745 | 1315 | 2.85 | 130364 | 416 | 43687 | 20626 |
+| `dashboard.yaml` | 2109 | 2749 | 0.77 | 147173 | 383 | 33928 | 18773 |
+| `data-tables.yaml` | 9576 | 2795 | 3.43 | 181603 | 389 | 25134 | 17834 |
+| `diff.yaml` | 2614 | 1472 | 1.78 | 118413 | 362 | 31539 | 18746 |
+| `engineering-widgets.yaml` | 13450 | 6633 | 2.03 | 189905 | 576 | 40179 | 20638 |
+| `evidence-widgets.yaml` | 3615 | 1744 | 2.07 | 135981 | 439 | 36121 | 19938 |
+| `explain.yaml` | 2623 | 1588 | 1.65 | 128029 | 428 | 31299 | 18473 |
+| `icons.yaml` | 2403 | 872 | 2.76 | 125129 | 372 | 37438 | 19457 |
+| `incident-report.yaml` | 5843 | 3442 | 1.70 | 168775 | 567 | 43397 | 21042 |
+| `interactive-data-explorer.yaml` | 4251 | 2349 | 1.81 | 176861 | 489 | 47273 | 21110 |
+| `interactive.yaml` | 4282 | 1402 | 3.05 | 136664 | 485 | 40706 | 19610 |
+| `media.yaml` | 3403 | 1885 | 1.81 | 130192 | 453 | 36365 | 19567 |
+| `newspaper-frontpage.yaml` | 4896 | 2987 | 1.64 | 207989 | 434 | 30115 | 18334 |
+| `plan-review.yaml` | 1982 | 1499 | 1.32 | 145775 | 429 | 28819 | 18166 |
+| `plan.yaml` | 2937 | 1533 | 1.92 | 111754 | 393 | 32350 | 18703 |
+| `product-case-study.yaml` | 5692 | 2961 | 1.92 | 135930 | 547 | 37691 | 19638 |
+| `product-widgets.yaml` | 5765 | 2532 | 2.28 | 162475 | 516 | 38420 | 19807 |
+| `recap.yaml` | 1923 | 1431 | 1.34 | 132653 | 378 | 36161 | 19132 |
+| `research-report.yaml` | 5654 | 2472 | 2.29 | 139609 | 511 | 44971 | 20830 |
+| `responsive-layouts.yaml` | 5394 | 2113 | 2.55 | 157179 | 509 | 58951 | 22504 |
+| `rich-composition.yaml` | 4256 | 1959 | 2.17 | 154501 | 503 | 51752 | 21397 |
+| `showcase.yaml` | 8767 | 4024 | 2.18 | 154724 | 548 | 44342 | 21000 |
+| `theme-dialects.yaml` | 2471 | 1555 | 1.59 | 179103 | 420 | 40233 | 19793 |
+| `theme-showcase.yaml` | 2659 | 1682 | 1.58 | 134098 | 441 | 43247 | 20048 |
 
-Median spec-to-text ratio 1.86; a compiled page is a median
-35× its spec, and none of it enters the agent's context.
+Median spec-to-text ratio 1.81; a compiled page is a median
+37× its spec, and none of it enters the agent's context.
 
 ## Not measured
 
