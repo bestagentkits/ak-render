@@ -19,6 +19,10 @@ Release mechanics and the compatibility contract live in
   highlighted token, and keep WCAG AA contrast in every preset. Other
   languages render plain, as before. The `language` prop's description lists
   the highlighted languages.
+- Code blocks also highlight `html` (with `xml` and `svg`, and embedded
+  `<script>` and `<style>` bodies), `css` and `markdown` (`md`), and
+  TypeScript (`ts`, `tsx`) now has its own grammar so type words such as
+  `string` and `number` are colored.
 - `decision` and `feedback` blocks let a reader answer a plan inside the
   page. A `decision` is a question with up to six options, one of which may
   be `recommended` (it starts checked), and a note. One `feedback` block per
@@ -103,6 +107,13 @@ Release mechanics and the compatibility contract live in
   against the issuer's JWKS and serves RFC 9728 protected-resource metadata.
   A personal AgentKit API key (`ck_live_…`) also works as a static bearer and
   lasts until revoked.
+
+### Fixed
+
+- Highlighting stays linear on a line full of unclosed openers such as
+  `${${${` in Bash or `#[#[` in Rust, which took about ten seconds per
+  100k-character block before. A language named after an `Object`
+  property, such as `constructor`, renders plain.
 
 ### Changed
 

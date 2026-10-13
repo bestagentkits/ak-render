@@ -54,7 +54,10 @@ describe('syntax highlighting', () => {
   });
 
   it('highlights every language the prop description names', () => {
-    const named = LANGUAGE_DESCRIPTION.replace(/^Highlighted: |\. Any.*$/gu, '').split(', ');
+    const named = LANGUAGE_DESCRIPTION.replace(
+      /^Highlighted at compile time: |\. Any.*$/gu,
+      '',
+    ).split(', ');
     expect(named.filter((language) => !isHighlighted(language))).toEqual([]);
   });
 
@@ -115,6 +118,136 @@ describe('syntax highlighting', () => {
       .replace(/<[^>]+>/gu, '')
       .replace(/&quot;/gu, '"');
     expect(text).toBe(source.replace(/\n$/u, ''));
+  });
+
+  it('highlights TypeScript type words that JavaScript leaves plain', () => {
+    expect(tokens(codeLines('let n: number = 1;', 'ts'))).toContainEqual(['k', 'number']);
+    expect(tokens(codeLines('let number = 1;', 'js'))).not.toContainEqual(['k', 'number']);
+  });
+
+  it('highlights HTML tags, attributes, entities and embedded script and style', () => {
+    const html = codeLines(
+      [
+        '<!doctype html>',
+        '<!-- note -->',
+        '<a href="/x?a=1&amp;b=2" hidden>Go &amp; see</a>',
+        '<style>.card { color: #fff; }</style>',
+        "<script>const a = 'x';</script>",
+      ].join('\n'),
+      'html',
+    );
+    expect(tokens(html)).toEqual([
+      ['meta', '&lt;!doctype html&gt;'],
+      ['c', '&lt;!-- note --&gt;'],
+      ['k', 'a'],
+      ['a', 'href'],
+      ['s', '"/x?a=1&amp;amp;b=2"'],
+      ['a', 'hidden'],
+      ['n', '&amp;amp;'],
+      ['k', 'a'],
+      ['k', 'style'],
+      ['f', '.card'],
+      ['a', 'color'],
+      ['n', '#fff'],
+      ['k', 'style'],
+      ['k', 'script'],
+      ['k', 'const'],
+      ['s', "'x'"],
+      ['k', 'script'],
+    ]);
+    expect(isHighlighted('xml')).toBe(true);
+    expect(isHighlighted('svg')).toBe(true);
+  });
+
+  it('highlights CSS selectors, at-rules, properties, values and comments', () => {
+    const html = codeLines(
+      '@media (min-width: 40rem) {\n  .a, #b > p { margin: 0 auto !important; width: calc(100% - 2px); }\n}\n/* end */',
+      'css',
+    );
+    expect(tokens(html)).toEqual([
+      ['k', '@media'],
+      ['a', 'min-width'],
+      ['n', '40rem'],
+      ['f', '.a'],
+      ['f', '#b'],
+      ['k', 'p'],
+      ['a', 'margin'],
+      ['n', '0'],
+      ['k', '!important'],
+      ['a', 'width'],
+      ['f', 'calc'],
+      ['n', '100%'],
+      ['n', '2px'],
+      ['c', '/* end */'],
+    ]);
+  });
+
+  it('highlights Markdown headings, fences, quotes, list markers and inline code', () => {
+    const html = codeLines(
+      [
+        '# Title',
+        '> quoted',
+        '- item with `code` and **bold** [link](https://x.dev)',
+        '```js',
+        'let a = 1;',
+        '```',
+      ].join('\n'),
+      'md',
+    );
+    expect(tokens(html)).toEqual([
+      ['k', '# Title'],
+      ['c', '&gt; quoted'],
+      ['a', '-'],
+      ['s', '`code`'],
+      ['k', '**bold**'],
+      ['s', 'https://x.dev'],
+      ['meta', '```js'],
+      ['s', 'let a = 1;'],
+      ['meta', '```'],
+    ]);
+  });
+
+  it('treats Object.prototype names as unknown languages', () => {
+    for (const name of ['constructor', 'toString', '__proto__', 'hasOwnProperty']) {
+      expect(isHighlighted(name)).toBe(false);
+      expect(codeLines('a <b>', name)).toBe('<span class="ak-line">a &lt;b&gt;</span>');
+    }
+  });
+
+  it('keeps every new scanner text-faithful', () => {
+    const sources: [string, string][] = [
+      ["<p class=x data-a='1'>a &lt; b</p>\n<br/>", 'html'],
+      ['a { b: c }\n"unterminated', 'css'],
+      ['## h\n\n* `x` **y**', 'markdown'],
+      ['<script>"\n</script>', 'html'],
+    ];
+    for (const [source, language] of sources) {
+      const text = codeLines(source, language)
+        .replace(/<[^>]+>/gu, '')
+        .replace(/&quot;/gu, '"')
+        .replace(/&#39;/gu, "'")
+        .replace(/&lt;/gu, '<')
+        .replace(/&gt;/gu, '>')
+        .replace(/&amp;/gu, '&');
+      expect(text).toBe(source);
+    }
+  });
+
+  it('stays linear on lines full of unclosed openers', () => {
+    const inputs: [string, string][] = [
+      ['${'.repeat(50_000), 'bash'],
+      ['#['.repeat(50_000), 'rust'],
+      ['<a "'.repeat(25_000), 'html'],
+      ['<!--'.repeat(25_000), 'html'],
+      ['](](('.repeat(20_000), 'markdown'],
+      ['`**'.repeat(33_000), 'markdown'],
+      ['/*@#{'.repeat(20_000), 'css'],
+    ];
+    for (const [value, language] of inputs) {
+      const started = performance.now();
+      codeLines(value, language);
+      expect(performance.now() - started, language).toBeLessThan(1_000);
+    }
   });
 
   it('stays linear on long unclosed input', () => {

@@ -27,3 +27,13 @@ Page size is not a product criterion. Implementation choices are open within the
 - Verify with `REVIEW.md`: run the gates, then check the screenshots at 1440, 768 and 375 in light and dark.
 - When gallery content or routes change, keep the discovery surfaces it advertises (meta and share tags) in sync.
 - Do not commit to `main`. Use a branch and a PR with conventional commits.
+
+## Issue claims
+
+Claim an issue before working on it so parallel contributors and agents do not duplicate work. Assign yourself and keep exactly one state label current:
+
+- `in progress` while implementing, `blocked` while waiting on something outside the work;
+- `in review` while the diff is under review (an isolated reviewer agent counts);
+- `done` once the PR is open, `shipped` once it is merged.
+
+Before starting, skip an issue another assignee already holds in `in progress` or `in review`. When you find a related or duplicate issue, comment on it with a link to the one you are working on. File an unrelated bug you discover as its own issue instead of widening the current PR.
