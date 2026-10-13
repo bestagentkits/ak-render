@@ -22,7 +22,7 @@ spec from stdin (`-`) and the `mcp` command need version 0.2.0 or later, and
 ## The loop
 
 1. **Find the blocks.** Search by intent, or list one category. The full
-   catalog of 85 block types and every action is about 7 kB:
+   catalog of 90 block types and every action is about 8 kB:
 
    ```bash
    npx -y @bestagentkits/render search-catalog sortable table

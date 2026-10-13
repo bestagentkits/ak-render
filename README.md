@@ -67,7 +67,7 @@ Requires Node.js >= 20.11.
 
 ### Find the blocks you need
 
-There are 86 block types in eight categories (layout, content, data,
+There are 90 block types in eight categories (layout, content, data,
 interaction, media, showcase, engineering, product), from primitives (`section`,
 `grid`, `split`, `text`) to semantic blocks that carry the design for you
 (`hero`, `steps`, `timeline`, `kpi`, `data-table`, `chart`, `kanban`,
@@ -313,14 +313,14 @@ and runtime so it looks designed and works offline without the agent writing any
 
 | Part of a page task | Hand-written HTML | AK Render |
 | --- | ---: | ---: |
-| Presentation guidance read | 25.0k (baseline mean) | 10.6k (shared contract, skill, catalog, `describe --json`) |
-| Written by the agent | 13.9k (median legacy page) | 7.2k (projected spec) |
+| Presentation guidance read | 25.0k (baseline mean) | 10.8k (shared contract, skill, catalog, `describe --json`) |
+| Written by the agent | 13.9k (median legacy page) | 7.0k (projected spec) |
 | Returned into context | the written page is already there | 0.1k (render summary) |
 | **Total, estimated** | **38.9k** | **17.9k (−54%)** |
 
 With the compact workflow the agent guide recommends,
-`describe <types...> --compact`, the guidance read is 5.7k and the total
-13.1k (−66%). The spec written and the summary returned are the same.
+`describe <types...> --compact`, the guidance read is 6.1k and the total
+13.3k (−66%). The spec written and the summary returned are the same.
 
 - **Benchmarked:** presentation context drops 64–68%, from 23.7k–26.6k tokens
   of AgentKit's legacy HTML guidance to 7.9k–8.5k on the `ak-render` skill
@@ -332,8 +332,8 @@ With the compact workflow the agent guide recommends,
   proxy for their hand-written HTML route.
 - **Measured on 12 HTML pages agents wrote in real projects:** a median of 26%
   of each page is visible text; the rest is markup, CSS and script. The
-  projected median output saving is 52%. A page that is mostly prose saves
-  little or nothing: one of the twelve grew by 35%.
+  projected median output saving is 54%. A page that is mostly prose saves
+  little or nothing: one of the twelve grew by 32%.
 - **Not measured yet:** live model token counts, repair loops, wall time and
   output quality.
 

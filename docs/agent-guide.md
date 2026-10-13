@@ -10,7 +10,7 @@ do not try to position or style blocks: there is no field for it.
 1. **Find the blocks.** `ak-render search-catalog <intent words>` ranks block
    types for what the page needs, for example `search-catalog sortable table`
    or `search-catalog pricing`. `ak-render catalog --category <c>` lists one
-   category; `ak-render catalog` lists every block and action (about 7 kB).
+   category; `ak-render catalog` lists every block and action (about 8 kB).
 2. **Describe only what you use.** `ak-render describe <type...> --compact`
    returns one line per prop for up to 12 types at once. Use
    `ak-render describe <type> --json` for a block whose full contract you need:
