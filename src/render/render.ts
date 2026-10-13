@@ -27,6 +27,7 @@ import { type RenderContext, renderNode } from './blocks.js';
 import { assembleDocument } from './document.js';
 import { renderAttributes } from './escape.js';
 import { embeddedFontCss } from './font-faces.js';
+import { applyMotionPolicy, motionPolicyOf, PRINT_STILL_CSS } from './motion.js';
 import { hasOutline, renderOutline } from './outline.js';
 import { recipeCss } from './recipe-styles.js';
 import { buildRuntime, needsLiveRegion } from './runtime.js';
@@ -147,19 +148,9 @@ function buildCss(
   sheets.push(theme.css);
   // The night band redeclares colour tokens, so it must follow the theme sheet.
   if (usesInverseSurface(ir.nodes)) sheets.push(inverseSurfaceCss(theme));
-  const css = sheets.join('\n');
-  return theme.motionPolicy === 'none' ? withoutMotion(css) : css;
-}
-
-/**
- * Every animation in the emitted CSS sits behind
- * `(prefers-reduced-motion:no-preference)`. A theme that disables motion turns
- * that condition into one that never matches, so the page renders exactly as it
- * does for a reader who asked the system to reduce motion.
- */
-const MOTION_ALLOWED = '(prefers-reduced-motion:no-preference)';
-function withoutMotion(css: string): string {
-  return css.replaceAll(MOTION_ALLOWED, `${MOTION_ALLOWED} and (prefers-reduced-motion:reduce)`);
+  sheets.push(PRINT_STILL_CSS);
+  // See `motion.ts` for what each effective motion state keeps.
+  return applyMotionPolicy(sheets.join('\n'), motionPolicyOf(theme.motionPolicy));
 }
 
 function bodyNeedsRuntime(body: string): boolean {
@@ -309,7 +300,7 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
     allowedOrigins: collectOrigins(ir, registry),
     themeToggle: includeThemeToggle,
     density: resolved.density,
-    motionDisabled: resolved.motionPolicy === 'none',
+    motion: motionPolicyOf(resolved.motionPolicy),
     recipes: resolved.recipes,
     outline: renderOutline(ir),
     // Declared by the blocks themselves: the theme toggle alone announces nothing.

@@ -109,7 +109,8 @@ export const TOKEN_SPECS: Readonly<Record<string, TokenSpec>> = {
   'motion-policy': {
     kind: 'enum',
     group: 'motion',
-    description: 'Whether transitions and animations run at all.',
+    description:
+      "How much the page moves: full, reduced (state feedback only) or none. The reader's reduced-motion setting always wins.",
     values: ['full', 'reduced', 'none'],
   },
 };

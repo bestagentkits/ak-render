@@ -47,8 +47,8 @@ export const FEATURE_CSS: Readonly<Partial<Record<RuntimeFeature, string>>> = {
 
   dialog: `dialog.ak-dialog{width:min(560px,calc(100vw - 32px));max-width:none;border:var(--ak-border-width) solid var(--ak-color-border);border-radius:var(--ak-radius-large);background:var(--ak-fill);color:var(--ak-color-text);padding:calc(var(--ak-space-unit) * 3.5);box-shadow:var(--ak-elevation-popover)}
 dialog.ak-dialog::backdrop{background:color-mix(in srgb,var(--ak-color-background) 62%,transparent);backdrop-filter:blur(8px) saturate(.9)}
-dialog.ak-dialog[open]{animation:ak-rise calc(var(--ak-motion-duration) * 1.5) var(--ak-motion-easing)}
-@keyframes ak-rise{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes ak-dialog-in{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:no-preference){dialog.ak-dialog[open]{animation:ak-dialog-in calc(var(--ak-motion-duration) * 1.5) var(--ak-motion-easing)}}
 .ak-dialog-title{margin-bottom:var(--ak-space-unit)}
 .ak-dialog-title h2{font-size:calc(var(--ak-font-size-base) * 1.4);font-size:calc(var(--ak-font-size-base) * pow(var(--ak-font-scale),1.5))}
 dialog.ak-dialog > p{color:var(--ak-color-text-muted)}
@@ -119,7 +119,7 @@ ${disclosureSummary('.ak-diagram-details')}
 @media (max-width:768px){.ak-diagram-details summary{min-height:44px}}
 @media print{.ak-diagram-rendered{overflow:visible;box-shadow:none}.ak-diagram-rendered svg{max-width:100%}.ak-diagram-details::details-content{content-visibility:visible;display:block}.ak-diagram-details summary::before{display:none}}
 @media (prefers-reduced-motion:reduce),print{.ak-diagram-canvas,.ak-diagram-canvas *{animation:none!important;transition:none!important}}
-[data-motion="none"] .ak-diagram-canvas,[data-motion="none"] .ak-diagram-canvas *{animation:none!important;transition:none!important}
+:root[data-motion] .ak-diagram-canvas,:root[data-motion] .ak-diagram-canvas *{animation:none!important;transition:none!important}
 .ak-diagram-fallback{display:flex;flex-direction:column;gap:var(--ak-space-unit);background:var(--ak-fill);border:var(--ak-border-width) solid var(--ak-color-border);border-radius:var(--ak-radius-medium);padding:calc(var(--ak-space-unit) * 3);box-shadow:var(--ak-elevation-card)}
 .ak-diagram-fallback{gap:calc(var(--ak-space-unit) * 2)}
 .ak-diagram-fallback > .ak-caption{font-size:.74rem;color:var(--ak-color-text-muted)}
