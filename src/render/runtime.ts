@@ -34,7 +34,8 @@ function q(sel, ctx) { return (ctx || doc).querySelector(sel); }
 function qa(sel, ctx) { return Array.prototype.slice.call((ctx || doc).querySelectorAll(sel)); }
 function byId(id) { return qa('[data-ak-id="' + id + '"]'); }
 function motionAllowed() {
-  if (root.getAttribute('data-motion') === 'none') return false;
+  // A theme policy of reduced or none keeps script-driven motion off.
+  if (root.hasAttribute('data-motion')) return false;
   return !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 }
 function announce(message) {

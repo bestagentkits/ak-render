@@ -55,6 +55,7 @@ const FRAGMENT_URL_ARGUMENT = /^[\t\n\f\r ]*(["']?)#[A-Za-z0-9_-]+\1[\t\n\f\r ]*
 export const PAGE_KEYFRAMES_NAMES: ReadonlySet<string> = new Set([
   'ak-aurora',
   'ak-caret',
+  'ak-dialog-in',
   'ak-draw',
   'ak-drift',
   'ak-enter',

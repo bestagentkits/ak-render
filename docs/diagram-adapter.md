@@ -127,7 +127,7 @@ fitted to that policy before it is embedded:
   A `<style>` element must be plain text that runs straight to its `</style>`
   end tag; a self-closing `<style/>` is rejected.
 - **Motion decorates.** Adapter animation and transitions stop under
-  `prefers-reduced-motion: reduce`, `motion-policy: none` and in print, so the
+  `prefers-reduced-motion: reduce`, `motion-policy: reduced` or `none` and in print, so the
   drawing must read completely in its unanimated state. Keyframes names are
   page-wide, so two panels from the same adapter share them.
 

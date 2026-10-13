@@ -57,8 +57,19 @@ values, so a preset cannot supply an arbitrary shadow or transition. Lengths
 accept `px`, `rem`, `em`, `ch`, `ex`, `%`, `vw`, `vh`, `ms`, and `s`. Colours are
 hex.
 
-`motion-policy: none` and the `prefers-reduced-motion` media query both zero the
-transition duration in the emitted artifact.
+`motion-policy` sets how much a page moves, and the reader's
+`prefers-reduced-motion: reduce` setting always wins over it:
+
+| `motion-policy` | Reader allows motion | Reader asks for reduced motion |
+| --- | --- | --- |
+| `full` (default) | Every transition and animation | Still |
+| `reduced` | State feedback only: hover, focus and disclosure transitions; no entrance, loop, parallax, smooth scroll or count-up | Still |
+| `none` | Still | Still |
+
+A still page has a 0ms transition duration and no animation. The reading-progress
+rail and scroll-edge shades follow the scroll position in every state, and print
+always settles the page. See
+[ADR 0002](./adr/0002-motion-policy.md) for the full contract.
 
 ## Recipes
 

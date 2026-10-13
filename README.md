@@ -167,7 +167,7 @@ theme:
   extends: editorial
   tokens:
     color-accent: "#b8860b"
-    motion-policy: none     # a still page, as under reduced motion
+    motion-policy: reduced  # state feedback only; `none` is a still page
 ```
 
 `ak-render themes` lists the presets it can see, including project and user

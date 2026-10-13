@@ -115,6 +115,21 @@ Release mechanics and the compatibility contract live in
   a client's sign-in. Before, it was served, and only `validate` and `render`
   refused it. A deployment without OAuth keeps anonymous discovery.
 
+### Fixed
+
+- `motion-policy: reduced` now restrains motion as documented: state feedback
+  transitions keep the theme duration, while entrances, loops, parallax, smooth
+  scrolling, count-up and the theme view transition stay off. The reader's
+  reduced-motion setting still wins over every policy. See
+  [ADR 0002](./docs/adr/0002-motion-policy.md).
+- The dialog entrance now respects reduced motion, and it no longer shares the
+  `ak-rise` keyframes name with the hero word reveal, which made one of the two
+  play the other's animation on pages with a dialog.
+- Print settles every animation and transition.
+- The compiler now fails a page whose stylesheet has an animation outside the
+  reduced-motion guard, a fixed-duration transition outside it, or a keyframes
+  name defined twice.
+
 ## [0.3.0] - 2026-10-06
 
 The Page Spec stays `version: 1`, and every spec that was valid in 0.2.0 stays
