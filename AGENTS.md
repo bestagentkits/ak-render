@@ -2,7 +2,7 @@
 
 ## Product principles
 
-AK Render exists so coding agents get polished HTML from a compact structured spec, instead of spending tokens writing raw HTML. Output must stay beautiful, high quality and deterministic.
+AK Render is optimized to reduce the tokens and decisions AI agents spend authoring, iterating on, and maintaining high-quality HTML pages. The byte size of the emitted HTML is not the optimization target. Output must stay beautiful, high quality and deterministic.
 
 Mandatory boundaries (only the author may change these, not even for better looks or speed):
 
@@ -15,8 +15,25 @@ Guiding priorities (a collaborator may choose differently within the boundaries 
 
 - **The compiler owns presentation.** The spec describes meaning; layout, color and motion derive from content and theme. Presentation props stay optional with good defaults. Do not add a knob the compiler can decide itself.
 - **Striking, within limits.** Output may be expressive (motion, depth, atmosphere), but every page must read completely with reduced motion, in print, in a screenshot and without JavaScript. Motion decorates; it never carries information.
+- **Agent tokens, not HTML bytes.** Optimize for what an agent spends on a page task, while keeping quality, readability, correctness, accessibility, determinism and offline output. Compact specs, smart defaults, high-level blocks, terse tool responses that can be queried deeper, and progressive discovery (`search-catalog`, `describe --compact`) are how that cost falls.
 
-Page size is not a product criterion. Implementation choices are open within these principles.
+Implementation choices are open within these principles.
+
+### Three different costs
+
+| Cost | What it is | Status |
+| --- | --- | --- |
+| Agent token cost | Tokens to read guidance, write the spec, call the CLI or MCP tools, read diagnostics, repair, and maintain the page later. Includes the number of round-trips and manual decisions. | The primary optimization target. |
+| Rendered HTML bytes | Size of the emitted file. It never passes through the model; the agent reads a one-line summary. | Not a product KPI. It may grow when inlining is what keeps the page polished and offline. |
+| Runtime performance | Load, CPU, memory and interaction cost for the person who opens the page. | Must stay reasonable for UX. It is not the same thing as minifying or shrinking the file. |
+
+These rules hold regardless of the trade-off clause above.
+
+Inlining in the compiler is the point, not overhead: the theme stylesheet, embedded fonts, icon and diagram SVG, syntax-highlight token spans and the small interaction runtime ship inside the file so the agent never writes CSS, picks a CDN, draws an icon or hand-highlights code. Do not remove or externalize them to save kilobytes.
+
+- Do not trade output semantics, visual quality, no-JS and print readability, accessibility, security or determinism for a few kilobytes of output.
+- Do not add a minified-output or file-size target, budget or gate. Byte counts in benchmarks and render summaries are reported for transparency and determinism checks, not as goals.
+- Judge a change by task-level agent cost: the median and p95 tokens per task (guidance read, spec written, tool round-trips and repairs), task completion rate, iterations to a valid page, and page quality. `benchmarks/agent-token-cost.mjs` and `benchmarks/spec-compression.mjs` measure the parts that do not need a live model; `agent-token-cost.mjs` lists live token counts and repair loops as not measured yet.
 
 ## Working rules
 
@@ -27,3 +44,4 @@ Page size is not a product criterion. Implementation choices are open within the
 - Verify with `REVIEW.md`: run the gates, then check the screenshots at 1440, 768 and 375 in light and dark.
 - When gallery content or routes change, keep the discovery surfaces it advertises (meta and share tags) in sync.
 - Do not commit to `main`. Use a branch and a PR with conventional commits.
+- Claim an issue before working on it: assign yourself and keep one state label current (`in progress`, `blocked`, `in review` during agent review, `done` once the PR is open, `shipped` after merge to `main`). Check those labels first so parallel contributors and agents do not duplicate work. File unrelated gaps you find as new issues, and comment on related or duplicate issues with a reference.

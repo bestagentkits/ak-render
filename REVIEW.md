@@ -23,4 +23,5 @@ Capture the changed gallery pages (`docs/gallery/*.html`, opened from `file://`)
 
 - Each artifact keeps `<title>`, a meta description when the spec has one, and `og:title`, `og:type`, `og:description` and `twitter:card` from spec meta. Never invent URLs.
 - Each chart keeps its text summary and data table.
+- The change lowers or keeps the agent's cost per page task (spec written, discovery read, round-trips, repairs). A larger emitted file is acceptable when it keeps quality, offline output or determinism; never shrink output at their expense.
 - If the gallery gets a public origin, add robots.txt, sitemap.xml, llms.txt, canonical and og:url, and run the discovery scan against it.

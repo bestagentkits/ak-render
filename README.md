@@ -307,6 +307,9 @@ Details, limits and the REST routes are in
 
 The compiled page goes to disk, never through the model. What the agent pays
 is guidance it reads, the spec it writes, and a one-line summary it reads back.
+That agent cost is what AK Render optimizes. The size of the emitted HTML is
+not a goal: the file inlines its stylesheet, fonts, icons, diagrams, highlighting
+and runtime so it looks designed and works offline without the agent writing any of it.
 
 | Part of a page task | Hand-written HTML | AK Render |
 | --- | ---: | ---: |

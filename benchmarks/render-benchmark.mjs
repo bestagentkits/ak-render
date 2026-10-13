@@ -15,6 +15,9 @@
  *                      them. They are never estimated and never replaced by the
  *                      epic's target values.
  *
+ * Emitted bytes are recorded for determinism and transparency, not as a goal:
+ * AK Render optimizes the agent's tokens per task, not the size of the file.
+ *
  * Usage:
  *   node benchmarks/render-benchmark.mjs [--agentkit <path>] [--repeat 5]
  *                                        [--out docs/artifacts/benchmark-render.json]
