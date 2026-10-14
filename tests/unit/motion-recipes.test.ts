@@ -320,7 +320,11 @@ describe('motion emission', () => {
     expect(css).toContain('[data-ak-motion="none"]::before');
     expect(css).toContain('[data-ak-motion="none"]::backdrop');
     // The scroll shades are spared, and only for boxes this page styles.
-    expect(css).toMatch(/\[data-ak-motion="none"\] \*:not\([^)]*\.ak-table-wrap/u);
+    expect(css).toContain(',.ak-table-wrap)');
+    // A nested block with its own preset keeps it, along with its contents.
+    expect(css).toContain(
+      '[data-ak-motion="none"] *:not([data-ak-motion="none"] [data-ak-motion]:not([data-ak-motion="none"]),[data-ak-motion="none"] [data-ak-motion]:not([data-ak-motion="none"]) *',
+    );
     expect(css).not.toContain('ak-diagram-rendered');
     expect(motionDiagnostics(css)).toEqual([]);
   });

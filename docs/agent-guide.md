@@ -168,9 +168,9 @@ rendering never needs the token or the network.
   `stagger` on content and lists, `number-tick` on `stats`/`kpi`,
   `tab-indicator` or `crossfade` on `tabs`, `crossfade` on `carousel` or a
   `visibleWhen` block (a warning says when nothing would reveal it),
-  `accordion-expand`, `dialog-rise`, or `none` to keep a block still. A preset
-  the block does not accept fails at `…motion.preset` with the accepted ones in
-  `details.known`. The reader's
+  `accordion-expand`, `dialog-rise`, or `none` to turn a block's built-in
+  entrance and keyframe motion off. A preset the block does not accept fails
+  at `…motion.preset` with the accepted ones in `details.known`. The reader's
   reduced-motion setting and the theme's `motion-policy` always win; see
   [ADR 0003](./adr/0003-motion-recipes.md).
 - The same spec, theme presets and compiler version always produce the same

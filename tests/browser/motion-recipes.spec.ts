@@ -82,6 +82,17 @@ blocks:
       - { label: Uptime, value: '99.9%' }
       - { label: Errors, value: '0.1%' }
       - { label: Latency, value: '120ms' }
+  - type: section
+    id: still-section
+    title: Still section
+    motion: { preset: none }
+    blocks:
+      - type: stats
+        id: nested-stats
+        motion: { preset: stagger }
+        items:
+          - { label: Plans, value: '12' }
+          - { label: Seats, value: '340' }
   - type: table
     id: still-table
     motion: { preset: none }
@@ -184,6 +195,41 @@ test.describe('on-enter recipes', () => {
     await expect.poll(() => callout.evaluate((el) => getComputedStyle(el).opacity)).toBe('1');
   });
 
+  test('a block on screen at load never flashes visible before it fades in', async ({ page }) => {
+    await page.addInitScript(() => {
+      const samples: number[] = [];
+      (window as unknown as { samples: number[] }).samples = samples;
+      const sample = () => {
+        const el = document.querySelector('[data-ak-id="top-callout"]');
+        if (el !== null) samples.push(Number(getComputedStyle(el).opacity));
+        if (samples.length < 60) requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+    await open(page);
+    await expect
+      .poll(() => page.evaluate(() => (window as unknown as { samples: number[] }).samples.length))
+      .toBeGreaterThanOrEqual(60);
+    const samples = await page.evaluate(() => (window as unknown as { samples: number[] }).samples);
+    // From the first painted frame it only ever grows towards fully visible.
+    for (let index = 1; index < samples.length; index += 1) {
+      expect(samples[index], `frame ${index}: ${samples.join(', ')}`).toBeGreaterThanOrEqual(
+        samples[index - 1] ?? 0,
+      );
+    }
+    expect(samples.at(-1)).toBe(1);
+  });
+
+  test('a block is marked before it scrolls into view', async ({ page }) => {
+    await open(page);
+    const stats = block(page, 'below-stats');
+    // Its top edge just reaches the viewport: already entered, not caught visible first.
+    await stats.evaluate((el) => {
+      window.scrollBy(0, el.getBoundingClientRect().top - window.innerHeight + 4);
+    });
+    await expect(stats).toHaveAttribute('data-ak-entered', '');
+  });
+
   test('number-tick plays on the figures, not the labels', async ({ page }) => {
     await open(page);
     const kpi = block(page, 'below-kpi');
@@ -262,6 +308,19 @@ test.describe('preset none', () => {
         .map((animation) => (animation as CSSAnimation).animationName),
     );
     expect(running).toEqual([]);
+  });
+
+  test('stops at a nested block with a preset of its own', async ({ page }) => {
+    await open(page);
+    const nested = block(page, 'nested-stats');
+    await nested.scrollIntoViewIfNeeded();
+    await expect(nested).toHaveAttribute('data-ak-entered', '');
+    const names = await nested.evaluate((el) =>
+      Array.from(el.querySelectorAll('dl > div')).map(
+        (item) => getComputedStyle(item).animationName,
+      ),
+    );
+    expect(names).toEqual(['ak-m-item-in', 'ak-m-item-in']);
   });
 
   test('keeps the scroll-position shade on an overflowing table', async ({ page }) => {

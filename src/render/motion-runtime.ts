@@ -10,23 +10,29 @@ import { ENTER_RECIPES } from './motion-recipes.js';
 /**
  * On-enter recipes play as a block arrives. Until then the block shows its
  * final state, so a capture, a print or a disabled script never sees it blank
- * (ADR 0002); the animation's backwards fill supplies the first frame. The
- * attribute is the recipe's own, so the built-in entrance observer cannot
- * start a recipe early.
+ * (ADR 0002); the animation's backwards fill supplies the first frame. Blocks
+ * already on screen are marked while the page boots, before its first paint,
+ * and the rest a little before they scroll in, so a reader never sees a block
+ * shown, blanked, then faded in. The attribute is the recipe's own, so the
+ * built-in entrance observer cannot start a recipe early.
  */
 const ENTER = `
 function wireMotionEnter() {
   if (!motionAllowed() || typeof window.IntersectionObserver !== 'function') return;
   var ids = ${JSON.stringify([...ENTER_RECIPES])};
+  var enter = function (el) { el.setAttribute('data-ak-entered', ''); };
   var observer = new window.IntersectionObserver(function (entries) {
     entries.forEach(function (entry) {
       if (!entry.isIntersecting) return;
       observer.unobserve(entry.target);
-      entry.target.setAttribute('data-ak-entered', '');
+      enter(entry.target);
     });
-  }, { rootMargin: '0px 0px -6% 0px' });
+  }, { rootMargin: '0px 0px 12% 0px' });
   qa('[data-ak-motion]').forEach(function (el) {
-    if (ids.indexOf(el.getAttribute('data-ak-motion')) !== -1) observer.observe(el);
+    if (ids.indexOf(el.getAttribute('data-ak-motion')) === -1) return;
+    var box = el.getBoundingClientRect();
+    if (box.height > 0 && box.top < window.innerHeight && box.bottom > 0) enter(el);
+    else observer.observe(el);
   });
 }`;
 

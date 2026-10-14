@@ -62,7 +62,7 @@ which change how a surface looks at rest.
 | `tab-indicator` | tabs | state-change | measures the selected tab | pill moves instantly; the selected tab keeps its surface until measured |
 | `accordion-expand` | accordion | state-change | none | instant open and close |
 | `dialog-rise` | dialog | open and close | exit lifecycle | instant open and close; focus returns either way |
-| `none` | any block that accepts a preset | — | — | turns that block's built-in keyframe motion and count-up off |
+| `none` | any block that accepts a preset | — | — | turns that block's built-in entrance, keyframe motion and count-up off; hover transitions stay |
 
 `motionPresetsFor(type)` lists a type's presets. `code` is not a target: its
 id sits on the inner `<pre>`, not the block root. `crossfade` on a content
@@ -116,9 +116,12 @@ variables as token-timed.
   `data-ak-entered`, and the animation's backwards fill supplies its first
   frame. A full-page capture, print, no script, no IntersectionObserver,
   reduced motion or a policy of `reduced`/`none` all read the block complete.
-  The attribute is the recipe's own, and a block's preset replaces its
-  built-in entrance (the KPI and terminal `data-ak-animate` observer skips
-  it), so the two cannot race.
+  So that a reader never sees a block shown, blanked, then faded in, blocks
+  already on screen are marked while the page boots, before its first paint,
+  and the rest are observed with a 12% lead below the viewport, so they are
+  marked just before they scroll in. The attribute is the recipe's own, and a
+  block's preset replaces its built-in entrance (the KPI entrance observer
+  skips it), so the two cannot race.
 - **Crossfade.** A MutationObserver, wired after every other part, marks a
   tab panel, slide or `visibleWhen` block `data-ak-entering` when a change
   reveals it. The authored first view is never marked, the old content leaves
@@ -141,10 +144,13 @@ variables as token-timed.
   closed.
 - **Accordion expand.** The size transition applies on screen only, so print
   shows every section at full height.
-- **`none`.** Stops the block's keyframe animations, its pseudo-elements'
-  included (the hero aurora, a dialog backdrop). Scroll-position shades on the
-  tables, diagrams and roadmaps the page styles keep following the scroll, as
-  ADR 0002 requires; the sheet names only shaded boxes the page already styles.
+- **`none`.** Stops the block's keyframe animations and count-up, its
+  pseudo-elements' included (the hero aurora, a dialog backdrop), down
+  through its nested content. A nested block with a preset of its own keeps
+  it: a preset belongs to its block. Hover and focus transitions are feedback,
+  not motion, and stay. Scroll-position shades on the tables, diagrams and
+  roadmaps the page styles keep following the scroll, as ADR 0002 requires;
+  the sheet names only shaded boxes the page already styles.
 
 A `toggle` action on an open dialog now closes it (it used to call open
 again), and on a closing dialog reopens it. A scripted page without the theme

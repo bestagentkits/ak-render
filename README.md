@@ -204,7 +204,7 @@ blocks:
 
 The first-party recipes are `reveal-soft`, `stagger`, `number-tick`,
 `crossfade`, `tab-indicator`, `accordion-expand` and `dialog-rise`; `none`
-keeps a block still. Each lists the block types it fits, and the compiler emits
+turns a block's built-in entrance and keyframe motion off. Each lists the block types it fits, and the compiler emits
 its CSS and runtime only on pages that use it. The reader's reduced-motion
 setting and the theme's `motion-policy` always win, print settles the page, and
 without JavaScript every block shows its final state. See

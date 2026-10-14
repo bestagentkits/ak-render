@@ -254,14 +254,18 @@ export const MOTION_NONE = 'none';
 
 /**
  * The off switch: a block that opts out keeps no keyframe animation of its own,
- * pseudo-elements included. Scroll-position indicators (the overflow shades on
- * tables, diagrams and roadmaps) are not motion and keep working, as ADR 0002
- * requires; the caller passes the shaded boxes its page styles, so the sheet
- * never names a feature the page does not use.
+ * pseudo-elements included. It reaches nested content but stops at a nested
+ * block with a preset of its own, since a preset belongs to its block.
+ * Scroll-position indicators (the overflow shades on tables, diagrams and
+ * roadmaps) are not motion and keep working, as ADR 0002 requires; the caller
+ * passes the shaded boxes its page styles, so the sheet never names a feature
+ * the page does not use.
  */
 function noneCss(edges: readonly string[]): string {
-  const descendants = edges.length === 0 ? '*' : `*:not(${edges.join(',')})`;
-  return [uses(MOTION_NONE), `${uses(MOTION_NONE)} ${descendants}`]
+  // Spared: a nested block with its own preset and everything inside it.
+  const nested = `${uses(MOTION_NONE)} [data-ak-motion]:not(${uses(MOTION_NONE)})`;
+  const spared = [nested, `${nested} *`, ...edges];
+  return [uses(MOTION_NONE), `${uses(MOTION_NONE)} *:not(${spared.join(',')})`]
     .flatMap((scope) => [scope, `${scope}::before`, `${scope}::after`, `${scope}::backdrop`])
     .join(',')
     .concat('{animation:none!important}');
