@@ -229,7 +229,9 @@ ak-render motion studio page.yaml
   the proposal does not compile or if it changes nothing.
 - **Limits.** The studio edits version 1 specs; a bare version 0 block list
   is refused when the studio starts. A block shared through a YAML anchor or
-  alias is not edited, because the edit would change every copy.
+  alias is not edited, because the edit would change every copy. Accept
+  replaces the spec with a new file, so a hard link to the old spec keeps the
+  old content.
 
 The studio never touches compiled HTML and is never part of a compiled page.
 It listens on 127.0.0.1 only, behind a random session path, sends a strict
