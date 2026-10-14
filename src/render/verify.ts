@@ -55,6 +55,7 @@ const FEATURE_MARKERS: Readonly<Partial<Record<RuntimeFeature, string>>> = {
   frame: '.ak-frame-view',
   checklist: '.ak-checklist',
   state: '.ak-when',
+  motion: '[data-ak-motion]',
 };
 
 /** Features whose behavior requires emitted JavaScript. */

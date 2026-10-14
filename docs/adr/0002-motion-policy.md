@@ -110,6 +110,9 @@ Until the recipe registry exists, new motion must fit this budget:
 
 ## Guidance for the recipe registry
 
+The registry now exists; see [motion recipes](../motion.md). The budget above
+still applies to motion outside it.
+
 - A recipe declares which effective states it runs in (normally full only) and
   whether it is feedback (allowed in restrained) or decoration.
 - Recipes emit through the same guard and pass the same `motionDiagnostics`;

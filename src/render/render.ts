@@ -15,6 +15,7 @@ import { RenderError } from '../errors.js';
 import { stableHash } from '../hash.js';
 import { ICON_CSS, type IconCollector, renderIconSprite } from '../icons/icon-render.js';
 import type { IrDocument, IrNode } from '../ir.js';
+import { getMotionRecipe, motionRecipeCss } from '../motion/recipes.js';
 import type { BlockRegistry, FeatureModule } from '../registry/block-module.js';
 import { DEFAULT_REGISTRY } from '../registry/registry.js';
 import type { RuntimeFeature } from '../registry/roster.js';
@@ -97,6 +98,7 @@ const FEATURE_ORDER: readonly RuntimeFeature[] = [
   'showcase',
   'cta',
   'state',
+  'motion',
 ];
 
 function collectFeatures(ir: IrDocument, includeTheme: boolean): Set<RuntimeFeature> {
@@ -145,12 +147,23 @@ function buildCss(
   // Recipes restyle feature surfaces, so they follow every feature sheet.
   const recipes = recipeCss(theme.recipes, features);
   if (recipes !== '') sheets.push(recipes);
+  // Motion recipes are keyed on their own attribute and follow the feature
+  // sheets they animate; the theme still overrides their duration.
+  const motion = motionRecipeCss(usedMotionRecipes(ir));
+  if (motion !== '') sheets.push(motion);
   sheets.push(theme.css);
   // The night band redeclares colour tokens, so it must follow the theme sheet.
   if (usesInverseSurface(ir.nodes)) sheets.push(inverseSurfaceCss(theme));
   sheets.push(PRINT_STILL_CSS);
   // See `motion.ts` for what each effective motion state keeps.
   return applyMotionPolicy(sheets.join('\n'), motionPolicyOf(theme.motionPolicy));
+}
+
+/** Recipe ids the page's blocks opt into. */
+function usedMotionRecipes(ir: IrDocument): Set<string> {
+  const used = new Set<string>();
+  for (const node of ir.nodes) if (node.motion !== undefined) used.add(node.motion.preset);
+  return used;
 }
 
 function bodyNeedsRuntime(body: string): boolean {
@@ -161,13 +174,33 @@ function nodeIndex(ir: IrDocument): Map<string, IrNode> {
   return new Map(ir.nodes.map((node) => [node.id, node]));
 }
 
+const OPENING_TAG = /^(\s*(?:<!--[\s\S]*?-->\s*)*<[a-zA-Z][\w-]*)([^>]*)>/u;
+
+/**
+ * Mark a block's outer element with the motion recipe it opts into. An
+ * arrival recipe also joins the runtime's arrival observer through
+ * `data-ak-animate`, which some blocks already carry.
+ */
+function withMotion(html: string, node: IrNode): string {
+  if (node.motion === undefined) return html;
+  const recipe = getMotionRecipe(node.motion.preset);
+  if (recipe === undefined) return html;
+  return html.replace(OPENING_TAG, (_match, open: string, rest: string) => {
+    const arrival =
+      recipe.runtime === 'in-view' && !/\sdata-ak-animate[\s=>]|\sdata-ak-animate$/u.test(rest)
+        ? ' data-ak-animate'
+        : '';
+    return `${open}${rest} data-ak-motion="${recipe.id}"${arrival}>`;
+  });
+}
+
 /**
  * Render a node, wrapped when it carries `visibleWhen`. The wrapper starts
  * hidden exactly when the condition is false for the initial state, so the page
  * reads correctly without scripts; the runtime toggles it afterwards.
  */
 function renderVisible(node: IrNode, context: RenderContext): string {
-  const html = renderNode(node, context);
+  const html = withMotion(renderNode(node, context), node);
   if (node.when === undefined) return html;
   const attributes = renderAttributes({
     class: 'ak-when',
@@ -288,6 +321,7 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
         state: ir.state,
         hasBindings: bodyNeedsRuntime(body),
         moduleFeatures,
+        motion: usedMotionRecipes(ir),
       })
     : '';
 

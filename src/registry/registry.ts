@@ -14,6 +14,12 @@ import {
 } from '../data/data-json-schema.js';
 import { RenderError } from '../errors.js';
 import { ICON_PROFILE_NAMES } from '../icons/icon-packs.js';
+import {
+  motionJsonSchema,
+  motionPresetsFor,
+  specificMotionPresetsFor,
+  UNIVERSAL_MOTION_PRESETS,
+} from '../motion/recipes.js';
 import { LIMITS } from '../spec/bounds.js';
 import { CONDITION_JSON_SCHEMA } from '../spec/conditions.js';
 import { THEME_RECIPES_JSON_SCHEMA } from '../theme/recipes.js';
@@ -169,6 +175,14 @@ function blockSchema(definition: BlockDefinition): Record<string, unknown> {
     Object.assign(properties, BLOCK_DATA_JSON_SCHEMA_PROPERTIES);
   }
   properties.visibleWhen = { $ref: '#/$defs/condition' };
+  // Most blocks take only the universal recipes, which share one definition.
+  const presets = motionPresetsFor(definition.type);
+  if (presets.length > 0) {
+    properties.motion =
+      specificMotionPresetsFor(definition.type).length === 0
+        ? { $ref: '#/$defs/motion' }
+        : motionJsonSchema(presets);
+  }
 
   return {
     type: 'object',
@@ -231,6 +245,7 @@ export function buildPageSpecJsonSchema(): Record<string, unknown> {
     actionMap: actionMapSchema(),
     action: actionSchema(),
     condition: CONDITION_JSON_SCHEMA,
+    motion: motionJsonSchema(UNIVERSAL_MOTION_PRESETS),
     ...DATA_JSON_SCHEMA_DEFS,
   };
   for (const definition of BLOCK_DEFINITIONS) {

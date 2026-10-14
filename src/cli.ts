@@ -234,6 +234,7 @@ function compactContractText(contract: CompactBlockDescription): string {
     lines.push(`  data: ${need} — ${contract.data.description}`);
   }
   if (contract.actions !== undefined) lines.push(`  actions: ${contract.actions.join(', ')}`);
+  if (contract.motion !== undefined) lines.push(`  motion: ${contract.motion.join(', ')}`);
   return `${lines.join('\n')}\n`;
 }
 
