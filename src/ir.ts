@@ -38,6 +38,8 @@ export interface IrNode {
   slots?: Record<string, string[]>;
   /** `visibleWhen`: the block shows only while this state condition holds. */
   when?: Condition;
+  /** `motion.preset`: a motion recipe id, or `none` to turn built-in motion off. */
+  motion?: string;
   /** Rows the block resolved from `dataRef` or `data`, after its transform. */
   data?: MaterializedData;
   /** Accessibility contract inherited from the block definition. */

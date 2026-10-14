@@ -181,8 +181,12 @@ const isPrintOnly = (context: readonly string[]) =>
 const TIME = /(?:^|[\s(])\d*\.?\d+m?s\b/u;
 const ZERO_TIME = /(?:^|[\s(])0*\.?0+m?s\b/gu;
 
-/** Theme variables whose times the still state zeroes; easing carries no time. */
-const TOKEN_TIME = /var\(--ak-(?:motion-duration|motion-easing|transition)\)/gu;
+/**
+ * Theme variables whose times the still state zeroes, including the semantic
+ * scale that derives from the duration token; easings carry no time.
+ */
+const TOKEN_TIME =
+  /var\(--ak-(?:motion-duration|motion-easing|transition|motion-(?:micro|fast|normal|relaxed|emphasis)|motion-ease-(?:standard|enter|exit))\)/gu;
 
 /**
  * A time left once the token variables are removed is fixed: the still state

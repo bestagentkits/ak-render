@@ -25,9 +25,10 @@ import { loadTheme, type ResolvedTheme, resolveTheme } from '../theme/load-theme
 import { builtinThemeCatalog, type ThemeCatalog } from '../theme/theme-catalog.js';
 import { type RenderContext, renderNode } from './blocks.js';
 import { assembleDocument } from './document.js';
-import { renderAttributes } from './escape.js';
+import { escapeAttribute, renderAttributes } from './escape.js';
 import { embeddedFontCss } from './font-faces.js';
 import { applyMotionPolicy, motionPolicyOf, PRINT_STILL_CSS } from './motion.js';
+import { motionRecipe, motionRecipeCss } from './motion-recipes.js';
 import { hasOutline, renderOutline } from './outline.js';
 import { recipeCss } from './recipe-styles.js';
 import { buildRuntime, needsLiveRegion } from './runtime.js';
@@ -133,6 +134,7 @@ function buildCss(
   theme: ResolvedTheme,
   ir: IrDocument,
   usesIcons: boolean,
+  motion: ReadonlySet<string>,
 ): string {
   const sheets = [BASE_CSS];
   for (const feature of FEATURE_ORDER) {
@@ -142,6 +144,9 @@ function buildCss(
   }
   for (const feature of moduleFeatures) sheets.push(feature.css);
   if (usesIcons) sheets.push(ICON_CSS);
+  // Motion recipes refine feature motion, so they follow every feature sheet.
+  const motionSheet = motionRecipeCss(motion);
+  if (motionSheet !== '') sheets.push(motionSheet);
   // Recipes restyle feature surfaces, so they follow every feature sheet.
   const recipes = recipeCss(theme.recipes, features);
   if (recipes !== '') sheets.push(recipes);
@@ -151,6 +156,33 @@ function buildCss(
   sheets.push(PRINT_STILL_CSS);
   // See `motion.ts` for what each effective motion state keeps.
   return applyMotionPolicy(sheets.join('\n'), motionPolicyOf(theme.motionPolicy));
+}
+
+/** Motion presets the page uses, in IR order. */
+function collectMotion(ir: IrDocument): Set<string> {
+  const used = new Set<string>();
+  for (const node of ir.nodes) if (node.motion !== undefined) used.add(node.motion);
+  return used;
+}
+
+/**
+ * Mark a block's root element with its motion preset. Every block that
+ * accepts a preset renders its id on its first element, so the marker lands on
+ * the element the recipe selectors start from.
+ */
+function withMotion(node: IrNode, html: string): string {
+  if (node.motion === undefined) return html;
+  const marker = ` data-ak-id="${escapeAttribute(node.id)}"`;
+  const end = html.indexOf('>');
+  const at = html.indexOf(marker);
+  if (at < 0 || end < 0 || at > end) {
+    throw new RenderError('INTERNAL_ERROR', `block "${node.type}" has no root id for its motion`, {
+      path: node.path,
+      nodeId: node.id,
+    });
+  }
+  const cut = at + marker.length;
+  return `${html.slice(0, cut)} data-ak-motion="${escapeAttribute(node.motion)}"${html.slice(cut)}`;
 }
 
 function bodyNeedsRuntime(body: string): boolean {
@@ -167,7 +199,7 @@ function nodeIndex(ir: IrDocument): Map<string, IrNode> {
  * reads correctly without scripts; the runtime toggles it afterwards.
  */
 function renderVisible(node: IrNode, context: RenderContext): string {
-  const html = renderNode(node, context);
+  const html = withMotion(node, renderNode(node, context));
   if (node.when === undefined) return html;
   const attributes = renderAttributes({
     class: 'ak-when',
@@ -278,16 +310,19 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
   if (body.includes(SYNTAX_TOKEN_MARKUP)) features.add('syntax');
   // Faces come first and need the rendered text, which decides their subsets.
   const fonts = embeddedFontCss(resolved, `${ir.meta.title}\n${body}`);
-  const css = [fonts, buildCss(features, moduleFeatures, resolved, ir, usesIcons)]
+  const motion = collectMotion(ir);
+  const css = [fonts, buildCss(features, moduleFeatures, resolved, ir, usesIcons, motion)]
     .filter((sheet) => sheet !== '')
     .join('\n');
-  const runtimeNeeded = features.size > 0 || bodyNeedsRuntime(body);
+  const motionNeedsRuntime = [...motion].some((id) => motionRecipe(id)?.requiresRuntime === true);
+  const runtimeNeeded = features.size > 0 || bodyNeedsRuntime(body) || motionNeedsRuntime;
   const js = runtimeNeeded
     ? buildRuntime({
         features,
         state: ir.state,
         hasBindings: bodyNeedsRuntime(body),
         moduleFeatures,
+        motion,
       })
     : '';
 

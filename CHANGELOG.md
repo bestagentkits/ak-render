@@ -11,6 +11,18 @@ Release mechanics and the compatibility contract live in
 
 ### Added
 
+- Motion recipes. A block opts into a first-party motion intent with
+  `motion: { preset }`: `reveal-soft`, `stagger`, `number-tick`, `crossfade`,
+  `tab-indicator`, `accordion-expand` or `dialog-rise`, or `none` to turn the
+  block's built-in motion off. Presets are validated per block type with JSON
+  paths, recipe CSS and runtime ship only on pages that use them, and every
+  recipe follows the motion policy, print and no-script rules. Recipes time on a
+  semantic scale (micro, fast, normal, relaxed, emphasis) derived from
+  `motion-duration`. Dialogs with `dialog-rise` animate their exit and still
+  restore focus and fire `close` once; tab panels and slides with `crossfade`
+  fade in only on a change. `motionRecipeDescriptors()` exports compact recipe
+  metadata for discovery. See `docs/adr/0003-motion-recipes.md`.
+
 - Code blocks and `api-endpoint` bodies are syntax highlighted at compile
   time for php, javascript, typescript, python, go, rust, java, kotlin,
   csharp, c, cpp, swift, ruby, bash, sql, json, yaml and diff, plus common
@@ -117,6 +129,9 @@ Release mechanics and the compatibility contract live in
 
 ### Fixed
 
+- A `toggle` action that targets an open dialog now closes it. Before, it
+  opened the dialog again, so a dialog action such as "Close" with
+  `toggle` did nothing ([#43](https://github.com/bestagentkits/ak-render/issues/43)).
 - `motion-policy: reduced` now restrains motion as documented: colour, shadow
   and opacity transitions keep the theme duration, anything that would move
   (hover lifts, image zoom) jumps to its end state, and entrances, loops,

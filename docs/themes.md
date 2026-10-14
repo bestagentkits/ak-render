@@ -71,6 +71,29 @@ rail and scroll-edge shades follow the scroll position in every state, and print
 always settles the page. See
 [ADR 0002](./adr/0002-motion-policy.md) for the full contract.
 
+### Motion recipes and the timing scale
+
+`motion-duration` is the tempo of the whole page. Blocks that opt into a
+motion recipe with `motion: { preset }` (see [ADR 0003](./adr/0003-motion-recipes.md))
+time it on a semantic scale derived from that one token, so a theme never
+sets recipe timings directly:
+
+| Step | Multiple of `motion-duration` |
+| --- | --- |
+| micro | 0.4 |
+| fast | 0.7 |
+| normal | 1 |
+| relaxed | 1.6 |
+| emphasis | 2.2 |
+
+`motion-easing` is the standard easing; recipes add a decelerating enter and
+an accelerating exit easing, neither of which overshoots. Because every step
+derives from `motion-duration`, a still state (0ms) stops every recipe, and no
+theme value can weaken the reader's reduced-motion setting.
+
+Motion recipes are not the style recipes below: a style recipe changes how a
+surface looks at rest, a motion recipe how a block arrives, leaves or changes.
+
 ## Recipes
 
 Tokens change colour, type and spacing. **Recipes** change how a component is

@@ -81,6 +81,7 @@ blocks:
         path: state.confidence
 
   - type: tabs
+    motion: { preset: tab-indicator }
     id: mode-tabs
     title: Mode
     on:
@@ -99,6 +100,7 @@ blocks:
         text: Shows the normalized node graph.
 
   - type: carousel
+    motion: { preset: crossfade }
     id: steps-carousel
     ariaLabel: Guided steps
     on:
@@ -114,6 +116,7 @@ blocks:
         text: Reduced motion is respected when the user asks for it.
 
   - type: accordion
+    motion: { preset: accordion-expand }
     id: faq
     title: Details
     items:
@@ -183,6 +186,7 @@ blocks:
       - text: interactive.yaml
 
   - type: dialog
+    motion: { preset: dialog-rise }
     id: details-dialog
     title: Runtime details
     ariaLabel: Runtime details

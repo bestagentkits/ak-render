@@ -22,6 +22,7 @@ import type { BlockRegistry, CheckContext } from '../registry/block-module.js';
 import { NODE_ID_PATTERN, validateProps } from '../registry/prop-schema.js';
 import { blockTypes, DEFAULT_REGISTRY, getBlockDefinition } from '../registry/registry.js';
 import type { BlockDefinition, RuntimeFeature } from '../registry/roster.js';
+import { motionPresetsFor } from '../render/motion-recipes.js';
 import { slotKey } from '../render/render-context.js';
 import { validateThemeRecipes } from '../theme/recipes.js';
 import { VERSION } from '../version.js';
@@ -491,6 +492,46 @@ function collectSlotLists(
   return lists;
 }
 
+/**
+ * `motion` is `{ preset }` and nothing else: the preset names a recipe the
+ * block type accepts, or `none`. Authors never pass timings, CSS or script.
+ */
+function validateMotion(
+  value: unknown,
+  presets: readonly string[],
+  path: string,
+  bag: DiagnosticBag,
+): string | undefined {
+  if (!isPlainObject(value)) {
+    bag.add({ code: 'SPEC_VALIDATION_ERROR', path, message: 'expected an object { preset }' });
+    return undefined;
+  }
+  let valid = true;
+  for (const key of Object.keys(value)) {
+    if (key === 'preset') continue;
+    valid = false;
+    bag.add({
+      code: 'SPEC_VALIDATION_ERROR',
+      path: pathKey(path, key),
+      message: `unknown motion property "${key}"; only "preset" is allowed`,
+    });
+  }
+  const preset = value.preset;
+  if (typeof preset !== 'string' || !presets.includes(preset)) {
+    bag.add({
+      code: 'SPEC_VALIDATION_ERROR',
+      path: pathKey(path, 'preset'),
+      message:
+        preset === undefined
+          ? 'motion requires a "preset"'
+          : `unknown motion preset ${JSON.stringify(preset)} for this block`,
+      details: { known: [...presets] },
+    });
+    return undefined;
+  }
+  return valid ? preset : undefined;
+}
+
 function buildNode(
   entry: unknown,
   parentId: string | null,
@@ -531,6 +572,8 @@ function buildNode(
   const dataInput: BlockDataInput = {};
   let childBlocks: unknown;
   let visibleWhen: unknown;
+  let motion: unknown;
+  const motionPresets = motionPresetsFor(definition.type);
   for (const [key, value] of Object.entries(entry)) {
     if (key === 'type') continue;
     if (key === 'blocks') {
@@ -539,6 +582,10 @@ function buildNode(
     }
     if (key === 'visibleWhen') {
       visibleWhen = value;
+      continue;
+    }
+    if (key === 'motion' && motionPresets.length > 0) {
+      motion = value;
       continue;
     }
     if (definition.data !== undefined && DATA_KEYS.includes(key)) {
@@ -592,6 +639,10 @@ function buildNode(
       node.when = condition;
       node.runtimeFeatures.push('state');
     }
+  }
+  if (motion !== undefined) {
+    const preset = validateMotion(motion, motionPresets, pathKey(path, 'motion'), context.bag);
+    if (preset !== undefined) node.motion = preset;
   }
   if (definition.data !== undefined) {
     const data = resolveBlockData(dataInput, context.datasets, path, context.bag);

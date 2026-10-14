@@ -146,7 +146,8 @@ test.describe('effective motion policy', () => {
       const dialog = page.locator('dialog.ak-dialog[open]');
       await expect(dialog).toBeVisible();
       const name = await dialog.evaluate((el) => getComputedStyle(el).animationName);
-      expect(name).toBe(state === 'full' ? 'ak-dialog-in' : 'none');
+      // The fixture's dialog uses the dialog-rise recipe, which replaces the built-in entrance.
+      expect(name).toBe(state === 'full' ? 'ak-m-dialog-rise' : 'none');
       // Focus moves into the open dialog and Escape returns it, whatever the motion.
       expect(await dialog.evaluate((el) => el.contains(document.activeElement))).toBe(true);
       await page.keyboard.press('Escape');

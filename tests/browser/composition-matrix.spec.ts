@@ -225,7 +225,10 @@ for (const name of FIXTURES) {
     }) => {
       const titles = disclosureTitles(name);
       const views = initialViews(name);
-      await withContext(browser, { javaScriptEnabled: false }, async (page) => {
+      // Reduced motion: an animated expand moves the next summary while the
+      // loop is already clicking it, and this test is about content, not motion.
+      const options = { javaScriptEnabled: false, reducedMotion: 'reduce' } as const;
+      await withContext(browser, options, async (page) => {
         const audit = await open(page, name);
         // Disclosures are native <details>: a reader opens them without
         // scripts, outermost first, so nested panels become readable too.

@@ -163,6 +163,15 @@ rendering never needs the token or the network.
   control binds must be declared under `state`.
 - Themes are presets, not CSS. Custom presets extend a built-in; see
   [themes.md](./themes.md).
+- Motion is an intent, never CSS. Blocks move by default where it helps; to
+  ask for more, give a block `motion: { preset: <name> }`: `reveal-soft` or
+  `stagger` on content and lists, `number-tick` on `stats`/`kpi`,
+  `tab-indicator` or `crossfade` on `tabs`, `crossfade` on `carousel` or a
+  `visibleWhen` block, `accordion-expand`, `dialog-rise`, or `none` to keep a
+  block still. A preset the block does not accept fails at
+  `…motion.preset` with the accepted ones in `details.known`. The reader's
+  reduced-motion setting and the theme's `motion-policy` always win; see
+  [ADR 0003](./adr/0003-motion-recipes.md).
 - The same spec, theme presets and compiler version always produce the same
   bytes, so a changed hash means one of those three changed. Project or user
   presets found on disk and `--theme` count as theme input.

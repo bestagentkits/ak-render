@@ -14,6 +14,7 @@ import {
 } from '../data/data-json-schema.js';
 import { RenderError } from '../errors.js';
 import { ICON_PROFILE_NAMES } from '../icons/icon-packs.js';
+import { motionPresetsFor } from '../render/motion-recipes.js';
 import { LIMITS } from '../spec/bounds.js';
 import { CONDITION_JSON_SCHEMA } from '../spec/conditions.js';
 import { THEME_RECIPES_JSON_SCHEMA } from '../theme/recipes.js';
@@ -169,6 +170,16 @@ function blockSchema(definition: BlockDefinition): Record<string, unknown> {
     Object.assign(properties, BLOCK_DATA_JSON_SCHEMA_PROPERTIES);
   }
   properties.visibleWhen = { $ref: '#/$defs/condition' };
+  const presets = motionPresetsFor(definition.type);
+  if (presets.length > 0) {
+    properties.motion = {
+      type: 'object',
+      additionalProperties: false,
+      required: ['preset'],
+      properties: { preset: { enum: presets } },
+      description: 'Motion recipe for this block; `none` turns its built-in motion off.',
+    };
+  }
 
   return {
     type: 'object',

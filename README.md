@@ -182,6 +182,34 @@ set of declarative actions (`ak-render catalog` lists them); there is no
 JavaScript field. Every page reads completely with scripts off, with motion
 reduced, in print and in a screenshot.
 
+### Motion
+
+Blocks ask for motion by name, never by CSS:
+
+```yaml
+blocks:
+  - type: hero
+    title: Launch update
+    motion: { preset: reveal-soft }
+  - type: stats
+    motion: { preset: stagger }
+    items:
+      - { label: Revenue, value: "$120K" }
+  - type: tabs
+    motion: { preset: tab-indicator }
+    items:
+      - { title: Overview, text: The quarter at a glance. }
+      - { title: Risks, text: Two open risks. }
+```
+
+The first-party recipes are `reveal-soft`, `stagger`, `number-tick`,
+`crossfade`, `tab-indicator`, `accordion-expand` and `dialog-rise`; `none`
+keeps a block still. Each lists the block types it fits, and the compiler emits
+its CSS and runtime only on pages that use it. The reader's reduced-motion
+setting and the theme's `motion-policy` always win, print settles the page, and
+without JavaScript every block shows its final state. See
+[ADR 0003](./docs/adr/0003-motion-recipes.md).
+
 ### Review a plan in the page
 
 End a plan with a `feedback` block and put each open question in a `decision`

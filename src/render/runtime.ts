@@ -16,6 +16,7 @@ import { CAROUSEL, TABS } from '../blocks/composition/composition-runtime.js';
 import type { FeatureModule } from '../registry/block-module.js';
 import type { RuntimeFeature } from '../registry/roster.js';
 import { serializeJsonForScript } from './escape.js';
+import { DIALOG_WITH_EXIT, motionRuntime } from './motion-runtime.js';
 
 /** Features that produce user-facing feedback and therefore need a live region. */
 const ANNOUNCING_FEATURES: readonly RuntimeFeature[] = ['copy', 'filter', 'theme'];
@@ -27,6 +28,8 @@ export interface RuntimeOptions {
   hasBindings: boolean;
   /** Registry features the page uses, in registry order. */
   moduleFeatures?: readonly FeatureModule[];
+  /** Motion presets the page uses; each adds only the parts it needs. */
+  motion?: ReadonlySet<string>;
 }
 
 const helpers = (conditions: boolean): string => `
@@ -146,7 +149,11 @@ function run(action, source, detail) {
   if (type === 'toggle') {
     var nodes = byId(targetId);
     nodes.forEach(function (node) {
-      if (node.tagName === 'DIALOG') openDialog(node);
+      // A toggle closes an open dialog; one that is closing reopens.
+      if (node.tagName === 'DIALOG') {
+        if (node.hasAttribute('open') && !node.akPendingClose) closeDialog(node);
+        else openDialog(node);
+      }
       else if (node.tagName === 'DETAILS') node.open = !node.open;
       else if (node.hasAttribute('data-ak-theme-toggle')) toggleTheme(node);
       else {
@@ -450,7 +457,10 @@ function wireEffects() {
       else countUp(entry.target);
     });
   }, { rootMargin: '0px 0px 12% 0px' });
-  qa('[data-ak-animate], [data-ak-count], .ak-stat dd').forEach(function (el) { observer.observe(el); });
+  // A block with motion preset none keeps its figures as authored.
+  qa('[data-ak-animate], [data-ak-count], .ak-stat dd').forEach(function (el) {
+    if (!el.closest('[data-ak-motion="none"]')) observer.observe(el);
+  });
 }`;
 
 const DIALOG = `
@@ -557,7 +567,8 @@ export function buildRuntime(options: RuntimeOptions): string {
   if (conditions) parts.push(STATE);
   if (features.has('theme')) parts.push(THEME);
   if (features.has('copy')) parts.push(COPY);
-  if (features.has('dialog')) parts.push(DIALOG);
+  const motion = options.motion ?? new Set<string>();
+  if (features.has('dialog')) parts.push(motion.has('dialog-rise') ? DIALOG_WITH_EXIT : DIALOG);
   if (features.has('filter')) parts.push(FILTER);
   if (features.has('carousel')) parts.push(CAROUSEL);
   if (features.has('slider')) parts.push(SLIDER);
@@ -568,6 +579,8 @@ export function buildRuntime(options: RuntimeOptions): string {
   for (const feature of modules) {
     if (feature.script !== undefined) parts.push(feature.script.code);
   }
+  const motionParts = motionRuntime(motion);
+  parts.push(...motionParts.code);
   parts.push(EFFECTS);
 
   const wiring: string[] = [];
@@ -581,6 +594,7 @@ export function buildRuntime(options: RuntimeOptions): string {
   for (const feature of modules) {
     if (feature.script?.boot !== undefined) wiring.push(feature.script.boot);
   }
+  wiring.push(...motionParts.boot);
   wiring.push('wireEffects();');
 
   return [
