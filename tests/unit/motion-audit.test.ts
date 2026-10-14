@@ -892,8 +892,75 @@ describe('motion gate and baseline helpers', () => {
     });
   });
 
+  it('keeps a finding on a named block stable when other blocks move', () => {
+    const nested = {
+      type: 'section',
+      id: 'outer',
+      title: 'Outer',
+      motion: 'reveal-soft',
+      blocks: [card('inner', 'reveal-soft')],
+    };
+    const before = auditMotionSpec({ ...spec(nested), blocks: [nested] });
+    const after = auditMotionSpec({ ...spec(nested), blocks: [card('new-first'), nested] });
+    expect(before.findings.length).toBeGreaterThan(0);
+    expect(after.findings.map((item) => item.path)).not.toEqual(
+      before.findings.map((item) => item.path),
+    );
+    expect(compareMotionAudits(before, after)).toEqual({ added: [], resolved: [] });
+  });
+
   it('compares a real audit against its own report as no change', () => {
     const report = auditMotionSpec(spec(card('a', 'spin-forever')));
     expect(compareMotionAudits(report, report)).toEqual({ added: [], resolved: [] });
+  });
+});
+
+describe('compiled HTML audit: hostile input', () => {
+  // Each input once took quadratic time or ran out of memory. Linear work
+  // finishes well inside the bound even on a slow CI runner.
+  const cases: [string, string][] = [
+    ['unclosed style tags', '<style>'.repeat(150_000)],
+    ['unclosed script tags', '<script>'.repeat(150_000)],
+    ['html tags with no end', '<html '.repeat(150_000)],
+    ['link tags with no end', '<link '.repeat(150_000)],
+    ['url() with no close', `<style>${'url(//'.repeat(150_000)}</style>`],
+    ['deeply nested blocks', `<style>${'a{'.repeat(400_000)}</style>`],
+    ['many keyframes', `<style>${'@keyframes k{0%{opacity:0}}'.repeat(20_000)}</style>`],
+  ];
+  it.each(cases)('audits %s in linear time', (_name, html) => {
+    const started = performance.now();
+    const report = auditMotionHtml(html);
+    expect(report.mode).toBe('html');
+    expect(performance.now() - started).toBeLessThan(5_000);
+  });
+});
+
+describe('compiled HTML audit: shorthand, counts and logical properties', () => {
+  it('names each loop in a shorthand that starts with its duration', () => {
+    const css =
+      '@media (prefers-reduced-motion:no-preference){.a{animation:1s linear infinite spin}.b{animation:2s ease-in-out infinite pulse}.c{animation:300ms infinite wobble}}';
+    const finding = findingFor(auditMotionHtml(htmlPage({ css })), 'html/unbounded-motion');
+    expect(finding?.evidence).toBe('pulse, spin, wobble');
+  });
+
+  it('counts recipe uses in the markup, not in stylesheet selectors', () => {
+    const html = readText(MOTION_GALLERY_PAGE);
+    const markup = html.replace(/<(style|script)\b[\s\S]*?<\/\1>/gu, '');
+    const report = auditMotionHtml(html);
+    expect(report.recipes.length).toBeGreaterThanOrEqual(7);
+    for (const recipe of report.recipes) {
+      const uses = markup.split(`data-ak-motion="${recipe.id}"`).length - 1;
+      expect(recipe.count, recipe.id).toBe(uses);
+    }
+    expect(report.recipes.find((recipe) => recipe.id === 'stagger')?.count).toBe(1);
+  });
+
+  it('treats logical margin, padding and inset properties as layout', () => {
+    const css =
+      '@keyframes ak-x{from{margin-inline-start:0;padding-block-end:0;inset-inline-start:0}to{opacity:1}}';
+    const finding = findingFor(auditMotionHtml(htmlPage({ css })), 'html/layout-keyframes');
+    expect(finding?.message).toContain('margin-inline-start');
+    expect(finding?.message).toContain('padding-block-end');
+    expect(finding?.message).toContain('inset-inline-start');
   });
 });

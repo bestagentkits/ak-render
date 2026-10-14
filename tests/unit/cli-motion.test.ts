@@ -269,6 +269,7 @@ describe('ak-render motion audit', () => {
       ['motion', 'check', write('x.yaml', CLEAN_SPEC)],
       ['motion', 'audit'],
       ['motion', 'audit', join(workspace, 'does-not-exist.yaml')],
+      ['motion', 'audit', write('extra.yaml', CLEAN_SPEC), 'extra'],
     ]) {
       const c = capture();
       expect(run(argv, c.io), argv.join(' ')).toBe(2);
@@ -302,6 +303,15 @@ describe('ak-render motion audit', () => {
     const c = capture(html);
     expect(run(['motion', 'audit', '-', '--json'], c.io)).toBe(0);
     expect((JSON.parse(c.out()) as { mode: string }).mode).toBe('html');
+  });
+
+  it('detects a piped page that opens with a BOM or a comment', () => {
+    const html = readFileSync(GALLERY_PAGE, 'utf8');
+    for (const text of [`\uFEFF${html}`, `<!-- saved page -->\n${html}`]) {
+      const c = capture(text);
+      expect(run(['motion', 'audit', '-', '--json'], c.io)).toBe(0);
+      expect((JSON.parse(c.out()) as { mode: string }).mode).toBe('html');
+    }
   });
 
   it('gates an HTML file by its findings the same way as a spec', () => {

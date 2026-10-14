@@ -400,6 +400,12 @@ function motionDescriptionText(described: ReturnType<typeof describeMotion>): st
 
 const HTML_INPUT = /\.html?$/iu;
 
+/** A piped page may open with a BOM or comments before its doctype. */
+function looksLikeHtml(text: string): boolean {
+  const start = text.replace(/^\uFEFF/u, '').replace(/^(?:\s*<!--[\s\S]*?-->)*\s*/u, '');
+  return /^<(?:!doctype|html|head|meta)\b/iu.test(start);
+}
+
 function isMotionSeverity(value: string): value is MotionSeverity | 'none' {
   return value === 'none' || (MOTION_SEVERITIES as readonly string[]).includes(value);
 }
@@ -411,9 +417,9 @@ function findingText(finding: MotionFinding): string {
 }
 
 function motionAuditCommand(args: string[], io: CliIo, flags: Flags): number {
-  const [action, file] = args;
-  if (action !== 'audit' || file === undefined) {
-    io.stderr('ak-render: usage: ak-render motion audit <spec|page.html|-> [--json]\n');
+  const [action, file, ...extra] = args;
+  if (action !== 'audit' || file === undefined || extra.length > 0) {
+    io.stderr(`ak-render: usage: ${COMMANDS.motion?.usage ?? 'ak-render motion audit <spec>'}\n`);
     return 2;
   }
   const failOn = flags.failOn ?? 'error';
@@ -434,8 +440,7 @@ function motionAuditCommand(args: string[], io: CliIo, flags: Flags): number {
       return 2;
     }
   }
-  const html =
-    HTML_INPUT.test(file) || (file === STDIN_PATH && /^\s*<(?:!doctype|html)/iu.test(text));
+  const html = HTML_INPUT.test(file) || (file === STDIN_PATH && looksLikeHtml(text));
   const result = html
     ? auditMotionHtml(text)
     : auditMotionSpec(text, { source: sourceLabel(file) });

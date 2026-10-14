@@ -137,8 +137,19 @@ const REMOTE_VALIDATE_TOOL: RemoteTool = {
   },
 };
 
+/** The Worker refuses bodies over MAX_REQUEST_BYTES, so the schema says so. */
+const AUDIT_MOTION_PROPERTIES = AUDIT_MOTION_TOOL.inputSchema.properties as Record<string, object>;
+const REMOTE_AUDIT_MOTION_SCHEMA = {
+  ...AUDIT_MOTION_TOOL.inputSchema,
+  properties: {
+    ...AUDIT_MOTION_PROPERTIES,
+    html: { ...AUDIT_MOTION_PROPERTIES.html, maxLength: MAX_REQUEST_BYTES },
+  },
+};
+
 const REMOTE_AUDIT_MOTION_TOOL: RemoteTool = {
   ...AUDIT_MOTION_TOOL,
+  inputSchema: REMOTE_AUDIT_MOTION_SCHEMA,
   run: async (args, context) => {
     const guarded = await guard(context, ['render'], 'validate');
     if (!guarded.ok) return guarded.result;

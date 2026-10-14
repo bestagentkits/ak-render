@@ -96,7 +96,7 @@ const STAGGER_CAP = 8;
 
 /** Properties that make the browser lay the page out again on every frame. */
 const LAYOUT_PROPERTIES =
-  /^(?:width|height|min-width|min-height|max-width|max-height|top|right|bottom|left|inset|margin(?:-\w+)?|padding(?:-\w+)?|font-size|line-height)$/u;
+  /^(?:width|height|min-width|min-height|max-width|max-height|top|right|bottom|left|inset|margin(?:-[\w-]+)?|padding(?:-[\w-]+)?|inset-[\w-]+|font-size|line-height)$/u;
 
 const RANK: Readonly<Record<MotionSeverity, number>> = { error: 0, warning: 1, info: 2 };
 
@@ -141,9 +141,14 @@ export function motionAuditFails(
   return findings.some((finding) => RANK[finding.severity] <= RANK[failOn]);
 }
 
-/** Identity of a finding across runs: everything but its prose. */
+/**
+ * Identity of a finding across runs: everything but its prose. A finding on a
+ * named block keys on the block id, not its JSON path, so inserting or moving
+ * other blocks does not turn a known finding into a new one.
+ */
 export function motionFindingKey(finding: MotionFinding): string {
-  return [finding.rule, finding.path, finding.nodeId ?? '', finding.evidence ?? ''].join('|');
+  const where = finding.nodeId === undefined ? finding.path : `#${finding.nodeId}`;
+  return [finding.rule, where, finding.evidence ?? ''].join('|');
 }
 
 /**
@@ -377,8 +382,102 @@ export function auditMotionSpec(
 
 // --- compiled HTML audit ----------------------------------------------------
 
-const STYLE = /<style\b([^>]*)>([\s\S]*?)<\/style>/giu;
-const SCRIPT = /<script\b([^>]*)>([\s\S]*?)<\/script>/giu;
+/** Lower-case ASCII only, so every index still lines up with the original. */
+const asciiLower = (text: string) => text.replace(/[A-Z]+/gu, (run) => run.toLowerCase());
+
+interface Element {
+  start: number;
+  end: number;
+  attributes: string;
+  body: string;
+}
+
+/**
+ * Every `<name ...>body</name>` element, found with forward-only scans so an
+ * unclosed or malformed tag costs linear time on untrusted input.
+ */
+function elements(html: string, name: string, withBody = true): Element[] {
+  const found: Element[] = [];
+  const lower = asciiLower(html);
+  const open = `<${name}`;
+  const close = `</${name}`;
+  let position = 0;
+  while (position < lower.length) {
+    const start = lower.indexOf(open, position);
+    if (start < 0) break;
+    const after = lower.charAt(start + open.length);
+    if (after !== '' && !/[\s/>]/u.test(after)) {
+      position = start + open.length;
+      continue;
+    }
+    const tagEnd = lower.indexOf('>', start);
+    if (tagEnd < 0) break;
+    const attributes = html.slice(start + open.length, tagEnd);
+    if (!withBody) {
+      found.push({ start, end: tagEnd + 1, attributes, body: '' });
+      position = tagEnd + 1;
+      continue;
+    }
+    const closeAt = lower.indexOf(close, tagEnd + 1);
+    if (closeAt < 0) break;
+    const closeEnd = lower.indexOf('>', closeAt);
+    const end = closeEnd < 0 ? lower.length : closeEnd + 1;
+    found.push({ start, end, attributes, body: html.slice(tagEnd + 1, closeAt) });
+    position = end;
+  }
+  return found;
+}
+
+/** `url(...)` arguments in a stylesheet, scanned forward only. */
+function cssUrls(css: string): string[] {
+  const urls: string[] = [];
+  const lower = asciiLower(css);
+  let position = 0;
+  while (position < lower.length) {
+    const start = lower.indexOf('url(', position);
+    if (start < 0) break;
+    const end = lower.indexOf(')', start);
+    if (end < 0) break;
+    urls.push(css.slice(start, end + 1));
+    position = end + 1;
+  }
+  return urls;
+}
+
+/** Tokens of an `animation` layer that cannot be its name. */
+const ANIMATION_KEYWORDS = new Set([
+  'none',
+  'infinite',
+  'normal',
+  'reverse',
+  'alternate',
+  'alternate-reverse',
+  'forwards',
+  'backwards',
+  'both',
+  'running',
+  'paused',
+  'linear',
+  'ease',
+  'ease-in',
+  'ease-out',
+  'ease-in-out',
+  'step-start',
+  'step-end',
+  'initial',
+  'inherit',
+  'unset',
+]);
+
+/** The keyframes name in one `animation` shorthand layer, if it has one. */
+function animationName(layer: string): string {
+  for (const token of layer.replace(/\([^)]*\)/gu, ' ').split(/\s+/u)) {
+    if (token === '' || ANIMATION_KEYWORDS.has(token.toLowerCase())) continue;
+    if (/^[-+]?[\d.]/u.test(token) || token.startsWith('var(')) continue;
+    if (/^-?[a-z_][\w-]*$/iu.test(token)) return token;
+  }
+  return '';
+}
 
 /** What a lifecycle recipe needs from the runtime, as text the runtime holds. */
 const LIFECYCLE_MARKERS: Readonly<Record<string, string>> = {
@@ -432,8 +531,7 @@ function cssFindings(css: string): MotionFinding[] {
     if (property === 'animation' || property === 'animation-iteration-count') {
       for (const layer of layers(value)) {
         if (/\binfinite\b/u.test(layer)) {
-          const name =
-            property === 'animation' ? (/[\w-]*ak-[\w-]+|[a-z][\w-]*/u.exec(layer)?.[0] ?? '') : '';
+          const name = property === 'animation' ? animationName(layer) : '';
           infinite.add(name === '' ? selector : name);
         }
       }
@@ -468,15 +566,20 @@ function cssFindings(css: string): MotionFinding[] {
     });
   }
 
+  // Layout properties per keyframes prelude, gathered in one pass.
+  const layoutIn = new Map<string, Set<string>>();
+  for (const { property, context } of found) {
+    if (!LAYOUT_PROPERTIES.test(property)) continue;
+    const prelude = context.find((entry) => entry.startsWith('@keyframes'));
+    if (prelude === undefined) continue;
+    const set = layoutIn.get(prelude) ?? new Set<string>();
+    set.add(property);
+    layoutIn.set(prelude, set);
+  }
   for (const block of blocks) {
     const name = /^@keyframes\s+([\w-]+)/u.exec(block.property)?.[1];
     if (name === undefined) continue;
-    const inside = found.filter((item) => item.context.includes(block.property));
-    const moved = [
-      ...new Set(
-        inside.map((item) => item.property).filter((property) => LAYOUT_PROPERTIES.test(property)),
-      ),
-    ];
+    const moved = [...(layoutIn.get(block.property) ?? [])];
     if (moved.length > 0) {
       findings.push({
         rule: 'html/layout-keyframes',
@@ -510,22 +613,33 @@ export function auditMotionHtml(html: string): MotionAuditReport {
     });
   }
 
-  const sheets: string[] = [];
-  for (const match of html.matchAll(STYLE)) {
-    if (!(match[1] ?? '').includes(ADAPTER_STYLE_MARKER)) sheets.push(match[2] ?? '');
-  }
-  const css = sheets.join('\n');
-  const scripts = [...html.matchAll(SCRIPT)];
-  const js = scripts.map((match) => match[2] ?? '').join('\n');
+  const styles = elements(html, 'style');
+  const css = styles
+    .filter((style) => !style.attributes.includes(ADAPTER_STYLE_MARKER))
+    .map((style) => style.body)
+    .join('\n');
+  const scripts = elements(html, 'script');
+  const js = scripts.map((script) => script.body).join('\n');
   findings.push(...cssFindings(css));
 
-  const policyAttribute = /<html\b[^>]*\bdata-motion="(reduced|none)"/u.exec(html)?.[1];
+  const root = elements(html, 'html', false)[0];
+  const policyAttribute = /\bdata-motion="(reduced|none)"/u.exec(root?.attributes ?? '')?.[1];
   const policy: MotionPolicy | undefined = trusted
     ? motionPolicyOf(policyAttribute ?? 'full')
     : undefined;
 
+  // Count uses in the markup only; stylesheet selectors and runtime strings
+  // name the same attribute.
+  let markup = '';
+  let cursor = 0;
+  for (const range of [...styles, ...scripts].sort((a, b) => a.start - b.start)) {
+    if (range.start < cursor) continue;
+    markup += html.slice(cursor, range.start);
+    cursor = range.end;
+  }
+  markup += html.slice(cursor);
   const counts = new Map<string, number>();
-  for (const match of html.matchAll(/\bdata-ak-motion="([^"]*)"/gu)) {
+  for (const match of markup.matchAll(/\bdata-ak-motion="([^"<>]{0,64})"/gu)) {
     const id = match[1] ?? '';
     counts.set(id, (counts.get(id) ?? 0) + 1);
   }
@@ -593,15 +707,17 @@ export function auditMotionHtml(html: string): MotionAuditReport {
   }
 
   const remote: string[] = [];
-  for (const match of scripts) {
-    const src = /\bsrc="([^"]*)"/u.exec(match[1] ?? '')?.[1];
+  for (const script of scripts) {
+    const src = /\bsrc="([^"]*)"/u.exec(script.attributes)?.[1];
     if (src !== undefined) remote.push(`<script src="${src}">`);
   }
-  for (const match of html.matchAll(/<link\b[^>]*\brel="stylesheet"[^>]*>/giu))
-    remote.push(match[0]);
+  for (const link of elements(html, 'link', false)) {
+    if (/\brel="stylesheet"/iu.test(link.attributes)) remote.push(`<link${link.attributes}>`);
+  }
   for (const match of css.matchAll(/@import\b[^;]*;?/gu)) remote.push(match[0]);
-  for (const match of css.matchAll(/url\(\s*['"]?(?:https?:)?\/\/[^)]*\)/giu))
-    remote.push(match[0]);
+  for (const url of cssUrls(css)) {
+    if (/^url\(\s*['"]?(?:https?:)?\/\//iu.test(url)) remote.push(url);
+  }
   for (const resource of remote) {
     findings.push({
       rule: 'html/remote-resource',

@@ -163,7 +163,7 @@ accessible.
 | --- | --- | --- |
 | `html/unguarded-motion`, `html/duplicate-keyframes` | error | What `motionDiagnostics` rejects at compile time |
 | `html/missing-recipe-css`, `html/missing-exit`, `html/missing-lifecycle` | error | A block names a recipe whose CSS, exit phase or runtime is missing |
-| `html/missing-csp`, `html/unsafe-csp`, `html/remote-resource` | error | No CSP, a CSP that allows remote or unsafe sources, or a remote script, stylesheet, import or `url()` |
+| `html/missing-csp`, `html/unsafe-csp`, `html/remote-resource` | error | No CSP, a CSP that allows `unsafe-inline` or `unsafe-eval`, or a remote script, stylesheet, import or `url()` |
 | `html/transition-all`, `html/layout-keyframes` | warning | `transition: all`, or keyframes that animate layout properties |
 | `html/unknown-recipe` | warning | A `data-ak-motion` value the registry does not know |
 | `html/unbounded-motion` | info | More than one infinite loop |
@@ -177,7 +177,8 @@ loops and hero effects cause (`html/unbounded-motion`, `html/fixed-timing`).
 exit code: 1 when a finding at that severity or above is present, 2 for a usage
 error. `--baseline` takes an earlier `--json` report and gates only on new
 findings, plus every current error: a baseline can forgive a known warning,
-never a standing error. The score is advisory: 100 minus 25 per error, 8 per
+never a standing error. A finding on a block with an `id` is matched by that id,
+so inserting or moving other blocks does not turn it into a new one. The score is advisory: 100 minus 25 per error, 8 per
 warning and 2 per note, floored at 0. It never decides the gate.
 
 ## Adding a recipe

@@ -113,6 +113,11 @@ describe('remote MCP: discovery', () => {
     const local = (stdio?.result as { tools: { name: string }[] } | undefined)?.tools ?? [];
     expect(local.length).toBe(13);
     expect(remote.map((entry) => entry.name)).toEqual(local.map((entry) => entry.name));
+    // The remote audit schema advertises the Worker's body cap, not the local one.
+    const audit = (
+      remote as { name: string; inputSchema: { properties: { html: { maxLength: number } } } }[]
+    ).find((entry) => entry.name === 'audit-motion');
+    expect(audit?.inputSchema.properties.html.maxLength).toBe(1024 * 1024);
     // Discovery never reaches the entitlements endpoint.
     expect(fetchMock).not.toHaveBeenCalled();
   });

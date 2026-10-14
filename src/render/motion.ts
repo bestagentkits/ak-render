@@ -101,9 +101,18 @@ export interface CssDeclaration {
 }
 
 /**
+ * Blocks nested deeper than this are walked for balance but not collected, so
+ * hostile input cannot make the context copies grow with the nesting.
+ */
+export const CSS_MAX_NESTING = 32;
+
+/**
  * Every declaration in a stylesheet with its enclosing preludes. Feature sheets
  * are compiler-authored and adapter sheets have passed the stylesheet filter,
  * so a brace-and-semicolon walk is enough; strings never hold braces here.
+ * The motion audit also feeds it untrusted pages, so the work stays linear:
+ * enclosing preludes are shared until the nesting changes, and blocks past
+ * {@link CSS_MAX_NESTING} are skipped.
  */
 export function parseCssDeclarations(css: string): {
   found: CssDeclaration[];
@@ -112,27 +121,38 @@ export function parseCssDeclarations(css: string): {
   const found: CssDeclaration[] = [];
   const blocks: CssDeclaration[] = [];
   const stack: string[] = [];
+  // Depth including skipped blocks past the cap.
+  let depth = 0;
+  // One frozen copy of the stack, shared by every entry until it changes.
+  let context: readonly string[] = [];
   let buffer = '';
   const flush = () => {
     const text = buffer.trim();
     buffer = '';
     const colon = text.indexOf(':');
-    if (colon <= 0 || stack.length === 0) return;
+    if (colon <= 0 || stack.length === 0 || depth > CSS_MAX_NESTING) return;
     found.push({
       property: text.slice(0, colon).trim().toLowerCase(),
       value: text.slice(colon + 1).trim(),
-      context: [...stack],
+      context,
     });
   };
   for (const character of css) {
     if (character === '{') {
       const prelude = buffer.trim();
-      blocks.push({ property: prelude, value: '', context: [...stack] });
-      stack.push(prelude);
       buffer = '';
+      depth += 1;
+      if (depth > CSS_MAX_NESTING) continue;
+      blocks.push({ property: prelude, value: '', context });
+      stack.push(prelude);
+      context = [...stack];
     } else if (character === '}') {
       flush();
-      stack.pop();
+      if (depth > 0) depth -= 1;
+      if (stack.length > depth) {
+        stack.pop();
+        context = [...stack];
+      }
     } else if (character === ';') {
       flush();
     } else {
