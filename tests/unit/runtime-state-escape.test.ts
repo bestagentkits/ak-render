@@ -28,4 +28,11 @@ describe('runtime state', () => {
     const js = buildRuntime({ features: new Set(), state: {}, hasBindings: true });
     expect(js).toContain("if (target.hasAttribute('data-ak-id')) return;");
   });
+
+  it('restores the theme only on a page that has the theme toggle', () => {
+    const without = buildRuntime({ features: new Set(['dialog']), state: {}, hasBindings: false });
+    expect(without).not.toContain('restoreTheme');
+    const withTheme = buildRuntime({ features: new Set(['theme']), state: {}, hasBindings: false });
+    expect(withTheme).toContain('restoreTheme();');
+  });
 });

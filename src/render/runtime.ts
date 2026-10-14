@@ -149,7 +149,7 @@ function run(action, source, detail) {
   if (type === 'toggle') {
     var nodes = byId(targetId);
     nodes.forEach(function (node) {
-      if (node.tagName === 'DIALOG') openDialog(node);
+      if (node.tagName === 'DIALOG') toggleDialog(node);
       else if (node.tagName === 'DETAILS') node.open = !node.open;
       else if (node.hasAttribute('data-ak-theme-toggle')) toggleTheme(node);
       else {
@@ -471,6 +471,10 @@ function closeDialog(dialog) {
   else dialog.removeAttribute('open');
   if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
   fire(dialog, 'close');
+}
+function toggleDialog(dialog) {
+  if (dialog.open) closeDialog(dialog);
+  else openDialog(dialog);
 }`;
 
 const SLIDER = `
@@ -547,8 +551,7 @@ doc.addEventListener('keydown', function (event) {
 }, false);`;
 
 const BOOT = `
-syncBindings();
-restoreTheme();`;
+syncBindings();`;
 
 /** Build the emitted runtime for the features a page actually uses. */
 export function buildRuntime(options: RuntimeOptions): string {
@@ -605,6 +608,8 @@ export function buildRuntime(options: RuntimeOptions): string {
     ...parts,
     DELEGATION,
     BOOT,
+    // Only a page with the theme toggle defines restoreTheme.
+    features.has('theme') ? 'restoreTheme();' : '',
     ...wiring,
     '})();',
   ]

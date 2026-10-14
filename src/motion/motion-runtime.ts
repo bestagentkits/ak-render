@@ -168,6 +168,11 @@ function closeDialog(dialog) {
   if (dialog.getAttribute('data-ak-motion') !== 'dialog-pop') { finish(); return; }
   motionSettle(dialog, 'data-ak-leaving', finish);
 }
+// A toggle closes an open dialog; one that is mid-exit reopens.
+function toggleDialog(dialog) {
+  if (dialog.open && !dialog.hasAttribute('data-ak-leaving')) closeDialog(dialog);
+  else openDialog(dialog);
+}
 // The browser closes a modal on Escape by itself; route it through the exit.
 doc.addEventListener('cancel', function (event) {
   var dialog = event.target;
