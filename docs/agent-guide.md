@@ -168,7 +168,8 @@ rendering never needs the token or the network.
   on a card, `stagger` on steps, `tabs-slide` on tabs. `describe --compact`
   lists a type's recipes under `motion:`, and `fade-swap` fits any block with
   `visibleWhen`. `ak-render motions search <intent>` ranks recipes and
-  `ak-render motion audit <spec> --json` checks the result. See
+  `ak-render motion audit <spec> --json` checks the result. A person can tune
+  the same spec by eye with `ak-render motion studio <spec>`. See
   [motion.md](./motion.md).
 - The same spec, theme presets and compiler version always produce the same
   bytes, so a changed hash means one of those three changed. Project or user

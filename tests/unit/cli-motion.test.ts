@@ -276,6 +276,20 @@ describe('ak-render motion audit', () => {
     }
   });
 
+  it('refuses to start the studio on stdin, HTML, a missing file or a bad port', () => {
+    for (const [argv, message] of [
+      [['motion', 'studio', '-'], 'not stdin or HTML'],
+      [['motion', 'studio', GALLERY_PAGE], 'not stdin or HTML'],
+      [['motion', 'studio', join(workspace, 'missing.yaml')], 'no such file'],
+      [['motion', 'studio', FIXTURE, '--port', 'abc'], '--port must be an integer'],
+      [['motion', 'studio', FIXTURE, '--port', '70000'], '--port must be an integer'],
+    ] as const) {
+      const c = capture();
+      expect(run([...argv], c.io), argv.join(' ')).toBe(2);
+      expect(c.err()).toContain(message);
+    }
+  });
+
   it('audits the motion recipes fixture without findings', () => {
     const c = capture();
     expect(run(['motion', 'audit', FIXTURE, '--json'], c.io)).toBe(0);

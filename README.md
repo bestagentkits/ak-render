@@ -187,6 +187,8 @@ A block can also opt into one named motion recipe, such as
 timing and the reduced-motion fallback; see [docs/motion.md](./docs/motion.md).
 `ak-render motions search <intent>` finds a recipe, and `ak-render motion audit
 <spec|page.html>` reports motion problems with a rule id, a path and a fix.
+`ak-render motion studio page.yaml` opens a local dashboard to inspect, tune,
+preview and accept motion changes as a reviewed diff to the spec.
 
 ### Review a plan in the page
 
@@ -431,6 +433,7 @@ ak-render icons <search <terms...>|describe <icon>|packs>
 ak-render describe <type...> [--compact]
 ak-render motions [search <terms...>|describe <id...> [--compact]]
 ak-render motion audit <spec|page.html|-> [--fail-on <severity>] [--baseline <report.json>]
+ak-render motion studio <spec> [--port <n>]  # local motion dashboard
 ak-render recipes
 ak-render recipe <name>                   # YAML by default
 ak-render themes

@@ -184,6 +184,51 @@ never a standing error. A finding on a block with an `id` is matched by that id,
 so inserting or moving other blocks does not turn it into a new one. The score is advisory: 100 minus 25 per error, 8 per
 warning and 2 per note, floored at 0. It never decides the gate.
 
+## Motion Studio
+
+`ak-render motion studio page.yaml` opens a local, development-only dashboard
+over one Page Spec: inspect, tune, preview, then accept a reviewed diff. It
+prints a URL and runs until Ctrl-C (`--port <n>` picks the port; `--json`
+prints `{url, port, file}`).
+
+```sh
+ak-render motion studio page.yaml
+# Motion Studio for page.yaml
+#   http://127.0.0.1:52144/studio/<session>/
+# Press Ctrl-C to stop.
+```
+
+- **Blocks and gallery.** The block list shows every block with its recipe.
+  The recipe gallery plays each recipe's registry example, compiled by AK.
+  Both lists take the arrow keys.
+- **Inspector.** For the selected block it shows the recipe's phase timeline,
+  the duration in milliseconds at the current `motion-duration`, the easing,
+  the animated properties, the runtime, the states it plays in, the
+  reduced-motion fallback and the CSS the compiled page actually emits. The
+  recipe select offers only recipes that block can take.
+- **Tuning.** A slider sets `motion-duration` (0–1000ms, 10ms steps) and two
+  selects set `motion-easing` and `motion-policy`. Values outside those bounds
+  are refused by the server, never written. The studio sets no CSS, selector
+  or script of its own.
+- **Preview.** The preview is the real compiled page for the proposal.
+  Replay reloads it, Pause freezes its animations, Rapid toggle clicks the
+  selected block's tabs, toggles and disclosures three times to check that it
+  settles. **Preview as** recompiles both previews under `full`, `reduced`,
+  `none` or OS reduced motion (the still state) for viewing only. Compare
+  shows the original beside the proposal.
+- **Accept.** Undo steps back, Reset drops every edit, and the panel shows
+  the unified diff and the motion audit of the proposal. Accept writes the
+  diff to the spec file in place, keeping YAML comments, key order and JSON
+  indentation. It is refused if the file changed on disk since the studio read
+  it, if another accept is running, if the proposal does not compile or if it
+  changes nothing.
+
+The studio never touches compiled HTML and is never part of a compiled page.
+It listens on 127.0.0.1 only, behind a random session path, sends a strict
+CSP with no inline script or style, refuses foreign `Host` headers, and needs
+a session header on every write. It needs no network access, account or AI
+service.
+
 ## Adding a recipe
 
 Add an entry to `MOTION_RECIPES` with its targets, triggers, scale step,
