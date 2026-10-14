@@ -11,7 +11,15 @@
  */
 
 import { randomBytes } from 'node:crypto';
-import { readFileSync, renameSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  readFileSync,
+  realpathSync,
+  renameSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { basename, dirname, join } from 'node:path';
@@ -21,6 +29,8 @@ import { motionCatalog } from '../motion-catalog.js';
 import { getMotionRecipe } from '../recipes.js';
 import {
   checkProposal,
+  checkStudioSource,
+  hashText,
   inspectBlock,
   readSource,
   STUDIO_DURATION_LIMITS,
@@ -133,16 +143,14 @@ async function readJson(request: IncomingMessage): Promise<Record<string, unknow
 export function startMotionStudio(options: MotionStudioOptions): Promise<MotionStudio> {
   const session = randomBytes(16).toString('hex');
   const prefix = `/studio/${session}/`;
-  const file = options.file;
   const modelOptions: StudioOptions =
     options.themeCatalog === undefined ? {} : { themeCatalog: options.themeCatalog };
   const previews = new Map<string, string>();
-  let accepting = false;
   let port = 0;
+  // Accept writes through a symlink to the file it names, never over the link.
+  let file = options.file;
 
-  const load = () => readSource(file, readFileSync(file, 'utf8'));
-  // Read once up front so a missing or unreadable file fails the command.
-  load();
+  const load = () => readSource(options.file, readFileSync(file, 'utf8'));
 
   const keep = (html: string): string => {
     const id = randomBytes(8).toString('hex');
@@ -199,38 +207,43 @@ export function startMotionStudio(options: MotionStudioOptions): Promise<MotionS
     return compile(spec, { source: `${id}.example` }).html;
   };
 
+  const stale = (hash: string) =>
+    new HttpError(
+      409,
+      'the spec changed on disk since this proposal was made; reload to start again',
+      {
+        stale: true,
+        hash,
+      },
+    );
+
+  // Synchronous from the hash check to the rename, so two accepts never interleave.
   const accept = (body: Record<string, unknown>) => {
-    if (accepting) throw new HttpError(409, 'another accept is in progress');
-    accepting = true;
-    try {
-      const proposal = checkProposal(body.proposal);
-      const source = load();
-      if (body.hash !== source.hash) {
-        throw new HttpError(
-          409,
-          'the spec changed on disk since this proposal was made; reload to start again',
-          {
-            stale: true,
-            hash: source.hash,
-          },
-        );
-      }
-      const { html, ...state } = studioState(source, proposal, modelOptions);
-      if (!state.ok || html === undefined) {
-        throw new HttpError(422, state.error?.message ?? 'the proposed spec does not compile', {
-          error: state.error,
-        });
-      }
-      if (state.diff === '')
-        throw new HttpError(409, 'nothing to accept: the proposal matches the spec');
-      // Write beside the file, then rename, so a crash never leaves half a spec.
-      const temporary = join(dirname(file), `.${basename(file)}.${session}.tmp`);
-      writeFileSync(temporary, state.proposedText, 'utf8');
-      renameSync(temporary, file);
-      return { accepted: true, diff: state.diff, hash: load().hash };
-    } finally {
-      accepting = false;
+    const proposal = checkProposal(body.proposal);
+    const source = load();
+    if (body.hash !== source.hash) throw stale(source.hash);
+    const { html, ...state } = studioState(source, proposal, modelOptions);
+    if (!state.ok || html === undefined) {
+      throw new HttpError(422, state.error?.message ?? 'the proposed spec does not compile', {
+        error: state.error,
+      });
     }
+    if (state.diff === '')
+      throw new HttpError(409, 'nothing to accept: the proposal matches the spec');
+    // Write beside the file, then rename, so a crash never leaves half a spec.
+    // The copy keeps the file's mode, and the hash is read again just before
+    // the rename, so an editor save during the compile is not overwritten.
+    const temporary = join(dirname(file), `.${basename(file)}.${session}.tmp`);
+    try {
+      writeFileSync(temporary, state.proposedText, { encoding: 'utf8', mode: 0o600 });
+      chmodSync(temporary, statSync(file).mode & 0o7777);
+      const current = hashText(readFileSync(file, 'utf8'));
+      if (current !== source.hash) throw stale(current);
+      renameSync(temporary, file);
+    } finally {
+      rmSync(temporary, { force: true });
+    }
+    return { accepted: true, diff: state.diff, hash: load().hash };
   };
 
   const handle = async (request: IncomingMessage, response: ServerResponse) => {
@@ -310,6 +323,14 @@ export function startMotionStudio(options: MotionStudioOptions): Promise<MotionS
   });
 
   return new Promise((resolve, reject) => {
+    // A missing, unreadable or unsupported spec fails the start, not a request.
+    try {
+      file = realpathSync(options.file);
+      checkStudioSource(load());
+    } catch (error) {
+      reject(error);
+      return;
+    }
     server.once('error', reject);
     server.listen(options.port ?? 0, '127.0.0.1', () => {
       port = (server.address() as AddressInfo).port;

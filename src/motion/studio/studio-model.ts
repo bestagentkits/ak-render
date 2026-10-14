@@ -5,18 +5,21 @@
  * The source file stays the only truth. A proposal names a recipe per block id
  * and the three motion theme tokens, nothing else, so the studio cannot inject
  * CSS, selectors or script. Applying a proposal edits the parsed YAML document
- * (comments and key order survive) or the JSON object, then the result is
- * validated by the real compiler before anyone sees it. Accept is guarded by
+ * or the JSON object, then carries only the changed lines back onto the source
+ * text, so comments, key order, line endings and the author's formatting
+ * survive. The result is validated by the real compiler before anyone sees it. Accept is guarded by
  * the hash of the text the proposal was made against, so a file changed on
  * disk, or a second accept of the same proposal, is refused instead of
  * overwritten.
  */
 
 import { createHash } from 'node:crypto';
-import { type Document, isMap, parseDocument } from 'yaml';
+import { isDeepStrictEqual } from 'node:util';
+import { type Document, isAlias, isMap, isNode, parseDocument } from 'yaml';
 import { RenderError } from '../../errors.js';
 import type { IrDocument, IrNode } from '../../ir.js';
 import { type CompileResult, compile } from '../../render/render.js';
+import { detectSpecVersion } from '../../spec/migrate.js';
 import type { ThemeCatalog } from '../../theme/theme-catalog.js';
 import { TOKEN_SPECS } from '../../theme/tokens.js';
 import { auditMotionSpec, type MotionAuditReport } from '../motion-audit.js';
@@ -241,9 +244,26 @@ function getIn(target: Document | Record<string, unknown>, keys: (string | numbe
   return node;
 }
 
-function jsonIndent(text: string): number {
-  const match = /\n( +)"/u.exec(text);
-  return match?.[1]?.length ?? 2;
+function jsonIndent(text: string): string {
+  return /\n(\t+| +)"/u.exec(text)?.[1] ?? '  ';
+}
+
+/** Refuse a source the studio cannot edit where it is authored. */
+export function checkStudioSource(source: StudioSource): void {
+  let document: unknown;
+  try {
+    document =
+      source.format === 'json' ? JSON.parse(source.text) : parseDocument(source.text).toJS();
+  } catch {
+    // The compiler reports a spec that does not parse, with its position.
+    return;
+  }
+  if (detectSpecVersion(document) === 0) {
+    throw studioError(
+      'Motion Studio edits version 1 specs; add "version: 1" with meta and theme to this spec first',
+      '$.version',
+    );
+  }
 }
 
 /**
@@ -260,12 +280,15 @@ export function applyProposal(
   const tokens = Object.entries(proposal.tokens ?? {});
   if (blocks.length === 0 && tokens.length === 0) return source.text;
 
+  checkStudioSource(source);
   const ir = compileSource(source.text, source.path, options).ir;
   const byId = blockPaths(ir);
+  const crlf = source.text.includes('\r\n');
+  const text = crlf ? source.text.replace(/\r\n/gu, '\n') : source.text;
   const target: Document | Record<string, unknown> =
     source.format === 'json'
-      ? (JSON.parse(source.text) as Record<string, unknown>)
-      : parseDocument(source.text, { keepSourceTokens: true });
+      ? (JSON.parse(text) as Record<string, unknown>)
+      : parseDocument(text, { keepSourceTokens: true });
 
   for (const [id, recipe] of blocks) {
     const node = byId.get(id);
@@ -274,7 +297,17 @@ export function applyProposal(
         known: [...byId.keys()],
       });
     }
-    setIn(target, [...jsonPathKeys(node.path), 'motion'], recipe === null ? undefined : recipe);
+    const keys = jsonPathKeys(node.path);
+    if (isDocument(target)) {
+      const authored = target.getIn(keys, true);
+      if (isAlias(authored) || (isNode(authored) && authored.anchor !== undefined)) {
+        throw studioError(
+          `block "${id}" is shared through a YAML anchor, so editing it would change every copy; edit it by hand`,
+          `proposal.blocks.${id}`,
+        );
+      }
+    }
+    setIn(target, [...keys, 'motion'], recipe === null ? undefined : recipe);
   }
 
   if (tokens.length > 0) {
@@ -300,9 +333,91 @@ export function applyProposal(
     if (themeEmpty) setIn(target, ['theme'], undefined);
   }
 
-  if (isDocument(target)) return target.toString({ lineWidth: 0 });
-  const trailing = source.text.endsWith('\n') ? '\n' : '';
-  return `${JSON.stringify(target, null, jsonIndent(source.text))}${trailing}`;
+  let baseline: string;
+  let edited: string;
+  let parse: (value: string) => unknown;
+  if (isDocument(target)) {
+    // Match the author's flow style, `{a: b}` or `{ a: b }`, so an edited flow
+    // collection keeps it.
+    const style = { lineWidth: 0, flowCollectionPadding: !/[{[][^\s\]}]/u.test(text) };
+    baseline = parseDocument(text, { keepSourceTokens: true }).toString(style);
+    edited = target.toString(style);
+    parse = (value) => parseDocument(value).toJS();
+  } else {
+    const indent = jsonIndent(text);
+    const trailing = text.endsWith('\n') ? '\n' : '';
+    baseline = `${JSON.stringify(JSON.parse(text), null, indent)}${trailing}`;
+    edited = `${JSON.stringify(target, null, indent)}${trailing}`;
+    parse = (value) => JSON.parse(value);
+  }
+  // Keep the author's formatting outside the edit when the edit maps cleanly
+  // onto the source lines and the result means the same as the edited document.
+  const patched = patchLines(text, baseline, edited);
+  let result = edited;
+  if (patched !== undefined) {
+    try {
+      if (isDeepStrictEqual(parse(patched), parse(edited))) result = patched;
+    } catch {
+      // A patch that does not parse falls back to the serialized document.
+    }
+  }
+  return crlf ? result.replace(/\n/gu, '\r\n') : result;
+}
+
+/**
+ * Carry the edit from `baseline` to `edited` onto `source`, where `baseline`
+ * is `source` reserialized without the edit. Each changed region must sit on
+ * source lines that match the baseline exactly, with matching neighbours, so
+ * nothing the serializer reformatted is touched; otherwise this gives up.
+ */
+function patchLines(source: string, baseline: string, edited: string): string | undefined {
+  const s = source.split('\n');
+  const b = baseline.split('\n');
+  const alignment = editScript(b, s);
+  if (alignment === undefined) return undefined;
+  const at = new Array<number>(b.length).fill(-1);
+  for (const step of alignment) if (step.kind === ' ') at[step.a] = step.b;
+  const changes = editScript(b, edited.split('\n'));
+  if (changes === undefined) return undefined;
+
+  const out: string[] = [];
+  let cursor = 0;
+  let index = 0;
+  while (index < changes.length) {
+    const step = changes[index] as Step;
+    if (step.kind === ' ') {
+      index += 1;
+      continue;
+    }
+    // One region: consecutive removals and additions at baseline line `start`.
+    const start = step.a;
+    let end = start;
+    const added: string[] = [];
+    while (index < changes.length && (changes[index] as Step).kind !== ' ') {
+      const next = changes[index] as Step;
+      if (next.kind === '-') end = next.a + 1;
+      else added.push(next.text);
+      index += 1;
+    }
+    let from: number;
+    if (end > start) {
+      from = at[start] as number;
+      for (let line = start; line < end; line += 1) {
+        if (from < 0 || at[line] !== from + line - start) return undefined;
+      }
+    } else {
+      from = start < b.length ? (at[start] as number) : s.length;
+      if (from < 0) return undefined;
+    }
+    const to = from + (end - start);
+    if (start > 0 && at[start - 1] !== from - 1) return undefined;
+    if (end < b.length && at[end] !== to) return undefined;
+    if (from < cursor) return undefined;
+    out.push(...s.slice(cursor, from), ...added);
+    cursor = to;
+  }
+  out.push(...s.slice(cursor));
+  return out.join('\n');
 }
 
 export interface StudioOptions {
@@ -471,15 +586,20 @@ export function recipeCss(html: string, id: string, keyframes: readonly string[]
   return [...new Set(picked)].join('\n');
 }
 
+type Step = { kind: ' ' | '-' | '+'; text: string; a: number; b: number };
+
+/** Cells above this make {@link editScript} give up rather than stall. */
+const EDIT_SCRIPT_CELLS = 4_000_000;
+
 /**
- * A unified diff of two texts, line by line, with three lines of context. It
- * is the review surface for Accept, so it favours a readable hunk over the
- * shortest edit script.
+ * The line edit script from `a` to `b`, removals before additions. `a` and
+ * `b` on each step are the line indexes in `a` and `b` reached so far.
  */
-export function lineDiff(before: string, after: string, label: string): string {
-  if (before === after) return '';
-  const a = before.split('\n');
-  const b = after.split('\n');
+function editScript(
+  a: readonly string[],
+  b: readonly string[],
+  limit = EDIT_SCRIPT_CELLS,
+): Step[] | undefined {
   // Trim the shared head and tail so the quadratic table covers only the edit.
   let head = 0;
   while (head < a.length && head < b.length && a[head] === b[head]) head += 1;
@@ -493,6 +613,7 @@ export function lineDiff(before: string, after: string, label: string): string {
   }
   const midA = a.slice(head, a.length - tail);
   const midB = b.slice(head, b.length - tail);
+  if ((midA.length + 1) * (midB.length + 1) > limit) return undefined;
   const table: number[][] = Array.from({ length: midA.length + 1 }, () =>
     new Array<number>(midB.length + 1).fill(0),
   );
@@ -505,13 +626,14 @@ export function lineDiff(before: string, after: string, label: string): string {
           : Math.max((table[i + 1] as number[])[j] as number, row[j + 1] as number);
     }
   }
-  type Line = { kind: ' ' | '-' | '+'; text: string };
-  const lines: Line[] = a.slice(0, head).map((text) => ({ kind: ' ', text }));
+  const steps: Step[] = a
+    .slice(0, head)
+    .map((text, index) => ({ kind: ' ', text, a: index, b: index }));
   let i = 0;
   let j = 0;
   while (i < midA.length || j < midB.length) {
     if (i < midA.length && j < midB.length && midA[i] === midB[j]) {
-      lines.push({ kind: ' ', text: midA[i] as string });
+      steps.push({ kind: ' ', text: midA[i] as string, a: head + i, b: head + j });
       i += 1;
       j += 1;
     } else if (
@@ -519,16 +641,30 @@ export function lineDiff(before: string, after: string, label: string): string {
       (j === midB.length ||
         ((table[i + 1] as number[])[j] as number) >= ((table[i] as number[])[j + 1] as number))
     ) {
-      // Removals print before additions, as in a conventional unified diff.
-      lines.push({ kind: '-', text: midA[i] as string });
+      steps.push({ kind: '-', text: midA[i] as string, a: head + i, b: head + j });
       i += 1;
     } else {
-      lines.push({ kind: '+', text: midB[j] as string });
+      steps.push({ kind: '+', text: midB[j] as string, a: head + i, b: head + j });
       j += 1;
     }
   }
-  for (const text of a.slice(a.length - tail)) lines.push({ kind: ' ', text });
+  a.slice(a.length - tail).forEach((text, index) => {
+    const offset = index - tail;
+    steps.push({ kind: ' ', text, a: a.length + offset, b: b.length + offset });
+  });
+  return steps;
+}
 
+/**
+ * A unified diff of two texts, line by line, with three lines of context. It
+ * is the review surface for Accept, so it favours a readable hunk over the
+ * shortest edit script.
+ */
+export function lineDiff(before: string, after: string, label: string): string {
+  if (before === after) return '';
+  const steps = editScript(before.split(/\r?\n/u), after.split(/\r?\n/u), Infinity) as Step[];
+  const lines = steps.map(({ kind, text }) => ({ kind, text }));
+  type Line = (typeof lines)[number];
   const context = 3;
   const out = [`--- a/${label}`, `+++ b/${label}`];
   let index = 0;

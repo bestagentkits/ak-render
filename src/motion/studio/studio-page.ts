@@ -130,6 +130,7 @@ dl{display:grid;grid-template-columns:auto 1fr;gap:.2rem .6rem;margin:.5rem 0}dt
 .code .add{background:var(--add);display:block}.code .del{background:var(--del);display:block}
 .findings{margin:0;padding-left:1.1rem;font-size:.88rem}.findings code{font-size:.8rem}
 @media (max-width:1100px){.layout{grid-template-columns:minmax(0,1fr) minmax(0,1.6fr)}.layout aside{grid-column:1 / -1}}
+@media (pointer:coarse),(max-width:720px){button,select,input[type="range"]{min-height:44px}}
 @media (max-width:720px){.layout{grid-template-columns:minmax(0,1fr)}.frames.split{grid-template-columns:1fr}iframe{height:55vh}}
 `;
 
@@ -195,11 +196,15 @@ function propose(next, record) {
 
 function refresh() {
   var ticket = ++pending;
+  // Accept stays off until the diff on screen is the proposal it would write.
+  $('accept').disabled = true;
   return post('api/state', { proposal: proposal, preview: $('preview-mode').value }).then(function (reply) {
     if (ticket !== pending) return;
     if (reply.status !== 200) { say(reply.data.error || 'The studio could not apply that.', 'error'); return; }
     current = reply.data;
     render();
+  }, function () {
+    if (ticket === pending) say('The studio is not reachable. Is ak-render motion studio still running?', 'error');
   });
 }
 
@@ -281,9 +286,13 @@ function renderTokens(state) {
   var limits = catalog.durationLimits;
   var duration = $('duration');
   duration.min = limits.min; duration.max = limits.max; duration.step = limits.step;
-  var ms = parseInt(state.tokens['motion-duration'], 10);
-  if (!isNaN(ms) && document.activeElement !== duration) duration.value = String(ms);
-  $('duration-out').textContent = duration.value + 'ms';
+  // The token may be authored in seconds or above the slider's range.
+  var match = /^(d+(?:.d+)?)(ms|s)$/.exec(state.tokens['motion-duration'] || '');
+  var ms = match ? Math.round(Number(match[1]) * (match[2] === 's' ? 1000 : 1)) : NaN;
+  if (document.activeElement !== duration) {
+    if (!isNaN(ms)) duration.value = String(Math.min(ms, limits.max));
+    $('duration-out').textContent = isNaN(ms) ? duration.value + 'ms' : ms + 'ms' + (ms > limits.max ? ' (above the slider)' : '');
+  }
   fill($('easing'), catalog.easings, state.tokens['motion-easing']);
   fill($('policy'), catalog.policies, state.tokens['motion-policy']);
 }
@@ -295,6 +304,8 @@ function fill(select, values, value) {
 
 function renderInspector() {
   var box = $('inspector');
+  // The select is rebuilt on every render; keep keyboard focus on it.
+  var refocus = document.activeElement !== null && document.activeElement.id === 'recipe';
   box.textContent = '';
   if (!selected || !current.inspections[selected]) { box.appendChild(el('p', { class: 'muted', text: 'Select a block.' })); return; }
   $('proposed-caption').textContent = 'Proposed';
@@ -313,6 +324,7 @@ function renderInspector() {
   box.appendChild(el('p', {}, [el('strong', { text: block.id }), el('span', { class: 'muted', text: ' ' + block.type + ' at ' + block.path })]));
   box.appendChild(el('label', { for: 'recipe', text: 'Recipe' }));
   box.appendChild(select);
+  if (refocus) select.focus();
   if (block.compatible.length === 0) box.appendChild(el('p', { class: 'muted small', text: 'No recipe targets this block type.' }));
   if (!info.recipe) return;
   var recipe = info.recipe;
@@ -428,7 +440,8 @@ function start() {
     var button = $('accept');
     button.disabled = true;
     say('Writing the proposal…');
-    post('api/accept', { proposal: proposal, hash: original.state.source.hash }).then(function (reply) {
+    // Write the proposal whose diff is on screen, never a newer one in flight.
+    post('api/accept', { proposal: current.state.proposal, hash: original.state.source.hash }).then(function (reply) {
       if (reply.status !== 200) {
         say(reply.data.error || 'Accept failed.', 'error');
         button.disabled = false;
@@ -440,6 +453,9 @@ function start() {
         render();
         say('Accepted. ' + original.state.source.path + ' now carries the change.');
       });
+    }).catch(function () {
+      say('Accept failed: the studio is not reachable. The file was not confirmed written; reload to check.', 'error');
+      button.disabled = false;
     });
   });
   $('scheme').addEventListener('click', function () {

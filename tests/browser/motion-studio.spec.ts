@@ -143,10 +143,45 @@ test('the recipe gallery plays a compiled example', async ({ page }) => {
 
 test('Pause and Replay control the preview animations', async ({ page }) => {
   await open(page);
+  const states = () =>
+    page
+      .frameLocator('#proposed')
+      .locator('body')
+      .evaluate((body) => body.ownerDocument.getAnimations().map((item) => item.playState));
+  await expect.poll(async () => (await states()).length).toBeGreaterThan(0);
   await page.locator('#pause').click();
   await expect(page.locator('#pause')).toHaveAttribute('aria-pressed', 'true');
+  expect(new Set(await states())).toEqual(new Set(['paused']));
   await page.locator('#replay').click();
   await expect(page.locator('#pause')).toHaveAttribute('aria-pressed', 'false');
+});
+
+test('Accept stays off until the diff for the latest change is on screen', async ({ page }) => {
+  await open(page);
+  await page.locator('#policy').selectOption('reduced');
+  await expect(page.locator('#accept')).toBeEnabled();
+  let release: () => void = () => undefined;
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route('**/api/state', async (route) => {
+    await held;
+    await route.continue();
+  });
+  await page.locator('#easing').selectOption('linear');
+  await expect(page.locator('#accept')).toBeDisabled();
+  release();
+  await expect(diff(page)).toContainText('+    motion-easing: linear');
+  await expect(page.locator('#accept')).toBeEnabled();
+  await page.unroute('**/api/state');
+});
+
+test('keyboard focus stays on the recipe select after a change', async ({ page }) => {
+  await open(page);
+  await page.locator('#recipe').focus();
+  await page.locator('#recipe').selectOption('');
+  await expect(diff(page)).toContainText('-        motion: reveal-soft');
+  await expect(page.locator('#recipe')).toBeFocused();
 });
 
 test('Rapid toggle leaves the selected tabs settled on one panel', async ({ page }) => {
@@ -191,6 +226,13 @@ test('fits a 375px viewport without horizontal scroll', async ({ page }) => {
   );
   expect(overflow).toBeLessThanOrEqual(0);
   await expect(page.locator('#accept')).toBeVisible();
+  const small = await page.evaluate(() =>
+    [...document.querySelectorAll('button, select')]
+      .filter((node) => (node as HTMLElement).offsetParent !== null)
+      .filter((node) => node.getBoundingClientRect().height < 44)
+      .map((node) => node.id || node.textContent?.trim()),
+  );
+  expect(small).toEqual([]);
 });
 
 test('a reduced-motion preference reaches the previewed page', async ({ page }) => {

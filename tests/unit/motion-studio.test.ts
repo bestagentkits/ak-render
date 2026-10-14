@@ -398,3 +398,159 @@ describe('startMotionStudio', () => {
     });
   });
 });
+
+describe('applyProposal keeps the author formatting', () => {
+  const edit = (path: string, text: string, proposal: Parameters<typeof applyProposal>[1]) =>
+    applyProposal(readSource(path, text), proposal);
+  const changed = (before: string, after: string) =>
+    lineDiff(before, after, 'x')
+      .split('\n')
+      .filter((line) => /^[-+][^-+]/u.test(line));
+
+  it('keeps CRLF line endings and changes only the edited lines', () => {
+    const crlf = YAML_SPEC.replace(/\n/gu, '\r\n');
+    const after = edit('page.yaml', crlf, { blocks: { 'inner-card': 'reveal-soft' } });
+    expect(
+      after
+        .split('\n')
+        .slice(0, -1)
+        .every((line) => line.endsWith('\r')),
+    ).toBe(true);
+    expect(changed(crlf, after)).toEqual(['+        motion: reveal-soft']);
+  });
+
+  it('keeps folded scalars and flow collections outside and inside the edit', () => {
+    const text = `version: 1
+meta:
+  title: Flow
+  description: >-
+    a folded line
+    that continues
+blocks:
+  - {type: card, id: flow-card, title: A, text: x}
+  - type: card
+    id: block-card
+    title: B
+    text: y
+`;
+    expect(
+      changed(text, edit('page.yaml', text, { blocks: { 'block-card': 'reveal-soft' } })),
+    ).toEqual(['+    motion: reveal-soft']);
+    expect(
+      changed(text, edit('page.yaml', text, { blocks: { 'flow-card': 'reveal-soft' } })),
+    ).toEqual([
+      '-  - {type: card, id: flow-card, title: A, text: x}',
+      '+  - {type: card, id: flow-card, title: A, text: x, motion: reveal-soft}',
+    ]);
+  });
+
+  it('keeps tab indentation, inline objects and escapes in JSON', () => {
+    const text =
+      '{\n\t"version": 1,\n\t"meta": { "title": "Caf\\u00e9" },\n\t"blocks": [\n\t\t{\n\t\t\t"type": "card",\n\t\t\t"id": "tab-card",\n\t\t\t"title": "B",\n\t\t\t"text": "y"\n\t\t}\n\t]\n}\n';
+    const after = edit('page.json', text, { blocks: { 'tab-card': 'reveal-soft' } });
+    expect(changed(text, after)).toEqual([
+      '-\t\t\t"text": "y"',
+      '+\t\t\t"text": "y",',
+      '+\t\t\t"motion": "reveal-soft"',
+    ]);
+    expect(after).toContain('"meta": { "title": "Caf\\u00e9" }');
+  });
+
+  it('serializes the whole document when the edit cannot map onto the source', () => {
+    const text =
+      '{"version":1,"meta":{"title":"One line"},"blocks":[{"type":"card","id":"c","title":"C","text":"t"}]}';
+    const after = edit('page.json', text, { blocks: { c: 'reveal-soft' } });
+    expect(JSON.parse(after).blocks[0].motion).toBe('reveal-soft');
+  });
+
+  it('refuses a block shared through a YAML anchor', () => {
+    const text = `version: 1
+meta: {title: Anchors}
+blocks:
+  - &shared {type: card, id: shared-card, title: A, text: x}
+`;
+    expectRenderError(
+      () => edit('page.yaml', text, { blocks: { 'shared-card': 'reveal-soft' } }),
+      /YAML anchor/u,
+    );
+  });
+
+  it('refuses a version 0 spec, whose theme the migration replaces', () => {
+    const text = 'blocks:\n  - {type: card, id: old-card, title: A, text: x}\n';
+    expectRenderError(
+      () => edit('page.yaml', text, { tokens: { 'motion-duration': '300ms' } }),
+      /version 1 specs/u,
+    );
+  });
+});
+
+describe('startMotionStudio file handling', () => {
+  const post = (url: string, session: string, body: unknown) =>
+    fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-ak-studio': session },
+      body: JSON.stringify(body),
+    });
+
+  it('writes through a symlink to its target and keeps the target mode', async () => {
+    const { chmodSync, lstatSync, statSync, symlinkSync } = await import('node:fs');
+    const directory = mkdtempSync(join(workspace, 'link-'));
+    const target = join(directory, 'spec.yaml');
+    const link = join(directory, 'link.yaml');
+    writeFileSync(target, YAML_SPEC);
+    chmodSync(target, 0o640);
+    symlinkSync(target, link);
+    const studio = await startMotionStudio({ file: link });
+    try {
+      const session = /\/studio\/([0-9a-f]{32})\/$/u.exec(studio.url)?.[1] as string;
+      const view = await (await post(`${studio.url}api/state`, session, {})).json();
+      const accepted = await post(`${studio.url}api/accept`, session, {
+        proposal: { tokens: { 'motion-easing': 'linear' } },
+        hash: view.state.source.hash,
+      });
+      expect(accepted.status).toBe(200);
+    } finally {
+      await studio.close();
+    }
+    expect(lstatSync(link).isSymbolicLink()).toBe(true);
+    expect(readFileSync(target, 'utf8')).toContain('motion-easing: linear');
+    expect(statSync(target).mode & 0o777).toBe(0o640);
+  });
+
+  it('fails to start on an unreadable path or a version 0 spec', async () => {
+    const directory = mkdtempSync(join(workspace, 'bad-'));
+    await expect(startMotionStudio({ file: directory })).rejects.toThrow(/EISDIR/u);
+    const old = join(directory, 'old.yaml');
+    writeFileSync(old, 'blocks:\n  - {type: card, id: a, title: A, text: x}\n');
+    await expect(startMotionStudio({ file: old })).rejects.toThrow(/version 1 specs/u);
+  });
+
+  it('refuses a wrong content type, a large body and a cross-origin preflight', async () => {
+    const file = join(mkdtempSync(join(workspace, 'limits-')), 'page.yaml');
+    writeFileSync(file, YAML_SPEC);
+    const studio = await startMotionStudio({ file });
+    try {
+      const session = /\/studio\/([0-9a-f]{32})\/$/u.exec(studio.url)?.[1] as string;
+      const plain = await fetch(`${studio.url}api/state`, {
+        method: 'POST',
+        headers: { 'content-type': 'text/plain', 'x-ak-studio': session },
+        body: '{}',
+      });
+      expect(plain.status).toBe(415);
+      const large = await fetch(`${studio.url}api/state`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-ak-studio': session },
+        body: JSON.stringify({ proposal: {}, pad: 'x'.repeat(1_100_000) }),
+      });
+      expect(large.status).toBe(413);
+      const preflight = await fetch(`${studio.url}api/accept`, {
+        method: 'OPTIONS',
+        headers: { origin: 'https://evil.test', 'access-control-request-method': 'POST' },
+      });
+      expect(preflight.status).toBe(405);
+      expect(preflight.headers.get('access-control-allow-origin')).toBeNull();
+    } finally {
+      await studio.close();
+    }
+  });
+});

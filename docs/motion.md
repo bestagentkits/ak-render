@@ -218,11 +218,18 @@ ak-render motion studio page.yaml
   `none` or OS reduced motion (the still state) for viewing only. Compare
   shows the original beside the proposal.
 - **Accept.** Undo steps back, Reset drops every edit, and the panel shows
-  the unified diff and the motion audit of the proposal. Accept writes the
-  diff to the spec file in place, keeping YAML comments, key order and JSON
-  indentation. It is refused if the file changed on disk since the studio read
-  it, if another accept is running, if the proposal does not compile or if it
-  changes nothing.
+  the unified diff and the motion audit of the proposal. Accept writes
+  exactly the diff on screen. Only the changed lines are rewritten: comments,
+  key order, line endings (LF or CRLF), indentation (spaces or tabs) and the
+  rest of the file's formatting stay as written. When an edit cannot be mapped
+  onto the authored lines, the whole file is serialized again, and the diff
+  shows that before you accept. A symlinked spec is written through to its
+  target, which keeps its permissions. Accept is refused if the file changed
+  on disk since the studio read it (checked again just before the write), if
+  the proposal does not compile or if it changes nothing.
+- **Limits.** The studio edits version 1 specs; a bare version 0 block list
+  is refused when the studio starts. A block shared through a YAML anchor or
+  alias is not edited, because the edit would change every copy.
 
 The studio never touches compiled HTML and is never part of a compiled page.
 It listens on 127.0.0.1 only, behind a random session path, sends a strict

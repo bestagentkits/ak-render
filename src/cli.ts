@@ -498,7 +498,7 @@ function motionStudioCommand(file: string, io: CliIo, flags: Flags): number {
     return 2;
   }
   const port = flags.port === undefined ? 0 : Number(flags.port);
-  if (!Number.isInteger(port) || port < 0 || port > 65_535) {
+  if (!/^\d{1,5}$/u.test(flags.port ?? '0') || port > 65_535) {
     io.stderr('ak-render: --port must be an integer from 0 to 65535\n');
     return 2;
   }

@@ -283,6 +283,7 @@ describe('ak-render motion audit', () => {
       [['motion', 'studio', join(workspace, 'missing.yaml')], 'no such file'],
       [['motion', 'studio', FIXTURE, '--port', 'abc'], '--port must be an integer'],
       [['motion', 'studio', FIXTURE, '--port', '70000'], '--port must be an integer'],
+      [['motion', 'studio', FIXTURE, '--port', '1e3'], '--port must be an integer'],
     ] as const) {
       const c = capture();
       expect(run([...argv], c.io), argv.join(' ')).toBe(2);
