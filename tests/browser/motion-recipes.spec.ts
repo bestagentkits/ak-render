@@ -259,6 +259,26 @@ test.describe('motion recipes under full motion', () => {
     );
     expect(transition).toContain('block-size');
   });
+
+  test('a section opened just before printing prints at full height', async ({ page }) => {
+    await open(page);
+    const closed = block(page, 'faq').locator('details:not([open])').first();
+    // Open, switch to print and measure in one task, so the screen transition
+    // has no time to finish on its own.
+    await closed.evaluate((el) => {
+      (el as HTMLDetailsElement).open = true;
+    });
+    await page.emulateMedia({ media: 'print' });
+    const [shown, full] = await closed.evaluate((el) => {
+      const body = el.querySelector(':scope > :not(summary)') as HTMLElement;
+      return [
+        getComputedStyle(el, '::details-content').transitionDuration,
+        body.getBoundingClientRect().height > 0 ? 'tall' : 'clipped',
+      ];
+    });
+    expect(shown).toBe('0s');
+    expect(full).toBe('tall');
+  });
 });
 
 test.describe('a tab marker that first shows from a hidden block', () => {
