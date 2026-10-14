@@ -93,7 +93,7 @@ export function rootMotionAttribute(policy: MotionPolicy): string | undefined {
   return policy === 'full' ? undefined : policy;
 }
 
-interface Declaration {
+export interface CssDeclaration {
   property: string;
   value: string;
   /** Preludes of every enclosing block, outermost first. */
@@ -105,9 +105,12 @@ interface Declaration {
  * are compiler-authored and adapter sheets have passed the stylesheet filter,
  * so a brace-and-semicolon walk is enough; strings never hold braces here.
  */
-function parse(css: string): { found: Declaration[]; blocks: Declaration[] } {
-  const found: Declaration[] = [];
-  const blocks: Declaration[] = [];
+export function parseCssDeclarations(css: string): {
+  found: CssDeclaration[];
+  blocks: CssDeclaration[];
+} {
+  const found: CssDeclaration[] = [];
+  const blocks: CssDeclaration[] = [];
   const stack: string[] = [];
   let buffer = '';
   const flush = () => {
@@ -140,7 +143,7 @@ function parse(css: string): { found: Declaration[]; blocks: Declaration[] } {
 }
 
 /** Split a value or a media query list on its top-level commas. */
-function layers(value: string): string[] {
+export function layers(value: string): string[] {
   const parts: string[] = [];
   let depth = 0;
   let current = '';
@@ -163,7 +166,7 @@ function layers(value: string): string[] {
  * print): `(min-width:0),(prefers-reduced-motion:no-preference)` still matches
  * under reduced motion, so it is not a guard.
  */
-const isGuarded = (context: readonly string[]) =>
+export const isGuarded = (context: readonly string[]) =>
   context.some((prelude) => {
     if (!prelude.startsWith('@media')) return false;
     const queries = layers(prelude.slice('@media'.length));
@@ -189,7 +192,7 @@ const TOKEN_TIME = /var\(--ak-(?:motion-duration|motion-easing|transition)\)/gu;
  * cannot zero it. Any other `var()` counts as fixed too, since its value or
  * fallback may be a fixed time. A zero time moves nothing.
  */
-const hasFixedTime = (layer: string) => {
+export const hasFixedTime = (layer: string) => {
   const rest = layer.replace(TOKEN_TIME, '').replace(ZERO_TIME, ' ');
   return rest.includes('var(') || TIME.test(rest);
 };
@@ -211,7 +214,7 @@ const contextKey = (context: readonly string[]) => context.join('{');
  */
 export function motionDiagnostics(css: string): string[] {
   const messages = new Set<string>();
-  const { found: all, blocks } = parse(css);
+  const { found: all, blocks } = parseCssDeclarations(css);
   const counts = new Map<string, number>();
   for (const block of blocks) {
     const name = /^@keyframes\s+([\w-]+)/u.exec(block.property)?.[1];

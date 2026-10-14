@@ -58,7 +58,7 @@ const STOP_WORDS: ReadonlySet<string> = new Set([
 ]);
 
 /** Lowercase ASCII words; anything else separates words. */
-function words(text: string): string[] {
+export function words(text: string): string[] {
   return text
     .toLowerCase()
     .split(/[^a-z0-9]+/u)
@@ -69,7 +69,7 @@ function words(text: string): string[] {
  * Two words match when they are equal or differ only by a plural `s`/`es`, so
  * "logs" finds `log-viewer` and "tables" finds `table`.
  */
-function sameWord(a: string, b: string): boolean {
+export function sameWord(a: string, b: string): boolean {
   return a === b || a === `${b}s` || b === `${a}s` || a === `${b}es` || b === `${a}es`;
 }
 

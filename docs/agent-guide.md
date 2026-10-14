@@ -74,8 +74,9 @@ Check every block's real props with `describe` before relying on this shape.
 `ak-render mcp` serves the same loop as MCP tools over stdio: `catalog`
 (optional `category`), `search-catalog` (`query`), `describe` (`type`, or
 `types` with optional `compact`), `search-icons` (`query`, optional `pack`, `limit`),
-`describe-icon` (`icon`), `icon-packs`, `recipes`, `recipe` (`name`), `validate`,
-`render` and `themes`. `render` writes the HTML to the
+`describe-icon` (`icon`), `icon-packs`, `motions` (optional `query`, or `id`
+with `compact`), `recipes`, `recipe` (`name`), `validate`, `audit-motion`
+(`spec` or `html`), `render` and `themes`. `render` writes the HTML to the
 `out` path and returns only the summary, so the page never enters your context.
 `out` must end in `.html` or `.htm`. A relative path resolves against the
 directory the server was started in; an absolute or `..` path is written where
@@ -93,7 +94,7 @@ it points, so review it like any file write. `spec` may be YAML/JSON text or the
 
 Without Node, use the hosted server at `https://render.agentkit.best/mcp` (MCP
 Streamable HTTP). It serves `catalog`, `search-catalog`, `describe`,
-`search-icons`, `describe-icon`, `icon-packs`, `recipes`, `recipe`, `validate`, `render` and `themes` with the same names and
+`search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `audit-motion`, `render` and `themes` with the same names and
 contracts, and the
 loop is the same. Two things differ:
 
@@ -166,7 +167,9 @@ rendering never needs the token or the network.
 - Motion is opt-in per block and named, never authored: `motion: reveal-soft`
   on a card, `stagger` on steps, `tabs-slide` on tabs. `describe --compact`
   lists a type's recipes under `motion:`, and `fade-swap` fits any block with
-  `visibleWhen`. See [motion.md](./motion.md).
+  `visibleWhen`. `ak-render motions search <intent>` ranks recipes and
+  `ak-render motion audit <spec> --json` checks the result. See
+  [motion.md](./motion.md).
 - The same spec, theme presets and compiler version always produce the same
   bytes, so a changed hash means one of those three changed. Project or user
   presets found on disk and `--theme` count as theme input.

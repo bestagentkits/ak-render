@@ -22,6 +22,13 @@ import {
   searchIcons,
 } from '../icons/icon-catalog.js';
 import { ICON_PACK_IDS, type IconPackId, isIconPack } from '../icons/icon-packs.js';
+import { auditMotionHtml, auditMotionSpec } from '../motion/motion-audit.js';
+import {
+  describeMotion,
+  MOTION_SEARCH_LIMITS,
+  motionCatalog,
+  searchMotions,
+} from '../motion/motion-catalog.js';
 import { recipe, recipes } from '../recipes/index.js';
 import { BLOCK_CATEGORIES } from '../registry/block-module.js';
 import { CATALOG_SEARCH_LIMITS, searchCatalog } from '../registry/catalog-search.js';
@@ -293,6 +300,75 @@ export const VALIDATE_TOOL: McpTool<unknown> = {
   run: (args) => {
     const result = validate(args.spec, { source: '<spec>' });
     return result.ok ? text(result) : failure(result);
+  },
+};
+
+export const MOTIONS_TOOL: McpTool<unknown> = {
+  name: 'motions',
+  description:
+    'Motion recipes for the block field motion. No arguments: one line each. query: rank recipes for an intent ("smooth tabs"). id: one recipe, compact: true for the short form. No CSS.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      query: {
+        type: 'string',
+        maxLength: CATALOG_SEARCH_LIMITS.maxQueryLength,
+        description: 'A few words for the motion intent.',
+      },
+      id: { type: 'string', maxLength: 64, description: 'A recipe id, e.g. "tabs-slide".' },
+      compact: { type: 'boolean', description: 'With id: the short form.' },
+    },
+    additionalProperties: false,
+  },
+  run: (args) => {
+    const query = optionalString(args, 'query');
+    const id = optionalString(args, 'id');
+    if (query !== undefined && id !== undefined) {
+      throw new ToolArgumentError('pass either "query" or "id", not both');
+    }
+    if (args.compact !== undefined && typeof args.compact !== 'boolean') {
+      throw new ToolArgumentError('"compact" must be a boolean');
+    }
+    if (id !== undefined) {
+      if (id.length > 64) throw new ToolArgumentError('"id" is longer than 64 characters');
+      return text(describeMotion(id, { compact: args.compact === true }));
+    }
+    if (query !== undefined) return text(searchMotions(query, MOTION_SEARCH_LIMITS.defaultHits));
+    return text(motionCatalog());
+  },
+};
+
+/** Compiled pages are a few hundred kilobytes; this bound only stops abuse. */
+export const AUDIT_HTML_MAX_LENGTH = 8_000_000;
+
+export const AUDIT_MOTION_TOOL: McpTool<unknown> = {
+  name: 'audit-motion',
+  description:
+    'Audit motion. spec: authoritative checks on the normalized Page Spec. html: best-effort checks on a compiled page. Returns findings (rule, severity, path, fix), counts and an advisory score.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      spec: SPEC_INPUT,
+      html: {
+        type: 'string',
+        maxLength: AUDIT_HTML_MAX_LENGTH,
+        description: 'A compiled page; use instead of spec.',
+      },
+    },
+    additionalProperties: false,
+  },
+  run: (args) => {
+    if ((args.spec === undefined) === (args.html === undefined)) {
+      throw new ToolArgumentError('pass exactly one of "spec" or "html"');
+    }
+    if (args.html !== undefined) {
+      const html = requireString(args, 'html');
+      if (html.length > AUDIT_HTML_MAX_LENGTH) {
+        throw new ToolArgumentError(`"html" is longer than ${AUDIT_HTML_MAX_LENGTH} characters`);
+      }
+      return text(auditMotionHtml(html));
+    }
+    return text(auditMotionSpec(args.spec, { source: '<spec>' }));
   },
 };
 

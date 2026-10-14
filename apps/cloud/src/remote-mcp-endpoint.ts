@@ -40,12 +40,14 @@ import {
   type ToolResult,
 } from '../../../src/mcp/mcp-protocol.js';
 import {
+  AUDIT_MOTION_TOOL,
   BUILTIN_THEMES_TOOL,
   CATALOG_TOOL,
   DESCRIBE_ICON_TOOL,
   DESCRIBE_TOOL,
   ICON_PACKS_TOOL,
   type McpTool,
+  MOTIONS_TOOL,
   optionalTheme,
   RECIPE_TOOL,
   RECIPES_TOOL,
@@ -135,6 +137,15 @@ const REMOTE_VALIDATE_TOOL: RemoteTool = {
   },
 };
 
+const REMOTE_AUDIT_MOTION_TOOL: RemoteTool = {
+  ...AUDIT_MOTION_TOOL,
+  run: async (args, context) => {
+    const guarded = await guard(context, ['render'], 'validate');
+    if (!guarded.ok) return guarded.result;
+    return AUDIT_MOTION_TOOL.run(args, context);
+  },
+};
+
 const REMOTE_RENDER_TOOL: RemoteTool = {
   ...REMOTE_RENDER_DEFINITION,
   run: async (args, context) => {
@@ -186,9 +197,11 @@ export const REMOTE_TOOLS: readonly RemoteTool[] = [
   anonymous(SEARCH_ICONS_TOOL),
   anonymous(DESCRIBE_ICON_TOOL),
   anonymous(ICON_PACKS_TOOL),
+  anonymous(MOTIONS_TOOL),
   anonymous(RECIPES_TOOL),
   anonymous(RECIPE_TOOL),
   REMOTE_VALIDATE_TOOL,
+  REMOTE_AUDIT_MOTION_TOOL,
   REMOTE_RENDER_TOOL,
   anonymous(BUILTIN_THEMES_TOOL),
 ];

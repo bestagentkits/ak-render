@@ -24,6 +24,17 @@ import {
 } from './icons/icon-catalog.js';
 import { ICON_PACK_IDS, isIconPack } from './icons/icon-packs.js';
 import { serveMcp } from './mcp-server.js';
+import {
+  auditMotionHtml,
+  auditMotionSpec,
+  compareMotionAudits,
+  MOTION_SEVERITIES,
+  type MotionAuditReport,
+  type MotionFinding,
+  type MotionSeverity,
+  motionAuditFails,
+} from './motion/motion-audit.js';
+import { describeMotion, motionCatalog, searchMotions } from './motion/motion-catalog.js';
 import { type PageRecipe, recipe, recipes } from './recipes/index.js';
 import { BLOCK_CATEGORIES } from './registry/block-module.js';
 import { searchCatalog } from './registry/catalog-search.js';
@@ -62,6 +73,8 @@ interface Flags {
   category?: string;
   pack?: string;
   limit?: string;
+  failOn?: string;
+  baseline?: string;
   out?: string;
   theme?: string;
   themeFile?: string;
@@ -309,6 +322,160 @@ function iconsCommand(args: string[], io: CliIo, flags: Flags): number {
   return 2;
 }
 
+function motionsCommand(args: string[], io: CliIo, flags: Flags): number {
+  const [action, ...rest] = args;
+  if (action === undefined) {
+    const listing = motionCatalog();
+    if (flags.json) {
+      io.stdout(`${JSON.stringify(listing, null, 2)}\n`);
+      return 0;
+    }
+    const width = Math.max(...listing.recipes.map((entry) => entry.id.length));
+    for (const entry of listing.recipes) {
+      const blocks = entry.blocks === '*' ? 'any block' : entry.blocks.join(', ');
+      io.stdout(
+        `${entry.id.padEnd(width)}  ${entry.triggers.join(', ')}${entry.script ? ' (adds script)' : ''} — ${entry.purpose}\n${' '.repeat(width + 2)}blocks: ${blocks}\n`,
+      );
+    }
+    io.stdout(`\n${listing.usage}\n`);
+    return 0;
+  }
+  if (action === 'search') {
+    if (rest.length === 0) {
+      io.stderr('ak-render: motions search requires search terms\n');
+      return 2;
+    }
+    const query = rest.join(' ');
+    const hits = searchMotions(query);
+    if (flags.json) io.stdout(`${JSON.stringify(hits, null, 2)}\n`);
+    else if (hits.length === 0) io.stdout(`no motion recipes match "${query}"\n`);
+    else for (const hit of hits) io.stdout(`${hit.id} — ${hit.purpose}\n`);
+    return 0;
+  }
+  if (action === 'describe') {
+    if (rest.length === 0) {
+      io.stderr('ak-render: motions describe requires a recipe id\n');
+      return 2;
+    }
+    let described: ReturnType<typeof describeMotion>[];
+    try {
+      described = rest.map((id) => describeMotion(id, { compact: flags.compact }));
+    } catch (error) {
+      if (isRenderError(error)) {
+        io.stderr(`ak-render: ${error.message}\n`);
+        const suggestions = (error.details as { suggestions?: string[] } | undefined)?.suggestions;
+        if (suggestions !== undefined && suggestions.length > 0) {
+          io.stderr(`did you mean: ${suggestions.slice(0, 3).join(', ')}\n`);
+        }
+        return 1;
+      }
+      throw error;
+    }
+    if (flags.json) {
+      io.stdout(`${JSON.stringify(rest.length === 1 ? described[0] : described, null, 2)}\n`);
+      return 0;
+    }
+    io.stdout(described.map(motionDescriptionText).join('\n'));
+    return 0;
+  }
+  io.stderr('ak-render: motions takes no argument, search <terms> or describe <id...>\n');
+  return 2;
+}
+
+/** A recipe descriptor as text: one `field: value` line each, the example last. */
+function motionDescriptionText(described: ReturnType<typeof describeMotion>): string {
+  const lines = [`${described.id} — ${described.purpose}`];
+  for (const [key, value] of Object.entries(described)) {
+    if (key === 'id' || key === 'purpose' || key === 'example') continue;
+    const text = Array.isArray(value)
+      ? value.join(', ')
+      : typeof value === 'object'
+        ? JSON.stringify(value)
+        : String(value);
+    lines.push(`  ${key}: ${text}`);
+  }
+  lines.push(`  example: ${JSON.stringify(described.example)}`);
+  return `${lines.join('\n')}\n`;
+}
+
+const HTML_INPUT = /\.html?$/iu;
+
+function isMotionSeverity(value: string): value is MotionSeverity | 'none' {
+  return value === 'none' || (MOTION_SEVERITIES as readonly string[]).includes(value);
+}
+
+function findingText(finding: MotionFinding): string {
+  const where = finding.nodeId === undefined ? finding.path : `${finding.path} [${finding.nodeId}]`;
+  const evidence = finding.evidence === undefined ? '' : `\n    evidence: ${finding.evidence}`;
+  return `${finding.severity} ${finding.rule}: ${where}: ${finding.message}${evidence}\n    fix: ${finding.fix}\n`;
+}
+
+function motionAuditCommand(args: string[], io: CliIo, flags: Flags): number {
+  const [action, file] = args;
+  if (action !== 'audit' || file === undefined) {
+    io.stderr('ak-render: usage: ak-render motion audit <spec|page.html|-> [--json]\n');
+    return 2;
+  }
+  const failOn = flags.failOn ?? 'error';
+  if (!isMotionSeverity(failOn)) {
+    io.stderr(`ak-render: --fail-on must be one of ${[...MOTION_SEVERITIES, 'none'].join(', ')}\n`);
+    return 2;
+  }
+  const text = readSpecFile(file, io);
+  if (text === undefined) return 2;
+  let baseline: MotionAuditReport | undefined;
+  if (flags.baseline !== undefined) {
+    try {
+      baseline = JSON.parse(readFileSync(flags.baseline, 'utf8')) as MotionAuditReport;
+      if (!Array.isArray(baseline.findings)) throw new Error('it has no findings list');
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      io.stderr(`ak-render: cannot read baseline ${flags.baseline}: ${reason}\n`);
+      return 2;
+    }
+  }
+  const html =
+    HTML_INPUT.test(file) || (file === STDIN_PATH && /^\s*<(?:!doctype|html)/iu.test(text));
+  const result = html
+    ? auditMotionHtml(text)
+    : auditMotionSpec(text, { source: sourceLabel(file) });
+  const comparison = baseline === undefined ? undefined : compareMotionAudits(baseline, result);
+  // A baseline forgives known warnings and notes, never a standing error.
+  const gated =
+    comparison === undefined
+      ? result.findings
+      : [...comparison.added, ...result.findings.filter((finding) => finding.severity === 'error')];
+  const failed = motionAuditFails(gated, failOn);
+
+  if (flags.json) {
+    io.stdout(
+      `${JSON.stringify(
+        {
+          source: sourceLabel(file),
+          ...result,
+          ...(comparison === undefined ? {} : { baseline: comparison }),
+          gate: { failOn, failed },
+        },
+        null,
+        2,
+      )}\n`,
+    );
+  } else {
+    for (const finding of result.findings) io.stdout(findingText(finding));
+    const { error, warning, info } = result.counts;
+    io.stdout(
+      `${sourceLabel(file)}: ${result.mode} audit (${result.reliability}), ${error} error(s), ${warning} warning(s), ${info} info; score ${result.score.value}/100 (advisory)\n`,
+    );
+    if (comparison !== undefined) {
+      io.stdout(
+        `baseline: ${comparison.added.length} new, ${comparison.resolved.length} resolved\n`,
+      );
+    }
+    if (failed) io.stdout(`gate failed: findings at ${failOn} or above\n`);
+  }
+  return failed ? 1 : 0;
+}
+
 const COMMANDS: Record<string, Command> = {
   compile: {
     summary: 'Compile a Page Spec to a standalone HTML artifact.',
@@ -451,9 +618,20 @@ const COMMANDS: Record<string, Command> = {
       return 0;
     },
   },
+  motions: {
+    summary: 'List, search and describe compiler-owned motion recipes.',
+    usage: 'ak-render motions [search <terms...>|describe <id...> [--compact]] [--json]',
+    run: motionsCommand,
+  },
+  motion: {
+    summary: 'Audit the motion of a Page Spec (authoritative) or compiled page (best effort).',
+    usage:
+      'ak-render motion audit <spec|page.html|-> [--fail-on <error|warning|info|none>] [--baseline <report.json>] [--json]',
+    run: motionAuditCommand,
+  },
   mcp: {
     summary:
-      'Serve catalog, search-catalog, describe, recipes, recipe, validate, render and themes as MCP tools over stdio.',
+      'Serve the catalog, describe, icon, motion, recipe, validate, audit-motion, render and themes tools over MCP stdio.',
     usage: 'ak-render mcp',
     run: () => {
       // The server keeps the process alive until its client closes stdin.
@@ -523,6 +701,8 @@ const VALUE_FLAGS = [
   '--category',
   '--pack',
   '--limit',
+  '--fail-on',
+  '--baseline',
 ] as const;
 
 /** Build the preset catalog for this invocation from flags and discovery. */
@@ -566,6 +746,8 @@ function parseArgs(args: string[]): ParsedArgs | { error: string } {
       else if (valueFlag === '--category') flags.category = value;
       else if (valueFlag === '--pack') flags.pack = value;
       else if (valueFlag === '--limit') flags.limit = value;
+      else if (valueFlag === '--fail-on') flags.failOn = value;
+      else if (valueFlag === '--baseline') flags.baseline = value;
       else flags.themeFile = value;
       index += 1;
       continue;

@@ -11,6 +11,20 @@ Release mechanics and the compatibility contract live in
 
 ### Added
 
+- Motion discovery and audit. `ak-render motions` lists the motion recipes,
+  `motions search <terms>` ranks them by intent and `motions describe <id>`
+  (`--compact` for the short form) returns one descriptor, all projected from
+  the registry and never carrying CSS. `ak-render motion audit <spec|page.html>`
+  reports deterministic findings with a rule id, severity, path, evidence and
+  fix: the spec audit is authoritative (incompatible, nested, excessive or
+  never-playing recipes, theme policy); the compiled-page audit is best effort
+  (unguarded or looping motion, `transition: all`, layout keyframes, missing
+  recipe CSS, exit or runtime, CSP and remote resources). `--fail-on` gates CI,
+  `--baseline` gates only on new findings and standing errors, and the score
+  is advisory. The MCP servers add `motions` (no bearer remotely) and
+  `audit-motion` (bearer, like `validate`); the library exports the same
+  functions. See [docs/motion.md](./docs/motion.md#discovery-and-audit).
+
 - Blocks can opt into a named motion recipe with `motion: <recipe>` (or
   `motion: { preset }`): `reveal-soft`, `stagger`, `figure-roll`, `fade-swap`,
   `tabs-slide`, `accordion-expand` and `dialog-pop`. Recipes are

@@ -31,11 +31,41 @@ export { ICON_PACK_IDS, ICON_PROFILE_NAMES, ICON_SIZES } from './icons/icon-pack
 export type { IrDocument, IrNode, IrTheme, NetworkPolicy } from './ir.js';
 export type { JsonValue } from './json.js';
 export type {
+  MotionAuditReport,
+  MotionFinding,
+  MotionScore,
+  MotionSeverity,
+  MotionSpecAuditOptions,
+} from './motion/motion-audit.js';
+export {
+  auditMotionHtml,
+  auditMotionSpec,
+  compareMotionAudits,
+  MOTION_SCORE_WEIGHTS,
+  MOTION_SEVERITIES,
+  motionAuditFails,
+} from './motion/motion-audit.js';
+export type {
+  CompactMotionDescription,
+  MotionCatalog,
+  MotionCatalogEntry,
+  MotionDescription,
+  MotionSearchHit,
+} from './motion/motion-catalog.js';
+export {
+  describeMotion,
+  MOTION_SEARCH_LIMITS,
+  motionCatalog,
+  searchMotions,
+} from './motion/motion-catalog.js';
+export type {
   MotionDuration,
   MotionEasing,
   MotionPhase,
   MotionRecipe,
+  MotionRole,
   MotionRuntime,
+  MotionState,
   MotionTrigger,
 } from './motion/recipes.js';
 export {
