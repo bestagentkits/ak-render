@@ -107,8 +107,14 @@ test.describe('motion recipes under full motion', () => {
     const tabs = block(page, 'plan-tabs');
     await tabs.scrollIntoViewIfNeeded();
     await expect(tabs.locator('> [role="tablist"]')).toHaveAttribute('data-ak-indicator-live', '');
+    // A late layout change can re-place the marker, so wait for it to settle.
     let state = await markerAndTab(page);
-    expect(state.marker).toEqual(state.tab);
+    await expect
+      .poll(async () => {
+        state = await markerAndTab(page);
+        return JSON.stringify(state.marker) === JSON.stringify(state.tab);
+      })
+      .toBe(true);
     expect(state.slides).toBe(true);
 
     await recordStarts(page);
