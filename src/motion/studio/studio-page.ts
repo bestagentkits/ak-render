@@ -147,6 +147,7 @@ var history = [];
 var selected = null;
 var paused = false;
 var pending = 0;
+var accepting = false;
 
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 function say(text, kind) { $('message').textContent = text; $('message').setAttribute('data-kind', kind || 'info'); }
@@ -214,7 +215,7 @@ function render() {
   $('hash').textContent = 'sha256 ' + state.source.hash.slice(0, 12);
   $('undo').disabled = history.length === 0;
   $('reset').disabled = isEmpty(proposal);
-  $('accept').disabled = !state.ok || state.diff === '';
+  $('accept').disabled = accepting || !state.ok || state.diff === '';
   if (!state.ok) say(state.error.message + (state.error.path ? ' (' + state.error.path + ')' : ''), 'error');
   else if (state.diff === '') say('No changes. Pick a block, change its recipe or a token, then Accept.');
   else say('Previewing the proposal. Accept writes it to ' + state.source.path + '.');
@@ -287,7 +288,7 @@ function renderTokens(state) {
   var duration = $('duration');
   duration.min = limits.min; duration.max = limits.max; duration.step = limits.step;
   // The token may be authored in seconds or above the slider's range.
-  var match = /^(d+(?:.d+)?)(ms|s)$/.exec(state.tokens['motion-duration'] || '');
+  var match = /^(\\d+(?:\\.\\d+)?|\\.\\d+)(ms|s)$/.exec(state.tokens['motion-duration'] || '');
   var ms = match ? Math.round(Number(match[1]) * (match[2] === 's' ? 1000 : 1)) : NaN;
   if (document.activeElement !== duration) {
     if (!isNaN(ms)) duration.value = String(Math.min(ms, limits.max));
@@ -438,24 +439,30 @@ function start() {
   });
   $('accept').addEventListener('click', function () {
     var button = $('accept');
+    var path = original.state.source.path;
+    accepting = true;
     button.disabled = true;
     say('Writing the proposal…');
+    function done() { accepting = false; render(); }
     // Write the proposal whose diff is on screen, never a newer one in flight.
     post('api/accept', { proposal: current.state.proposal, hash: original.state.source.hash }).then(function (reply) {
       if (reply.status !== 200) {
+        done();
         say(reply.data.error || 'Accept failed.', 'error');
-        button.disabled = false;
         return;
       }
-      say('Accepted. ' + original.state.source.path + ' now carries the change.');
       return post('api/state', { proposal: {}, preview: $('preview-mode').value }).then(function (fresh) {
+        if (fresh.status !== 200) throw new Error('state');
         original = fresh.data; current = fresh.data; proposal = {}; history = [];
-        render();
-        say('Accepted. ' + original.state.source.path + ' now carries the change.');
+        done();
+        say('Accepted. ' + path + ' now carries the change.');
+      }).catch(function () {
+        accepting = false;
+        say('Accepted. ' + path + ' now carries the change, but the studio could not reload it; reload the page.', 'error');
       });
-    }).catch(function () {
+    }, function () {
+      done();
       say('Accept failed: the studio is not reachable. The file was not confirmed written; reload to check.', 'error');
-      button.disabled = false;
     });
   });
   $('scheme').addEventListener('click', function () {

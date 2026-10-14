@@ -322,18 +322,23 @@ export function motionDiagnostics(css: string | ReturnType<typeof parseCssDeclar
     if (count > 1) messages.add(`@keyframes ${name} is defined ${count} times`);
   }
 
-  const scrollTimelines = new Set(
-    all
-      .filter((item) => item.property === 'animation-timeline' && /^scroll\(/u.test(item.value))
-      .map((item) => item.scope),
-  );
+  // Within one scope the later declaration wins, and the animation shorthand
+  // resets animation-timeline to auto.
+  const scrollTimelines = new Map<number, boolean>();
+  for (const item of all) {
+    if (item.property === 'animation-timeline') {
+      scrollTimelines.set(item.scope, /^scroll\(/u.test(item.value));
+    } else if (item.property === 'animation') {
+      scrollTimelines.set(item.scope, false);
+    }
+  }
   for (const declaration of all) {
     const { property, value, context, facts, scope } = declaration;
     if (facts.guarded || facts.printOnly || facts.inKeyframes) continue;
     const plain = value.replace(/!important$/u, '').trim();
     const selector = clipSelector(context.at(-1) ?? '');
     if (property === 'animation' || property === 'animation-name') {
-      const onScrollTimeline = scrollTimelines.has(scope);
+      const onScrollTimeline = scrollTimelines.get(scope) === true;
       for (const layer of layers(plain)) {
         if (/^none\b/u.test(layer)) continue;
         const name = /ak-[\w-]+/u.exec(layer)?.[0] ?? layer;

@@ -85,6 +85,28 @@ test('the duration slider tunes the token and the inspector timing', async ({ pa
   await expect(page.locator('#inspector')).toContainText('motion-duration 400ms');
 });
 
+test('the duration slider reads the authored token in milliseconds or seconds', async ({
+  page,
+}) => {
+  for (const [token, ms] of [
+    ['200ms', '200'],
+    ['0.3s', '300'],
+  ] as const) {
+    await studio.close();
+    writeFileSync(
+      file,
+      FIXTURE.replace(
+        '  preset: editorial\n',
+        `  preset: editorial\n  tokens:\n    motion-duration: ${token}\n`,
+      ),
+    );
+    studio = await startMotionStudio({ file });
+    await open(page);
+    await expect(page.locator('#duration')).toHaveValue(ms);
+    await expect(page.locator('#duration-out')).toHaveText(`${ms}ms`);
+  }
+});
+
 test('Accept writes the reviewed diff and keeps comments and order', async ({ page }) => {
   await open(page);
   await page.locator('#policy').selectOption('reduced');
@@ -174,6 +196,29 @@ test('Accept stays off until the diff for the latest change is on screen', async
   await expect(diff(page)).toContainText('+    motion-easing: linear');
   await expect(page.locator('#accept')).toBeEnabled();
   await page.unroute('**/api/state');
+});
+
+test('Accept stays off while a write is in flight, even when the proposal changes', async ({
+  page,
+}) => {
+  await open(page);
+  await page.locator('#policy').selectOption('reduced');
+  await expect(page.locator('#accept')).toBeEnabled();
+  let release: () => void = () => undefined;
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route('**/api/accept', async (route) => {
+    await held;
+    await route.continue();
+  });
+  await page.locator('#accept').click();
+  await page.locator('#easing').selectOption('linear');
+  await expect(diff(page)).toContainText('+    motion-easing: linear');
+  await expect(page.locator('#accept')).toBeDisabled();
+  release();
+  await expect(page.locator('#message')).toContainText('Accepted');
+  await page.unroute('**/api/accept');
 });
 
 test('keyboard focus stays on the recipe select after a change', async ({ page }) => {

@@ -15,7 +15,7 @@
 
 import { createHash } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
-import { type Document, isAlias, isMap, isNode, parseDocument } from 'yaml';
+import { type Document, isAlias, isMap, isNode, parseAllDocuments, parseDocument } from 'yaml';
 import { RenderError } from '../../errors.js';
 import type { IrDocument, IrNode } from '../../ir.js';
 import { type CompileResult, compile } from '../../render/render.js';
@@ -252,9 +252,21 @@ function jsonIndent(text: string): string {
 export function checkStudioSource(source: StudioSource): void {
   let document: unknown;
   try {
-    document =
-      source.format === 'json' ? JSON.parse(source.text) : parseDocument(source.text).toJS();
-  } catch {
+    if (source.format === 'json') document = JSON.parse(source.text);
+    else {
+      const documents = parseAllDocuments(source.text);
+      if (documents.length > 1) {
+        throw studioError('Motion Studio edits a single YAML document; split this file first', '$');
+      }
+      const first = documents[0];
+      const error = first?.errors[0];
+      if (error !== undefined) {
+        throw studioError(`the spec has a YAML error: ${error.message}; fix it first`, '$');
+      }
+      document = first?.toJS();
+    }
+  } catch (error) {
+    if (error instanceof RenderError) throw error;
     // The compiler reports a spec that does not parse, with its position.
     return;
   }
@@ -264,6 +276,16 @@ export function checkStudioSource(source: StudioSource): void {
       '$.version',
     );
   }
+}
+
+/** True when the node at `keys`, or any node on the way to it, is an alias or carries an anchor. */
+function isShared(doc: Document, keys: readonly (string | number)[]): boolean {
+  for (let depth = 1; depth <= keys.length; depth += 1) {
+    const node = doc.getIn(keys.slice(0, depth), true);
+    if (isAlias(node) || (isNode(node) && node.anchor !== undefined)) return true;
+    if (node === undefined) return false;
+  }
+  return false;
 }
 
 /**
@@ -283,8 +305,7 @@ export function applyProposal(
   checkStudioSource(source);
   const ir = compileSource(source.text, source.path, options).ir;
   const byId = blockPaths(ir);
-  const crlf = source.text.includes('\r\n');
-  const text = crlf ? source.text.replace(/\r\n/gu, '\n') : source.text;
+  const text = source.text;
   const target: Document | Record<string, unknown> =
     source.format === 'json'
       ? (JSON.parse(text) as Record<string, unknown>)
@@ -298,14 +319,11 @@ export function applyProposal(
       });
     }
     const keys = jsonPathKeys(node.path);
-    if (isDocument(target)) {
-      const authored = target.getIn(keys, true);
-      if (isAlias(authored) || (isNode(authored) && authored.anchor !== undefined)) {
-        throw studioError(
-          `block "${id}" is shared through a YAML anchor, so editing it would change every copy; edit it by hand`,
-          `proposal.blocks.${id}`,
-        );
-      }
+    if (isDocument(target) && isShared(target, keys)) {
+      throw studioError(
+        `block "${id}" is shared through a YAML anchor, so editing it would change every copy; edit it by hand`,
+        `proposal.blocks.${id}`,
+      );
     }
     setIn(target, [...keys, 'motion'], recipe === null ? undefined : recipe);
   }
@@ -317,6 +335,12 @@ export function applyProposal(
       : typeof theme === 'object' && theme !== null;
     if (theme !== undefined && !isObject) {
       throw studioError('the spec theme must be an object to take token overrides', '$.theme');
+    }
+    if (isDocument(target) && isShared(target, ['theme', 'tokens'])) {
+      throw studioError(
+        'the spec theme is shared through a YAML anchor, so editing it would change every copy; edit it by hand',
+        '$.theme',
+      );
     }
     for (const [token, value] of tokens) {
       setIn(target, ['theme', 'tokens', token], value === null ? undefined : value);
@@ -342,7 +366,11 @@ export function applyProposal(
     const style = { lineWidth: 0, flowCollectionPadding: !/[{[][^\s\]}]/u.test(text) };
     baseline = parseDocument(text, { keepSourceTokens: true }).toString(style);
     edited = target.toString(style);
-    parse = (value) => parseDocument(value).toJS();
+    parse = (value) => {
+      const document = parseDocument(value);
+      if (document.errors.length > 0) throw document.errors[0];
+      return document.toJS();
+    };
   } else {
     const indent = jsonIndent(text);
     const trailing = text.endsWith('\n') ? '\n' : '';
@@ -352,8 +380,9 @@ export function applyProposal(
   }
   // Keep the author's formatting outside the edit when the edit maps cleanly
   // onto the source lines and the result means the same as the edited document.
+  // Patch lines carry their own line endings, so a CRLF or mixed file keeps them.
   const patched = patchLines(text, baseline, edited);
-  let result = edited;
+  let result = text.includes('\r\n') ? edited.replace(/\n/gu, '\r\n') : edited;
   if (patched !== undefined) {
     try {
       if (isDeepStrictEqual(parse(patched), parse(edited))) result = patched;
@@ -361,7 +390,7 @@ export function applyProposal(
       // A patch that does not parse falls back to the serialized document.
     }
   }
-  return crlf ? result.replace(/\n/gu, '\r\n') : result;
+  return result;
 }
 
 /**
@@ -371,7 +400,10 @@ export function applyProposal(
  * nothing the serializer reformatted is touched; otherwise this gives up.
  */
 function patchLines(source: string, baseline: string, edited: string): string | undefined {
-  const s = source.split('\n');
+  // Align a file without a final newline as if it had one, then drop it again.
+  const unterminated = source !== '' && !source.endsWith('\n');
+  const raw = (unterminated ? `${source}\n` : source).split('\n');
+  const s = raw.map((line) => (line.endsWith('\r') ? line.slice(0, -1) : line));
   const b = baseline.split('\n');
   const alignment = editScript(b, s);
   if (alignment === undefined) return undefined;
@@ -413,11 +445,14 @@ function patchLines(source: string, baseline: string, edited: string): string | 
     if (start > 0 && at[start - 1] !== from - 1) return undefined;
     if (end < b.length && at[end] !== to) return undefined;
     if (from < cursor) return undefined;
-    out.push(...s.slice(cursor, from), ...added);
+    // New lines take the line ending of the line before them.
+    const ending = (raw[from - 1] ?? raw[0] ?? '').endsWith('\r') ? '\r' : '';
+    out.push(...raw.slice(cursor, from), ...added.map((line) => line + ending));
     cursor = to;
   }
-  out.push(...s.slice(cursor));
-  return out.join('\n');
+  out.push(...raw.slice(cursor));
+  const joined = out.join('\n');
+  return unterminated ? joined.replace(/\n$/u, '') : joined;
 }
 
 export interface StudioOptions {
@@ -662,8 +697,9 @@ function editScript(
  */
 export function lineDiff(before: string, after: string, label: string): string {
   if (before === after) return '';
-  const steps = editScript(before.split(/\r?\n/u), after.split(/\r?\n/u), Infinity) as Step[];
-  const lines = steps.map(({ kind, text }) => ({ kind, text }));
+  // Lines compare with their line endings, so a changed ending shows in the diff.
+  const steps = editScript(before.split('\n'), after.split('\n'), Infinity) as Step[];
+  const lines = steps.map(({ kind, text }) => ({ kind, text: text.replace(/\r$/u, '') }));
   type Line = (typeof lines)[number];
   const context = 3;
   const out = [`--- a/${label}`, `+++ b/${label}`];

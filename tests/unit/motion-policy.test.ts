@@ -54,12 +54,25 @@ describe('motion diagnostics', () => {
     ).toEqual([]);
     expect(
       motionDiagnostics(
-        '.r{animation-timeline:scroll(root);&:hover{color:red}animation:ak-reading linear both}',
+        '.r{animation:ak-reading linear both;&:hover{color:red}animation-timeline:scroll(root)}',
       ),
     ).toEqual([]);
     expect(
       motionDiagnostics('.a{animation-timeline:scroll(root)}.r{animation:ak-reading linear both}'),
     ).toHaveLength(1);
+  });
+
+  it('lets a later animation shorthand reset the scroll timeline to the clock', () => {
+    for (const css of [
+      '.r{animation-timeline:scroll(root)}.r{animation:ak-reading linear both}',
+      '.r{animation-timeline:scroll(root);animation:ak-reading linear both}',
+      '.r{animation-timeline:scroll(root);&:hover{color:red}animation:ak-reading linear both}',
+      '@media (min-width:1px){.r{animation-timeline:scroll()}}@media (min-width:1px){.r{animation:ak-reading linear}}',
+    ]) {
+      expect(motionDiagnostics(css)).toEqual([
+        'animation ak-reading on .r is not behind (prefers-reduced-motion:no-preference)',
+      ]);
+    }
   });
 
   it('rejects a keyframes name defined twice', () => {

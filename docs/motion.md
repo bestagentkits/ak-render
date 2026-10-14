@@ -141,9 +141,12 @@ a `message`, a JSON `path` (or `css`, `html`, `script`), the block id when
 there is one, reproducible `evidence` and a `fix`. Findings are sorted, so the
 same input always gives the same report. A report lists at most 25 findings per
 rule, plus one that counts the rest and fingerprints them in its `evidence`, so
-a `--baseline` run still sees a change among the unlisted findings; `counts` and
-the score cover every finding. The audit takes linear time and quotes at most a short excerpt of
-the input, so a hostile page cannot stall it or inflate the report.
+a `--baseline` run still sees a change among the unlisted findings. Because of
+that, fixing a listed finding of a capped rule also reports the moved finding and
+the new fingerprint as added; write a fresh baseline after such a fix. `counts`
+and the score cover every finding. The audit takes linear time and quotes at most
+a short excerpt of the input, so a hostile page cannot stall it or inflate the
+report.
 
 **Spec audit (authoritative).** It runs on the normalized spec and the theme it
 resolves:
@@ -220,7 +223,7 @@ ak-render motion studio page.yaml
 - **Accept.** Undo steps back, Reset drops every edit, and the panel shows
   the unified diff and the motion audit of the proposal. Accept writes
   exactly the diff on screen. Only the changed lines are rewritten: comments,
-  key order, line endings (LF or CRLF), indentation (spaces or tabs) and the
+  key order, each line's ending (LF or CRLF), indentation (spaces or tabs) and the
   rest of the file's formatting stay as written. When an edit cannot be mapped
   onto the authored lines, the whole file is serialized again, and the diff
   shows that before you accept. A symlinked spec is written through to its
@@ -229,7 +232,9 @@ ak-render motion studio page.yaml
   the proposal does not compile or if it changes nothing.
 - **Limits.** The studio edits version 1 specs; a bare version 0 block list
   is refused when the studio starts. A block shared through a YAML anchor or
-  alias is not edited, because the edit would change every copy. Accept
+  alias, or that sits inside an anchored or aliased list, block or theme, is
+  not edited, because the edit would change every copy. A spec with YAML
+  errors or more than one YAML document is refused when the studio starts. Accept
   replaces the spec with a new file, so a hard link to the old spec keeps the
   old content.
 

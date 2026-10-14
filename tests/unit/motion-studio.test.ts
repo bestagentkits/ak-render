@@ -475,6 +475,66 @@ blocks:
     );
   });
 
+  it('refuses a block whose list or parent is shared through a YAML anchor', () => {
+    for (const blocks of [
+      '  - type: section\n    title: S\n    blocks: &kids\n      - {type: card, title: A, text: y}\n  - type: section\n    title: T\n    blocks: *kids\n',
+      '  - &s {type: section, title: S, blocks: [{type: card, title: A, text: y}]}\n  - *s\n',
+    ]) {
+      const text = `version: 1\nmeta: {title: Anchors}\nblocks:\n${blocks}`;
+      const card = studioState(readSource('page.yaml', text), {}).blocks.find(
+        (block) => block.path === '$.blocks[1].blocks[0]',
+      );
+      expect(card).toBeDefined();
+      expectRenderError(
+        () => edit('page.yaml', text, { blocks: { [card?.id ?? '']: 'reveal-soft' } }),
+        /YAML anchor/u,
+      );
+    }
+  });
+
+  it('refuses token edits to a theme shared through a YAML anchor', () => {
+    const text = `version: 1
+meta: {title: Anchors}
+theme: &t {preset: editorial, tokens: {motion-duration: 200ms}}
+blocks:
+  - {type: card, id: c, title: A, text: x}
+`;
+    expectRenderError(
+      () => edit('page.yaml', text, { tokens: { 'motion-duration': '300ms' } }),
+      /YAML anchor/u,
+    );
+  });
+
+  it('keeps a file without a final newline that way', () => {
+    const text = `${YAML_SPEC.trimEnd()}\n  - type: card\n    id: last-card\n    title:   Last\n    text: y`;
+    const after = edit('page.yaml', text, { blocks: { 'last-card': 'reveal-soft' } });
+    expect(after.endsWith('    motion: reveal-soft')).toBe(true);
+    expect(changed(text, after)).toEqual(['+    motion: reveal-soft']);
+  });
+
+  it('keeps each line ending of a file that mixes LF and CRLF', () => {
+    const mixed = YAML_SPEC.replace('\n', '\r\n');
+    const after = edit('page.yaml', mixed, { blocks: { 'inner-card': 'reveal-soft' } });
+    expect(after.replace('        motion: reveal-soft\n', '')).toBe(mixed);
+  });
+
+  it('refuses a stream of several YAML documents or one with YAML errors', () => {
+    expectRenderError(
+      () =>
+        edit('page.yaml', `${YAML_SPEC}---\n${YAML_SPEC}`, {
+          tokens: { 'motion-duration': '300ms' },
+        }),
+      /single YAML document/u,
+    );
+    expectRenderError(
+      () =>
+        edit('page.yaml', YAML_SPEC.replace('version: 1\n', 'version: 1\nversion: 1\n'), {
+          tokens: { 'motion-duration': '300ms' },
+        }),
+      /YAML error/u,
+    );
+  });
+
   it('refuses a version 0 spec, whose theme the migration replaces', () => {
     const text = 'blocks:\n  - {type: card, id: old-card, title: A, text: x}\n';
     expectRenderError(
