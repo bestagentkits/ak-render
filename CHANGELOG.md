@@ -145,6 +145,15 @@ Release mechanics and the compatibility contract live in
 - A `toggle` action on an open dialog now closes it. It used to open the
   dialog again, which moved focus back to its first control.
 
+- A `theme` action now works on a page compiled with `themeToggle: false`.
+  It used to throw `applyTheme is not defined`, because the theme runtime
+  shipped only with the toggle. The page still emits no toggle or toggle CSS.
+
+- A scripted page compiled with `themeToggle: false` no longer throws
+  `restoreTheme is not defined` on load, which left every block after it
+  unwired. The runtime restores a stored theme only when it ships the theme
+  runtime.
+
 - `motion-policy: reduced` now restrains motion as documented: colour, shadow
   and opacity transitions keep the theme duration, anything that would move
   (hover lifts, image zoom) jumps to its end state, and entrances, loops,
