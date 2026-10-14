@@ -515,6 +515,7 @@ function validateMotion(
         path: pathKey(motionPath, key),
         message:
           'motion accepts only "preset": recipes are compiler-owned, so CSS, keyframes, timings and scripts cannot be supplied',
+        details: { rule: 'motion/raw-motion-field', key },
       });
     }
     preset = value.preset;
@@ -529,7 +530,7 @@ function validateMotion(
       code: 'SPEC_VALIDATION_ERROR',
       path: presetPath,
       message: 'motion must be a recipe name or { preset: <name> }',
-      details: { compatible },
+      details: { rule: 'motion/invalid-value', compatible },
     });
     return undefined;
   }
@@ -542,7 +543,7 @@ function validateMotion(
         compatible.length === 0
           ? `unknown motion recipe "${preset}"; block type "${type}" takes no motion recipe`
           : `unknown motion recipe "${preset}"; "${type}" accepts: ${compatible.join(', ')}`,
-      details: { preset, compatible },
+      details: { rule: 'motion/unknown-recipe', preset, compatible },
     });
     return undefined;
   }
@@ -554,7 +555,7 @@ function validateMotion(
         compatible.length === 0
           ? `motion recipe "${preset}" does not apply to "${type}", which takes no motion recipe`
           : `motion recipe "${preset}" does not apply to "${type}"; it accepts: ${compatible.join(', ')}`,
-      details: { preset, compatible },
+      details: { rule: 'motion/incompatible-recipe', preset, compatible },
     });
     return undefined;
   }
@@ -563,7 +564,7 @@ function validateMotion(
       code: 'SPEC_VALIDATION_ERROR',
       path: presetPath,
       message: `motion recipe "${preset}" plays when a state change shows the block, so the block needs visibleWhen`,
-      details: { preset },
+      details: { rule: 'motion/needs-visible-when', preset, compatible },
     });
     return undefined;
   }

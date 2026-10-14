@@ -111,8 +111,13 @@ describe('remote MCP: discovery', () => {
       { cwd: '/', home: '/' },
     );
     const local = (stdio?.result as { tools: { name: string }[] } | undefined)?.tools ?? [];
-    expect(local.length).toBe(11);
+    expect(local.length).toBe(13);
     expect(remote.map((entry) => entry.name)).toEqual(local.map((entry) => entry.name));
+    // The remote audit schema advertises the Worker's body cap, not the local one.
+    const audit = (
+      remote as { name: string; inputSchema: { properties: { html: { maxLength: number } } } }[]
+    ).find((entry) => entry.name === 'audit-motion');
+    expect(audit?.inputSchema.properties.html.maxLength).toBe(1024 * 1024);
     // Discovery never reaches the entitlements endpoint.
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -497,5 +502,57 @@ describe('remote MCP: rate limits are shared with REST', () => {
       ...[...r2.objects.values()].map((entry) => JSON.stringify(entry.customMetadata ?? {})),
     ].join('\n');
     expect(stored).not.toContain(TOKEN);
+  });
+});
+
+describe('remote MCP: motion tools', () => {
+  const MOTION_SPEC = {
+    version: 1,
+    meta: { title: 'Remote motion' },
+    blocks: [{ type: 'card', id: 'solo', title: 'Solo', text: 'Body.', motion: 'reveal-soft' }],
+  };
+
+  it('answers motions with no bearer, for the catalog, a query and one recipe', async () => {
+    const { env, fetchMock } = harness();
+    const listing = await tool(env, 'motions', {}, null);
+    expect(listing.reply.isError).toBeUndefined();
+    expect(listing.payload['recipeCount']).toBe(7);
+    const hits = await tool(env, 'motions', { query: 'smooth tabs' }, null);
+    expect(hits.reply.isError).toBeUndefined();
+    expect((hits.payload as unknown as { id: string }[])[0]?.id).toBe('tabs-slide');
+    const compact = await tool(env, 'motions', { id: 'tabs-slide', compact: true }, null);
+    expect(compact.payload['id']).toBe('tabs-slide');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('refuses audit-motion without a bearer as a tool error, like validate', async () => {
+    const { env, fetchMock, r2 } = harness();
+    for (const args of [{ spec: MOTION_SPEC }, { html: '<p>x</p>' }]) {
+      const { status, reply, payload } = await tool(env, 'audit-motion', args, null);
+      expect(status).toBe(200);
+      expect(reply.isError).toBe(true);
+      expect(payload['code']).toBe('UNAUTHENTICATED');
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(r2.objects.size).toBe(0);
+  });
+
+  it('audits a spec with a bearer and returns the report', async () => {
+    const { env } = harness();
+    const { reply, payload } = await tool(env, 'audit-motion', { spec: MOTION_SPEC });
+    expect(reply.isError).toBeUndefined();
+    expect(payload['mode']).toBe('spec');
+    expect(payload['findings']).toEqual([]);
+  });
+
+  it('refuses audit-motion for a principal without the render entitlement', async () => {
+    const { env } = harness({
+      entitlements: {
+        ...activeEntitlements(),
+        entitlements: { agentkitApp: false, kits: {} },
+      },
+    });
+    const { payload } = await tool(env, 'audit-motion', { spec: MOTION_SPEC });
+    expect(payload['code']).toBe('FORBIDDEN');
   });
 });

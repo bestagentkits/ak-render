@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterAll, describe, expect, it } from 'vitest';
 import { run } from '../../src/cli.js';
 import { handleMcpLine, handleMcpMessage, type McpContext } from '../../src/mcp-server.js';
@@ -123,9 +124,11 @@ describe('MCP server', () => {
       'search-icons',
       'describe-icon',
       'icon-packs',
+      'motions',
       'recipes',
       'recipe',
       'validate',
+      'audit-motion',
       'render',
       'themes',
     ]);
@@ -306,5 +309,118 @@ describe('MCP server', () => {
   it('reports a parse error on a malformed line', () => {
     expect(JSON.parse(handleMcpLine('{nope', context) ?? '').error.code).toBe(-32700);
     expect(handleMcpLine('   ', context)).toBeUndefined();
+  });
+});
+
+describe('MCP motion tools', () => {
+  const context: McpContext = { cwd: workspace, home: workspace };
+  const call = (name: string, args: Record<string, unknown> = {}) =>
+    handleMcpMessage(
+      { jsonrpc: '2.0', id: 11, method: 'tools/call', params: { name, arguments: args } },
+      context,
+    )?.result as { content: { text: string }[]; isError?: boolean };
+  const payload = (result: { content: { text: string }[] }) =>
+    JSON.parse(result.content[0]?.text ?? '') as Record<string, unknown>;
+
+  const MOTION_SPEC = {
+    version: 1,
+    meta: { title: 'Motion MCP' },
+    blocks: [{ type: 'card', id: 'ghost', title: 'Ghost', text: 'Body.', motion: 'spin-forever' }],
+  };
+  const CLEAN_MOTION_SPEC = {
+    version: 1,
+    meta: { title: 'Clean motion' },
+    blocks: [{ type: 'card', id: 'solo', title: 'Solo', text: 'Body.', motion: 'reveal-soft' }],
+  };
+
+  it('lists the recipe catalog with no arguments', () => {
+    const listing = payload(call('motions'));
+    expect(listing['recipeCount']).toBe(7);
+    expect(Array.isArray(listing['recipes'])).toBe(true);
+  });
+
+  it('ranks recipes for a query and returns at most the default hit count', () => {
+    const hits = JSON.parse(call('motions', { query: 'smooth tabs' }).content[0]?.text ?? '') as {
+      id: string;
+    }[];
+    expect(hits[0]?.id).toBe('tabs-slide');
+    expect(hits.length).toBeLessThanOrEqual(5);
+  });
+
+  it('describes one recipe, with the full descriptor by default and compact on request', () => {
+    const full = payload(call('motions', { id: 'tabs-slide' }));
+    expect(full['version']).toBe(1);
+    const compact = payload(call('motions', { id: 'tabs-slide', compact: true }));
+    expect(compact['id']).toBe('tabs-slide');
+    expect(compact).not.toHaveProperty('version');
+    expect(JSON.stringify(compact)).not.toContain('@keyframes');
+  });
+
+  it('rejects a query together with an id', () => {
+    const result = call('motions', { query: 'tabs', id: 'tabs-slide' });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]?.text).toContain('either "query" or "id", not both');
+  });
+
+  it('rejects a non-boolean compact flag', () => {
+    const result = call('motions', { id: 'tabs-slide', compact: 'yes' });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]?.text).toContain('"compact" must be a boolean');
+  });
+
+  it('rejects an id longer than 64 characters', () => {
+    const result = call('motions', { id: 'x'.repeat(65) });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]?.text).toContain('longer than 64 characters');
+  });
+
+  it('answers an unknown id as a tool error that names the id', () => {
+    const result = call('motions', { id: 'tabs-sloe' });
+    expect(result.isError).toBe(true);
+    const error = payload(result);
+    expect(error['code']).toBe('SPEC_VALIDATION_ERROR');
+    expect(error['path']).toBe('id');
+    expect(String(error['message'])).toContain('unknown motion recipe');
+  });
+
+  it('audits a spec and returns the report, with a motion error as a finding', () => {
+    const clean = payload(call('audit-motion', { spec: CLEAN_MOTION_SPEC }));
+    expect(clean['mode']).toBe('spec');
+    expect(clean['findings']).toEqual([]);
+
+    const flagged = payload(call('audit-motion', { spec: MOTION_SPEC }));
+    expect((flagged['findings'] as { rule: string }[]).map((finding) => finding.rule)).toContain(
+      'motion/unknown-recipe',
+    );
+  });
+
+  it('audits a compiled page as HTML', () => {
+    const html = readFileSync(
+      fileURLToPath(new URL('../../docs/gallery/motion-recipes.html', import.meta.url)),
+      'utf8',
+    );
+    const report = payload(call('audit-motion', { html }));
+    expect(report['mode']).toBe('html');
+    expect(report['trusted']).toBe(true);
+  });
+
+  it('requires exactly one of spec and html', () => {
+    const neither = call('audit-motion', {});
+    expect(neither.isError).toBe(true);
+    expect(neither.content[0]?.text).toContain('pass exactly one of "spec" or "html"');
+    const both = call('audit-motion', { spec: CLEAN_MOTION_SPEC, html: '<p>x</p>' });
+    expect(both.isError).toBe(true);
+    expect(both.content[0]?.text).toContain('pass exactly one of "spec" or "html"');
+  });
+
+  it('refuses an html argument over the length limit', () => {
+    const result = call('audit-motion', { html: 'x'.repeat(8_000_001) });
+    expect(result.isError).toBe(true);
+    expect(result.content[0]?.text).toContain('longer than 8000000 characters');
+  });
+
+  it('refuses an html argument that is not a string', () => {
+    const result = call('audit-motion', { html: 3 });
+    expect(result.isError).toBe(true);
   });
 });

@@ -15,12 +15,14 @@ import { compile } from '../render/render.js';
 import { buildThemeCatalog, type ThemeCatalog } from '../theme/theme-catalog.js';
 import { text } from './mcp-protocol.js';
 import {
+  AUDIT_MOTION_TOOL,
   CATALOG_TOOL,
   DESCRIBE_ICON_TOOL,
   DESCRIBE_TOOL,
   ICON_PACKS_TOOL,
   LOCAL_RENDER_DEFINITION,
   type McpTool,
+  MOTIONS_TOOL,
   optionalTheme,
   RECIPE_TOOL,
   RECIPES_TOOL,
@@ -40,7 +42,7 @@ export interface McpContext {
 }
 
 export const LOCAL_INSTRUCTIONS = `AK Render compiles a Page Spec (YAML or JSON) into one self-contained, offline HTML file.
-Loop: call catalog once (or search-catalog with a few words), describe only the block types you plan to use (several at once with types, compact: true for the short form), find icons by meaning with search-icons (describe-icon, icon-packs for detail), optionally start from a recipe (list them with recipes), validate the spec and fix every diagnostic by its JSON path, then render to a file.
+Loop: call catalog once (or search-catalog with a few words), describe only the block types you plan to use (several at once with types, compact: true for the short form), find icons by meaning with search-icons (describe-icon, icon-packs for detail), find motion recipes with motions, optionally start from a recipe (list them with recipes), validate the spec and fix every diagnostic by its JSON path (audit-motion checks the motion it names), then render to a file.
 Describe meaning, not presentation: the compiler owns layout, colour, typography and motion.`;
 
 const HTML_FILE = /\.html?$/iu;
@@ -81,9 +83,11 @@ export const LOCAL_TOOLS: readonly McpTool<McpContext>[] = [
   SEARCH_ICONS_TOOL,
   DESCRIBE_ICON_TOOL,
   ICON_PACKS_TOOL,
+  MOTIONS_TOOL,
   RECIPES_TOOL,
   RECIPE_TOOL,
   VALIDATE_TOOL,
+  AUDIT_MOTION_TOOL,
   LOCAL_RENDER_TOOL,
   LOCAL_THEMES_TOOL,
 ];

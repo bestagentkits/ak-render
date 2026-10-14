@@ -185,6 +185,8 @@ reduced, in print and in a screenshot.
 A block can also opt into one named motion recipe, such as
 `motion: reveal-soft` or `motion: tabs-slide`. The compiler owns the CSS, the
 timing and the reduced-motion fallback; see [docs/motion.md](./docs/motion.md).
+`ak-render motions search <intent>` finds a recipe, and `ak-render motion audit
+<spec|page.html>` reports motion problems with a rule id, a path and a fix.
 
 ### Review a plan in the page
 
@@ -272,7 +274,7 @@ that cannot install Node or need a URL to hand someone.
 **Local CLI.** The loop above, with `ak-render` on the path or through `npx`.
 
 **Local MCP over stdio.** `ak-render mcp` serves `catalog`, `search-catalog`,
-`describe`, `search-icons`, `describe-icon`, `icon-packs`, `recipes`, `recipe`, `validate`, `render` and `themes` as MCP
+`describe`, `search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `audit-motion`, `render` and `themes` as MCP
 tools. `render` writes the HTML to disk
 and returns only a summary, so the page never enters the agent's context.
 
@@ -285,8 +287,8 @@ and returns only a summary, so the page never enters the agent's context.
 ```
 
 **Remote MCP over Streamable HTTP.** `https://render.agentkit.best/mcp` serves
-`catalog`, `search-catalog`, `describe`, `search-icons`, `describe-icon`, `icon-packs`, `recipes`, `recipe`, `validate`,
-`render` and `themes` with the same contracts. A remote server cannot write into your filesystem, so
+`catalog`, `search-catalog`, `describe`, `search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`,
+`audit-motion`, `render` and `themes` with the same contracts. A remote server cannot write into your filesystem, so
 `render` takes no `out`: it stores the page and returns the same summary plus an
 `artifactUrl` that lives for one hour, or a share link that lives for 30 days
 with `share: true`. The HTML still never enters the agent's context.
@@ -412,6 +414,8 @@ import {
 | `describe(type)` | Full machine-readable contract for one entry | Available |
 | `describeMany(types, options)` | Up to 12 contracts, full or `compact` | Available |
 | `recipes()`, `recipe(name)` | Page recipe list, and one recipe's starter spec | Available |
+| `motionCatalog()`, `searchMotions(query)`, `describeMotion(id, options)` | Motion recipe list, search and descriptor | Available |
+| `auditMotionSpec(spec)`, `auditMotionHtml(html)` | Deterministic motion findings for a spec or a compiled page | Available |
 | `loadTheme(input)` | Validate and resolve a theme preset | Available |
 | `buildThemeCatalog(options)` | Discover built-in, user, project, and explicit presets | Available |
 
@@ -425,6 +429,8 @@ ak-render catalog [--category <c>]
 ak-render search-catalog <terms...>
 ak-render icons <search <terms...>|describe <icon>|packs>
 ak-render describe <type...> [--compact]
+ak-render motions [search <terms...>|describe <id...> [--compact]]
+ak-render motion audit <spec|page.html|-> [--fail-on <severity>] [--baseline <report.json>]
 ak-render recipes
 ak-render recipe <name>                   # YAML by default
 ak-render themes
