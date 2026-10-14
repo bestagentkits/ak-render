@@ -128,18 +128,14 @@ Release mechanics and the compatibility contract live in
 
 ### Fixed
 
-- A `toggle` action that targets an open dialog now closes it, and one that
-  is mid-exit reopens. Before, it opened the dialog again, so a dialog action
+- A `toggle` action that targets an open dialog now closes it, and a
+  `dialog-pop` dialog that is still playing its exit reopens. Before, it opened the dialog again, so a dialog action
   such as "Close" with `toggle` did nothing
   ([#43](https://github.com/bestagentkits/ak-render/issues/43)).
 - A page with scripts but without the theme toggle (`themeToggle: false`) no
   longer throws on load: the runtime calls `restoreTheme` only when it ships
   the theme part, so tabs and other scripted blocks wire up again
   ([#46](https://github.com/bestagentkits/ak-render/issues/46)).
-- An `accordion-expand` section opened just before printing now prints at full
-  height. The recipe's transition is screen-only, since the print-still rule
-  cannot reach `::details-content`
-  ([#48](https://github.com/bestagentkits/ak-render/issues/48)).
 - `motion-policy: reduced` now restrains motion as documented: colour, shadow
   and opacity transitions keep the theme duration, anything that would move
   (hover lifts, image zoom) jumps to its end state, and entrances, loops,

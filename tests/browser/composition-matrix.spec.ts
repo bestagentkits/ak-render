@@ -225,11 +225,15 @@ for (const name of FIXTURES) {
     }) => {
       const titles = disclosureTitles(name);
       const views = initialViews(name);
-      // The walk checks content, not motion: reduced motion keeps an expanding
-      // section from moving the summaries below it while they are clicked.
+      // The walk checks content, not motion. On the recipe page, reduced motion
+      // keeps an expanding section from moving the summaries below it while
+      // they are clicked; every other page walks at full motion.
       await withContext(
         browser,
-        { javaScriptEnabled: false, reducedMotion: 'reduce' },
+        {
+          javaScriptEnabled: false,
+          reducedMotion: name === 'motion-recipes' ? 'reduce' : 'no-preference',
+        },
         async (page) => {
           const audit = await open(page, name);
           // Disclosures are native <details>: a reader opens them without
