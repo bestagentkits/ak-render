@@ -30,6 +30,11 @@ export interface RuntimeOptions {
   moduleFeatures?: readonly FeatureModule[];
   /** Motion recipe ids the page's blocks opt into. */
   motion?: ReadonlySet<string>;
+  /**
+   * True when a binding runs the `theme` action. The theme runtime then ships
+   * without the toggle feature, whose stylesheet and marker belong to the toggle.
+   */
+  themeAction?: boolean;
 }
 
 const helpers = (conditions: boolean): string => `
@@ -551,8 +556,7 @@ doc.addEventListener('keydown', function (event) {
 }, false);`;
 
 const BOOT = `
-syncBindings();
-restoreTheme();`;
+syncBindings();`;
 
 /** Build the emitted runtime for the features a page actually uses. */
 export function buildRuntime(options: RuntimeOptions): string {
@@ -562,9 +566,10 @@ export function buildRuntime(options: RuntimeOptions): string {
   const parts: string[] = [];
   const motion = options.motion ?? new Set<string>();
   const lifecycle = motionRuntime(motion);
+  const theme = features.has('theme') || options.themeAction === true;
 
   if (conditions) parts.push(STATE);
-  if (features.has('theme')) parts.push(THEME);
+  if (theme) parts.push(THEME);
   if (features.has('copy')) parts.push(COPY);
   if (features.has('dialog')) parts.push(motion.has('dialog-pop') ? MOTION_DIALOG : DIALOG);
   if (features.has('filter')) parts.push(FILTER);
@@ -609,6 +614,8 @@ export function buildRuntime(options: RuntimeOptions): string {
     ...parts,
     DELEGATION,
     BOOT,
+    // restoreTheme is defined only where the theme part ships.
+    theme ? 'restoreTheme();' : '',
     ...wiring,
     '})();',
   ]
