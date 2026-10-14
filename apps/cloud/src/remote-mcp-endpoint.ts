@@ -137,7 +137,12 @@ const REMOTE_VALIDATE_TOOL: RemoteTool = {
   },
 };
 
-/** The Worker refuses bodies over MAX_REQUEST_BYTES, so the schema says so. */
+/**
+ * The Worker refuses request bodies over MAX_REQUEST_BYTES. The schema states
+ * that as an upper bound on the page: the envelope, escaping and multi-byte
+ * characters all count against the same cap, so a page near it can still be
+ * refused.
+ */
 const AUDIT_MOTION_PROPERTIES = AUDIT_MOTION_TOOL.inputSchema.properties as Record<string, object>;
 const REMOTE_AUDIT_MOTION_SCHEMA = {
   ...AUDIT_MOTION_TOOL.inputSchema,

@@ -403,7 +403,9 @@ const HTML_INPUT = /\.html?$/iu;
 /** A piped page may open with a BOM or comments before its doctype. */
 function looksLikeHtml(text: string): boolean {
   const start = text.replace(/^\uFEFF/u, '').replace(/^(?:\s*<!--[\s\S]*?-->)*\s*/u, '');
-  return /^<(?:!doctype|html|head|meta)\b/iu.test(start);
+  // A YAML or JSON spec never starts with a tag, so any leading tag is a page
+  // or a fragment of one.
+  return /^<[!a-z]/iu.test(start);
 }
 
 function isMotionSeverity(value: string): value is MotionSeverity | 'none' {

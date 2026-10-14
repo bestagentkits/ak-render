@@ -139,7 +139,10 @@ nothing.
 Each finding has a stable `rule`, a `severity` (`error`, `warning` or `info`),
 a `message`, a JSON `path` (or `css`, `html`, `script`), the block id when
 there is one, reproducible `evidence` and a `fix`. Findings are sorted, so the
-same input always gives the same report.
+same input always gives the same report. A report lists at most 25 findings per
+rule, plus one that counts the rest; `counts` and the score cover every
+finding. The audit takes linear time and quotes at most a short excerpt of
+the input, so a hostile page cannot stall it or inflate the report.
 
 **Spec audit (authoritative).** It runs on the normalized spec and the theme it
 resolves:
@@ -161,7 +164,7 @@ accessible.
 
 | Rule | Severity | Finds |
 | --- | --- | --- |
-| `html/unguarded-motion`, `html/duplicate-keyframes` | error | What `motionDiagnostics` rejects at compile time |
+| `html/unguarded-motion`, `html/duplicate-keyframes` | error | What `motionDiagnostics` rejects at compile time, including a stylesheet nested more than 32 blocks deep, which cannot be checked |
 | `html/missing-recipe-css`, `html/missing-exit`, `html/missing-lifecycle` | error | A block names a recipe whose CSS, exit phase or runtime is missing |
 | `html/missing-csp`, `html/unsafe-csp`, `html/remote-resource` | error | No CSP, a CSP that allows `unsafe-inline` or `unsafe-eval`, or a remote script, stylesheet, import or `url()` |
 | `html/transition-all`, `html/layout-keyframes` | warning | `transition: all`, or keyframes that animate layout properties |

@@ -6,6 +6,7 @@ import {
   auditMotionSpec,
   compareMotionAudits,
   MOTION_ARRIVAL_BUDGET,
+  MOTION_FINDINGS_PER_RULE,
   MOTION_SCORE_WEIGHTS,
   type MotionAuditReport,
   type MotionFinding,
@@ -926,12 +927,63 @@ describe('compiled HTML audit: hostile input', () => {
     ['url() with no close', `<style>${'url(//'.repeat(150_000)}</style>`],
     ['deeply nested blocks', `<style>${'a{'.repeat(400_000)}</style>`],
     ['many keyframes', `<style>${'@keyframes k{0%{opacity:0}}'.repeat(20_000)}</style>`],
+    [
+      'a long media prelude over many declarations',
+      `<style>@media ${'x'.repeat(400_000)}{a{${'b:c;'.repeat(100_000)}}}</style>`,
+    ],
+    ['one transition with many layers', `<style>a{transition:${'all,'.repeat(250_000)}}</style>`],
+    [
+      'a long selector with many transitions',
+      `<style>${'a'.repeat(500_000)}{${'transition:all;'.repeat(30_000)}}</style>`,
+    ],
+    [
+      'a long selector with many animations',
+      `<style>${'a'.repeat(500_000)}{${'animation:spin 1s;'.repeat(25_000)}}</style>`,
+    ],
+    [
+      'many blocks under a long prelude',
+      `<style>@media ${'x'.repeat(400_000)}{${'a{animation-timeline:scroll()}'.repeat(20_000)}}</style>`,
+    ],
   ];
-  it.each(cases)('audits %s in linear time', (_name, html) => {
+  it.each(cases)('audits %s in linear time and bounded output', (_name, html) => {
     const started = performance.now();
     const report = auditMotionHtml(html);
     expect(report.mode).toBe('html');
     expect(performance.now() - started).toBeLessThan(5_000);
+    // The report stays small whatever the page holds.
+    expect(JSON.stringify(report).length).toBeLessThan(200_000);
+  });
+
+  it('fails a stylesheet nested too deeply to check instead of skipping it', () => {
+    const css = `${'@supports (display:grid){'.repeat(40)}.a{animation:spin 1s infinite}`;
+    const finding = findingFor(auditMotionHtml(htmlPage({ css })), 'html/unguarded-motion');
+    expect(finding?.severity).toBe('error');
+    expect(finding?.message).toContain('nests blocks deeper than');
+  });
+
+  it('lists a bounded number of findings per rule but counts every one', () => {
+    const css = Array.from({ length: 60 }, (_, index) => `.r${index}{transition:all 1s}`).join('');
+    const report = auditMotionHtml(htmlPage({ css }));
+    const listed = report.findings.filter((item) => item.rule === 'html/transition-all');
+    expect(listed).toHaveLength(MOTION_FINDINGS_PER_RULE + 1);
+    expect(listed.some((item) => item.evidence === `${60 - MOTION_FINDINGS_PER_RULE} more`)).toBe(
+      true,
+    );
+    expect(report.counts.warning).toBeGreaterThanOrEqual(60);
+  });
+
+  it('reports transition: all once per declaration', () => {
+    const report = auditMotionHtml(htmlPage({ css: '.a{transition:all 1s,all 2s,all 3s}' }));
+    expect(report.findings.filter((item) => item.rule === 'html/transition-all')).toHaveLength(1);
+  });
+
+  it('finds a remote resource behind a quoted > in an earlier attribute', () => {
+    const head =
+      '<link title="a>b" rel="stylesheet" href="//evil.example/x.css"><script data-x=">" src="//evil.example/x.js"></script>';
+    const report = auditMotionHtml(htmlPage({ head }));
+    const remote = report.findings.filter((item) => item.rule === 'html/remote-resource');
+    expect(remote.map((item) => item.evidence).join(' ')).toContain('evil.example/x.css');
+    expect(remote.map((item) => item.evidence).join(' ')).toContain('evil.example/x.js');
   });
 });
 
@@ -941,6 +993,13 @@ describe('compiled HTML audit: shorthand, counts and logical properties', () => 
       '@media (prefers-reduced-motion:no-preference){.a{animation:1s linear infinite spin}.b{animation:2s ease-in-out infinite pulse}.c{animation:300ms infinite wobble}}';
     const finding = findingFor(auditMotionHtml(htmlPage({ css })), 'html/unbounded-motion');
     expect(finding?.evidence).toBe('pulse, spin, wobble');
+  });
+
+  it('never takes an easing or var() function for the loop name', () => {
+    const css =
+      '@media (prefers-reduced-motion:no-preference){.a{animation:1s cubic-bezier(.2,0,0,1) infinite spin}.b{animation:2s steps(2,end) infinite pulse}.c{animation:1s infinite var(--d) ak-wave}}';
+    const finding = findingFor(auditMotionHtml(htmlPage({ css })), 'html/unbounded-motion');
+    expect(finding?.evidence).toBe('ak-wave, pulse, spin');
   });
 
   it('counts recipe uses in the markup, not in stylesheet selectors', () => {

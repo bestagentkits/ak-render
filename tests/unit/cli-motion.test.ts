@@ -305,11 +305,12 @@ describe('ak-render motion audit', () => {
     expect((JSON.parse(c.out()) as { mode: string }).mode).toBe('html');
   });
 
-  it('detects a piped page that opens with a BOM or a comment', () => {
+  it('detects a piped page that opens with a BOM, a comment or a bare tag', () => {
     const html = readFileSync(GALLERY_PAGE, 'utf8');
-    for (const text of [`\uFEFF${html}`, `<!-- saved page -->\n${html}`]) {
+    const fragment = '<style>.a{animation:spin 1s}</style><div>page</div>';
+    for (const text of [`\uFEFF${html}`, `<!-- saved page -->\n${html}`, fragment]) {
       const c = capture(text);
-      expect(run(['motion', 'audit', '-', '--json'], c.io)).toBe(0);
+      run(['motion', 'audit', '-', '--json', '--fail-on', 'none'], c.io);
       expect((JSON.parse(c.out()) as { mode: string }).mode).toBe('html');
     }
   });

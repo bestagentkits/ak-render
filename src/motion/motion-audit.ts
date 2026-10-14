@@ -26,8 +26,10 @@ import { DiagnosticBag } from '../diagnostics.js';
 import { ADAPTER_STYLE_MARKER } from '../diagram/adapter-markup-fit.js';
 import type { IrDocument, IrNode } from '../ir.js';
 import {
+  clipSelector,
   hasFixedTime,
   isGuarded,
+  isInKeyframes,
   layers,
   type MotionPolicy,
   motionDiagnostics,
@@ -91,6 +93,13 @@ export const MOTION_SCORE_WEIGHTS: Readonly<Record<MotionSeverity, number>> = {
 /** Arrival recipes past this count on one page turn reading into waiting. */
 export const MOTION_ARRIVAL_BUDGET = 6;
 
+/**
+ * A report lists at most this many findings per rule, and one more that counts
+ * the rest, so a hostile page cannot make the report grow without bound. The
+ * counts and the score still cover every finding.
+ */
+export const MOTION_FINDINGS_PER_RULE = 25;
+
 /** The stagger delay stops growing after this many items. */
 const STAGGER_CAP = 8;
 
@@ -128,8 +137,36 @@ function report(
     recipes: extra.recipes,
     counts,
     score: { value: Math.max(0, 100 - penalty), weights: MOTION_SCORE_WEIGHTS },
-    findings: sortFindings(findings),
+    findings: capFindings(sortFindings(findings)),
   };
+}
+
+function capFindings(sorted: MotionFinding[]): MotionFinding[] {
+  const listed: MotionFinding[] = [];
+  const omitted = new Map<string, { first: MotionFinding; count: number }>();
+  const perRule = new Map<string, number>();
+  for (const finding of sorted) {
+    const seen = perRule.get(finding.rule) ?? 0;
+    perRule.set(finding.rule, seen + 1);
+    if (seen < MOTION_FINDINGS_PER_RULE) {
+      listed.push(finding);
+      continue;
+    }
+    const entry = omitted.get(finding.rule);
+    if (entry === undefined) omitted.set(finding.rule, { first: finding, count: 1 });
+    else entry.count += 1;
+  }
+  for (const [rule, { first, count }] of omitted) {
+    listed.push({
+      rule,
+      severity: first.severity,
+      message: `${count} more ${rule} finding(s) are not listed`,
+      path: first.path,
+      evidence: `${count} more`,
+      fix: first.fix,
+    });
+  }
+  return omitted.size === 0 ? listed : sortFindings(listed);
 }
 
 /** True when the report holds a finding at `failOn` or more serious. */
@@ -393,6 +430,30 @@ interface Element {
 }
 
 /**
+ * The `>` that ends a start tag, skipping quoted attribute values so a `>`
+ * inside one cannot hide the attributes after it. Forward only.
+ */
+function endOfTag(html: string, from: number): number {
+  let index = from;
+  // The last non-space character, so `title = "a>b"` is a value too.
+  let previous = '';
+  while (index < html.length) {
+    const character = html.charAt(index);
+    if (character === '>') return index;
+    if ((character === '"' || character === "'") && previous === '=') {
+      const close = html.indexOf(character, index + 1);
+      if (close < 0) return -1;
+      index = close + 1;
+      previous = character;
+      continue;
+    }
+    if (!/\s/u.test(character)) previous = character;
+    index += 1;
+  }
+  return -1;
+}
+
+/**
  * Every `<name ...>body</name>` element, found with forward-only scans so an
  * unclosed or malformed tag costs linear time on untrusted input.
  */
@@ -410,7 +471,7 @@ function elements(html: string, name: string, withBody = true): Element[] {
       position = start + open.length;
       continue;
     }
-    const tagEnd = lower.indexOf('>', start);
+    const tagEnd = endOfTag(lower, start + open.length);
     if (tagEnd < 0) break;
     const attributes = html.slice(start + open.length, tagEnd);
     if (!withBody) {
@@ -471,9 +532,11 @@ const ANIMATION_KEYWORDS = new Set([
 
 /** The keyframes name in one `animation` shorthand layer, if it has one. */
 function animationName(layer: string): string {
-  for (const token of layer.replace(/\([^)]*\)/gu, ' ').split(/\s+/u)) {
-    if (token === '' || ANIMATION_KEYWORDS.has(token.toLowerCase())) continue;
-    if (/^[-+]?[\d.]/u.test(token) || token.startsWith('var(')) continue;
+  // A function such as cubic-bezier(), steps() or var() is never the name.
+  for (const token of layer.replace(/\([^)]*\)?/gu, '( ').split(/\s+/u)) {
+    if (token === '' || token.endsWith('(')) continue;
+    if (ANIMATION_KEYWORDS.has(token.toLowerCase())) continue;
+    if (/^[-+]?[\d.]/u.test(token)) continue;
     if (/^-?[a-z_][\w-]*$/iu.test(token)) return token;
   }
   return '';
@@ -487,7 +550,8 @@ const LIFECYCLE_MARKERS: Readonly<Record<string, string>> = {
 };
 
 function clip(text: string, length = 160): string {
-  const flat = text.replace(/\s+/gu, ' ').trim();
+  const head = text.length > length * 4 ? text.slice(0, length * 4) : text;
+  const flat = head.replace(/\s+/gu, ' ').trim();
   return flat.length > length ? `${flat.slice(0, length - 1)}…` : flat;
 }
 
@@ -511,28 +575,26 @@ function cssFindings(css: string): MotionFinding[] {
   const infinite = new Set<string>();
   const fixed: string[] = [];
   for (const { property, value, context } of found) {
-    const selector = context.at(-1) ?? '';
-    const inKeyframes = context.some((prelude) => prelude.startsWith('@keyframes'));
-    if (inKeyframes) continue;
-    if (property === 'transition' || property === 'transition-property') {
-      for (const layer of layers(value.replace(/!important$/u, ''))) {
-        if (/^all\b/u.test(layer)) {
-          findings.push({
-            rule: 'html/transition-all',
-            severity: 'warning',
-            message: `"${selector}" transitions every property, including layout and ones added later`,
-            path: 'css',
-            evidence: clip(`${selector}{${property}:${value}}`),
-            fix: 'List the properties that should transition.',
-          });
-        }
-      }
+    if (isInKeyframes(context)) continue;
+    const selector = clipSelector(context.at(-1) ?? '');
+    if (
+      (property === 'transition' || property === 'transition-property') &&
+      layers(value.replace(/!important$/u, '')).some((layer) => /^all\b/u.test(layer))
+    ) {
+      findings.push({
+        rule: 'html/transition-all',
+        severity: 'warning',
+        message: `"${selector}" transitions every property, including layout and ones added later`,
+        path: 'css',
+        evidence: clip(`${selector}{${property}:${clipSelector(value)}}`),
+        fix: 'List the properties that should transition.',
+      });
     }
     if (property === 'animation' || property === 'animation-iteration-count') {
       for (const layer of layers(value)) {
         if (/\binfinite\b/u.test(layer)) {
           const name = property === 'animation' ? animationName(layer) : '';
-          infinite.add(name === '' ? selector : name);
+          infinite.add(clipSelector(name === '' ? selector : name));
         }
       }
     }
@@ -561,7 +623,7 @@ function cssFindings(css: string): MotionFinding[] {
       severity: 'info',
       message: `${infinite.size} animations loop forever; the motion budget allows one ambient loop in view at once`,
       path: 'css',
-      evidence: [...infinite].sort().join(', '),
+      evidence: clip([...infinite].sort().join(', ')),
       fix: 'Check that only one loop is in view at once, and let every other animation finish.',
     });
   }
@@ -584,9 +646,9 @@ function cssFindings(css: string): MotionFinding[] {
       findings.push({
         rule: 'html/layout-keyframes',
         severity: 'warning',
-        message: `@keyframes ${name} animates ${moved.join(', ')}, which lays the page out on every frame`,
+        message: `@keyframes ${clipSelector(name)} animates ${moved.join(', ')}, which lays the page out on every frame`,
         path: 'css',
-        evidence: `@keyframes ${name}`,
+        evidence: clip(`@keyframes ${name}`),
         fix: 'Animate transform, translate, scale or opacity instead.',
       });
     }
