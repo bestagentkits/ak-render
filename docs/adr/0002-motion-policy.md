@@ -113,8 +113,9 @@ Until the recipe registry exists, new motion must fit this budget:
 The registry now exists; see [motion recipes](../motion.md). The budget above
 still applies to motion outside it.
 
-- A recipe declares which effective states it runs in (normally full only) and
-  whether it is feedback (allowed in restrained) or decoration.
+- A recipe declares which effective states it runs in (`states`, normally full
+  only) and whether it is feedback (allowed in restrained) or decoration
+  (`role`).
 - Recipes emit through the same guard and pass the same `motionDiagnostics`;
   extend the check rather than adding a second gate.
 - Keyframes names stay page-unique and are listed in

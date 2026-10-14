@@ -175,13 +175,8 @@ function blockSchema(definition: BlockDefinition): Record<string, unknown> {
     Object.assign(properties, BLOCK_DATA_JSON_SCHEMA_PROPERTIES);
   }
   properties.visibleWhen = { $ref: '#/$defs/condition' };
-  // Most blocks take only the universal recipes, which share one definition.
-  const presets = motionPresetsFor(definition.type);
-  if (presets.length > 0) {
-    properties.motion =
-      specificMotionPresetsFor(definition.type).length === 0
-        ? { $ref: '#/$defs/motion' }
-        : motionJsonSchema(presets);
+  if (motionPresetsFor(definition.type).length > 0) {
+    properties.motion = { $ref: `#/$defs/${motionDefName(definition.type)}` };
   }
 
   return {
@@ -191,6 +186,15 @@ function blockSchema(definition: BlockDefinition): Record<string, unknown> {
     properties,
     description: definition.summary,
   };
+}
+
+/**
+ * The `$defs` entry for a block's motion field. Blocks that accept the same
+ * recipes share one entry: most take only the universal ones (`motion`).
+ */
+function motionDefName(type: string): string {
+  const specific = specificMotionPresetsFor(type);
+  return specific.length === 0 ? 'motion' : `motion-${specific.join('-')}`;
 }
 
 function actionMapSchema(): Record<string, unknown> {
@@ -250,6 +254,10 @@ export function buildPageSpecJsonSchema(): Record<string, unknown> {
   };
   for (const definition of BLOCK_DEFINITIONS) {
     defs[`block-${definition.type}`] = blockSchema(definition);
+    const motion = motionDefName(definition.type);
+    if (motion !== 'motion' && defs[motion] === undefined) {
+      defs[motion] = motionJsonSchema(motionPresetsFor(definition.type));
+    }
   }
 
   return {

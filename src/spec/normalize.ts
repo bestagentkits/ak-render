@@ -520,7 +520,10 @@ function validateMotion(
     preset = value.preset;
     presetPath = pathKey(motionPath, 'preset');
   }
-  const compatible = motionPresetsFor(type);
+  // Recipes that need visibleWhen are offered only to blocks that have it.
+  const compatible = motionPresetsFor(type).filter(
+    (id) => hasVisibleWhen || getMotionRecipe(id)?.requires?.visibleWhen !== true,
+  );
   if (typeof preset !== 'string') {
     bag.add({
       code: 'SPEC_VALIDATION_ERROR',

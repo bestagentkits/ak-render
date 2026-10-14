@@ -47,12 +47,18 @@ function motionSettle(el, attribute, done) {
     el.removeAttribute(attribute);
     if (done) done();
   };
-  var onEnd = function (event) { if (event.target === el && !event.pseudoElement) finish(); };
+  var names = [];
+  // Only the animations this settle started end it: cancelling the entrance a
+  // close interrupts must not count as the end of the exit.
+  var onEnd = function (event) {
+    if (event.target === el && !event.pseudoElement && names.indexOf(event.animationName) >= 0) finish();
+  };
   // Re-adding the attribute restarts an animation that is still running.
   el.removeAttribute(attribute);
   void el.offsetWidth;
   el.setAttribute(attribute, '');
   var style = window.getComputedStyle(el);
+  names = String(style.animationName || '').split(',').map(function (name) { return name.trim(); });
   var ms = motionMs(style.animationDuration) + motionMs(style.animationDelay);
   if (!motionAllowed() || ms === 0 || doc.hidden) { finish(); return; }
   el.addEventListener('animationend', onEnd, false);
@@ -69,20 +75,32 @@ export const MOTION_TABS = `
 function placeTabMarker(list) {
   var tab = q('[role="tab"][aria-selected="true"]', list);
   if (!tab || tab.closest('[role="tablist"]') !== list) return;
+  // A hidden list has no geometry. Drop the marker, so the first placement
+  // after it shows snaps into place instead of growing from the corner.
+  if (tab.offsetWidth === 0) {
+    list.removeAttribute('data-ak-indicator');
+    list.removeAttribute('data-ak-indicator-live');
+    return;
+  }
   // The attribute positions the list first, so offsets resolve against it.
+  // Layout offsets, unlike client rects, ignore a scale an ancestor animates.
   list.setAttribute('data-ak-indicator', '');
   list.style.setProperty('--ak-tab-x', tab.offsetLeft + 'px');
   list.style.setProperty('--ak-tab-y', tab.offsetTop + 'px');
   list.style.setProperty('--ak-tab-w', tab.offsetWidth + 'px');
   list.style.setProperty('--ak-tab-h', tab.offsetHeight + 'px');
+  // The first visible placement never slides; later ones do.
+  if (!list.hasAttribute('data-ak-indicator-live')) {
+    window.requestAnimationFrame(function () {
+      if (list.hasAttribute('data-ak-indicator')) list.setAttribute('data-ak-indicator-live', '');
+    });
+  }
 }
 function wireTabMotion() {
   qa('[data-ak-motion="tabs-slide"]').forEach(function (container) {
     var list = q(':scope > [role="tablist"]', container);
     if (!list) return;
     placeTabMarker(list);
-    // The first placement never slides; later ones do.
-    window.requestAnimationFrame(function () { list.setAttribute('data-ak-indicator-live', ''); });
     if (typeof window.MutationObserver === 'function') {
       new window.MutationObserver(function (records) {
         records.forEach(function (record) {

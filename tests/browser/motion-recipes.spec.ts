@@ -35,6 +35,26 @@ const recipeAnimations = (page: Page) =>
 
 const block = (page: Page, id: string) => page.locator(`[data-ak-id="${id}"]`);
 
+/** Records every recipe animation that starts, as `<block id or role>:<name>`. */
+const recordStarts = (page: Page) =>
+  page.evaluate(() => {
+    const starts: string[] = [];
+    (window as unknown as { starts: string[] }).starts = starts;
+    document.addEventListener(
+      'animationstart',
+      (event) => {
+        if (!event.animationName.startsWith('ak-m-') || event.pseudoElement !== '') return;
+        const el = event.target as HTMLElement;
+        const owner = el.closest('[data-ak-id]')?.getAttribute('data-ak-id') ?? '';
+        starts.push(`${el.getAttribute('role') ?? owner}:${event.animationName}`);
+      },
+      true,
+    );
+  });
+
+const starts = (page: Page) =>
+  page.evaluate(() => [...(window as unknown as { starts: string[] }).starts]);
+
 /** The tab marker's box and the selected tab's box, relative to the tablist. */
 const markerAndTab = (page: Page) =>
   page.evaluate(() => {
@@ -91,9 +111,11 @@ test.describe('motion recipes under full motion', () => {
     expect(state.marker).toEqual(state.tab);
     expect(state.slides).toBe(true);
 
+    await recordStarts(page);
     await tabs.getByRole('tab', { name: 'Pricing' }).click();
     const panel = tabs.locator('> [role="tabpanel"]:not([hidden])');
     await expect(panel).toContainText('Arrow keys');
+    await expect.poll(() => starts(page)).toContain('tabpanel:ak-m-fade');
     await expect(panel).not.toHaveAttribute('data-ak-entering', /.*/u);
     await expect
       .poll(async () => {
@@ -132,6 +154,55 @@ test.describe('motion recipes under full motion', () => {
     expect(await block(page, 'annual-callout').evaluate((el) => getComputedStyle(el).opacity)).toBe(
       '1',
     );
+  });
+
+  test('a state change fades the shown block in once and rolls its figures again', async ({
+    page,
+  }) => {
+    await open(page);
+    const radios = block(page, 'plan-radios');
+    await radios.scrollIntoViewIfNeeded();
+    await recordStarts(page);
+    await radios.getByLabel('Annual').check();
+    await expect(block(page, 'annual-callout')).toBeVisible();
+    await expect.poll(() => starts(page)).toContain('annual-callout:ak-m-fade');
+    await expect.poll(() => starts(page)).toContain('annual-kpi:ak-m-roll');
+    await expect(page.locator('[data-ak-entering]')).toHaveCount(0);
+
+    // Re-running the bindings without a visibility change replays nothing.
+    const before = (await starts(page)).length;
+    await radios.getByLabel('Annual').dispatchEvent('change');
+    await page.waitForTimeout(400);
+    expect(await starts(page)).toHaveLength(before);
+
+    // Showing the figures again rolls them again.
+    await radios.getByLabel('Monthly').check();
+    await expect(block(page, 'monthly-kpi')).toBeVisible();
+    await radios.getByLabel('Annual').check();
+    await expect(block(page, 'annual-kpi')).toBeVisible();
+    await expect
+      .poll(async () => (await starts(page)).filter((name) => name === 'annual-kpi:ak-m-roll'))
+      .toHaveLength(4);
+  });
+
+  test('the close button plays the same exit and returns focus', async ({ page }) => {
+    await open(page);
+    const opener = block(page, 'open-confirm');
+    const dialog = page.locator('dialog[data-ak-id="confirm-dialog"]');
+    await opener.click();
+    await expect(dialog).toHaveAttribute('open', '');
+    const exit = await dialog.evaluate((el) => {
+      (el.querySelector('[data-ak-dialog-close]') as HTMLElement).click();
+      return {
+        leaving: el.hasAttribute('data-ak-leaving'),
+        animation: getComputedStyle(el).animationName,
+      };
+    });
+    // The exit runs while the dialog is still open, then the dialog closes.
+    expect(exit).toEqual({ leaving: true, animation: 'ak-m-pop-out' });
+    await expect(dialog).not.toHaveAttribute('open', /.*/u);
+    await expect(dialog).not.toHaveAttribute('data-ak-leaving', /.*/u);
+    await expect(opener).toBeFocused();
   });
 
   test('the dialog exits before closing and focus returns to its opener', async ({ page }) => {
@@ -187,6 +258,65 @@ test.describe('motion recipes under full motion', () => {
       (el) => getComputedStyle(el, '::details-content').transitionProperty,
     );
     expect(transition).toContain('block-size');
+  });
+});
+
+test.describe('a tab marker that first shows from a hidden block', () => {
+  test('snaps into place instead of growing from the corner', async ({ page }) => {
+    const spec = {
+      version: 1,
+      meta: { title: 'Hidden tabs' },
+      state: { show: 'no' },
+      blocks: [
+        {
+          type: 'radio-group',
+          id: 'show',
+          label: 'Show the tabs',
+          bind: 'state.show',
+          options: [
+            { value: 'no', label: 'Hide' },
+            { value: 'yes', label: 'Show' },
+          ],
+        },
+        {
+          type: 'tabs',
+          id: 'late-tabs',
+          visibleWhen: { path: 'state.show', equals: 'yes' },
+          items: [
+            { title: 'First', text: 'One.' },
+            { title: 'Second tab', text: 'Two.' },
+          ],
+          motion: 'tabs-slide',
+        },
+      ],
+    };
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    const file = workspace.write('motion-recipes-hidden-tabs', compile(spec).html);
+    await page.goto(`file://${file}`, { waitUntil: 'load' });
+    const list = block(page, 'late-tabs').locator('> [role="tablist"]');
+    await expect(list).not.toHaveAttribute('data-ak-indicator', /.*/u);
+
+    // Sample the marker on every frame after the tabs show.
+    const frames = await page.evaluate(async () => {
+      (document.querySelector('input[value="yes"]') as HTMLInputElement).click();
+      const tablist = document.querySelector(
+        '[data-ak-id="late-tabs"] > [role="tablist"]',
+      ) as HTMLElement;
+      const samples: { marker: number; tab: number }[] = [];
+      for (let frame = 0; frame < 8; frame += 1) {
+        await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)));
+        const tab = tablist.querySelector('[aria-selected="true"]') as HTMLElement;
+        if (!tablist.hasAttribute('data-ak-indicator')) continue;
+        samples.push({
+          marker: Math.round(Number.parseFloat(getComputedStyle(tablist, '::before').width)),
+          tab: tab.offsetWidth,
+        });
+      }
+      return samples;
+    });
+    expect(frames.length).toBeGreaterThan(0);
+    for (const frame of frames) expect(frame.marker).toBe(frame.tab);
+    await expect(list).toHaveAttribute('data-ak-indicator-live', '');
   });
 });
 

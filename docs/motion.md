@@ -85,7 +85,9 @@ third-party transition recipe is copied or repackaged.
 ## Adding a recipe
 
 Add an entry to `MOTION_RECIPES` with its targets, triggers, scale step,
-easing, `reduced` behaviour and an example. Put its animating CSS in `guarded`.
+easing, the effective states it plays in and whether it is feedback or
+decoration (`states`, `role`; every current recipe is decoration that plays
+under `full` only), its `reduced` behaviour and an example. Put its animating CSS in `guarded`.
 Add any new keyframes to `MOTION_KEYFRAMES` and `PAGE_KEYFRAMES_NAMES`. Then
 extend [`fixtures/pages/motion-recipes.yaml`](../fixtures/pages/motion-recipes.yaml)
 and the unit and browser specs (`tests/unit/motion-recipes.test.ts`,

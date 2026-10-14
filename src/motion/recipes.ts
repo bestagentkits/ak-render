@@ -47,11 +47,23 @@ export type MotionEasing = 'standard' | 'enter' | 'exit' | 'emphasis';
  */
 export type MotionRuntime = 'none' | 'in-view' | 'lifecycle';
 
+/** An effective motion state of ADR 0002 that a recipe may play in. */
+export type MotionState = 'full' | 'restrained';
+
+/**
+ * Whether a recipe carries meaning (`feedback`, which restrained may keep) or
+ * only polish (`decoration`, which plays under `full` alone).
+ */
+export type MotionRole = 'feedback' | 'decoration';
+
 export interface MotionRecipe {
   /** Kebab-case, unique, stable across releases. */
   id: string;
   /** Bumped when the recipe's visible behaviour changes. */
   version: number;
+  /** Effective states the recipe plays in; it settles in every other. */
+  states: readonly MotionState[];
+  role: MotionRole;
   /** One line: what the recipe is for. */
   purpose: string;
   /** Search words an agent might use for this intent. */
@@ -162,10 +174,21 @@ const REVEAL_TARGETS = [
   'story',
 ] as const;
 
-export const MOTION_RECIPES: readonly MotionRecipe[] = [
+/** Freezes a value and everything it holds, so no caller can edit a recipe's CSS. */
+function deepFreeze<T>(value: T): T {
+  if (value !== null && typeof value === 'object' && !Object.isFrozen(value)) {
+    for (const child of Object.values(value)) deepFreeze(child);
+    Object.freeze(value);
+  }
+  return value;
+}
+
+export const MOTION_RECIPES: readonly MotionRecipe[] = deepFreeze<MotionRecipe[]>([
   {
     id: 'reveal-soft',
     version: 1,
+    states: ['full'],
+    role: 'decoration',
     purpose: 'The block fades and rises into place once, as it scrolls into view.',
     aliases: ['reveal', 'fade in', 'entrance', 'appear', 'scroll reveal', 'rise'],
     targets: REVEAL_TARGETS,
@@ -192,6 +215,8 @@ export const MOTION_RECIPES: readonly MotionRecipe[] = [
   {
     id: 'stagger',
     version: 1,
+    states: ['full'],
+    role: 'decoration',
     purpose: 'Items of a list-like block arrive one after another as it scrolls into view.',
     aliases: ['stagger', 'cascade', 'sequence', 'one by one', 'staggered reveal'],
     targets: ['stats', 'steps', 'timeline', 'list', 'card-grid'],
@@ -217,6 +242,8 @@ export const MOTION_RECIPES: readonly MotionRecipe[] = [
   {
     id: 'figure-roll',
     version: 1,
+    states: ['full'],
+    role: 'decoration',
     purpose:
       'Headline figures roll up into place when the block arrives or a state change shows it.',
     aliases: ['number change', 'kpi change', 'figure', 'value change', 'counter', 'metric update'],
@@ -243,6 +270,8 @@ export const MOTION_RECIPES: readonly MotionRecipe[] = [
   {
     id: 'fade-swap',
     version: 1,
+    states: ['full'],
+    role: 'decoration',
     purpose: 'The block fades in each time a state change shows it.',
     aliases: ['crossfade', 'fade', 'swap', 'state change', 'content change', 'toggle view'],
     targets: '*',
@@ -271,6 +300,8 @@ export const MOTION_RECIPES: readonly MotionRecipe[] = [
   {
     id: 'tabs-slide',
     version: 1,
+    states: ['full'],
+    role: 'decoration',
     purpose: 'The selected-tab marker slides to the new tab and the panel fades in.',
     aliases: ['tabs', 'sliding indicator', 'tab underline', 'segmented', 'tab switch'],
     targets: ['tabs'],
@@ -300,6 +331,8 @@ export const MOTION_RECIPES: readonly MotionRecipe[] = [
   {
     id: 'accordion-expand',
     version: 1,
+    states: ['full'],
+    role: 'decoration',
     purpose: 'Sections open and close smoothly instead of snapping.',
     aliases: ['expand', 'collapse', 'disclosure', 'smooth accordion', 'faq'],
     targets: ['accordion'],
@@ -326,6 +359,8 @@ export const MOTION_RECIPES: readonly MotionRecipe[] = [
   {
     id: 'dialog-pop',
     version: 1,
+    states: ['full'],
+    role: 'decoration',
     purpose: 'The dialog scales in on open and fades out on close, with its backdrop.',
     aliases: ['modal', 'dialog', 'popup', 'overlay', 'open close'],
     targets: ['dialog'],
@@ -344,7 +379,7 @@ export const MOTION_RECIPES: readonly MotionRecipe[] = [
       guarded: `dialog${at('dialog-pop')}[open]{animation:ak-m-pop-in var(--ak-motion-relaxed) var(--ak-ease-enter)}dialog${at('dialog-pop')}[open]::backdrop{animation:ak-m-fade calc(var(--ak-motion-duration) * 1.5) var(--ak-motion-easing)}dialog${at('dialog-pop')}[data-ak-leaving]{animation:ak-m-pop-out var(--ak-motion-fast) var(--ak-ease-exit) forwards}dialog${at('dialog-pop')}[data-ak-leaving]::backdrop{animation:ak-m-fade-out calc(var(--ak-motion-duration) * .75) var(--ak-motion-easing) forwards}`,
     },
   },
-];
+]);
 
 const BY_ID: ReadonlyMap<string, MotionRecipe> = new Map(
   MOTION_RECIPES.map((recipe) => [recipe.id, recipe]),

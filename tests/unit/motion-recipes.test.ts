@@ -79,11 +79,28 @@ describe('motion recipe registry', () => {
   it('puts every animating rule behind the motion guard and passes the diagnostics', () => {
     const css = motionRecipeCss(new Set(MOTION_RECIPES.map((recipe) => recipe.id)));
     expect(motionDiagnostics(css)).toEqual([]);
-    const outside = css.replace(
-      new RegExp(`@media ${escapeRegExp(MOTION_ALLOWED)}\\{.*\\}`, 'su'),
-      '',
-    );
-    expect(outside).not.toMatch(/animation:|transition:/u);
+    expect(css).toContain(`@media ${MOTION_ALLOWED}{`);
+    for (const recipe of MOTION_RECIPES) {
+      expect(`${recipe.css.plain ?? ''}${recipe.css.print ?? ''}`).not.toMatch(
+        /animation|transition/u,
+      );
+    }
+  });
+
+  it('declares every recipe as decoration that plays under full motion only', () => {
+    for (const recipe of MOTION_RECIPES) {
+      expect(recipe.role).toBe('decoration');
+      expect(recipe.states).toEqual(['full']);
+    }
+  });
+
+  it('cannot be edited by a library caller', () => {
+    const recipe = getMotionRecipe('reveal-soft');
+    expect(Object.isFrozen(recipe)).toBe(true);
+    expect(Object.isFrozen(recipe?.css)).toBe(true);
+    expect(() => {
+      (recipe?.css as { guarded: string }).guarded = 'body{animation:spin 1s infinite}';
+    }).toThrow(TypeError);
   });
 
   it('emits each keyframes once, only for the recipes in use', () => {
@@ -117,6 +134,12 @@ describe('motion field validation', () => {
     );
     expect(error?.path).toBe('$.blocks[0].motion');
     expect(error?.message).toContain('tabs-slide');
+  });
+
+  it('offers fade-swap only to a block that has visibleWhen', () => {
+    const [error] = errors(page({ type: 'card', title: 'A', motion: 'spin' }));
+    expect(error?.message).toContain('reveal-soft');
+    expect(error?.message).not.toContain('fade-swap');
   });
 
   it('rejects a recipe on a block it does not target', () => {
@@ -167,9 +190,18 @@ describe('motion in contracts and runtime', () => {
   it('describes the motion field in the JSON Schema of each compatible block', () => {
     const defs = buildPageSpecJsonSchema().$defs as Record<
       string,
-      { properties: Record<string, unknown> }
+      { properties: Record<string, { $ref?: string }> }
     >;
-    expect(JSON.stringify(defs['block-tabs']?.properties.motion)).toContain('tabs-slide');
+    const motionOf = (type: string) => {
+      const ref = defs[`block-${type}`]?.properties.motion?.$ref;
+      return ref === undefined ? undefined : JSON.stringify(defs[ref.replace('#/$defs/', '')]);
+    };
+    expect(motionOf('tabs')).toContain('tabs-slide');
+    expect(motionOf('tabs')).toContain('fade-swap');
+    expect(motionOf('divider')).not.toContain('tabs-slide');
+    // Blocks that accept the same recipes share one definition.
+    expect(defs['block-card']?.properties.motion).toEqual({ $ref: '#/$defs/motion-reveal-soft' });
+    expect(defs['block-callout']?.properties.motion).toEqual(defs['block-card']?.properties.motion);
     expect(defs['block-page']?.properties.motion).toBeUndefined();
   });
 
@@ -208,7 +240,3 @@ describe('motion in contracts and runtime', () => {
     expect(html).toContain(`${MOTION_ALLOWED} and (prefers-reduced-motion:reduce)`);
   });
 });
-
-function escapeRegExp(text: string): string {
-  return text.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
-}
