@@ -140,8 +140,9 @@ Each finding has a stable `rule`, a `severity` (`error`, `warning` or `info`),
 a `message`, a JSON `path` (or `css`, `html`, `script`), the block id when
 there is one, reproducible `evidence` and a `fix`. Findings are sorted, so the
 same input always gives the same report. A report lists at most 25 findings per
-rule, plus one that counts the rest; `counts` and the score cover every
-finding. The audit takes linear time and quotes at most a short excerpt of
+rule, plus one that counts the rest and fingerprints them in its `evidence`, so
+a `--baseline` run still sees a change among the unlisted findings; `counts` and
+the score cover every finding. The audit takes linear time and quotes at most a short excerpt of
 the input, so a hostile page cannot stall it or inflate the report.
 
 **Spec audit (authoritative).** It runs on the normalized spec and the theme it

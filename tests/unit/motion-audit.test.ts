@@ -944,6 +944,20 @@ describe('compiled HTML audit: hostile input', () => {
       'many blocks under a long prelude',
       `<style>@media ${'x'.repeat(400_000)}{${'a{animation-timeline:scroll()}'.repeat(20_000)}}</style>`,
     ],
+    ['a flood of empty blocks', `<style>${'{}'.repeat(500_000)}</style>`],
+    ['a flood of nested empty rules', `<style>${'a{b{}}'.repeat(160_000)}</style>`],
+    [
+      'a long digit run in a transition',
+      `<style>a{transition:opacity (${'1'.repeat(900_000)}}</style>`,
+    ],
+    [
+      'a long zero run in a transition',
+      `<style>a{transition:opacity (${'0'.repeat(900_000)}}</style>`,
+    ],
+    [
+      'a long digit run in a guarded animation',
+      `<style>@media (prefers-reduced-motion:no-preference){a{animation:x (${'1'.repeat(900_000)}}}</style>`,
+    ],
   ];
   it.each(cases)('audits %s in linear time and bounded output', (_name, html) => {
     const started = performance.now();
@@ -952,6 +966,23 @@ describe('compiled HTML audit: hostile input', () => {
     expect(performance.now() - started).toBeLessThan(5_000);
     // The report stays small whatever the page holds.
     expect(JSON.stringify(report).length).toBeLessThan(200_000);
+  });
+
+  it('grows linearly when the hostile input grows', () => {
+    // The fastest of three runs, so a pause from other work does not count.
+    const elapsed = (size: number) => {
+      const html = `<style>${'a{b{}}'.repeat(size)}a{transition:opacity (${'1'.repeat(size * 6)}}</style>`;
+      let best = Number.POSITIVE_INFINITY;
+      for (let run = 0; run < 3; run += 1) {
+        const started = performance.now();
+        auditMotionHtml(html);
+        best = Math.min(best, performance.now() - started);
+      }
+      return best;
+    };
+    const small = Math.max(elapsed(40_000), 50);
+    // Quadratic work would take sixteen times as long at four times the size.
+    expect(elapsed(160_000) / small).toBeLessThan(10);
   });
 
   it('fails a stylesheet nested too deeply to check instead of skipping it', () => {
@@ -966,10 +997,36 @@ describe('compiled HTML audit: hostile input', () => {
     const report = auditMotionHtml(htmlPage({ css }));
     const listed = report.findings.filter((item) => item.rule === 'html/transition-all');
     expect(listed).toHaveLength(MOTION_FINDINGS_PER_RULE + 1);
-    expect(listed.some((item) => item.evidence === `${60 - MOTION_FINDINGS_PER_RULE} more`)).toBe(
-      true,
+    const omitted = 60 - MOTION_FINDINGS_PER_RULE;
+    expect(
+      listed.some((item) =>
+        new RegExp(`^${omitted} more, [0-9a-f]{8}$`, 'u').test(item.evidence ?? ''),
+      ),
+    ).toBe(true);
+    expect(report.counts.warning).toBe(60);
+  });
+
+  it('shows a baseline a change among the unlisted findings', () => {
+    const page = (selectors: string[]) =>
+      htmlPage({
+        css: selectors
+          .map((selector) => `${selector}{transition:all var(--ak-motion-duration)}`)
+          .join(''),
+      });
+    const selectors = Array.from(
+      { length: 30 },
+      (_, index) => `.s${String(index).padStart(2, '0')}`,
     );
-    expect(report.counts.warning).toBeGreaterThanOrEqual(60);
+    const baseline = auditMotionHtml(page(selectors));
+    const swapped = auditMotionHtml(page([...selectors.slice(0, -1), '.zz-new']));
+    expect(swapped.counts).toEqual(baseline.counts);
+    const { added } = compareMotionAudits(baseline, swapped);
+    expect(added.map((item) => item.rule)).toEqual(['html/transition-all']);
+    expect(motionAuditFails(added, 'warning')).toBe(true);
+    expect(compareMotionAudits(baseline, auditMotionHtml(page(selectors)))).toEqual({
+      added: [],
+      resolved: [],
+    });
   });
 
   it('reports transition: all once per declaration', () => {

@@ -98,6 +98,14 @@ export interface CssDeclaration {
   value: string;
   /** Preludes of every enclosing block, outermost first. */
   context: readonly string[];
+  /** What the enclosing preludes mean for motion, read once per block. */
+  facts: ContextFacts;
+  /**
+   * Same number for every entry under the same chain of preludes, so two rules
+   * with one selector, or a rule's declarations on both sides of a nested
+   * block, share it.
+   */
+  scope: number;
 }
 
 /**
@@ -128,9 +136,12 @@ export function parseCssDeclarations(css: string): {
   let tooDeep = false;
   // One frozen copy of the stack, shared by every entry until it changes.
   let context: readonly string[] = [];
-  // Facts of each open context, so each prelude is read once, when it opens.
-  const factsStack: ContextFacts[] = [NO_FACTS];
-  FACTS.set(context, NO_FACTS);
+  // Facts and scope of each open block, so each prelude is read once, when it
+  // opens. A scope is interned from its parent's scope and its prelude.
+  const frames: { facts: ContextFacts; scope: number }[] = [{ facts: NO_FACTS, scope: 0 }];
+  const preludeIds = new Map<string, number>();
+  const scopeIds = new Map<string, number>();
+  let frame = frames[0] as { facts: ContextFacts; scope: number };
   let buffer = '';
   const flush = () => {
     const text = buffer.trim();
@@ -141,6 +152,8 @@ export function parseCssDeclarations(css: string): {
       property: text.slice(0, colon).trim().toLowerCase(),
       value: text.slice(colon + 1).trim(),
       context,
+      facts: frame.facts,
+      scope: frame.scope,
     });
   };
   for (const character of css) {
@@ -152,20 +165,36 @@ export function parseCssDeclarations(css: string): {
         tooDeep = true;
         continue;
       }
-      blocks.push({ property: prelude, value: '', context });
+      blocks.push({
+        property: prelude,
+        value: '',
+        context,
+        facts: frame.facts,
+        scope: frame.scope,
+      });
       stack.push(prelude);
       context = [...stack];
-      const facts = joinFacts(factsStack.at(-1) ?? NO_FACTS, preludeFacts(prelude));
-      factsStack.push(facts);
-      FACTS.set(context, facts);
+      let preludeId = preludeIds.get(prelude);
+      if (preludeId === undefined) {
+        preludeId = preludeIds.size;
+        preludeIds.set(prelude, preludeId);
+      }
+      const scopeKey = `${frame.scope}:${preludeId}`;
+      let scope = scopeIds.get(scopeKey);
+      if (scope === undefined) {
+        scope = scopeIds.size + 1;
+        scopeIds.set(scopeKey, scope);
+      }
+      frame = { facts: joinFacts(frame.facts, preludeFacts(prelude)), scope };
+      frames.push(frame);
     } else if (character === '}') {
       flush();
       if (depth > 0) depth -= 1;
       if (stack.length > depth) {
         stack.pop();
-        factsStack.pop();
+        frames.pop();
+        frame = frames.at(-1) as { facts: ContextFacts; scope: number };
         context = [...stack];
-        FACTS.set(context, factsStack.at(-1) ?? NO_FACTS);
       }
     } else if (character === ';') {
       flush();
@@ -200,7 +229,7 @@ export function layers(value: string): string[] {
  * print): `(min-width:0),(prefers-reduced-motion:no-preference)` still matches
  * under reduced motion, so it is not a guard.
  */
-export const isGuarded = (context: readonly string[]) => contextFacts(context).guarded;
+export const isGuarded = (entry: Pick<CssDeclaration, 'facts'>) => entry.facts.guarded;
 
 const isGuardPrelude = (prelude: string) => {
   if (!prelude.startsWith('@media')) return false;
@@ -213,7 +242,7 @@ const isGuardPrelude = (prelude: string) => {
   );
 };
 
-interface ContextFacts {
+export interface ContextFacts {
   guarded: boolean;
   printOnly: boolean;
   inKeyframes: boolean;
@@ -233,24 +262,8 @@ const joinFacts = (outer: ContextFacts, inner: ContextFacts): ContextFacts => ({
   inKeyframes: outer.inKeyframes || inner.inKeyframes,
 });
 
-/**
- * Facts the parser recorded for each context it handed out, so every prelude
- * is read once when its block opens, never once per declaration or nested
- * block: a long prelude over many rules stays linear.
- */
-const FACTS = new WeakMap<readonly string[], ContextFacts>();
-
-function contextFacts(context: readonly string[]): ContextFacts {
-  let facts = FACTS.get(context);
-  if (facts === undefined) {
-    facts = context.map(preludeFacts).reduce(joinFacts, NO_FACTS);
-    FACTS.set(context, facts);
-  }
-  return facts;
-}
-
 /** True inside an `@keyframes` block, whose declarations are frames, not rules. */
-export const isInKeyframes = (context: readonly string[]) => contextFacts(context).inKeyframes;
+export const isInKeyframes = (entry: Pick<CssDeclaration, 'facts'>) => entry.facts.inKeyframes;
 
 /** A selector or name short enough to quote in a message. */
 export function clipSelector(text: string, length = 120): string {
@@ -259,8 +272,10 @@ export function clipSelector(text: string, length = 120): string {
   return single.length > length ? `${single.slice(0, length - 1)}…` : single;
 }
 
-const TIME = /(?:^|[\s(])\d*\.?\d+m?s\b/u;
-const ZERO_TIME = /(?:^|[\s(])0*\.?0+m?s\b/gu;
+// Each alternative consumes digits one way, so a long digit run cannot make
+// the match backtrack.
+const TIME = /^(?:\d+(?:\.\d+)?|\.\d+)m?s(?!\w)/u;
+const ZERO_TIME = /^(?:0+(?:\.0+)?|\.0+)m?s(?!\w)/u;
 
 /** Theme variables whose times the still state zeroes; easing carries no time. */
 const TOKEN_TIME = /var\(--ak-(?:motion-duration|motion-easing|transition)\)/gu;
@@ -271,8 +286,10 @@ const TOKEN_TIME = /var\(--ak-(?:motion-duration|motion-easing|transition)\)/gu;
  * fallback may be a fixed time. A zero time moves nothing.
  */
 export const hasFixedTime = (layer: string) => {
-  const rest = layer.replace(TOKEN_TIME, '').replace(ZERO_TIME, ' ');
-  return rest.includes('var(') || TIME.test(rest);
+  const rest = layer.replace(TOKEN_TIME, '');
+  if (rest.includes('var(')) return true;
+  // A time starts a word after a space or an opening parenthesis.
+  return rest.split(/[\s(]+/u).some((word) => TIME.test(word) && !ZERO_TIME.test(word));
 };
 
 /**
@@ -288,9 +305,9 @@ export const hasFixedTime = (layer: string) => {
  * Adapter stylesheets are not part of the page sheet; their canvas stops them
  * under every still or restrained state and in print.
  */
-export function motionDiagnostics(css: string): string[] {
+export function motionDiagnostics(css: string | ReturnType<typeof parseCssDeclarations>): string[] {
   const messages = new Set<string>();
-  const { found: all, blocks, tooDeep } = parseCssDeclarations(css);
+  const { found: all, blocks, tooDeep } = typeof css === 'string' ? parseCssDeclarations(css) : css;
   if (tooDeep) {
     messages.add(
       `the stylesheet nests blocks deeper than ${CSS_MAX_NESTING} levels, so its motion cannot be checked`,
@@ -308,16 +325,15 @@ export function motionDiagnostics(css: string): string[] {
   const scrollTimelines = new Set(
     all
       .filter((item) => item.property === 'animation-timeline' && /^scroll\(/u.test(item.value))
-      .map((item) => item.context),
+      .map((item) => item.scope),
   );
   for (const declaration of all) {
-    const { property, value, context } = declaration;
-    const facts = contextFacts(context);
+    const { property, value, context, facts, scope } = declaration;
     if (facts.guarded || facts.printOnly || facts.inKeyframes) continue;
     const plain = value.replace(/!important$/u, '').trim();
     const selector = clipSelector(context.at(-1) ?? '');
     if (property === 'animation' || property === 'animation-name') {
-      const onScrollTimeline = scrollTimelines.has(context);
+      const onScrollTimeline = scrollTimelines.has(scope);
       for (const layer of layers(plain)) {
         if (/^none\b/u.test(layer)) continue;
         const name = /ak-[\w-]+/u.exec(layer)?.[0] ?? layer;

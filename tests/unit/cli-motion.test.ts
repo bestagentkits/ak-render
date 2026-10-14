@@ -324,7 +324,7 @@ describe('ak-render motion audit', () => {
     const fragment = '<style>.a{animation:spin 1s}</style><div>page</div>';
     for (const text of [`\uFEFF${html}`, `<!-- saved page -->\n${html}`, fragment]) {
       const c = capture(text);
-      run(['motion', 'audit', '-', '--json', '--fail-on', 'none'], c.io);
+      expect(run(['motion', 'audit', '-', '--json', '--fail-on', 'none'], c.io)).toBe(0);
       expect((JSON.parse(c.out()) as { mode: string }).mode).toBe('html');
     }
   });

@@ -48,6 +48,20 @@ describe('motion diagnostics', () => {
     ).toHaveLength(1);
   });
 
+  it('finds the scroll timeline in another rule for the same selector or past a nested rule', () => {
+    expect(
+      motionDiagnostics('.r{animation:ak-reading linear both}.r{animation-timeline:scroll(root)}'),
+    ).toEqual([]);
+    expect(
+      motionDiagnostics(
+        '.r{animation-timeline:scroll(root);&:hover{color:red}animation:ak-reading linear both}',
+      ),
+    ).toEqual([]);
+    expect(
+      motionDiagnostics('.a{animation-timeline:scroll(root)}.r{animation:ak-reading linear both}'),
+    ).toHaveLength(1);
+  });
+
   it('rejects a keyframes name defined twice', () => {
     expect(motionDiagnostics('@keyframes ak-x{}@keyframes ak-x{}')).toEqual([
       '@keyframes ak-x is defined 2 times',
@@ -91,6 +105,10 @@ describe('motion diagnostics', () => {
     ).toHaveLength(1);
     expect(motionDiagnostics('.a{transition-delay:2s}')).toHaveLength(1);
     expect(motionDiagnostics('.a{transition-delay:0s}')).toEqual([]);
+    expect(motionDiagnostics('.a{transition:opacity 0.0s,color .0s calc(0ms)}')).toEqual([]);
+    expect(motionDiagnostics('.a{transition:opacity calc(1s*2)}')).toHaveLength(1);
+    expect(motionDiagnostics('.a{transition:opacity 1.5s}')).toHaveLength(1);
+    expect(motionDiagnostics('.a{transition:opacity x1s}')).toEqual([]);
     // Any other variable may hold a fixed time, directly or as its fallback.
     expect(motionDiagnostics('.a{transition:translate var(--ak-marquee-time)}')).toHaveLength(1);
     expect(motionDiagnostics('.a{transition:translate var(--ak-nope, 900ms)}')).toHaveLength(1);
