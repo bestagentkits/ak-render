@@ -451,10 +451,18 @@ function start() {
         say(reply.data.error || 'Accept failed.', 'error');
         return;
       }
+      // Replies to edits sent before the write describe the old file.
+      var ticket = ++pending;
       return post('api/state', { proposal: {}, preview: $('preview-mode').value }).then(function (fresh) {
         if (fresh.status !== 200) throw new Error('state');
-        original = fresh.data; current = fresh.data; proposal = {}; history = [];
-        done();
+        original = fresh.data;
+        accepting = false;
+        // Keep any edit made while the write was in flight.
+        proposal = tidy(proposal);
+        if (isEmpty(proposal)) history = [];
+        if (ticket !== pending) return;
+        if (isEmpty(proposal)) { current = fresh.data; render(); }
+        else refresh();
         say('Accepted. ' + path + ' now carries the change.');
       }).catch(function () {
         accepting = false;

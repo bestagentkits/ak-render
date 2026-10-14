@@ -324,13 +324,16 @@ export function motionDiagnostics(css: string | ReturnType<typeof parseCssDeclar
 
   // Within one scope the later declaration wins, and the animation shorthand
   // resets animation-timeline to auto.
-  const scrollTimelines = new Map<number, boolean>();
+  // An !important declaration wins over every later normal one.
+  const scrollTimelines = new Map<number, { scroll: boolean; important: boolean }>();
   for (const item of all) {
-    if (item.property === 'animation-timeline') {
-      scrollTimelines.set(item.scope, /^scroll\(/u.test(item.value));
-    } else if (item.property === 'animation') {
-      scrollTimelines.set(item.scope, false);
-    }
+    if (item.property !== 'animation-timeline' && item.property !== 'animation') continue;
+    const important = /!important$/u.test(item.value);
+    if (scrollTimelines.get(item.scope)?.important === true && !important) continue;
+    scrollTimelines.set(item.scope, {
+      scroll: item.property === 'animation-timeline' && /^scroll\(/u.test(item.value),
+      important,
+    });
   }
   for (const declaration of all) {
     const { property, value, context, facts, scope } = declaration;
@@ -338,7 +341,7 @@ export function motionDiagnostics(css: string | ReturnType<typeof parseCssDeclar
     const plain = value.replace(/!important$/u, '').trim();
     const selector = clipSelector(context.at(-1) ?? '');
     if (property === 'animation' || property === 'animation-name') {
-      const onScrollTimeline = scrollTimelines.get(scope) === true;
+      const onScrollTimeline = scrollTimelines.get(scope)?.scroll === true;
       for (const layer of layers(plain)) {
         if (/^none\b/u.test(layer)) continue;
         const name = /ak-[\w-]+/u.exec(layer)?.[0] ?? layer;

@@ -15,7 +15,7 @@
 
 import { createHash } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
-import { type Document, isAlias, isMap, isNode, parseAllDocuments, parseDocument } from 'yaml';
+import { type Document, isAlias, isMap, parseAllDocuments, parseDocument, visit } from 'yaml';
 import { RenderError } from '../../errors.js';
 import type { IrDocument, IrNode } from '../../ir.js';
 import { type CompileResult, compile } from '../../render/render.js';
@@ -278,14 +278,34 @@ export function checkStudioSource(source: StudioSource): void {
   }
 }
 
-/** True when the node at `keys`, or any node on the way to it, is an alias or carries an anchor. */
-function isShared(doc: Document, keys: readonly (string | number)[]): boolean {
+/** The nodes some alias points to, which an edit in place would change everywhere. */
+function aliasTargets(doc: Document): Set<unknown> {
+  const targets = new Set<unknown>();
+  visit(doc, {
+    Alias(_, alias) {
+      targets.add(alias.resolve(doc));
+    },
+  });
+  return targets;
+}
+
+/**
+ * True when the node at `keys`, or a node on the way to it, is an alias or an
+ * alias target, or when the value under `leaf` is an alias target. An alias as
+ * the value itself is fine: replacing it changes only this copy.
+ */
+function isShared(
+  doc: Document,
+  targets: Set<unknown>,
+  keys: readonly (string | number)[],
+  leaf: string | number,
+): boolean {
   for (let depth = 1; depth <= keys.length; depth += 1) {
     const node = doc.getIn(keys.slice(0, depth), true);
-    if (isAlias(node) || (isNode(node) && node.anchor !== undefined)) return true;
     if (node === undefined) return false;
+    if (isAlias(node) || targets.has(node)) return true;
   }
-  return false;
+  return targets.has(doc.getIn([...keys, leaf], true));
 }
 
 /**
@@ -310,6 +330,7 @@ export function applyProposal(
     source.format === 'json'
       ? (JSON.parse(text) as Record<string, unknown>)
       : parseDocument(text, { keepSourceTokens: true });
+  const targets = isDocument(target) ? aliasTargets(target) : new Set<unknown>();
 
   for (const [id, recipe] of blocks) {
     const node = byId.get(id);
@@ -319,7 +340,7 @@ export function applyProposal(
       });
     }
     const keys = jsonPathKeys(node.path);
-    if (isDocument(target) && isShared(target, keys)) {
+    if (isDocument(target) && isShared(target, targets, keys, 'motion')) {
       throw studioError(
         `block "${id}" is shared through a YAML anchor, so editing it would change every copy; edit it by hand`,
         `proposal.blocks.${id}`,
@@ -336,7 +357,10 @@ export function applyProposal(
     if (theme !== undefined && !isObject) {
       throw studioError('the spec theme must be an object to take token overrides', '$.theme');
     }
-    if (isDocument(target) && isShared(target, ['theme', 'tokens'])) {
+    const sharedToken = tokens.find(
+      ([token]) => isDocument(target) && isShared(target, targets, ['theme', 'tokens'], token),
+    );
+    if (sharedToken !== undefined) {
       throw studioError(
         'the spec theme is shared through a YAML anchor, so editing it would change every copy; edit it by hand',
         '$.theme',
@@ -402,7 +426,8 @@ export function applyProposal(
 function patchLines(source: string, baseline: string, edited: string): string | undefined {
   // Align a file without a final newline as if it had one, then drop it again.
   const unterminated = source !== '' && !source.endsWith('\n');
-  const raw = (unterminated ? `${source}\n` : source).split('\n');
+  const eol = source.includes('\r\n') ? '\r\n' : '\n';
+  const raw = (unterminated ? source + eol : source).split('\n');
   const s = raw.map((line) => (line.endsWith('\r') ? line.slice(0, -1) : line));
   const b = baseline.split('\n');
   const alignment = editScript(b, s);
@@ -452,7 +477,7 @@ function patchLines(source: string, baseline: string, edited: string): string | 
   }
   out.push(...raw.slice(cursor));
   const joined = out.join('\n');
-  return unterminated ? joined.replace(/\n$/u, '') : joined;
+  return unterminated && joined.endsWith(eol) ? joined.slice(0, -eol.length) : joined;
 }
 
 export interface StudioOptions {

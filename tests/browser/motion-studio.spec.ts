@@ -217,7 +217,12 @@ test('Accept stays off while a write is in flight, even when the proposal change
   await expect(diff(page)).toContainText('+    motion-easing: linear');
   await expect(page.locator('#accept')).toBeDisabled();
   release();
-  await expect(page.locator('#message')).toContainText('Accepted');
+  // The write lands, and the edit made meanwhile stays as the next proposal.
+  await expect.poll(() => readFileSync(file, 'utf8')).toContain('motion-policy: reduced');
+  await expect(diff(page)).not.toContainText('+    motion-policy');
+  await expect(diff(page)).toContainText('+    motion-easing: linear');
+  await expect(page.locator('#easing')).toHaveValue('linear');
+  await expect(page.locator('#accept')).toBeEnabled();
   await page.unroute('**/api/accept');
 });
 

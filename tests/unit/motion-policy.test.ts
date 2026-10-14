@@ -62,6 +62,14 @@ describe('motion diagnostics', () => {
     ).toHaveLength(1);
   });
 
+  it('keeps an !important scroll timeline over a later normal shorthand', () => {
+    expect(
+      motionDiagnostics(
+        '.r{animation-timeline:scroll(root)!important}.r{animation:ak-reading linear both}',
+      ),
+    ).toEqual([]);
+  });
+
   it('lets a later animation shorthand reset the scroll timeline to the clock', () => {
     for (const css of [
       '.r{animation-timeline:scroll(root)}.r{animation:ak-reading linear both}',

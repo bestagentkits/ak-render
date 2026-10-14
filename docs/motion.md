@@ -231,9 +231,9 @@ ak-render motion studio page.yaml
   on disk since the studio read it (checked again just before the write), if
   the proposal does not compile or if it changes nothing.
 - **Limits.** The studio edits version 1 specs; a bare version 0 block list
-  is refused when the studio starts. A block shared through a YAML anchor or
-  alias, or that sits inside an anchored or aliased list, block or theme, is
-  not edited, because the edit would change every copy. A spec with YAML
+  is refused when the studio starts. An edit is refused when a YAML alias
+  copies the value, block, list or theme it would change, because the edit
+  would change every copy; replacing an alias itself is allowed. A spec with YAML
   errors or more than one YAML document is refused when the studio starts. Accept
   replaces the spec with a new file, so a hard link to the old spec keeps the
   old content.

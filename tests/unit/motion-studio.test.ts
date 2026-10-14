@@ -463,16 +463,39 @@ blocks:
     expect(JSON.parse(after).blocks[0].motion).toBe('reveal-soft');
   });
 
-  it('refuses a block shared through a YAML anchor', () => {
+  it('refuses a motion value that an alias elsewhere copies', () => {
     const text = `version: 1
 meta: {title: Anchors}
 blocks:
-  - &shared {type: card, id: shared-card, title: A, text: x}
+  - {type: card, id: a, title: A, text: x, motion: &m reveal-soft}
+  - {type: card, id: b, title: B, text: y, motion: *m}
 `;
     expectRenderError(
-      () => edit('page.yaml', text, { blocks: { 'shared-card': 'reveal-soft' } }),
+      () => edit('page.yaml', text, { blocks: { a: 'reveal-up' } }),
       /YAML anchor/u,
     );
+    // Replacing the alias changes only its own block.
+    const after = edit('page.yaml', text, { blocks: { b: 'reveal-up' } });
+    expect(changed(text, after)).toEqual([
+      '-  - {type: card, id: b, title: B, text: y, motion: *m}',
+      '+  - {type: card, id: b, title: B, text: y, motion: reveal-up}',
+    ]);
+  });
+
+  it('edits through an anchor that nothing refers to', () => {
+    const text = `version: 1
+meta: {title: Anchors}
+theme: &th
+  preset: editorial
+blocks: &all
+  - &one {type: card, id: c, title: A, text: x}
+`;
+    expect(changed(text, edit('page.yaml', text, { blocks: { c: 'reveal-soft' } }))).toHaveLength(
+      2,
+    );
+    expect(
+      changed(text, edit('page.yaml', text, { tokens: { 'motion-duration': '300ms' } })),
+    ).toEqual(['+  tokens:', '+    motion-duration: 300ms']);
   });
 
   it('refuses a block whose list or parent is shared through a YAML anchor', () => {
@@ -492,17 +515,39 @@ blocks:
     }
   });
 
-  it('refuses token edits to a theme shared through a YAML anchor', () => {
+  it('refuses a token value that an alias elsewhere copies', () => {
     const text = `version: 1
 meta: {title: Anchors}
-theme: &t {preset: editorial, tokens: {motion-duration: 200ms}}
+theme: {preset: editorial, tokens: {motion-duration: &d 200ms}}
 blocks:
-  - {type: card, id: c, title: A, text: x}
+  - {type: card, id: c, title: A, text: *d}
 `;
     expectRenderError(
       () => edit('page.yaml', text, { tokens: { 'motion-duration': '300ms' } }),
       /YAML anchor/u,
     );
+  });
+
+  it('keeps the line endings of a CRLF file without a final newline', () => {
+    const crlf = YAML_SPEC.trimEnd().replace(/\n/gu, '\r\n');
+    const added = edit(
+      'page.yaml',
+      crlf
+        .replace('    motion: reveal-soft', '    text: z')
+        .replace('    text: Top-level card.\r\n', ''),
+      {
+        blocks: { 'plain-card': 'reveal-soft' },
+      },
+    );
+    expect(added.endsWith('\r\n    motion: reveal-soft')).toBe(true);
+    expect(
+      added
+        .split('\n')
+        .slice(0, -1)
+        .every((line) => line.endsWith('\r')),
+    ).toBe(true);
+    const replaced = edit('page.yaml', crlf, { blocks: { 'plain-card': 'reveal-up' } });
+    expect(replaced).toBe(crlf.replace('motion: reveal-soft', 'motion: reveal-up'));
   });
 
   it('keeps a file without a final newline that way', () => {
