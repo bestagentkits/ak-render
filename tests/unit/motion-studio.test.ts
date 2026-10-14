@@ -514,7 +514,8 @@ describe('startMotionStudio file handling', () => {
     }
     expect(lstatSync(link).isSymbolicLink()).toBe(true);
     expect(readFileSync(target, 'utf8')).toContain('motion-easing: linear');
-    expect(statSync(target).mode & 0o777).toBe(0o640);
+    // Windows keeps no POSIX permission bits to preserve.
+    if (process.platform !== 'win32') expect(statSync(target).mode & 0o777).toBe(0o640);
   });
 
   it('fails to start on an unreadable path or a version 0 spec', async () => {
