@@ -11,6 +11,17 @@ Release mechanics and the compatibility contract live in
 
 ### Added
 
+- Blocks can opt into a named motion recipe with `motion: <recipe>` (or
+  `motion: { preset }`): `reveal-soft`, `stagger`, `figure-roll`, `fade-swap`,
+  `tabs-slide`, `accordion-expand` and `dialog-pop`. Recipes are
+  compiler-owned CSS behind the reduced-motion guard, timed from a scale that
+  derives from `motion-duration`, so reduced, still, print and no-JS pages
+  settle as before. A page that names no recipe emits identical bytes.
+  Validation rejects unknown or incompatible recipes and any field other than
+  `preset` with a JSON path. The JSON Schema, `describe --compact` and the
+  library exports (`MOTION_RECIPES`, `getMotionRecipe`, `motionPresetsFor`)
+  carry the registry. See [docs/motion.md](./docs/motion.md).
+
 - Code blocks and `api-endpoint` bodies are syntax highlighted at compile
   time for php, javascript, typescript, python, go, rust, java, kotlin,
   csharp, c, cpp, swift, ruby, bash, sql, json, yaml and diff, plus common

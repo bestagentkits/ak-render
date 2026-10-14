@@ -16,6 +16,7 @@ The agent writes meaning (blocks such as hero, prose, table, chart, timeline, co
 - [Landing page](https://render.agentkit.best/): overview, install, MCP setup for Claude, ChatGPT, Claude Code, Cursor, VS Code and Codex
 - [Gallery](https://render.agentkit.best/gallery/): compiled example pages
 - [Theme preview](https://render.agentkit.best/gallery/themes/): every built-in theme preset on the same page
+- [Motion recipes](https://render.agentkit.best/gallery/motion-recipes.html): every named motion recipe on the blocks it suits
 - [GitHub repository](https://github.com/bestagentkits/ak-render): source, README, agent guide, self-hosting
 - [npm package](https://www.npmjs.com/package/@bestagentkits/render)
 - [AgentKit](https://agentkit.best): the team that builds and hosts AK Render

@@ -14,6 +14,12 @@ import {
 } from '../data/data-json-schema.js';
 import { RenderError } from '../errors.js';
 import { ICON_PROFILE_NAMES } from '../icons/icon-packs.js';
+import {
+  motionJsonSchema,
+  motionPresetsFor,
+  specificMotionPresetsFor,
+  UNIVERSAL_MOTION_PRESETS,
+} from '../motion/recipes.js';
 import { LIMITS } from '../spec/bounds.js';
 import { CONDITION_JSON_SCHEMA } from '../spec/conditions.js';
 import { THEME_RECIPES_JSON_SCHEMA } from '../theme/recipes.js';
@@ -169,6 +175,9 @@ function blockSchema(definition: BlockDefinition): Record<string, unknown> {
     Object.assign(properties, BLOCK_DATA_JSON_SCHEMA_PROPERTIES);
   }
   properties.visibleWhen = { $ref: '#/$defs/condition' };
+  if (motionPresetsFor(definition.type).length > 0) {
+    properties.motion = { $ref: `#/$defs/${motionDefName(definition.type)}` };
+  }
 
   return {
     type: 'object',
@@ -177,6 +186,15 @@ function blockSchema(definition: BlockDefinition): Record<string, unknown> {
     properties,
     description: definition.summary,
   };
+}
+
+/**
+ * The `$defs` entry for a block's motion field. Blocks that accept the same
+ * recipes share one entry: most take only the universal ones (`motion`).
+ */
+function motionDefName(type: string): string {
+  const specific = specificMotionPresetsFor(type);
+  return specific.length === 0 ? 'motion' : `motion-${specific.join('-')}`;
 }
 
 function actionMapSchema(): Record<string, unknown> {
@@ -231,10 +249,15 @@ export function buildPageSpecJsonSchema(): Record<string, unknown> {
     actionMap: actionMapSchema(),
     action: actionSchema(),
     condition: CONDITION_JSON_SCHEMA,
+    motion: motionJsonSchema(UNIVERSAL_MOTION_PRESETS),
     ...DATA_JSON_SCHEMA_DEFS,
   };
   for (const definition of BLOCK_DEFINITIONS) {
     defs[`block-${definition.type}`] = blockSchema(definition);
+    const motion = motionDefName(definition.type);
+    if (motion !== 'motion' && defs[motion] === undefined) {
+      defs[motion] = motionJsonSchema(motionPresetsFor(definition.type));
+    }
   }
 
   return {

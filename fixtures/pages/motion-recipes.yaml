@@ -1,0 +1,139 @@
+version: 1
+
+meta:
+  title: Motion Recipes
+  description: Every compiler-owned motion recipe on the blocks it suits, each named by the block and none authored as CSS or script
+  locale: en
+
+theme:
+  preset: editorial
+
+policy:
+  network: deny
+
+state:
+  plan: monthly
+
+blocks:
+  - type: hero
+    eyebrow: Motion
+    title: Name the motion, not the keyframes
+    description: Each block below opts into one recipe with a single motion field. The compiler owns the timing, the reduced-motion fallback and the print state.
+
+  - type: section
+    id: arrival
+    title: On arrival
+    blocks:
+      - type: card
+        id: reveal-card
+        title: Revenue is up 12%
+        text: This card fades and rises into place once, the first time it scrolls into view.
+        motion: reveal-soft
+      - type: steps
+        id: stagger-steps
+        items:
+          - title: Plan
+            text: Agree on the outcome.
+          - title: Build
+            text: Ship behind a flag.
+          - title: Measure
+            text: Read the numbers.
+          - title: Roll out
+            text: Open it to everyone.
+        motion: stagger
+      - type: stats
+        id: roll-stats
+        items:
+          - label: Revenue
+            value: $120K
+          - label: Customers
+            value: '4,200'
+          - label: Retention
+            value: 94%
+        motion: figure-roll
+
+  - type: section
+    id: state-change
+    title: On a state change
+    blocks:
+      - type: radio-group
+        id: plan-radios
+        label: Billing period
+        bind: state.plan
+        options:
+          - value: monthly
+            label: Monthly
+          - value: annual
+            label: Annual
+      - type: kpi
+        id: monthly-kpi
+        visibleWhen:
+          path: state.plan
+          equals: monthly
+        items:
+          - label: Price per seat
+            value: $12
+          - label: Billed
+            value: Monthly
+        motion: figure-roll
+      - type: kpi
+        id: annual-kpi
+        visibleWhen:
+          path: state.plan
+          equals: annual
+        items:
+          - label: Price per seat
+            value: $10
+          - label: Billed
+            value: Yearly
+        motion: figure-roll
+      - type: callout
+        id: annual-callout
+        tone: success
+        title: Two months free
+        text: The annual plan costs ten months of the monthly price.
+        visibleWhen:
+          path: state.plan
+          equals: annual
+        motion: fade-swap
+
+  - type: section
+    id: interaction
+    title: On interaction
+    blocks:
+      - type: tabs
+        id: plan-tabs
+        items:
+          - title: Overview
+            text: The selected-tab marker slides to the new tab, and the panel fades in.
+          - title: Pricing
+            text: Arrow keys, Home and End move between tabs exactly as before.
+          - title: Frequently asked
+            text: Under reduced motion the marker and the panel switch at once.
+        motion: tabs-slide
+      - type: accordion
+        id: faq
+        items:
+          - title: Does it work offline?
+            text: Yes. Every recipe is CSS inside the page, plus a few lines of runtime for state changes.
+          - title: What happens with reduced motion?
+            text: Sections snap open and shut, and arrivals show in place.
+          - title: Can a spec add its own animation?
+            text: No. A spec names a recipe; the compiler writes the CSS.
+        motion: accordion-expand
+      - type: toolbar
+        title: Dialog
+        items:
+          - type: button
+            id: open-confirm
+            label: Open the dialog
+            on:
+              click:
+                action: toggle
+                target: confirm-dialog
+
+  - type: dialog
+    id: confirm-dialog
+    title: Publish this page?
+    text: The dialog scales in, and on close it fades out before focus returns to the button that opened it.
+    motion: dialog-pop

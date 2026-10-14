@@ -69,7 +69,9 @@ hex.
 A still page has a 0ms transition duration and no animation. The reading-progress
 rail and scroll-edge shades follow the scroll position in every state, and print
 always settles the page. See
-[ADR 0002](./adr/0002-motion-policy.md) for the full contract.
+[ADR 0002](./adr/0002-motion-policy.md) for the full contract. Per-block
+[motion recipes](./motion.md) time themselves from `motion-duration`, so a still
+theme stills them too.
 
 ## Recipes
 

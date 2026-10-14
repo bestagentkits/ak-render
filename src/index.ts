@@ -30,6 +30,21 @@ export type { IconPackId, IconProfileName, IconSize } from './icons/icon-packs.j
 export { ICON_PACK_IDS, ICON_PROFILE_NAMES, ICON_SIZES } from './icons/icon-packs.js';
 export type { IrDocument, IrNode, IrTheme, NetworkPolicy } from './ir.js';
 export type { JsonValue } from './json.js';
+export type {
+  MotionDuration,
+  MotionEasing,
+  MotionPhase,
+  MotionRecipe,
+  MotionRuntime,
+  MotionTrigger,
+} from './motion/recipes.js';
+export {
+  getMotionRecipe,
+  MOTION_DURATION_SCALE,
+  MOTION_EASINGS,
+  MOTION_RECIPES,
+  motionPresetsFor,
+} from './motion/recipes.js';
 export type { PageRecipe, PageRecipeSummary } from './recipes/index.js';
 export { recipe, recipes } from './recipes/index.js';
 export type { ActionDefinition, ActionType } from './registry/actions.js';

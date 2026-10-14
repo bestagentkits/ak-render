@@ -13,6 +13,7 @@
  */
 
 import { CAROUSEL, TABS } from '../blocks/composition/composition-runtime.js';
+import { MOTION_DIALOG, motionRuntime } from '../motion/motion-runtime.js';
 import type { FeatureModule } from '../registry/block-module.js';
 import type { RuntimeFeature } from '../registry/roster.js';
 import { serializeJsonForScript } from './escape.js';
@@ -27,6 +28,8 @@ export interface RuntimeOptions {
   hasBindings: boolean;
   /** Registry features the page uses, in registry order. */
   moduleFeatures?: readonly FeatureModule[];
+  /** Motion recipe ids the page's blocks opt into. */
+  motion?: ReadonlySet<string>;
 }
 
 const helpers = (conditions: boolean): string => `
@@ -553,11 +556,13 @@ export function buildRuntime(options: RuntimeOptions): string {
   const modules = options.moduleFeatures ?? [];
   const conditions = features.has('state');
   const parts: string[] = [];
+  const motion = options.motion ?? new Set<string>();
+  const lifecycle = motionRuntime(motion);
 
   if (conditions) parts.push(STATE);
   if (features.has('theme')) parts.push(THEME);
   if (features.has('copy')) parts.push(COPY);
-  if (features.has('dialog')) parts.push(DIALOG);
+  if (features.has('dialog')) parts.push(motion.has('dialog-pop') ? MOTION_DIALOG : DIALOG);
   if (features.has('filter')) parts.push(FILTER);
   if (features.has('carousel')) parts.push(CAROUSEL);
   if (features.has('slider')) parts.push(SLIDER);
@@ -568,6 +573,7 @@ export function buildRuntime(options: RuntimeOptions): string {
   for (const feature of modules) {
     if (feature.script !== undefined) parts.push(feature.script.code);
   }
+  parts.push(...lifecycle.code);
   parts.push(EFFECTS);
 
   const wiring: string[] = [];
@@ -581,6 +587,8 @@ export function buildRuntime(options: RuntimeOptions): string {
   for (const feature of modules) {
     if (feature.script?.boot !== undefined) wiring.push(feature.script.boot);
   }
+  // Motion wires after the blocks it watches, so their own setup never plays.
+  wiring.push(...lifecycle.boot);
   wiring.push('wireEffects();');
 
   return [

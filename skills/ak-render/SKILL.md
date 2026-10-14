@@ -151,6 +151,12 @@ The twelve built-in presets are `blueprint`, `crimson-press`, `data-console`,
 `research-notebook`, `swiss-clean`, `terminal-mono`, and `warm-signal`, and `themes` also lists any
 project or user presets it finds. Use only a name it lists. Don't try to restyle the page.
 
+Motion is named, not authored. A block may opt into one recipe, such as
+`motion: reveal-soft` on a card, `stagger` on steps, or `tabs-slide` on tabs;
+`describe --compact` lists a type's recipes under `motion:`, and `fade-swap`
+fits any block with `visibleWhen`. Leave `motion` out unless motion helps the
+reader; the compiler handles reduced motion and print.
+
 ## Rules
 
 - **No raw HTML, CSS, or JS.** The spec has no field for them, and keys such

@@ -134,7 +134,9 @@ describe('describeMany', () => {
       'category',
       'summary',
       'props',
+      'motion',
     ]);
+    expect(kpi?.motion).toEqual(['figure-roll']);
     expect(JSON.stringify(kpi)).not.toContain('description');
   });
 

@@ -18,6 +18,7 @@ import { derivedNodeId } from '../hash.js';
 import { ICON_PROFILE_NAMES, isIconProfileName } from '../icons/icon-packs.js';
 import type { IrDocument, IrNode, IrTheme, NetworkPolicy } from '../ir.js';
 import { isPlainObject, type JsonValue } from '../json.js';
+import { getMotionRecipe, motionPresetsFor, motionRecipeTargets } from '../motion/recipes.js';
 import type { BlockRegistry, CheckContext } from '../registry/block-module.js';
 import { NODE_ID_PATTERN, validateProps } from '../registry/prop-schema.js';
 import { blockTypes, DEFAULT_REGISTRY, getBlockDefinition } from '../registry/registry.js';
@@ -491,6 +492,84 @@ function collectSlotLists(
   return lists;
 }
 
+/**
+ * Check a block's `motion` opt-in: a recipe name, or `{ preset }`. A recipe is
+ * compiler-owned, so the spec can name one but never supply CSS, keyframes,
+ * timings or scripts. Returns the recipe id when it applies to the block.
+ */
+function validateMotion(
+  value: unknown,
+  type: string,
+  hasVisibleWhen: boolean,
+  path: string,
+  bag: DiagnosticBag,
+): string | undefined {
+  const motionPath = pathKey(path, 'motion');
+  let preset: unknown = value;
+  let presetPath = motionPath;
+  if (isPlainObject(value)) {
+    for (const key of Object.keys(value)) {
+      if (key === 'preset') continue;
+      bag.add({
+        code: 'SPEC_VALIDATION_ERROR',
+        path: pathKey(motionPath, key),
+        message:
+          'motion accepts only "preset": recipes are compiler-owned, so CSS, keyframes, timings and scripts cannot be supplied',
+      });
+    }
+    preset = value.preset;
+    presetPath = pathKey(motionPath, 'preset');
+  }
+  // Recipes that need visibleWhen are offered only to blocks that have it.
+  const compatible = motionPresetsFor(type).filter(
+    (id) => hasVisibleWhen || getMotionRecipe(id)?.requires?.visibleWhen !== true,
+  );
+  if (typeof preset !== 'string') {
+    bag.add({
+      code: 'SPEC_VALIDATION_ERROR',
+      path: presetPath,
+      message: 'motion must be a recipe name or { preset: <name> }',
+      details: { compatible },
+    });
+    return undefined;
+  }
+  const recipe = getMotionRecipe(preset);
+  if (recipe === undefined) {
+    bag.add({
+      code: 'SPEC_VALIDATION_ERROR',
+      path: presetPath,
+      message:
+        compatible.length === 0
+          ? `unknown motion recipe "${preset}"; block type "${type}" takes no motion recipe`
+          : `unknown motion recipe "${preset}"; "${type}" accepts: ${compatible.join(', ')}`,
+      details: { preset, compatible },
+    });
+    return undefined;
+  }
+  if (!motionRecipeTargets(recipe, type)) {
+    bag.add({
+      code: 'SPEC_VALIDATION_ERROR',
+      path: presetPath,
+      message:
+        compatible.length === 0
+          ? `motion recipe "${preset}" does not apply to "${type}", which takes no motion recipe`
+          : `motion recipe "${preset}" does not apply to "${type}"; it accepts: ${compatible.join(', ')}`,
+      details: { preset, compatible },
+    });
+    return undefined;
+  }
+  if (recipe.requires?.visibleWhen === true && !hasVisibleWhen) {
+    bag.add({
+      code: 'SPEC_VALIDATION_ERROR',
+      path: presetPath,
+      message: `motion recipe "${preset}" plays when a state change shows the block, so the block needs visibleWhen`,
+      details: { preset },
+    });
+    return undefined;
+  }
+  return recipe.id;
+}
+
 function buildNode(
   entry: unknown,
   parentId: string | null,
@@ -531,8 +610,13 @@ function buildNode(
   const dataInput: BlockDataInput = {};
   let childBlocks: unknown;
   let visibleWhen: unknown;
+  let motion: unknown;
   for (const [key, value] of Object.entries(entry)) {
     if (key === 'type') continue;
+    if (key === 'motion') {
+      motion = value;
+      continue;
+    }
     if (key === 'blocks') {
       childBlocks = value;
       continue;
@@ -591,6 +675,19 @@ function buildNode(
     if (condition !== undefined) {
       node.when = condition;
       node.runtimeFeatures.push('state');
+    }
+  }
+  if (motion !== undefined) {
+    const preset = validateMotion(
+      motion,
+      definition.type,
+      visibleWhen !== undefined,
+      path,
+      context.bag,
+    );
+    if (preset !== undefined) {
+      node.motion = { preset };
+      if (!node.runtimeFeatures.includes('motion')) node.runtimeFeatures.push('motion');
     }
   }
   if (definition.data !== undefined) {

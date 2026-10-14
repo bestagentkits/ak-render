@@ -84,6 +84,7 @@ export const CORE_RUNTIME_FEATURES = [
   'frame',
   'checklist',
   'state',
+  'motion',
 ] as const;
 
 export type CoreRuntimeFeature = (typeof CORE_RUNTIME_FEATURES)[number];

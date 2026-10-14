@@ -163,6 +163,10 @@ rendering never needs the token or the network.
   control binds must be declared under `state`.
 - Themes are presets, not CSS. Custom presets extend a built-in; see
   [themes.md](./themes.md).
+- Motion is opt-in per block and named, never authored: `motion: reveal-soft`
+  on a card, `stagger` on steps, `tabs-slide` on tabs. `describe --compact`
+  lists a type's recipes under `motion:`, and `fade-swap` fits any block with
+  `visibleWhen`. See [motion.md](./motion.md).
 - The same spec, theme presets and compiler version always produce the same
   bytes, so a changed hash means one of those three changed. Project or user
   presets found on disk and `--theme` count as theme input.

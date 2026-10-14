@@ -182,6 +182,10 @@ set of declarative actions (`ak-render catalog` lists them); there is no
 JavaScript field. Every page reads completely with scripts off, with motion
 reduced, in print and in a screenshot.
 
+A block can also opt into one named motion recipe, such as
+`motion: reveal-soft` or `motion: tabs-slide`. The compiler owns the CSS, the
+timing and the reduced-motion fallback; see [docs/motion.md](./docs/motion.md).
+
 ### Review a plan in the page
 
 End a plan with a `feedback` block and put each open question in a `decision`
