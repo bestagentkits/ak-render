@@ -10,7 +10,7 @@
  * known command is optional.
  */
 
-import { mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -35,6 +35,7 @@ import {
   motionAuditFails,
 } from './motion/motion-audit.js';
 import { describeMotion, motionCatalog, searchMotions } from './motion/motion-catalog.js';
+import { startMotionStudio } from './motion/studio/studio-server.js';
 import { type PageRecipe, recipe, recipes } from './recipes/index.js';
 import { BLOCK_CATEGORIES } from './registry/block-module.js';
 import { searchCatalog } from './registry/catalog-search.js';
@@ -75,6 +76,7 @@ interface Flags {
   limit?: string;
   failOn?: string;
   baseline?: string;
+  port?: string;
   out?: string;
   theme?: string;
   themeFile?: string;
@@ -418,8 +420,11 @@ function findingText(finding: MotionFinding): string {
   return `${finding.severity} ${finding.rule}: ${where}: ${finding.message}${evidence}\n    fix: ${finding.fix}\n`;
 }
 
-function motionAuditCommand(args: string[], io: CliIo, flags: Flags): number {
+function motionCommand(args: string[], io: CliIo, flags: Flags): number {
   const [action, file, ...extra] = args;
+  if (action === 'studio' && file !== undefined && extra.length === 0) {
+    return motionStudioCommand(file, io, flags);
+  }
   if (action !== 'audit' || file === undefined || extra.length > 0) {
     io.stderr(`ak-render: usage: ${COMMANDS.motion?.usage ?? 'ak-render motion audit <spec>'}\n`);
     return 2;
@@ -481,6 +486,47 @@ function motionAuditCommand(args: string[], io: CliIo, flags: Flags): number {
     if (failed) io.stdout(`gate failed: findings at ${failOn} or above\n`);
   }
   return failed ? 1 : 0;
+}
+
+/**
+ * Start the loopback Motion Studio for one spec file. The server keeps the
+ * process alive until it is interrupted; a failed start sets the exit code.
+ */
+function motionStudioCommand(file: string, io: CliIo, flags: Flags): number {
+  if (file === STDIN_PATH || HTML_INPUT.test(file)) {
+    io.stderr('ak-render: motion studio edits a YAML or JSON spec file, not stdin or HTML\n');
+    return 2;
+  }
+  const port = flags.port === undefined ? 0 : Number(flags.port);
+  if (!/^\d{1,5}$/u.test(flags.port ?? '0') || port > 65_535) {
+    io.stderr('ak-render: --port must be an integer from 0 to 65535\n');
+    return 2;
+  }
+  if (!existsSync(file)) {
+    io.stderr(`ak-render: cannot read ${file}: no such file\n`);
+    return 2;
+  }
+  startMotionStudio({ file, port, themeCatalog: themeCatalogFor(flags, io) }).then(
+    (studio) => {
+      io.stdout(
+        flags.json
+          ? `${JSON.stringify({ url: studio.url, port: studio.port, file })}\n`
+          : `Motion Studio for ${file}\n  ${studio.url}\nPress Ctrl-C to stop.\n`,
+      );
+      const stop = () => {
+        void studio.close().then(() => process.exit(0));
+      };
+      process.once('SIGINT', stop);
+      process.once('SIGTERM', stop);
+    },
+    (error: unknown) => {
+      io.stderr(
+        `ak-render: motion studio failed to start: ${error instanceof Error ? error.message : String(error)}\n`,
+      );
+      process.exitCode = 1;
+    },
+  );
+  return 0;
 }
 
 const COMMANDS: Record<string, Command> = {
@@ -631,10 +677,11 @@ const COMMANDS: Record<string, Command> = {
     run: motionsCommand,
   },
   motion: {
-    summary: 'Audit the motion of a Page Spec (authoritative) or compiled page (best effort).',
+    summary:
+      'Audit the motion of a Page Spec or compiled page, or open the local Motion Studio for a spec.',
     usage:
-      'ak-render motion audit <spec|page.html|-> [--fail-on <error|warning|info|none>] [--baseline <report.json>] [--json]',
-    run: motionAuditCommand,
+      'ak-render motion audit <spec|page.html|-> [--fail-on <error|warning|info|none>] [--baseline <report.json>] [--json]\n  ak-render motion studio <spec> [--port <n>] [--json]',
+    run: motionCommand,
   },
   mcp: {
     summary:
@@ -710,6 +757,7 @@ const VALUE_FLAGS = [
   '--limit',
   '--fail-on',
   '--baseline',
+  '--port',
 ] as const;
 
 /** Build the preset catalog for this invocation from flags and discovery. */
@@ -755,6 +803,7 @@ function parseArgs(args: string[]): ParsedArgs | { error: string } {
       else if (valueFlag === '--limit') flags.limit = value;
       else if (valueFlag === '--fail-on') flags.failOn = value;
       else if (valueFlag === '--baseline') flags.baseline = value;
+      else if (valueFlag === '--port') flags.port = value;
       else flags.themeFile = value;
       index += 1;
       continue;

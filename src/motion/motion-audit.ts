@@ -96,7 +96,8 @@ export const MOTION_ARRIVAL_BUDGET = 6;
 /**
  * A report lists at most this many findings per rule, and one more that counts
  * the rest, so a hostile page cannot make the report grow without bound. The
- * counts and the score still cover every finding.
+ * counts and the score still cover every finding, and the summary's evidence
+ * fingerprints the unlisted ones, so a baseline still sees any change to them.
  */
 export const MOTION_FINDINGS_PER_RULE = 25;
 
@@ -143,7 +144,7 @@ function report(
 
 function capFindings(sorted: MotionFinding[]): MotionFinding[] {
   const listed: MotionFinding[] = [];
-  const omitted = new Map<string, { first: MotionFinding; count: number }>();
+  const omitted = new Map<string, { first: MotionFinding; count: number; hash: number }>();
   const perRule = new Map<string, number>();
   for (const finding of sorted) {
     const seen = perRule.get(finding.rule) ?? 0;
@@ -153,20 +154,36 @@ function capFindings(sorted: MotionFinding[]): MotionFinding[] {
       continue;
     }
     const entry = omitted.get(finding.rule);
-    if (entry === undefined) omitted.set(finding.rule, { first: finding, count: 1 });
-    else entry.count += 1;
+    const key = motionFindingKey(finding);
+    if (entry === undefined) {
+      omitted.set(finding.rule, { first: finding, count: 1, hash: fnv1a(key, FNV_OFFSET) });
+    } else {
+      entry.count += 1;
+      entry.hash = fnv1a(key, entry.hash);
+    }
   }
-  for (const [rule, { first, count }] of omitted) {
+  for (const [rule, { first, count, hash }] of omitted) {
     listed.push({
       rule,
       severity: first.severity,
       message: `${count} more ${rule} finding(s) are not listed`,
       path: first.path,
-      evidence: `${count} more`,
+      evidence: `${count} more, ${hash.toString(16).padStart(8, '0')}`,
       fix: first.fix,
     });
   }
   return omitted.size === 0 ? listed : sortFindings(listed);
+}
+
+const FNV_OFFSET = 0x811c9dc5;
+
+/** 32-bit FNV-1a of `text` and a separator, continued from `hash`. */
+function fnv1a(text: string, hash: number): number {
+  let next = hash;
+  for (let index = 0; index < text.length; index += 1) {
+    next = Math.imul(next ^ text.charCodeAt(index), 0x01000193) >>> 0;
+  }
+  return Math.imul(next ^ 0x0a, 0x01000193) >>> 0;
 }
 
 /** True when the report holds a finding at `failOn` or more serious. */
@@ -557,7 +574,8 @@ function clip(text: string, length = 160): string {
 
 function cssFindings(css: string): MotionFinding[] {
   const findings: MotionFinding[] = [];
-  for (const message of motionDiagnostics(css)) {
+  const parsed = parseCssDeclarations(css);
+  for (const message of motionDiagnostics(parsed)) {
     const duplicate = message.startsWith('@keyframes');
     findings.push({
       rule: duplicate ? 'html/duplicate-keyframes' : 'html/unguarded-motion',
@@ -571,11 +589,12 @@ function cssFindings(css: string): MotionFinding[] {
     });
   }
 
-  const { found, blocks } = parseCssDeclarations(css);
+  const { found, blocks } = parsed;
   const infinite = new Set<string>();
   const fixed: string[] = [];
-  for (const { property, value, context } of found) {
-    if (isInKeyframes(context)) continue;
+  for (const declaration of found) {
+    const { property, value, context } = declaration;
+    if (isInKeyframes(declaration)) continue;
     const selector = clipSelector(context.at(-1) ?? '');
     if (
       (property === 'transition' || property === 'transition-property') &&
@@ -599,7 +618,7 @@ function cssFindings(css: string): MotionFinding[] {
       }
     }
     if (
-      isGuarded(context) &&
+      isGuarded(declaration) &&
       (property === 'animation' || property === 'transition') &&
       layers(value).some(hasFixedTime)
     ) {

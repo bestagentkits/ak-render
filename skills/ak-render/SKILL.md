@@ -155,7 +155,8 @@ Motion is named, not authored. A block may opt into one recipe, such as
 `motion: reveal-soft` on a card, `stagger` on steps, or `tabs-slide` on tabs;
 `describe --compact` lists a type's recipes under `motion:`, `motions search
 <intent>` ranks them, and `fade-swap` fits any block with `visibleWhen`.
-`motion audit page.yaml` flags nested, excessive or never-playing motion. Leave `motion` out unless motion helps the
+`motion audit page.yaml` flags nested, excessive or never-playing motion, and
+`motion studio page.yaml` lets a person tune it locally and accept a diff. Leave `motion` out unless motion helps the
 reader; the compiler handles reduced motion and print.
 
 ## Rules

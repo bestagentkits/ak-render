@@ -140,9 +140,13 @@ Each finding has a stable `rule`, a `severity` (`error`, `warning` or `info`),
 a `message`, a JSON `path` (or `css`, `html`, `script`), the block id when
 there is one, reproducible `evidence` and a `fix`. Findings are sorted, so the
 same input always gives the same report. A report lists at most 25 findings per
-rule, plus one that counts the rest; `counts` and the score cover every
-finding. The audit takes linear time and quotes at most a short excerpt of
-the input, so a hostile page cannot stall it or inflate the report.
+rule, plus one that counts the rest and fingerprints them in its `evidence`, so
+a `--baseline` run still sees a change among the unlisted findings. Because of
+that, fixing a listed finding of a capped rule also reports the moved finding and
+the new fingerprint as added; write a fresh baseline after such a fix. `counts`
+and the score cover every finding. The audit takes linear time and quotes at most
+a short excerpt of the input, so a hostile page cannot stall it or inflate the
+report.
 
 **Spec audit (authoritative).** It runs on the normalized spec and the theme it
 resolves:
@@ -183,6 +187,62 @@ findings, plus every current error: a baseline can forgive a known warning,
 never a standing error. A finding on a block with an `id` is matched by that id,
 so inserting or moving other blocks does not turn it into a new one. The score is advisory: 100 minus 25 per error, 8 per
 warning and 2 per note, floored at 0. It never decides the gate.
+
+## Motion Studio
+
+`ak-render motion studio page.yaml` opens a local, development-only dashboard
+over one Page Spec: inspect, tune, preview, then accept a reviewed diff. It
+prints a URL and runs until Ctrl-C (`--port <n>` picks the port; `--json`
+prints `{url, port, file}`).
+
+```sh
+ak-render motion studio page.yaml
+# Motion Studio for page.yaml
+#   http://127.0.0.1:52144/studio/<session>/
+# Press Ctrl-C to stop.
+```
+
+- **Blocks and gallery.** The block list shows every block with its recipe.
+  The recipe gallery plays each recipe's registry example, compiled by AK.
+  Both lists take the arrow keys.
+- **Inspector.** For the selected block it shows the recipe's phase timeline,
+  the duration in milliseconds at the current `motion-duration`, the easing,
+  the animated properties, the runtime, the states it plays in, the
+  reduced-motion fallback and the CSS the compiled page actually emits. The
+  recipe select offers only recipes that block can take.
+- **Tuning.** A slider sets `motion-duration` (0–1000ms, 10ms steps) and two
+  selects set `motion-easing` and `motion-policy`. Values outside those bounds
+  are refused by the server, never written. The studio sets no CSS, selector
+  or script of its own.
+- **Preview.** The preview is the real compiled page for the proposal.
+  Replay reloads it, Pause freezes its animations, Rapid toggle clicks the
+  selected block's tabs, toggles and disclosures three times to check that it
+  settles. **Preview as** recompiles both previews under `full`, `reduced`,
+  `none` or OS reduced motion (the still state) for viewing only. Compare
+  shows the original beside the proposal.
+- **Accept.** Undo steps back, Reset drops every edit, and the panel shows
+  the unified diff and the motion audit of the proposal. Accept writes
+  exactly the diff on screen. Only the changed lines are rewritten: comments,
+  key order, each line's ending (LF or CRLF), indentation (spaces or tabs) and the
+  rest of the file's formatting stay as written. When an edit cannot be mapped
+  onto the authored lines, the whole file is serialized again, and the diff
+  shows that before you accept. A symlinked spec is written through to its
+  target, which keeps its permissions. Accept is refused if the file changed
+  on disk since the studio read it (checked again just before the write), if
+  the proposal does not compile or if it changes nothing.
+- **Limits.** The studio edits version 1 specs; a bare version 0 block list
+  is refused when the studio starts. An edit is refused when a YAML alias
+  copies the value, block, list or theme it would change, because the edit
+  would change every copy; replacing an alias itself is allowed. A spec with YAML
+  errors or more than one YAML document is refused when the studio starts. Accept
+  replaces the spec with a new file, so a hard link to the old spec keeps the
+  old content.
+
+The studio never touches compiled HTML and is never part of a compiled page.
+It listens on 127.0.0.1 only, behind a random session path, sends a strict
+CSP with no inline script or style, refuses foreign `Host` headers, and needs
+a session header on every write. It needs no network access, account or AI
+service.
 
 ## Adding a recipe
 

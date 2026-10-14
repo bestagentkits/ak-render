@@ -11,6 +11,16 @@ Release mechanics and the compatibility contract live in
 
 ### Added
 
+- Motion Studio. `ak-render motion studio <spec>` serves a local,
+  development-only dashboard over one Page Spec: a block list and a recipe
+  gallery of compiled examples, an inspector with the phase timeline, timing,
+  properties, fallback and emitted CSS, bounded token controls, Replay, Pause,
+  Rapid toggle, a preview-only motion policy switch, Compare, Undo and Reset.
+  Accept writes the reviewed diff to the spec in place, keeps YAML comments
+  and refuses a stale, duplicate, invalid or empty proposal. It listens on
+  127.0.0.1 behind a session path with a strict CSP and never touches compiled
+  HTML. See [docs/motion.md](./docs/motion.md#motion-studio).
+
 - Motion discovery and audit. `ak-render motions` lists the motion recipes,
   `motions search <terms>` ranks them by intent and `motions describe <id>`
   (`--compact` for the short form) returns one descriptor, all projected from
