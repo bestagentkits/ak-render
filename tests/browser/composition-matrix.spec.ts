@@ -283,6 +283,9 @@ for (const name of FIXTURES) {
     });
 
     test('Tab reaches every control, each with a visible focus ring', async ({ page }) => {
+      // The walk presses Tab once per stop, so its time grows with the page:
+      // the largest fixtures need more than the default budget under load.
+      test.slow();
       const audit = await open(page, name);
       const stops = await markTabStops(page);
       // Every page has at least the skip link and the theme toggle.
