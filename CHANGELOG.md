@@ -128,6 +128,9 @@ Release mechanics and the compatibility contract live in
 
 ### Fixed
 
+- A `toggle` action on an open dialog now closes it. It used to open the
+  dialog again, which moved focus back to its first control.
+
 - `motion-policy: reduced` now restrains motion as documented: colour, shadow
   and opacity transitions keep the theme duration, anything that would move
   (hover lifts, image zoom) jumps to its end state, and entrances, loops,

@@ -400,3 +400,54 @@ test.describe('motion recipes on a narrow dark page', () => {
     expect(overflow).toBeLessThanOrEqual(0);
   });
 });
+
+test.describe('a toggle action on a dialog', () => {
+  for (const motion of [undefined, 'dialog-pop'] as const) {
+    test(`closes it when open and opens it when closed (${motion ?? 'no recipe'})`, async ({
+      page,
+    }) => {
+      const spec = {
+        version: 1,
+        meta: { title: 'Dialog toggle' },
+        blocks: [
+          {
+            type: 'button',
+            id: 'flip',
+            label: 'Toggle the dialog',
+            on: { click: { action: 'toggle', target: 'dlg' } },
+          },
+          {
+            type: 'dialog',
+            id: 'dlg',
+            title: 'Hello',
+            text: 'Body.',
+            ...(motion ? { motion } : {}),
+          },
+        ],
+      };
+      await page.emulateMedia({ reducedMotion: 'no-preference' });
+      const file = workspace.write(`dialog-toggle-${motion ?? 'plain'}`, compile(spec).html);
+      await page.goto(`file://${file}`, { waitUntil: 'load' });
+      const button = block(page, 'flip');
+      const dialog = page.locator('dialog[data-ak-id="dlg"]');
+      await page.evaluate(() => {
+        const panel = document.querySelector('dialog[data-ak-id="dlg"]') as HTMLElement;
+        const opens: number[] = [];
+        (window as unknown as { opens: number[] }).opens = opens;
+        new MutationObserver((records) => {
+          for (const record of records) {
+            if (record.oldValue === null && panel.hasAttribute('open')) opens.push(1);
+          }
+        }).observe(panel, { attributes: true, attributeFilter: ['open'], attributeOldValue: true });
+      });
+      await button.click();
+      await expect(dialog).toHaveAttribute('open', '');
+      // The modal makes the page inert, so send the second toggle from script.
+      await button.evaluate((el) => (el as HTMLElement).click());
+      await expect(dialog).not.toHaveAttribute('open', /.*/u);
+      await expect(button).toBeFocused();
+      const opens = await page.evaluate(() => (window as unknown as { opens: number[] }).opens);
+      expect(opens).toHaveLength(1);
+    });
+  }
+});

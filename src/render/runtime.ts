@@ -149,7 +149,7 @@ function run(action, source, detail) {
   if (type === 'toggle') {
     var nodes = byId(targetId);
     nodes.forEach(function (node) {
-      if (node.tagName === 'DIALOG') openDialog(node);
+      if (node.tagName === 'DIALOG') toggleDialog(node);
       else if (node.tagName === 'DETAILS') node.open = !node.open;
       else if (node.hasAttribute('data-ak-theme-toggle')) toggleTheme(node);
       else {
@@ -471,6 +471,10 @@ function closeDialog(dialog) {
   else dialog.removeAttribute('open');
   if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
   fire(dialog, 'close');
+}
+function toggleDialog(dialog) {
+  if (dialog.hasAttribute('open')) closeDialog(dialog);
+  else openDialog(dialog);
 }`;
 
 const SLIDER = `
