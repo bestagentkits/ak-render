@@ -116,7 +116,6 @@ blocks:
         text: Reduced motion is respected when the user asks for it.
 
   - type: accordion
-    motion: { preset: accordion-expand }
     id: faq
     title: Details
     items:
@@ -186,7 +185,6 @@ blocks:
       - text: interactive.yaml
 
   - type: dialog
-    motion: { preset: dialog-rise }
     id: details-dialog
     title: Runtime details
     ariaLabel: Runtime details

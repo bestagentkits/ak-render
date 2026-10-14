@@ -503,7 +503,12 @@ function validateMotion(
   bag: DiagnosticBag,
 ): string | undefined {
   if (!isPlainObject(value)) {
-    bag.add({ code: 'SPEC_VALIDATION_ERROR', path, message: 'expected an object { preset }' });
+    bag.add({
+      code: 'SPEC_VALIDATION_ERROR',
+      path,
+      message: 'expected an object { preset }',
+      details: { known: [...presets] },
+    });
     return undefined;
   }
   let valid = true;
@@ -514,6 +519,7 @@ function validateMotion(
       code: 'SPEC_VALIDATION_ERROR',
       path: pathKey(path, key),
       message: `unknown motion property "${key}"; only "preset" is allowed`,
+      details: { known: [...presets] },
     });
   }
   const preset = value.preset;
@@ -643,6 +649,20 @@ function buildNode(
   if (motion !== undefined) {
     const preset = validateMotion(motion, motionPresets, pathKey(path, 'motion'), context.bag);
     if (preset !== undefined) node.motion = preset;
+    // A content block fades only when its own visibleWhen reveals it; tabs and
+    // carousels fade their panels.
+    if (
+      preset === 'crossfade' &&
+      node.when === undefined &&
+      !['tabs', 'carousel'].includes(typeValue)
+    ) {
+      context.bag.add({
+        code: 'SPEC_VALIDATION_ERROR',
+        severity: 'warning',
+        path: pathKey(pathKey(path, 'motion'), 'preset'),
+        message: 'crossfade on this block needs visibleWhen; without it nothing changes',
+      });
+    }
   }
   if (definition.data !== undefined) {
     const data = resolveBlockData(dataInput, context.datasets, path, context.bag);

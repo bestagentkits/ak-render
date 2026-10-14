@@ -20,8 +20,11 @@ Release mechanics and the compatibility contract live in
   semantic scale (micro, fast, normal, relaxed, emphasis) derived from
   `motion-duration`. Dialogs with `dialog-rise` animate their exit and still
   restore focus and fire `close` once; tab panels and slides with `crossfade`
-  fade in only on a change. `motionRecipeDescriptors()` exports compact recipe
-  metadata for discovery. See `docs/adr/0003-motion-recipes.md`.
+  fade in only on a change. A block's preset replaces its built-in entrance,
+  and an on-enter block shows its final state until it arrives, so captures
+  never see it blank. The library exports `motionRecipeDescriptors()` (compact
+  recipe metadata for discovery) and `motionPresetsFor(type)`. See
+  `docs/adr/0003-motion-recipes.md`.
 
 - Code blocks and `api-endpoint` bodies are syntax highlighted at compile
   time for php, javascript, typescript, python, go, rust, java, kotlin,
@@ -132,6 +135,10 @@ Release mechanics and the compatibility contract live in
 - A `toggle` action that targets an open dialog now closes it. Before, it
   opened the dialog again, so a dialog action such as "Close" with
   `toggle` did nothing ([#43](https://github.com/bestagentkits/ak-render/issues/43)).
+- A page with scripts but without the theme toggle (`themeToggle: false`) no
+  longer throws on load: the runtime calls `restoreTheme` only when it ships
+  the theme part, so tabs and other scripted blocks wire up again
+  ([#46](https://github.com/bestagentkits/ak-render/issues/46)).
 - `motion-policy: reduced` now restrains motion as documented: colour, shadow
   and opacity transitions keep the theme duration, anything that would move
   (hover lifts, image zoom) jumps to its end state, and entrances, loops,

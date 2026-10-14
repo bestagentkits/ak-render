@@ -24,6 +24,7 @@ import { type NormalizeResult, normalizeSpec } from '../spec/normalize.js';
 import { loadTheme, type ResolvedTheme, resolveTheme } from '../theme/load-theme.js';
 import { builtinThemeCatalog, type ThemeCatalog } from '../theme/theme-catalog.js';
 import { type RenderContext, renderNode } from './blocks.js';
+import { SCROLL_EDGE_SELECTORS } from './derived-variables.js';
 import { assembleDocument } from './document.js';
 import { escapeAttribute, renderAttributes } from './escape.js';
 import { embeddedFontCss } from './font-faces.js';
@@ -145,7 +146,10 @@ function buildCss(
   for (const feature of moduleFeatures) sheets.push(feature.css);
   if (usesIcons) sheets.push(ICON_CSS);
   // Motion recipes refine feature motion, so they follow every feature sheet.
-  const motionSheet = motionRecipeCss(motion);
+  // `none` spares the scroll-position shades, naming only boxes this page styles.
+  const styled = sheets.join('\n');
+  const edges = SCROLL_EDGE_SELECTORS.filter((selector) => styled.includes(`${selector}{`));
+  const motionSheet = motionRecipeCss(motion, edges);
   if (motionSheet !== '') sheets.push(motionSheet);
   // Recipes restyle feature surfaces, so they follow every feature sheet.
   const recipes = recipeCss(theme.recipes, features);

@@ -19,7 +19,13 @@ state:
   view: summary
 blocks:
   - type: hero
+    id: still-hero
     title: Launch update
+    motion: { preset: none }
+  - type: callout
+    id: top-callout
+    title: Shipped
+    text: The release is out.
     motion: { preset: reveal-soft }
   - type: button
     id: open-dialog
@@ -69,12 +75,42 @@ blocks:
     motion: { preset: number-tick }
     items:
       - { label: Uptime, value: '99.9%' }
+  - type: kpi
+    id: staggered-kpi
+    motion: { preset: stagger }
+    items:
+      - { label: Uptime, value: '99.9%' }
+      - { label: Errors, value: '0.1%' }
+      - { label: Latency, value: '120ms' }
+  - type: table
+    id: still-table
+    motion: { preset: none }
+    columns: [Region, January, February, March, April, May, June, July, August, September]
+    rows:
+      - ['North America', '120', '130', '140', '150', '160', '170', '180', '190', '200']
+      - ['Europe', '90', '95', '100', '105', '110', '115', '120', '125', '130']
 `;
 }
 
 function artifact(policy: Policy): string {
   const name = `recipes-${policy}`;
   return workspace.write(name, compile(spec(policy), { source: `${name}.yaml` }).html);
+}
+
+/** A page whose only runtime is a recipe: no theme toggle, no other feature. */
+function motionOnlyArtifact(): string {
+  const source = `version: 1
+meta:
+  title: Motion only
+blocks:
+  - type: hero
+    title: Motion only
+    motion: { preset: reveal-soft }
+`;
+  return workspace.write(
+    'recipes-motion-only',
+    compile(source, { source: 'recipes-motion-only.yaml', themeToggle: false }).html,
+  );
 }
 
 async function open(
@@ -117,14 +153,17 @@ const indicator = (page: Page, id: string) =>
   }, id);
 
 test.describe('on-enter recipes', () => {
-  test('blocks below the fold wait hidden, then reveal as they scroll in', async ({ page }) => {
+  test('blocks below the fold show their final state, then play as they scroll in', async ({
+    page,
+  }) => {
     await open(page);
     const stats = block(page, 'below-stats');
-    await expect(stats).toHaveAttribute('data-ak-pending', '');
-    expect(await stats.evaluate((el) => getComputedStyle(el).opacity)).toBe('0');
+    // A full-page capture taken now must read completely (ADR 0002).
+    expect(await stats.evaluate((el) => getComputedStyle(el).opacity)).toBe('1');
+    expect(await page.screenshot({ fullPage: true })).toBeTruthy();
+    await expect(stats).not.toHaveAttribute('data-ak-entered', '');
     await stats.scrollIntoViewIfNeeded();
-    await expect(stats).toHaveAttribute('data-ak-inview', '');
-    await expect(stats).not.toHaveAttribute('data-ak-pending', '');
+    await expect(stats).toHaveAttribute('data-ak-entered', '');
     // The items stagger: later items start later, and at most eight offsets exist.
     const delays = await stats.evaluate((el) =>
       Array.from(el.querySelectorAll('dl > div')).map(
@@ -138,18 +177,18 @@ test.describe('on-enter recipes', () => {
     await expect.poll(() => stats.evaluate((el) => getComputedStyle(el).opacity)).toBe('1');
   });
 
-  test('the hero reveals in place on load and settles fully visible', async ({ page }) => {
+  test('a block in view on load reveals in place and settles fully visible', async ({ page }) => {
     await open(page);
-    const hero = block(page, (await page.locator('.ak-hero').getAttribute('data-ak-id')) ?? '');
-    await expect(hero).toHaveAttribute('data-ak-inview', '');
-    await expect.poll(() => hero.evaluate((el) => getComputedStyle(el).opacity)).toBe('1');
+    const callout = block(page, 'top-callout');
+    await expect(callout).toHaveAttribute('data-ak-entered', '');
+    await expect.poll(() => callout.evaluate((el) => getComputedStyle(el).opacity)).toBe('1');
   });
 
   test('number-tick plays on the figures, not the labels', async ({ page }) => {
     await open(page);
     const kpi = block(page, 'below-kpi');
     await kpi.scrollIntoViewIfNeeded();
-    await expect(kpi).toHaveAttribute('data-ak-inview', '');
+    await expect(kpi).toHaveAttribute('data-ak-entered', '');
     const names = await kpi.evaluate((el) =>
       el
         .getAnimations({ subtree: true })
@@ -158,22 +197,85 @@ test.describe('on-enter recipes', () => {
     expect(names).toContain('ak-m-tick');
   });
 
+  test('a preset replaces the built-in entrance, so it cannot start early', async ({ page }) => {
+    await open(page);
+    const kpi = block(page, 'staggered-kpi');
+    // Just inside the built-in observer's margin, outside the recipe's.
+    await kpi.evaluate((el) => {
+      window.scrollBy(0, el.getBoundingClientRect().top - window.innerHeight + 20);
+    });
+    await page.waitForTimeout(200);
+    expect(await kpi.getAttribute('data-ak-inview')).toBeNull();
+    await kpi.scrollIntoViewIfNeeded();
+    await expect(kpi).toHaveAttribute('data-ak-entered', '');
+    expect(await kpi.getAttribute('data-ak-inview')).toBeNull();
+    const names = await kpi.evaluate((el) =>
+      el
+        .getAnimations({ subtree: true })
+        .map((animation) => (animation as CSSAnimation).animationName),
+    );
+    expect(names).toContain('ak-m-item-in');
+  });
+
+  test('a page whose only runtime is a recipe boots without errors', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.goto(`file://${motionOnlyArtifact()}`, { waitUntil: 'load' });
+    await expect(page.locator('.ak-hero').first()).toHaveAttribute('data-ak-entered', '');
+    expect(errors).toEqual([]);
+  });
+
   for (const [label, options] of [
     ['system reduced motion', { reduce: true }],
     ['policy reduced', { policy: 'reduced' as const }],
     ['policy none', { policy: 'none' as const }],
   ] as const) {
-    test(`${label}: nothing waits hidden and no recipe animates`, async ({ page }) => {
+    test(`${label}: blocks stay in their final state and no recipe animates`, async ({ page }) => {
       await open(page, options);
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
       for (const id of ['below-stats', 'below-kpi']) {
-        await expect(block(page, id)).not.toHaveAttribute('data-ak-pending', '');
+        await expect(block(page, id)).not.toHaveAttribute('data-ak-entered', '');
         expect(await block(page, id).evaluate((el) => getComputedStyle(el).opacity)).toBe('1');
       }
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
       await page.getByRole('tab', { name: 'Two' }).click();
       expect(await recipeAnimations(page)).toEqual([]);
     });
   }
+});
+
+test.describe('preset none', () => {
+  test('stops pseudo-element motion too', async ({ page }) => {
+    await open(page);
+    const hero = block(page, 'still-hero');
+    // The hero's aurora runs on ::before, which a plain descendant rule misses.
+    expect(await hero.evaluate((el) => getComputedStyle(el, '::before').animationName)).toBe(
+      'none',
+    );
+    const running = await page.evaluate(() =>
+      document
+        .getAnimations()
+        .filter((animation) => {
+          const target = (animation.effect as KeyframeEffect | null)?.target;
+          return target instanceof Element && target.closest('[data-ak-id="still-hero"]') !== null;
+        })
+        .map((animation) => (animation as CSSAnimation).animationName),
+    );
+    expect(running).toEqual([]);
+  });
+
+  test('keeps the scroll-position shade on an overflowing table', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await open(page);
+    const shade = await block(page, 'still-table').evaluate((el) => {
+      const wrap = el.querySelector('.ak-table-wrap') ?? el.closest('.ak-table-wrap');
+      if (!(wrap instanceof HTMLElement)) return 'missing';
+      if (wrap.scrollWidth <= wrap.clientWidth) return 'no overflow';
+      if (!CSS.supports('animation-timeline', 'scroll()')) return 'unsupported';
+      return getComputedStyle(wrap).backgroundSize;
+    });
+    expect(shade).toMatch(/14px 100%/u);
+  });
 });
 
 test.describe('without scripts', () => {
@@ -183,7 +285,7 @@ test.describe('without scripts', () => {
     await open(page);
     for (const id of ['below-stats', 'below-kpi', 'indicator-tabs', 'faq']) {
       const element = block(page, id);
-      await expect(element).not.toHaveAttribute('data-ak-pending', '');
+      await expect(element).not.toHaveAttribute('data-ak-entered', '');
       expect(await element.evaluate((el) => getComputedStyle(el).opacity)).toBe('1');
     }
     await expect(page.getByText('Third panel')).toBeVisible();
@@ -192,14 +294,25 @@ test.describe('without scripts', () => {
 });
 
 test.describe('print', () => {
-  test('pending blocks print visible and settled', async ({ page }) => {
+  test('blocks print settled, and closed accordion sections print in full', async ({ page }) => {
     await open(page);
-    await expect(block(page, 'below-stats')).toHaveAttribute('data-ak-pending', '');
+    const faq = page.locator('[data-ak-id="faq"] details').first();
+    if ((await faq.getAttribute('open')) !== null) await faq.locator('summary').click();
+    await expect(faq).not.toHaveAttribute('open', '');
     await page.emulateMedia({ media: 'print' });
     expect(await block(page, 'below-stats').evaluate((el) => getComputedStyle(el).opacity)).toBe(
       '1',
     );
     expect(await recipeAnimations(page)).toEqual([]);
+    const fits = await faq.evaluate((el) => {
+      const summary = el.querySelector('summary') as HTMLElement;
+      const answer = el.querySelector('summary ~ *') as HTMLElement;
+      return (
+        el.getBoundingClientRect().height + 1 >=
+        summary.getBoundingClientRect().height + answer.getBoundingClientRect().height
+      );
+    });
+    expect(fits).toBe(true);
   });
 });
 
@@ -364,8 +477,23 @@ test.describe('dialog exit', () => {
     await page.evaluate(() => {
       const target = document.querySelector('dialog[data-ak-id="details"]') as HTMLDialogElement;
       (window as unknown as { closes: number }).closes = 0;
+      (window as unknown as { opens: number }).opens = 0;
       target.addEventListener('close', () => {
         (window as unknown as { closes: number }).closes += 1;
+      });
+      // Count the dialog's open event through a binding the runtime reads.
+      target.setAttribute(
+        'data-ak-on-open',
+        JSON.stringify([{ action: 'copy', target: 'details' }]),
+      );
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: {
+          writeText: () => {
+            (window as unknown as { opens: number }).opens += 1;
+            return Promise.resolve();
+          },
+        },
       });
     });
     await opener.click();
@@ -381,6 +509,8 @@ test.describe('dialog exit', () => {
     await expect(dialog).toHaveAttribute('open', '');
     await expect(dialog).not.toHaveAttribute('data-ak-closing', '');
     expect(await page.evaluate(() => (window as unknown as { closes: number }).closes)).toBe(0);
+    // It never closed, so it announced opening only once.
+    expect(await page.evaluate(() => (window as unknown as { opens: number }).opens)).toBe(1);
     await dialog.getByRole('button', { name: 'Close' }).last().click();
     await expect(dialog).not.toHaveAttribute('open', '');
     await page.waitForTimeout(300);

@@ -191,6 +191,44 @@ describe('motion in the Page Spec', () => {
     expect(errors.map((error) => error.path)).toContain(path);
   });
 
+  it('lists the accepted presets with every motion error', () => {
+    const errors = errorsOf(
+      page(`  - type: hero
+    title: Hi
+    motion: { preset: reveal-soft, duration: 9000 }
+  - type: hero
+    title: Hi
+    motion: reveal-soft
+`),
+    );
+    const motionErrors = errors.filter((diagnostic) => diagnostic.path?.includes('.motion'));
+    expect(motionErrors).toHaveLength(2);
+    for (const error of motionErrors) {
+      expect(error.details?.known).toEqual(motionPresetsFor('hero'));
+    }
+  });
+
+  it('warns when crossfade on a content block has no visibleWhen to reveal it', () => {
+    const warnings = (source: string) =>
+      validate(source).diagnostics.filter((diagnostic) => diagnostic.severity === 'warning');
+    expect(
+      warnings(
+        page(`  - type: callout
+    title: Static
+    text: Never changes.
+    motion: { preset: crossfade }
+`),
+      ).map((diagnostic) => diagnostic.path),
+    ).toContain('$.blocks[0].motion.preset');
+    const tabs = page(`  - type: tabs
+    motion: { preset: crossfade }
+    items: [{ title: A, text: a }, { title: B, text: b }]
+`);
+    expect(warnings(tabs).map((diagnostic) => diagnostic.path)).not.toContain(
+      '$.blocks[0].motion.preset',
+    );
+  });
+
   it('reports the accepted presets with an unknown one', () => {
     try {
       compile(
@@ -278,8 +316,13 @@ describe('motion emission', () => {
 `),
     ).html;
     expect(html).toMatch(/<section[^>]*data-ak-motion="none"/u);
-    expect(styleOf(html)).toContain('[data-ak-motion="none"] *{animation:none!important}');
-    expect(motionDiagnostics(styleOf(html))).toEqual([]);
+    const css = styleOf(html);
+    expect(css).toContain('[data-ak-motion="none"]::before');
+    expect(css).toContain('[data-ak-motion="none"]::backdrop');
+    // The scroll shades are spared, and only for boxes this page styles.
+    expect(css).toMatch(/\[data-ak-motion="none"\] \*:not\([^)]*\.ak-table-wrap/u);
+    expect(css).not.toContain('ak-diagram-rendered');
+    expect(motionDiagnostics(css)).toEqual([]);
   });
 
   it('is deterministic', () => {

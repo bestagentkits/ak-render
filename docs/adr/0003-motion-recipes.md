@@ -34,7 +34,7 @@ A block that accepts motion takes one optional key:
 
 `motion` is `{ preset }` and nothing else. The preset must be a recipe that
 lists the block type as a target, or `none`. Anything else is a
-`SPEC_VALIDATION_ERROR` at its JSON path, with the accepted presets in
+`SPEC_VALIDATION_ERROR` at its JSON path, each with the accepted presets in
 `details.known`: an unknown or incompatible preset at `…motion.preset`, any
 other key (a duration, raw CSS) at `…motion.<key>`, a non-object at
 `…motion`. A block type with no compatible recipe has no `motion` key in the
@@ -65,7 +65,9 @@ which change how a surface looks at rest.
 | `none` | any block that accepts a preset | — | — | turns that block's built-in keyframe motion and count-up off |
 
 `motionPresetsFor(type)` lists a type's presets. `code` is not a target: its
-id sits on the inner `<pre>`, not the block root.
+id sits on the inner `<pre>`, not the block root. `crossfade` on a content
+block fades it only when its own `visibleWhen` reveals it, so without one the
+compiler warns at `…motion.preset`.
 
 ### Semantic timing
 
@@ -109,11 +111,14 @@ variables as token-timed.
 
 ### Lifecycle
 
-- **On enter.** The runtime marks a block `data-ak-pending` (hidden, on screen
-  only) at the moment it starts observing it, then swaps that for
-  `data-ak-inview` when the block scrolls in. No script, no
-  IntersectionObserver, reduced motion or a policy of `reduced`/`none` means
-  nothing is ever pending. Print shows pending blocks.
+- **On enter.** As ADR 0002 requires, nothing starts hidden: a block shows its
+  final state until the runtime sees it arrive and marks it
+  `data-ak-entered`, and the animation's backwards fill supplies its first
+  frame. A full-page capture, print, no script, no IntersectionObserver,
+  reduced motion or a policy of `reduced`/`none` all read the block complete.
+  The attribute is the recipe's own, and a block's preset replaces its
+  built-in entrance (the KPI and terminal `data-ak-animate` observer skips
+  it), so the two cannot race.
 - **Crossfade.** A MutationObserver, wired after every other part, marks a
   tab panel, slide or `visibleWhen` block `data-ak-entering` when a change
   reveals it. The authored first view is never marked, the old content leaves
@@ -132,9 +137,19 @@ variables as token-timed.
   comes. Escape and the native `cancel` request go through the same exit.
   Opening mid-exit cancels it; a second close mid-exit is ignored.
 
+  Reopening mid-exit does not fire `open` again, since the dialog never
+  closed.
+- **Accordion expand.** The size transition applies on screen only, so print
+  shows every section at full height.
+- **`none`.** Stops the block's keyframe animations, its pseudo-elements'
+  included (the hero aurora, a dialog backdrop). Scroll-position shades on the
+  tables, diagrams and roadmaps the page styles keep following the scroll, as
+  ADR 0002 requires; the sheet names only shaded boxes the page already styles.
+
 A `toggle` action on an open dialog now closes it (it used to call open
-again), and on a closing dialog reopens it. Both runtime changes apply to every
-page.
+again), and on a closing dialog reopens it. A scripted page without the theme
+toggle no longer calls the missing `restoreTheme` on load. These runtime
+changes apply to every page.
 
 ### Precedence
 
@@ -150,6 +165,7 @@ opt-in, and a theme sets only the tempo and the policy.
   guard, its transitions use the token scale, and its script checks
   `motionAllowed()` and settles without waiting on an event.
 - Discovery surfaces (catalog, describe, MCP) can list recipes from
-  `motionRecipeDescriptors()` without reading CSS.
+  `motionRecipeDescriptors()`, exported from the package root with
+  `motionPresetsFor`, without reading CSS.
 - Not done: direction-aware carousel slides and theme-level default presets.
   Both can be added as new recipe versions without changing the spec shape.

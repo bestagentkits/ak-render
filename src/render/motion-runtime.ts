@@ -8,26 +8,26 @@
 import { ENTER_RECIPES } from './motion-recipes.js';
 
 /**
- * On-enter recipes: a block is pending (hidden) only from the moment this
- * script decides to observe it, so no script, no motion and no observer all
- * leave it visible. Display-none blocks (a hidden panel or `visibleWhen`
- * wrapper) wait until they are shown and scrolled to.
+ * On-enter recipes play as a block arrives. Until then the block shows its
+ * final state, so a capture, a print or a disabled script never sees it blank
+ * (ADR 0002); the animation's backwards fill supplies the first frame. The
+ * attribute is the recipe's own, so the built-in entrance observer cannot
+ * start a recipe early.
  */
 const ENTER = `
 function wireMotionEnter() {
+  if (!motionAllowed() || typeof window.IntersectionObserver !== 'function') return;
   var ids = ${JSON.stringify([...ENTER_RECIPES])};
-  var blocks = qa('[data-ak-motion]').filter(function (el) { return ids.indexOf(el.getAttribute('data-ak-motion')) !== -1; });
-  if (!blocks.length) return;
-  var reveal = function (el) { el.removeAttribute('data-ak-pending'); el.setAttribute('data-ak-inview', ''); };
-  if (!motionAllowed() || typeof window.IntersectionObserver !== 'function') { blocks.forEach(reveal); return; }
   var observer = new window.IntersectionObserver(function (entries) {
     entries.forEach(function (entry) {
       if (!entry.isIntersecting) return;
       observer.unobserve(entry.target);
-      reveal(entry.target);
+      entry.target.setAttribute('data-ak-entered', '');
     });
   }, { rootMargin: '0px 0px -6% 0px' });
-  blocks.forEach(function (el) { el.setAttribute('data-ak-pending', ''); observer.observe(el); });
+  qa('[data-ak-motion]').forEach(function (el) {
+    if (ids.indexOf(el.getAttribute('data-ak-motion')) !== -1) observer.observe(el);
+  });
 }`;
 
 /**
@@ -118,12 +118,11 @@ function stopClosing(dialog) {
   return true;
 }
 function openDialog(dialog) {
-  var reopened = stopClosing(dialog);
-  if (!reopened) {
-    lastFocus = doc.activeElement;
-    if (typeof dialog.showModal === 'function') dialog.showModal();
-    else dialog.setAttribute('open', '');
-  }
+  // Reopened mid-exit: it never closed, so it does not announce opening again.
+  if (stopClosing(dialog)) return;
+  lastFocus = doc.activeElement;
+  if (typeof dialog.showModal === 'function') dialog.showModal();
+  else dialog.setAttribute('open', '');
   var focusable = q('button, [href], input', dialog);
   if (focusable) focusable.focus();
   fire(dialog, 'open');

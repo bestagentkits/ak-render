@@ -56,6 +56,11 @@ export {
 export type { BlockDefinition, SizingContract, SlotSpec } from './registry/roster.js';
 export { buildContentSecurityPolicy } from './render/document.js';
 export { escapeAttribute, escapeText, escapeUrl, serializeJsonForScript } from './render/escape.js';
+export {
+  type MotionRecipeDescriptor,
+  motionPresetsFor,
+  motionRecipeDescriptors,
+} from './render/motion-recipes.js';
 export type { CompileResult, RenderOptions } from './render/render.js';
 export { compile, render } from './render/render.js';
 export type { BoundsReport } from './spec/bounds.js';

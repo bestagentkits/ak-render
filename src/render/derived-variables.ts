@@ -35,8 +35,15 @@ const EDGE_SHADE = 'color-mix(in srgb,var(--ak-color-text) 18%,transparent)';
  * engine without scroll timelines keeps the plain fill. The shades follow
  * position, not time, so like the reading-progress rail they are not motion and
  * are not gated on reduced motion. `SCROLL_EDGE_KEYFRAMES` must be on the page.
+ * Every box that carries the shades is listed, so motion `none` can spare them.
  */
-export function scrollEdges(selector: string): string {
+export const SCROLL_EDGE_SELECTORS = [
+  '.ak-table-wrap',
+  '.ak-diagram-rendered',
+  '.ak-roadmap',
+] as const;
+
+export function scrollEdges(selector: (typeof SCROLL_EDGE_SELECTORS)[number]): string {
   return `@supports (animation-timeline:scroll()){${selector}{background:radial-gradient(farthest-side at 0 50%,${EDGE_SHADE},transparent) left center/0 100% no-repeat,radial-gradient(farthest-side at 100% 50%,${EDGE_SHADE},transparent) right center/0 100% no-repeat,var(--ak-fill);animation:ak-scroll-edges linear both;animation-timeline:scroll(self inline)}}`;
 }
 

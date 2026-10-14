@@ -108,19 +108,11 @@ function staggerDelays(): string {
   for (let index = 2; index <= STAGGER_LIMIT; index += 1) {
     const nth = index === STAGGER_LIMIT ? `n+${index}` : String(index);
     rules.push(
-      `${uses('stagger')}[data-ak-inview]>${STAGGER_ITEMS}:nth-child(${nth}){animation-delay:calc(${step('micro')} * ${index - 1})}`,
+      `${uses('stagger')}[data-ak-entered]>${STAGGER_ITEMS}:nth-child(${nth}){animation-delay:calc(${step('micro')} * ${index - 1})}`,
     );
   }
   return rules.join('');
 }
-
-/**
- * On-enter recipes wait for the runtime to mark a block pending, so the block
- * is hidden only while a script that will reveal it is running. Screen only:
- * print and no-script show the block.
- */
-const pending = (id: string, inner = '') =>
-  `@media screen and ${MOTION_ALLOWED}{${uses(id)}[data-ak-pending]${inner}{opacity:0}}`;
 
 /** Content blocks whose first element carries the block id. */
 const CONTENT_TARGETS = [
@@ -162,8 +154,7 @@ export const MOTION_RECIPES: readonly MotionRecipe[] = [
     reduced: 'Shown in place, fully visible, with no movement.',
     requiresRuntime: true,
     css: `@keyframes ak-m-reveal{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
-${pending('reveal-soft')}
-@media ${MOTION_ALLOWED}{${uses('reveal-soft')}[data-ak-inview]{animation:ak-m-reveal ${step('relaxed')} ${ease('enter')} both}}`,
+@media ${MOTION_ALLOWED}{${uses('reveal-soft')}[data-ak-entered]{animation:ak-m-reveal ${step('relaxed')} ${ease('enter')} both}}`,
   },
   {
     id: 'stagger',
@@ -176,8 +167,7 @@ ${pending('reveal-soft')}
     reduced: 'Every item shown at once, fully visible.',
     requiresRuntime: true,
     css: `@keyframes ak-m-item-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-${pending('stagger')}
-@media ${MOTION_ALLOWED}{${uses('stagger')}[data-ak-inview]>${STAGGER_ITEMS}{animation:ak-m-item-in ${step('normal')} ${ease('enter')} both}${staggerDelays()}}`,
+@media ${MOTION_ALLOWED}{${uses('stagger')}[data-ak-entered]>${STAGGER_ITEMS}{animation:ak-m-item-in ${step('normal')} ${ease('enter')} both}${staggerDelays()}}`,
   },
   {
     id: 'number-tick',
@@ -191,8 +181,7 @@ ${pending('stagger')}
     reduced: 'Figures shown at their final value.',
     requiresRuntime: true,
     css: `@keyframes ak-m-tick{from{opacity:0;transform:translateY(.45em)}to{opacity:1;transform:none}}
-${pending('number-tick', ' :is(dd,[data-ak-count])')}
-@media ${MOTION_ALLOWED}{${uses('number-tick')}[data-ak-inview] :is(dd,[data-ak-count]){animation:ak-m-tick ${step('fast')} ${ease('enter')} both}}`,
+@media ${MOTION_ALLOWED}{${uses('number-tick')}[data-ak-entered] :is(dd,[data-ak-count]){animation:ak-m-tick ${step('fast')} ${ease('enter')} both}}`,
   },
   {
     id: 'crossfade',
@@ -240,7 +229,7 @@ ${uses('tab-indicator')}[data-ak-indicator]>[role="tablist"]>[role="tab"][aria-s
     reduced:
       'Sections open and close instantly; a browser without size interpolation does the same.',
     requiresRuntime: false,
-    css: `@media ${MOTION_ALLOWED}{@supports (interpolate-size:allow-keywords){${uses('accordion-expand')}{interpolate-size:allow-keywords}${uses('accordion-expand')}>details::details-content{block-size:0;overflow-y:clip;transition:block-size ${step('normal')} ${ease('standard')},content-visibility ${step('normal')} allow-discrete}${uses('accordion-expand')}>details[open]::details-content{block-size:auto}}}`,
+    css: `@media screen and ${MOTION_ALLOWED}{@supports (interpolate-size:allow-keywords){${uses('accordion-expand')}{interpolate-size:allow-keywords}${uses('accordion-expand')}>details::details-content{block-size:0;overflow-y:clip;transition:block-size ${step('normal')} ${ease('standard')},content-visibility ${step('normal')} allow-discrete}${uses('accordion-expand')}>details[open]::details-content{block-size:auto}}}`,
   },
   {
     id: 'dialog-rise',
@@ -263,8 +252,20 @@ ${uses('tab-indicator')}[data-ak-indicator]>[role="tablist"]>[role="tab"][aria-s
 /** `preset: none`: the block's built-in motion is off. */
 export const MOTION_NONE = 'none';
 
-/** The off switch: a block that opts out keeps no keyframe animation of its own. */
-const NONE_CSS = `${uses(MOTION_NONE)},${uses(MOTION_NONE)} *{animation:none!important}`;
+/**
+ * The off switch: a block that opts out keeps no keyframe animation of its own,
+ * pseudo-elements included. Scroll-position indicators (the overflow shades on
+ * tables, diagrams and roadmaps) are not motion and keep working, as ADR 0002
+ * requires; the caller passes the shaded boxes its page styles, so the sheet
+ * never names a feature the page does not use.
+ */
+function noneCss(edges: readonly string[]): string {
+  const descendants = edges.length === 0 ? '*' : `*:not(${edges.join(',')})`;
+  return [uses(MOTION_NONE), `${uses(MOTION_NONE)} ${descendants}`]
+    .flatMap((scope) => [scope, `${scope}::before`, `${scope}::after`, `${scope}::backdrop`])
+    .join(',')
+    .concat('{animation:none!important}');
+}
 
 const BY_ID: ReadonlyMap<string, MotionRecipe> = new Map(
   MOTION_RECIPES.map((recipe) => [recipe.id, recipe]),
@@ -293,11 +294,14 @@ export const ENTER_RECIPES: ReadonlySet<string> = new Set(
  * The recipe sheet for the presets a page uses: the scale once, then each
  * used recipe once in registry order. Empty when the page uses none.
  */
-export function motionRecipeCss(used: ReadonlySet<string>): string {
+export function motionRecipeCss(
+  used: ReadonlySet<string>,
+  scrollEdges: readonly string[] = [],
+): string {
   if (used.size === 0) return '';
   const sheets = [MOTION_SCALE_CSS];
   for (const recipe of MOTION_RECIPES) if (used.has(recipe.id)) sheets.push(recipe.css);
-  if (used.has(MOTION_NONE)) sheets.push(NONE_CSS);
+  if (used.has(MOTION_NONE)) sheets.push(noneCss(scrollEdges));
   return sheets.join('\n');
 }
 

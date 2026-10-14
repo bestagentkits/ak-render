@@ -457,9 +457,12 @@ function wireEffects() {
       else countUp(entry.target);
     });
   }, { rootMargin: '0px 0px 12% 0px' });
-  // A block with motion preset none keeps its figures as authored.
+  // A block with motion preset none keeps its figures as authored, and a
+  // block's own motion preset replaces its built-in entrance.
   qa('[data-ak-animate], [data-ak-count], .ak-stat dd').forEach(function (el) {
-    if (!el.closest('[data-ak-motion="none"]')) observer.observe(el);
+    if (el.closest('[data-ak-motion="none"]')) return;
+    if (el.hasAttribute('data-ak-animate') && el.hasAttribute('data-ak-motion')) return;
+    observer.observe(el);
   });
 }`;
 
@@ -554,8 +557,7 @@ doc.addEventListener('keydown', function (event) {
 }, false);`;
 
 const BOOT = `
-syncBindings();
-restoreTheme();`;
+syncBindings();`;
 
 /** Build the emitted runtime for the features a page actually uses. */
 export function buildRuntime(options: RuntimeOptions): string {
@@ -611,6 +613,8 @@ export function buildRuntime(options: RuntimeOptions): string {
     ...parts,
     DELEGATION,
     BOOT,
+    // Only a page with the theme part defines restoreTheme.
+    features.has('theme') ? 'restoreTheme();' : '',
     ...wiring,
     '})();',
   ]
