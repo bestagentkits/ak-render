@@ -152,6 +152,10 @@ Release mechanics and the compatibility contract live in
 
 ### Fixed
 
+- Malformed YAML no longer compiles silently. A duplicate key, an
+  unterminated scalar, a second document or a recovered indentation error now
+  fails with `SPEC_PARSE_ERROR` and its line and column, instead of producing a
+  different page.
 - A `toggle` action on an open dialog now closes it. It used to open the
   dialog again, which moved focus back to its first control.
 

@@ -6,7 +6,7 @@
  * expansion bounded so a small document cannot expand into a large one.
  */
 
-import { parse as parseYaml } from 'yaml';
+import { parseDocument } from 'yaml';
 import { RenderError } from '../errors.js';
 import { isNumberedError } from '../internal/yaml-error.js';
 
@@ -49,21 +49,33 @@ export function parseSpec(input: unknown, options: ParseOptions = {}): unknown {
   }
 
   try {
-    return parseYaml(input, {
-      maxAliasCount: MAX_ALIAS_COUNT,
+    // Every document error fails the parse, so malformed YAML, a duplicate key
+    // or a second document never compiles into a different page. `error`
+    // keeps yaml's warnings (which quote the input) off stderr; `silent` would
+    // also suppress the multiple-document error.
+    const document = parseDocument(input, {
       uniqueKeys: true,
-      logLevel: 'silent',
       prettyErrors: true,
-    }) as unknown;
+      logLevel: 'error',
+    });
+    const [first] = document.errors;
+    if (first !== undefined) throw first;
+    return document.toJS({ maxAliasCount: MAX_ALIAS_COUNT }) as unknown;
   } catch (error) {
     const detail = isNumberedError(error)
-      ? `${describe(error)} (line ${error.linePos[0]?.line ?? '?'}, column ${error.linePos[0]?.col ?? '?'})`
+      ? `${headline(error.message)} (line ${error.linePos[0]?.line ?? '?'}, column ${error.linePos[0]?.col ?? '?'})`
       : describe(error);
     throw new RenderError('SPEC_PARSE_ERROR', `invalid YAML in ${source}: ${detail}`, {
       path: '$',
       cause: error,
     });
   }
+}
+
+/** yaml's pretty message without its code frame and its own location. */
+function headline(message: string): string {
+  const [first = message] = message.split('\n');
+  return first.replace(/ at line \d+, column \d+:?$/u, '');
 }
 
 function describe(error: unknown): string {
