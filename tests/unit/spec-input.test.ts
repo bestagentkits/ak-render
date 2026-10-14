@@ -50,6 +50,23 @@ describe('input boundary', () => {
     }
   });
 
+  it('fails on every YAML document error instead of compiling a different page', () => {
+    for (const [input, pattern] of [
+      ['version: 1\nmeta:\n  title: A\n  title: B\n', /unique/iu],
+      ['version: 1\nmeta:\n  title: "A\n', /line \d+, column \d+/u],
+      ['version: 1\n---\nversion: 2\n', /multiple documents/iu],
+      ['a: 1\n b: 2\n', /line \d+, column \d+/u],
+    ] as const) {
+      expect(() => parseSpec(input, { source: 'page.yaml' }), input).toThrowError(pattern);
+      try {
+        parseSpec(input, { source: 'page.yaml' });
+      } catch (error) {
+        expect((error as RenderError).code).toBe('SPEC_PARSE_ERROR');
+        expect((error as RenderError).message).toContain('page.yaml');
+      }
+    }
+  });
+
   it('bounds YAML alias expansion so a small document cannot inflate', () => {
     const bomb = [
       'a: &a ["x","x","x","x","x","x","x","x","x"]',

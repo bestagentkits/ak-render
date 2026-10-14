@@ -6,7 +6,7 @@
  * expansion bounded so a small document cannot expand into a large one.
  */
 
-import { parse as parseYaml } from 'yaml';
+import { parseDocument } from 'yaml';
 import { RenderError } from '../errors.js';
 import { isNumberedError } from '../internal/yaml-error.js';
 
@@ -49,12 +49,13 @@ export function parseSpec(input: unknown, options: ParseOptions = {}): unknown {
   }
 
   try {
-    return parseYaml(input, {
-      maxAliasCount: MAX_ALIAS_COUNT,
-      uniqueKeys: true,
-      logLevel: 'silent',
-      prettyErrors: true,
-    }) as unknown;
+    // Every document error fails the parse, so malformed YAML, a duplicate key
+    // or a second document never compiles into a different page. Warnings
+    // stay silent.
+    const document = parseDocument(input, { uniqueKeys: true, prettyErrors: true });
+    const [first] = document.errors;
+    if (first !== undefined) throw first;
+    return document.toJS({ maxAliasCount: MAX_ALIAS_COUNT }) as unknown;
   } catch (error) {
     const detail = isNumberedError(error)
       ? `${describe(error)} (line ${error.linePos[0]?.line ?? '?'}, column ${error.linePos[0]?.col ?? '?'})`
