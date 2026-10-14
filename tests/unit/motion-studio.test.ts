@@ -528,6 +528,14 @@ blocks:
     );
   });
 
+  it('keeps a mixed-ending file without a final newline unterminated', () => {
+    const text = YAML_SPEC.trimEnd().replace('\n', '\r\n');
+    const replaced = edit('page.yaml', text, { blocks: { 'plain-card': 'reveal-up' } });
+    expect(replaced).toBe(text.replace('motion: reveal-soft', 'motion: reveal-up'));
+    const removed = edit('page.yaml', text, { blocks: { 'plain-card': null } });
+    expect(removed).toBe(text.replace('\n    motion: reveal-soft', ''));
+  });
+
   it('keeps the line endings of a CRLF file without a final newline', () => {
     const crlf = YAML_SPEC.trimEnd().replace(/\n/gu, '\r\n');
     const added = edit(

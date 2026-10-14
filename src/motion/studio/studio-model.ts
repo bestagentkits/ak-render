@@ -426,7 +426,8 @@ export function applyProposal(
 function patchLines(source: string, baseline: string, edited: string): string | undefined {
   // Align a file without a final newline as if it had one, then drop it again.
   const unterminated = source !== '' && !source.endsWith('\n');
-  const eol = source.includes('\r\n') ? '\r\n' : '\n';
+  // Pad with the ending of the last terminated line, so the last line matches it.
+  const eol = /\r\n[^\n]*$/u.test(source) ? '\r\n' : '\n';
   const raw = (unterminated ? source + eol : source).split('\n');
   const s = raw.map((line) => (line.endsWith('\r') ? line.slice(0, -1) : line));
   const b = baseline.split('\n');
@@ -477,7 +478,7 @@ function patchLines(source: string, baseline: string, edited: string): string | 
   }
   out.push(...raw.slice(cursor));
   const joined = out.join('\n');
-  return unterminated && joined.endsWith(eol) ? joined.slice(0, -eol.length) : joined;
+  return unterminated ? joined.replace(/\r?\n$/u, '') : joined;
 }
 
 export interface StudioOptions {

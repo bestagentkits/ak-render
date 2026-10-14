@@ -460,10 +460,14 @@ function start() {
         // Keep any edit made while the write was in flight.
         proposal = tidy(proposal);
         if (isEmpty(proposal)) history = [];
-        if (ticket !== pending) return;
-        if (isEmpty(proposal)) { current = fresh.data; render(); }
-        else refresh();
-        say('Accepted. ' + path + ' now carries the change.');
+        var accepted = 'Accepted. ' + path + ' now carries the change.';
+        if (ticket !== pending) { say(accepted); return; }
+        current = fresh.data;
+        render();
+        say(accepted);
+        if (!isEmpty(proposal)) {
+          refresh().then(function () { if (pending === ticket + 1) say(accepted + ' Your later edit is still proposed.'); });
+        }
       }).catch(function () {
         accepting = false;
         say('Accepted. ' + path + ' now carries the change, but the studio could not reload it; reload the page.', 'error');
