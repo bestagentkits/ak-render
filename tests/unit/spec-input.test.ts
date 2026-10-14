@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { DiagnosticBag } from '../../src/diagnostics.js';
 import { isRenderError, type RenderError } from '../../src/index.js';
 import { checkBounds, LIMITS } from '../../src/spec/bounds.js';
@@ -63,8 +63,24 @@ describe('input boundary', () => {
       } catch (error) {
         expect((error as RenderError).code).toBe('SPEC_PARSE_ERROR');
         expect((error as RenderError).message).toContain('page.yaml');
+        expect((error as RenderError).message).not.toContain('\n');
       }
     }
+  });
+
+  it('keeps yaml warnings about the input off the process warning channel', () => {
+    const warnings: unknown[] = [];
+    const listener = (warning: unknown) => warnings.push(warning);
+    process.on('warning', listener);
+    const emit = vi.spyOn(process, 'emitWarning');
+    try {
+      expect(parseSpec('version: 1\n? [a]\n: 1\n')).toEqual({ version: 1, '[ a ]': 1 });
+      expect(emit).not.toHaveBeenCalled();
+    } finally {
+      emit.mockRestore();
+      process.off('warning', listener);
+    }
+    expect(warnings).toEqual([]);
   });
 
   it('bounds YAML alias expansion so a small document cannot inflate', () => {
