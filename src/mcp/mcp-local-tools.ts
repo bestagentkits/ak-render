@@ -2,7 +2,8 @@
  * The tool set the local stdio server runs.
  *
  * `catalog`, `search-catalog`, `describe`, `recipes`, `recipe`, `validate` and
- * `repair` are the shared pure tools. `render` and `compose` write the HTML to a file under the server's working directory and `themes`
+ * `repair` are the shared pure tools. `audit-ui` adds the publication preset, which
+ * launches a local browser. `render` and `compose` write the HTML to a file under the server's working directory and `themes`
  * discovers project and user presets on disk, which is why this module, unlike
  * the shared definitions, may touch the filesystem. Nothing here touches the
  * network.
@@ -10,12 +11,15 @@
 
 import { mkdirSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
+import { auditUi } from '../audit/ui-audit.js';
 import { compile } from '../render/render.js';
 import { patchSpecFile } from '../spec/patch-file.js';
 import { buildThemeCatalog, type ThemeCatalog } from '../theme/theme-catalog.js';
-import { failure, ToolArgumentError, text } from './mcp-protocol.js';
+import { failure, ToolArgumentError, type ToolResult, text } from './mcp-protocol.js';
 import {
   AUDIT_MOTION_TOOL,
+  auditUiArgs,
+  auditUiDefinition,
   CATALOG_TOOL,
   composeReplyExtras,
   composeToolStep,
@@ -50,7 +54,7 @@ export interface McpContext {
 
 export const LOCAL_INSTRUCTIONS = `AK Render compiles a Page Spec (YAML or JSON) into one self-contained, offline HTML file.
 Fastest path: compose builds a whole page from a typed intent and content (e.g. investment-report) in one call; pass dryRun or returnSpec to get the Page Spec back for edits.
-Full control: call catalog once (or search-catalog with a few words), describe only the block types you plan to use (several at once with types, compact: true for the short form), find icons by meaning with search-icons (describe-icon, icon-packs for detail), find motion recipes with motions, optionally start from a recipe (list them with recipes), validate the spec and fix every diagnostic by its JSON path (repair applies the safe fixes; validate with suggest: true lists the rest as JSON Patches; audit-motion checks the motion it names), then render to a file (themes lists the presets). For a later edit, patch the spec file in place (file plus ops, paths like /blocks/@<id>/title) instead of rewriting it.
+Full control: call catalog once (or search-catalog with a few words), describe only the block types you plan to use (several at once with types, compact: true for the short form), find icons by meaning with search-icons (describe-icon, icon-packs for detail), find motion recipes with motions, optionally start from a recipe (list them with recipes), validate the spec and fix every diagnostic by its JSON path (repair applies the safe fixes; validate with suggest: true lists the rest as JSON Patches; audit-motion checks the motion it names), then render to a file (themes lists the presets). audit-ui checks the page visually: quick needs no browser, publication runs a real one before you publish. For a later edit, patch the spec file in place (file plus ops, paths like /blocks/@<id>/title) instead of rewriting it.
 Describe meaning, not presentation: the compiler owns layout, colour, typography and motion.`;
 
 const HTML_FILE = /\.html?$/iu;
@@ -75,6 +79,25 @@ const LOCAL_RENDER_TOOL: McpTool<McpContext> = {
     mkdirSync(dirname(out), { recursive: true });
     writeFileSync(out, result.html, 'utf8');
     return text({ out, ...renderSummary(result) });
+  },
+};
+
+/**
+ * `audit-ui` with both presets. Relative assets resolve against the server
+ * working directory; the browser blocks every network request.
+ */
+const LOCAL_AUDIT_UI_TOOL: McpTool<McpContext, ToolResult | Promise<ToolResult>> = {
+  ...auditUiDefinition(['quick', 'publication']),
+  run: async (args, context) => {
+    const parsed = auditUiArgs(args, ['quick', 'publication']);
+    const report = await auditUi(parsed.input, {
+      preset: parsed.preset,
+      themeCatalog: themeCatalogFor(context),
+      baseDir: context.cwd,
+      ...(parsed.theme === undefined ? {} : { theme: parsed.theme }),
+      ...(parsed.timeoutMs === undefined ? {} : { timeoutMs: parsed.timeoutMs }),
+    });
+    return text(report);
   },
 };
 
@@ -162,7 +185,7 @@ const LOCAL_THEMES_TOOL: McpTool<McpContext> = {
 };
 
 /** Local tools, in the order an agent uses them. */
-export const LOCAL_TOOLS: readonly McpTool<McpContext>[] = [
+export const LOCAL_TOOLS: readonly McpTool<McpContext, ToolResult | Promise<ToolResult>>[] = [
   CATALOG_TOOL,
   SEARCH_CATALOG_TOOL,
   DESCRIBE_TOOL,
@@ -176,6 +199,7 @@ export const LOCAL_TOOLS: readonly McpTool<McpContext>[] = [
   REPAIR_TOOL,
   LOCAL_PATCH_TOOL,
   AUDIT_MOTION_TOOL,
+  LOCAL_AUDIT_UI_TOOL,
   LOCAL_COMPOSE_TOOL,
   LOCAL_RENDER_TOOL,
   LOCAL_THEMES_TOOL,

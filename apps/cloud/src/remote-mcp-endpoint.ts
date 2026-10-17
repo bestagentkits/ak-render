@@ -42,6 +42,7 @@ import {
 } from '../../../src/mcp/mcp-protocol.js';
 import {
   AUDIT_MOTION_TOOL,
+  AUDIT_UI_QUICK_TOOL,
   BUILTIN_THEMES_TOOL,
   CATALOG_TOOL,
   composeReplyExtras,
@@ -84,7 +85,8 @@ export const REMOTE_INSTRUCTIONS = `AK Render compiles a Page Spec (YAML or JSON
 Fastest path: compose builds a whole page from a typed intent and content (e.g. investment-report) in one call; pass dryRun or returnSpec to get the Page Spec back for edits.
 Full control: call catalog once (or search-catalog with a few words), describe only the block types you plan to use (several at once with types, compact: true for the short form), find icons by meaning with search-icons (describe-icon, icon-packs for detail), find motion recipes with motions, optionally start from a recipe (list them with recipes), validate the spec and fix every diagnostic by its JSON path (repair applies the safe fixes; validate with suggest: true lists the rest as JSON Patches; audit-motion checks the motion it names), then render (themes lists the presets). For a later edit, send patch ops (paths like /blocks/@<id>/title) instead of rewriting the spec.
 On this remote server render stores the page and returns its artifactUrl and a short summary, never the HTML. Pass share: true for a longer-lived share link.
-validate, repair, patch, audit-motion, compose and render need an AgentKit API key or OAuth access token as the bearer in the Authorization header.
+audit-ui runs the quick visual checks here; the publication preset needs the local CLI.
+validate, repair, patch, audit-motion, audit-ui, compose and render need an AgentKit API key or OAuth access token as the bearer in the Authorization header.
 Describe meaning, not presentation: the compiler owns layout, colour, typography and motion.`;
 
 /** Per-request context every remote tool call receives. */
@@ -189,6 +191,28 @@ const REMOTE_AUDIT_MOTION_TOOL: RemoteTool = {
     const guarded = await guard(context, ['render'], 'validate');
     if (!guarded.ok) return guarded.result;
     return AUDIT_MOTION_TOOL.run(args, context);
+  },
+};
+
+/**
+ * `audit-ui` with the quick preset only: a Worker has no browser to drive, so
+ * the schema offers no publication preset and a call that asks for one is
+ * refused with a pointer to the local CLI. Counted like `validate`.
+ */
+const AUDIT_UI_PROPERTIES = AUDIT_UI_QUICK_TOOL.inputSchema.properties as Record<string, object>;
+const REMOTE_AUDIT_UI_TOOL: RemoteTool = {
+  ...AUDIT_UI_QUICK_TOOL,
+  inputSchema: {
+    ...AUDIT_UI_QUICK_TOOL.inputSchema,
+    properties: {
+      ...AUDIT_UI_PROPERTIES,
+      html: { ...AUDIT_UI_PROPERTIES.html, maxLength: MAX_REQUEST_BYTES },
+    },
+  },
+  run: async (args, context) => {
+    const guarded = await guard(context, ['render'], 'validate');
+    if (!guarded.ok) return guarded.result;
+    return AUDIT_UI_QUICK_TOOL.run(args, context);
   },
 };
 
@@ -308,6 +332,7 @@ export const REMOTE_TOOLS: readonly RemoteTool[] = [
   REMOTE_REPAIR_TOOL,
   REMOTE_PATCH_TOOL,
   REMOTE_AUDIT_MOTION_TOOL,
+  REMOTE_AUDIT_UI_TOOL,
   REMOTE_COMPOSE_TOOL,
   REMOTE_RENDER_TOOL,
   anonymous(BUILTIN_THEMES_TOOL),

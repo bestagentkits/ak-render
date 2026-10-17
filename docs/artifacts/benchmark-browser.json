@@ -1,7 +1,7 @@
 {
   "artifact": "benchmark-browser",
   "producer": "tests/browser/benchmark.spec.ts",
-  "measuredAt": "2026-10-17T11:51:37.162Z",
+  "measuredAt": "2026-10-17T12:36:10.102Z",
   "compiler": {
     "name": "@bestagentkits/render",
     "version": "0.3.0"
@@ -20,11 +20,11 @@
   "fixtures": [
     {
       "fixture": "all-components.yaml",
-      "bytes": 246651,
+      "bytes": 247008,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/all-components.html",
-        "file:///tmp/ak-render-benchmark-32666/assets/demo-poster.svg"
+        "file:///tmp/ak-render-benchmark-29148/all-components.html",
+        "file:///tmp/ak-render-benchmark-29148/assets/demo-poster.svg"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -73,10 +73,10 @@
     },
     {
       "fixture": "benchmark-report.yaml",
-      "bytes": 184195,
+      "bytes": 184349,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/benchmark-report.html"
+        "file:///tmp/ak-render-benchmark-29148/benchmark-report.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -118,7 +118,7 @@
       "bytes": 121313,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/brainstorm.html"
+        "file:///tmp/ak-render-benchmark-29148/brainstorm.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -152,10 +152,10 @@
     },
     {
       "fixture": "charts-v2.yaml",
-      "bytes": 186616,
+      "bytes": 187143,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/charts-v2.html"
+        "file:///tmp/ak-render-benchmark-29148/charts-v2.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -189,10 +189,10 @@
     },
     {
       "fixture": "complex-dashboard.yaml",
-      "bytes": 214446,
+      "bytes": 214642,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/complex-dashboard.html"
+        "file:///tmp/ak-render-benchmark-29148/complex-dashboard.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -229,7 +229,7 @@
       "bytes": 130513,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/controls.html"
+        "file:///tmp/ak-render-benchmark-29148/controls.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -263,10 +263,10 @@
     },
     {
       "fixture": "dashboard.yaml",
-      "bytes": 147322,
+      "bytes": 147638,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/dashboard.html"
+        "file:///tmp/ak-render-benchmark-29148/dashboard.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -303,7 +303,7 @@
       "bytes": 182061,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/data-tables.html"
+        "file:///tmp/ak-render-benchmark-29148/data-tables.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -340,7 +340,7 @@
       "bytes": 118562,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/diff.html"
+        "file:///tmp/ak-render-benchmark-29148/diff.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -374,10 +374,10 @@
     },
     {
       "fixture": "engineering-widgets.yaml",
-      "bytes": 190054,
+      "bytes": 190063,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/engineering-widgets.html"
+        "file:///tmp/ak-render-benchmark-29148/engineering-widgets.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -414,8 +414,8 @@
       "bytes": 136130,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/evidence-widgets.html",
-        "file:///tmp/ak-render-benchmark-32666/assets/shot-dashboard.webp"
+        "file:///tmp/ak-render-benchmark-29148/evidence-widgets.html",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-dashboard.webp"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -452,7 +452,7 @@
       "bytes": 128174,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/explain.html"
+        "file:///tmp/ak-render-benchmark-29148/explain.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -494,7 +494,7 @@
       "bytes": 125278,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/icons.html"
+        "file:///tmp/ak-render-benchmark-29148/icons.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -528,10 +528,10 @@
     },
     {
       "fixture": "incident-report.yaml",
-      "bytes": 168924,
+      "bytes": 168933,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/incident-report.html"
+        "file:///tmp/ak-render-benchmark-29148/incident-report.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -565,10 +565,10 @@
     },
     {
       "fixture": "interactive-data-explorer.yaml",
-      "bytes": 177319,
+      "bytes": 177473,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/interactive-data-explorer.html"
+        "file:///tmp/ak-render-benchmark-29148/interactive-data-explorer.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -605,7 +605,7 @@
       "bytes": 136987,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/interactive.html"
+        "file:///tmp/ak-render-benchmark-29148/interactive.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -657,18 +657,18 @@
       "bytes": 130341,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/media.html",
-        "file:///tmp/ak-render-benchmark-32666/assets/walkthrough-poster.webp",
-        "file:///tmp/ak-render-benchmark-32666/assets/demo-poster.svg",
-        "file:///tmp/ak-render-benchmark-32666/assets/shot-explain-light.webp",
-        "file:///tmp/ak-render-benchmark-32666/assets/shot-dashboard.webp",
-        "file:///tmp/ak-render-benchmark-32666/assets/shot-diff.webp",
-        "file:///tmp/ak-render-benchmark-32666/assets/shot-plan.webp",
-        "file:///tmp/ak-render-benchmark-32666/assets/shot-gallery.webp",
-        "file:///tmp/ak-render-benchmark-32666/assets/shot-components.webp",
-        "file:///tmp/ak-render-benchmark-32666/assets/shot-dashboard-dark.webp",
-        "file:///tmp/ak-render-benchmark-32666/assets/walkthrough.webm",
-        "file:///tmp/ak-render-benchmark-32666/assets/cover.svg"
+        "file:///tmp/ak-render-benchmark-29148/media.html",
+        "file:///tmp/ak-render-benchmark-29148/assets/walkthrough-poster.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/demo-poster.svg",
+        "file:///tmp/ak-render-benchmark-29148/assets/walkthrough.webm",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-dashboard.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-explain-light.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-diff.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-plan.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-gallery.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-components.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-dashboard-dark.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/cover.svg"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -715,7 +715,7 @@
       "bytes": 151461,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/motion-recipes.html"
+        "file:///tmp/ak-render-benchmark-29148/motion-recipes.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -757,8 +757,8 @@
       "bytes": 208138,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/newspaper-frontpage.html",
-        "file:///tmp/ak-render-benchmark-32666/assets/press-harbour.svg"
+        "file:///tmp/ak-render-benchmark-29148/newspaper-frontpage.html",
+        "file:///tmp/ak-render-benchmark-29148/assets/press-harbour.svg"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -795,7 +795,7 @@
       "bytes": 145924,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/plan-review.html"
+        "file:///tmp/ak-render-benchmark-29148/plan-review.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -832,7 +832,7 @@
       "bytes": 111899,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/plan.html"
+        "file:///tmp/ak-render-benchmark-29148/plan.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -869,13 +869,13 @@
       "bytes": 136079,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/product-case-study.html",
-        "file:///tmp/ak-render-benchmark-32666/assets/shot-dashboard.webp",
-        "file:///tmp/ak-render-benchmark-32666/assets/shot-plan.webp",
-        "file:///tmp/ak-render-benchmark-32666/assets/shot-diff.webp",
-        "file:///tmp/ak-render-benchmark-32666/assets/shot-explain-light.webp",
-        "file:///tmp/ak-render-benchmark-32666/assets/shot-recap.webp",
-        "file:///tmp/ak-render-benchmark-32666/assets/shot-showcase.webp"
+        "file:///tmp/ak-render-benchmark-29148/product-case-study.html",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-dashboard.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-plan.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-diff.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-recap.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-explain-light.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-showcase.webp"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -912,13 +912,13 @@
       "bytes": 162624,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/product-widgets.html",
-        "file:///tmp/ak-render-benchmark-32666/assets/logo-northwind.svg",
-        "file:///tmp/ak-render-benchmark-32666/assets/logo-lumen.svg",
-        "file:///tmp/ak-render-benchmark-32666/assets/logo-orbit.svg",
-        "file:///tmp/ak-render-benchmark-32666/assets/logo-harbor.svg",
-        "file:///tmp/ak-render-benchmark-32666/assets/logo-quill.svg",
-        "file:///tmp/ak-render-benchmark-32666/assets/logo-vertex.svg"
+        "file:///tmp/ak-render-benchmark-29148/product-widgets.html",
+        "file:///tmp/ak-render-benchmark-29148/assets/logo-northwind.svg",
+        "file:///tmp/ak-render-benchmark-29148/assets/logo-lumen.svg",
+        "file:///tmp/ak-render-benchmark-29148/assets/logo-orbit.svg",
+        "file:///tmp/ak-render-benchmark-29148/assets/logo-harbor.svg",
+        "file:///tmp/ak-render-benchmark-29148/assets/logo-quill.svg",
+        "file:///tmp/ak-render-benchmark-29148/assets/logo-vertex.svg"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -952,10 +952,10 @@
     },
     {
       "fixture": "recap.yaml",
-      "bytes": 132802,
+      "bytes": 132954,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/recap.html"
+        "file:///tmp/ak-render-benchmark-29148/recap.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -992,8 +992,8 @@
       "bytes": 139758,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/research-report.html",
-        "file:///tmp/ak-render-benchmark-32666/assets/shot-dashboard.webp"
+        "file:///tmp/ak-render-benchmark-29148/research-report.html",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-dashboard.webp"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -1027,10 +1027,10 @@
     },
     {
       "fixture": "responsive-layouts.yaml",
-      "bytes": 157328,
+      "bytes": 157439,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/responsive-layouts.html"
+        "file:///tmp/ak-render-benchmark-29148/responsive-layouts.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -1064,11 +1064,11 @@
     },
     {
       "fixture": "rich-composition.yaml",
-      "bytes": 154650,
+      "bytes": 154761,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/rich-composition.html",
-        "file:///tmp/ak-render-benchmark-32666/assets/compiler-pipeline.svg"
+        "file:///tmp/ak-render-benchmark-29148/rich-composition.html",
+        "file:///tmp/ak-render-benchmark-29148/assets/compiler-pipeline.svg"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -1115,13 +1115,18 @@
       "bytes": 154873,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/showcase.html",
-        "file:///tmp/ak-render-benchmark-32666/assets/shot-dashboard.webp",
-        "file:///tmp/ak-render-benchmark-32666/assets/walkthrough-poster.webp",
-        "file:///tmp/ak-render-benchmark-32666/assets/shot-explain-light.webp",
-        "file:///tmp/ak-render-benchmark-32666/assets/crop-chart.webp",
-        "file:///tmp/ak-render-benchmark-32666/assets/crop-compare.webp",
-        "file:///tmp/ak-render-benchmark-32666/assets/walkthrough.webm"
+        "file:///tmp/ak-render-benchmark-29148/showcase.html",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-dashboard.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/walkthrough-poster.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-explain-light.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/crop-chart.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/crop-compare.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/walkthrough.webm",
+        "file:///tmp/ak-render-benchmark-29148/assets/crop-timeline.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/crop-diagram.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/crop-donut.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-explain-dark.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-dashboard-dark.webp"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -1160,10 +1165,10 @@
     },
     {
       "fixture": "theme-dialects.yaml",
-      "bytes": 179252,
+      "bytes": 179363,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/theme-dialects.html"
+        "file:///tmp/ak-render-benchmark-29148/theme-dialects.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -1197,10 +1202,10 @@
     },
     {
       "fixture": "theme-showcase.yaml",
-      "bytes": 134247,
+      "bytes": 134358,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-32666/theme-showcase.html"
+        "file:///tmp/ak-render-benchmark-29148/theme-showcase.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],

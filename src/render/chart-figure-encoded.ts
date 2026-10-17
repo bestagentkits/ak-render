@@ -88,10 +88,10 @@ export function renderEncodedChart(input: ChartInput, encoded: EncodedChart): st
     renderLegend(drawn.legend),
     annotationList(annotations, xFormat, yFormat),
     `<p class="ak-sr">${escapeText(summary)}</p>`,
-    `<details class="ak-details"><summary>Chart data table</summary>${renderTable(
+    `<details class="ak-details"><summary>Chart data table</summary><div class="ak-chart-table-scroll">${renderTable(
       input.title ?? 'Chart data',
       table,
-    )}</details>`,
+    )}</div></details>`,
     '</figure>',
   ]
     .filter((part) => part !== '')

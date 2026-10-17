@@ -209,6 +209,13 @@ timing and the reduced-motion fallback; see [docs/motion.md](./docs/motion.md).
 `ak-render motion studio page.yaml` opens a local dashboard to inspect, tune,
 preview and accept motion changes as a reviewed diff to the spec.
 
+`ak-render audit-ui page.yaml` checks the compiled page itself: the `quick`
+preset reads the theme and markup, and `--preset publication` opens it in a
+headless Chromium at 375, 768 and 1440 px in light and dark, then no-JS,
+reduced motion and print, with every network request blocked. Each finding
+names the rule, the block's spec path, the viewport, the evidence and a fix;
+see [docs/audit-ui.md](./docs/audit-ui.md).
+
 ### Review a plan in the page
 
 End a plan with a `feedback` block and put each open question in a `decision`
@@ -297,7 +304,7 @@ that cannot install Node or need a URL to hand someone.
 **Local CLI.** The loop above, with `ak-render` on the path or through `npx`.
 
 **Local MCP over stdio.** `ak-render mcp` serves `catalog`, `search-catalog`,
-`describe`, `search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `repair`, `patch`, `audit-motion`, `compose`, `render` and `themes` as MCP
+`describe`, `search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `repair`, `patch`, `audit-motion`, `audit-ui`, `compose`, `render` and `themes` as MCP
 tools. `render` and `compose` write the HTML to disk
 and returns only a summary, so the page never enters the agent's context.
 
@@ -311,7 +318,7 @@ and returns only a summary, so the page never enters the agent's context.
 
 **Remote MCP over Streamable HTTP.** `https://render.agentkit.best/mcp` serves
 `catalog`, `search-catalog`, `describe`, `search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`,
-`repair`, `patch`, `audit-motion`, `compose`, `render` and `themes` with the same contracts. A remote server cannot write into your filesystem, so
+`repair`, `patch`, `audit-motion`, `audit-ui` (quick preset only), `compose`, `render` and `themes` with the same contracts. A remote server cannot write into your filesystem, so
 `render` and `compose` take no `out`: it stores the page and returns the same summary plus an
 `artifactUrl` that lives for one hour, or a share link that lives for 30 days
 with `share: true`. The HTML still never enters the agent's context.
@@ -470,6 +477,7 @@ ak-render describe <type...> [--compact]
 ak-render motions [search <terms...>|describe <id...> [--compact]]
 ak-render motion audit <spec|page.html|-> [--fail-on <severity>] [--baseline <report.json>]
 ak-render motion studio <spec> [--port <n>]  # local motion dashboard
+ak-render audit-ui <spec|page.html|-> [--preset <quick|publication>] [--fail-on <severity>]
 ak-render recipes
 ak-render recipe <name>                   # YAML by default
 ak-render themes

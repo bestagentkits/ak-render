@@ -36,6 +36,7 @@ adds authorization, rate limits and storage in
 | `repair` | yes | `render` | `render` | Parses an arbitrary spec; at most 200 revalidations. |
 | `patch` | yes | `render` | `validate` | Parses and patches an arbitrary spec; stores nothing. |
 | `audit-motion` | yes | `render` | `validate` | Parses an arbitrary spec or page. |
+| `audit-ui` | yes | `render` | `validate` | Quick preset only; parses an arbitrary spec or page. |
 | `compose` with `dryRun: true` | yes | `render` | `validate` | Expands an intent into a spec; stores nothing. |
 | `compose` | yes | `render` | `render` | Expands an intent, then stores it exactly like `render`. |
 | `render` | yes | `render` | `render` | Stores a one-hour artifact. |
@@ -45,8 +46,8 @@ adds authorization, rate limits and storage in
 `motions` take no spec and read only static data, so they answer without a bearer: a client
 can discover the server before it is configured with a token. Each call still builds a response of several
 kilobytes, so they count per client IP (`anon-ip`), and a batch counts every
-member. `validate`, `repair`, `patch` and `audit-motion` parse untrusted input, so they are authenticated.
-`validate`, `patch` and `audit-motion` share the `validate` limit; `repair` may revalidate many times
+member. `validate`, `repair`, `patch`, `audit-motion` and `audit-ui` parse untrusted input, so they are authenticated.
+`validate`, `patch`, `audit-motion` and `audit-ui` share the `validate` limit; `repair` may revalidate many times
 per call, so it counts against the stricter `render` limit.
 
 `render` compiles through `renderArtifact`, the exact path `POST /v1/render`

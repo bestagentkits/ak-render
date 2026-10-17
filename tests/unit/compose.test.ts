@@ -334,16 +334,16 @@ describe('compose: CLI', () => {
 
 describe('compose: local MCP tool', () => {
   const context = { cwd: workspace, home: workspace };
-  const call = (args: Record<string, unknown>) => {
-    const response = handleMcpMessage(
+  const call = async (args: Record<string, unknown>) => {
+    const response = await handleMcpMessage(
       { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'compose', arguments: args } },
       context,
     );
     return response?.result as { isError?: boolean; content: { text: string }[] };
   };
 
-  it('writes the HTML and answers with a summary, never the HTML', () => {
-    const reply = call({ ...INPUT, out: 'mcp.html' });
+  it('writes the HTML and answers with a summary, never the HTML', async () => {
+    const reply = await call({ ...INPUT, out: 'mcp.html' });
     expect(reply.isError).toBeUndefined();
     const text = reply.content[0]?.text ?? '';
     expect(text).not.toContain('<html');
@@ -351,13 +351,17 @@ describe('compose: local MCP tool', () => {
     expect(readFileSync(join(workspace, 'mcp.html'), 'utf8')).toBe(compile(SPEC_TEXT).html);
   });
 
-  it('returns the spec as YAML on a dry run without writing', () => {
-    const payload = JSON.parse(call({ ...INPUT, dryRun: true }).content[0]?.text ?? '');
+  it('returns the spec as YAML on a dry run without writing', async () => {
+    const payload = JSON.parse((await call({ ...INPUT, dryRun: true })).content[0]?.text ?? '');
     expect(parse(payload.spec)).toEqual(parse(SPEC_TEXT));
   });
 
-  it('returns every diagnostic as a tool error', () => {
-    const reply = call({ intent: 'investment-report', content: { title: 'x' }, out: 'x.html' });
+  it('returns every diagnostic as a tool error', async () => {
+    const reply = await call({
+      intent: 'investment-report',
+      content: { title: 'x' },
+      out: 'x.html',
+    });
     expect(reply.isError).toBe(true);
     expect(JSON.parse(reply.content[0]?.text ?? '').diagnostics[0].path).toBe('content.thesis');
   });

@@ -219,35 +219,35 @@ describe('MCP 2026-07-28 over Streamable HTTP', () => {
 describe('MCP 2026-07-28 over stdio', () => {
   const context = { cwd: '/', home: '/' };
 
-  it('answers server/discover as the dual-era probe and lists every local tool', () => {
-    const discover = handleMcpMessage(modernRequest('server/discover'), context);
+  it('answers server/discover as the dual-era probe and lists every local tool', async () => {
+    const discover = await handleMcpMessage(modernRequest('server/discover'), context);
     const result = discover?.result as RpcBody;
     expect(result.supportedVersions[0]).toBe(LATEST_PROTOCOL);
     expect(result.instructions).toBe(LOCAL_INSTRUCTIONS);
-    const listed = handleMcpMessage(modernRequest('tools/list', {}, 2), context);
+    const listed = await handleMcpMessage(modernRequest('tools/list', {}, 2), context);
     expect(
       (listed?.result as RpcBody | undefined)?.tools.map((tool: { name: string }) => tool.name),
     ).toEqual(LOCAL_TOOLS.map((tool) => tool.name));
   });
 
-  it('runs a tool call with the modern result shape', () => {
-    const reply = handleMcpMessage(
+  it('runs a tool call with the modern result shape', async () => {
+    const reply = await handleMcpMessage(
       modernRequest('tools/call', { name: 'recipes', arguments: {} }),
       context,
     );
     expect((reply?.result as RpcBody | undefined)?.resultType).toBe('complete');
   });
 
-  it('answers server/discover without a revision as a non-modern error, so a legacy probe falls back', () => {
-    const reply = handleMcpMessage(
+  it('answers server/discover without a revision as a non-modern error, so a legacy probe falls back', async () => {
+    const reply = await handleMcpMessage(
       { jsonrpc: '2.0', id: 1, method: 'server/discover', params: {} },
       context,
     );
     expect(reply?.error?.code).toBe(-32602);
   });
 
-  it('answers server/discover under a legacy revision as method not found', () => {
-    const reply = handleMcpMessage(
+  it('answers server/discover under a legacy revision as method not found', async () => {
+    const reply = await handleMcpMessage(
       {
         jsonrpc: '2.0',
         id: 1,
@@ -259,8 +259,8 @@ describe('MCP 2026-07-28 over stdio', () => {
     expect(reply?.error?.code).toBe(-32601);
   });
 
-  it('answers a non-string _meta revision as invalid params', () => {
-    const reply = handleMcpMessage(
+  it('answers a non-string _meta revision as invalid params', async () => {
+    const reply = await handleMcpMessage(
       {
         jsonrpc: '2.0',
         id: 1,
@@ -272,12 +272,12 @@ describe('MCP 2026-07-28 over stdio', () => {
     expect(reply?.error?.code).toBe(-32602);
   });
 
-  it('refuses a batch that carries 2026-07-28 requests', () => {
+  it('refuses a batch that carries 2026-07-28 requests', async () => {
     const line = JSON.stringify([
       modernRequest('tools/list', {}, 1),
       modernRequest('tools/list', {}, 2),
     ]);
-    const reply = JSON.parse(handleMcpLine(line, context) ?? '{}') as RpcBody;
+    const reply = JSON.parse((await handleMcpLine(line, context)) ?? '{}') as RpcBody;
     expect(reply.error?.code).toBe(-32600);
   });
 });

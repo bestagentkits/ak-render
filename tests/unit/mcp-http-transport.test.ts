@@ -107,7 +107,7 @@ describe('MCP Streamable HTTP: lifecycle', () => {
   it('answers the same initialize as the stdio server, apart from instructions', async () => {
     const message = { jsonrpc: '2.0', id: 1, method: 'initialize', params: {} };
     const { body } = await call(message);
-    const stdio = handleMcpMessage(message, { cwd: '/', home: '/' });
+    const stdio = await handleMcpMessage(message, { cwd: '/', home: '/' });
     const { instructions: _http, ...httpRest } = (body?.result ?? {}) as Record<string, unknown>;
     const { instructions: _stdio, ...stdioRest } = (stdio?.result ?? {}) as Record<string, unknown>;
     expect(Object.keys(httpRest).length).toBeGreaterThan(0);

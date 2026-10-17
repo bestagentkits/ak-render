@@ -47,6 +47,10 @@ can keep editing with the loop below. See [compose](./compose.md).
    `ak-render icons search <words>` and see [icons.md](./icons.md).
 5. **Compile.** `ak-render page.yaml --out page.html --json` writes the file and
    prints a summary (bytes, hash, features, warnings).
+6. **Check the page (optional).** `ak-render audit-ui page.yaml --json` lists
+   visual problems in the compiled page, each with the block's `path` and a
+   `fix`; add `--preset publication` when a Chromium is available for the
+   real-browser pass. See [audit-ui.md](./audit-ui.md).
 
 Pass `-` instead of a path to read the spec from standard input, so no temporary
 file is needed:
@@ -144,7 +148,7 @@ Check every block's real props with `describe` before relying on this shape.
 `describe-icon` (`icon`), `icon-packs`, `motions` (optional `query`, or `id`
 with `compact`), `recipes`, `recipe` (`name`), `validate` (optional `suggest`), `repair`, `patch` (`ops` with `file`
 or `spec`, optional `baseHash`), `audit-motion`
-(`spec` or `html`), `compose` (`intent`, `content`, optional `theme`, `out`,
+(`spec` or `html`), `audit-ui` (`spec` or `html`, optional `preset`), `compose` (`intent`, `content`, optional `theme`, `out`,
 `dryRun`, `returnSpec`), `render` and `themes`. `render` and `compose` write the HTML to the
 `out` path and returns only the summary, so the page never enters your context.
 `out` must end in `.html` or `.htm`. A relative path resolves against the
@@ -163,7 +167,7 @@ it points, so review it like any file write. `spec` may be YAML/JSON text or the
 
 Without Node, use the hosted server at `https://render.agentkit.best/mcp` (MCP
 Streamable HTTP). It serves `catalog`, `search-catalog`, `describe`,
-`search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `repair`, `patch`, `audit-motion`, `compose`, `render` and `themes` with the same names and
+`search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `repair`, `patch`, `audit-motion`, `audit-ui` (quick preset only), `compose`, `render` and `themes` with the same names and
 contracts, and the
 loop is the same. Two things differ:
 

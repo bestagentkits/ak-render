@@ -190,6 +190,10 @@ Motion is named, not authored. A block may opt into one recipe, such as
 `motion studio page.yaml` lets a person tune it locally and accept a diff. Leave `motion` out unless motion helps the
 reader; the compiler handles reduced motion and print.
 
+Before handing a page to someone, run `audit-ui page.yaml --json` (add
+`--preset publication` when a browser is available) and fix each finding at
+its `path` with the `fix` it gives.
+
 ## Rules
 
 - **No raw HTML, CSS, or JS.** The spec has no field for them, and keys such
@@ -221,7 +225,7 @@ reader; the compiler handles reduced motion and print.
 `npx -y @bestagentkits/render mcp` serves the same loop over stdio as the tools
 `catalog` (optional `category`), `search-catalog` (`query`), `describe`
 (`type`, or `types` with optional `compact`), `search-icons` (`query`), `describe-icon`, `icon-packs`, `motions` (optional `query`, or `id` with `compact`), `recipes`, `recipe` (`name`),
-`validate` (`spec`, optional `suggest`), `repair` (`spec`), `patch` (`ops` with `file` or `spec`, optional `baseHash`), `audit-motion` (`spec` or `html`), `compose` (`intent`, `content`, optional `theme`, `out`, `dryRun`, `returnSpec`), `render` (`spec`, `out`, optional `theme`), and `themes`. `spec` may be YAML or JSON text, or the parsed
+`validate` (`spec`, optional `suggest`), `repair` (`spec`), `patch` (`ops` with `file` or `spec`, optional `baseHash`), `audit-motion` (`spec` or `html`), `audit-ui` (`spec` or `html`, optional `preset`), `compose` (`intent`, `content`, optional `theme`, `out`, `dryRun`, `returnSpec`), `render` (`spec`, `out`, optional `theme`), and `themes`. `spec` may be YAML or JSON text, or the parsed
 object. `render` writes the file to `out` and returns only the summary. When
 these tools are available, use them instead of the shell commands.
 

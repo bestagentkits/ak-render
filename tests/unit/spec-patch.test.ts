@@ -414,8 +414,8 @@ describe('ak-render patch', () => {
 
 describe('patch over MCP', () => {
   const context = { cwd: workspace, home: workspace };
-  function call(args: Record<string, unknown>) {
-    const response = handleMcpMessage(
+  async function call(args: Record<string, unknown>) {
+    const response = await handleMcpMessage(
       { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'patch', arguments: args } },
       context,
     );
@@ -428,8 +428,8 @@ describe('patch over MCP', () => {
     };
   }
 
-  it('returns patched YAML text for a text spec, comments included', () => {
-    const { isError, body } = call({
+  it('returns patched YAML text for a text spec, comments included', async () => {
+    const { isError, body } = await call({
       spec: SPEC,
       ops: [{ op: 'replace', path: '/blocks/@intro/text', value: 'Over MCP.' }],
     });
@@ -438,9 +438,9 @@ describe('patch over MCP', () => {
     expect(body.spec).toContain('text: Over MCP.');
   });
 
-  it('edits a file under the working directory and returns no spec', () => {
+  it('edits a file under the working directory and returns no spec', async () => {
     specFile('mcp.yaml');
-    const { isError, body } = call({
+    const { isError, body } = await call({
       file: 'mcp.yaml',
       ops: [{ op: 'replace', path: '/meta/title', value: 'Via file' }],
     });
@@ -450,30 +450,30 @@ describe('patch over MCP', () => {
     expect(readFileSync(join(workspace, 'mcp.yaml'), 'utf8')).toContain('title: Via file');
   });
 
-  it('reports a conflict as a tool error carrying the current hash', () => {
-    const { isError, body } = call({ spec: SPEC, ops: [], baseHash: 's-stale' });
+  it('reports a conflict as a tool error carrying the current hash', async () => {
+    const { isError, body } = await call({ spec: SPEC, ops: [], baseHash: 's-stale' });
     expect(isError).toBe(true);
     expect(body.diagnostics[0].details.currentHash).toBe(body.hash);
   });
 
-  it('edits only spec files inside the working directory', () => {
+  it('edits only spec files inside the working directory', async () => {
     const outside = mkdtempSync(join(tmpdir(), 'ak-render-outside-'));
     try {
       writeFileSync(join(outside, 'page.yaml'), SPEC);
       symlinkSync(join(outside, 'page.yaml'), join(workspace, 'escape.yaml'));
       const ops = [{ op: 'replace', path: '/meta/title', value: 'x' }];
-      expect(call({ file: join(outside, 'page.yaml'), ops }).raw).toMatch(/outside/u);
-      expect(call({ file: 'escape.yaml', ops }).raw).toMatch(/outside/u);
-      expect(call({ file: 'missing.yaml', ops }).raw).toMatch(/does not exist/u);
+      expect((await call({ file: join(outside, 'page.yaml'), ops })).raw).toMatch(/outside/u);
+      expect((await call({ file: 'escape.yaml', ops })).raw).toMatch(/outside/u);
+      expect((await call({ file: 'missing.yaml', ops })).raw).toMatch(/does not exist/u);
       specFile('settings.json', '{"hooks":{}}');
-      expect(call({ file: 'settings.json', ops }).raw).toMatch(/not a Page Spec/u);
+      expect((await call({ file: 'settings.json', ops })).raw).toMatch(/not a Page Spec/u);
     } finally {
       rmSync(outside, { recursive: true, force: true });
     }
   });
 
-  it('asks for exactly one of spec and file', () => {
-    expect(call({ ops: [] }).raw).toMatch(/pass "spec" or "file"/u);
-    expect(call({ spec: SPEC, file: 'mcp.yaml', ops: [] }).raw).toMatch(/not both/u);
+  it('asks for exactly one of spec and file', async () => {
+    expect((await call({ ops: [] })).raw).toMatch(/pass "spec" or "file"/u);
+    expect((await call({ spec: SPEC, file: 'mcp.yaml', ops: [] })).raw).toMatch(/not both/u);
   });
 });
