@@ -11,6 +11,13 @@ Release mechanics and the compatibility contract live in
 
 ### Added
 
+- Vietnamese intent search. `search-catalog` (CLI, MCP and `searchCatalog`)
+  folds diacritics and `đ` before tokenizing and maps common Vietnamese words
+  and phrases ("biểu đồ", "bảng giá", "dòng thời gian") to the English words
+  the block index uses, longest phrase first. English queries over index
+  words rank as before; a few short Vietnamese words that are not English
+  index words ("bang", "nut", "loc") now find their blocks. Motion recipe
+  search shares the same tokenizer.
 - Motion Studio. `ak-render motion studio <spec>` serves a local,
   development-only dashboard over one Page Spec: a block list and a recipe
   gallery of compiled examples, an inspector with the phase timeline, timing,
