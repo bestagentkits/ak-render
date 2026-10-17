@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { describeMany, isRenderError, type RenderError, searchCatalog } from '../../src/index.js';
-import { catalogSearchTokens } from '../../src/registry/catalog-search.js';
+import {
+  catalogSearchTokens,
+  STOP_WORDS,
+  sameWord,
+  words,
+} from '../../src/registry/catalog-search.js';
+import { expandVietnamese, VI_ALIASES } from '../../src/registry/catalog-search-vi.js';
 import { compactDescription } from '../../src/registry/describe-many.js';
 import { blockTypes, describe as describeBlock } from '../../src/registry/registry.js';
 
@@ -111,6 +117,97 @@ describe('searchCatalog', () => {
   it('finds a filter for "filter rows by status" in the top three', () => {
     const top = searchCatalog('filter rows by status', 3).map((hit) => hit.type);
     expect(top).toContain(has('filter-bar') ? 'filter-bar' : 'search');
+  });
+});
+
+describe('searchCatalog in Vietnamese', () => {
+  /** Every word the block index can match, built the way the index builds it. */
+  const vocabulary = blockTypes().flatMap((type) => {
+    const definition = describeBlock(type);
+    return [
+      definition.type,
+      ...words(definition.type),
+      ...definition.tags.flatMap((tag) => [tag, ...words(tag)]),
+      ...definition.useCases.flatMap(words),
+      definition.category,
+      ...words(definition.summary),
+    ];
+  });
+  const indexed = (word: string) => vocabulary.some((entry) => sameWord(word, entry));
+  const english = (word: string) => STOP_WORDS.has(word) || indexed(word);
+
+  it('folds diacritics and đ, so accented and unaccented queries match alike', () => {
+    expect(words('Biểu ĐỒ cột, Đường')).toEqual(['bieu', 'do', 'cot', 'duong']);
+    const pairs: [accented: string, plain: string][] = [
+      ['biểu đồ', 'bieu do'],
+      ['bảng giá', 'bang gia'],
+      ['dòng thời gian', 'dong thoi gian'],
+      ['câu hỏi thường gặp', 'cau hoi thuong gap'],
+      ['sơ đồ kiến trúc', 'so do kien truc'],
+    ];
+    for (const [accented, plain] of pairs) {
+      expect(searchCatalog(accented), accented).toEqual(searchCatalog(plain));
+      expect(searchCatalog(accented).length, accented).toBeGreaterThan(0);
+    }
+  });
+
+  it('swaps the longest Vietnamese phrase for its English words', () => {
+    expect(catalogSearchTokens('biểu đồ cột')).toEqual(['chart']);
+    expect(catalogSearchTokens('bảng giá')).toEqual(['pricing']);
+    expect(catalogSearchTokens('danh sách kiểm tra')).toEqual(['checklist']);
+    expect(expandVietnamese(['bang', 'sortable', 'bieu', 'do'])).toEqual([
+      'table',
+      'sortable',
+      'chart',
+    ]);
+    // Words that start no phrase stay as they are.
+    expect(expandVietnamese(['xyz', 'do'])).toEqual(['xyz', 'do']);
+  });
+
+  it('ranks the expected block first for common Vietnamese intents', () => {
+    const golden: [query: string, type: string][] = [
+      ['biểu đồ', 'chart'],
+      ['bieu do cot', 'chart'],
+      ['bảng giá', 'pricing'],
+      ['dòng thời gian', 'timeline'],
+      ['dong thoi gian', 'timeline'],
+      ['câu hỏi thường gặp', 'accordion'],
+      ['sơ đồ kiến trúc', 'diagram-panel'],
+      ['nhật ký', 'log-viewer'],
+      ['lộ trình', 'roadmap'],
+      ['phím tắt', 'kbd'],
+      ['bảng dữ liệu', 'data-table'],
+      ['bang sortable', 'data-table'],
+      ['thanh lọc', 'filter-bar'],
+    ];
+    for (const [query, type] of golden) {
+      if (!has(type)) continue;
+      expect(searchCatalog(query)[0]?.type, query).toBe(type);
+    }
+  });
+
+  it('ranks a Vietnamese intent exactly like its English words', () => {
+    const pairs: [vietnamese: string, englishQuery: string][] = [
+      ['bảng', 'table'],
+      ['biểu đồ', 'chart'],
+      ['bảng giá', 'pricing'],
+      ['lọc các dòng theo trạng thái', 'filter rows by status'],
+      ['lọc bảng theo trạng thái', 'filter table status'],
+    ];
+    for (const [vietnamese, englishQuery] of pairs) {
+      expect(searchCatalog(vietnamese), vietnamese).toEqual(searchCatalog(englishQuery));
+    }
+  });
+
+  it('keeps every alias key out of the English index and every value inside it', () => {
+    for (const [key, values] of Object.entries(VI_ALIASES)) {
+      const keyWords = key.split(' ');
+      expect(keyWords.join(' '), key).toBe(words(key).join(' '));
+      // A key made only of English words would change an English query.
+      expect(keyWords.every(english), key).toBe(false);
+      if (keyWords.length === 1) expect(english(key), key).toBe(false);
+      for (const value of values) expect(indexed(value), `${key} -> ${value}`).toBe(true);
+    }
   });
 });
 
