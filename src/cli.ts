@@ -14,6 +14,8 @@ import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from
 import { homedir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { stringify } from 'yaml';
+import { COMPOSE_INTENTS, compose, composeIntents } from './compose/compose.js';
 import type { Diagnostic } from './diagnostics.js';
 import { isRenderError, type RenderError } from './errors.js';
 import {
@@ -75,6 +77,8 @@ function sourceLabel(path: string): string {
 interface Flags {
   json: boolean;
   compact: boolean;
+  dryRun: boolean;
+  specOut?: string;
   suggest: boolean;
   category?: string;
   pack?: string;
@@ -83,7 +87,6 @@ interface Flags {
   baseline?: string;
   port?: string;
   baseHash?: string;
-  dryRun: boolean;
   out?: string;
   theme?: string;
   themeFile?: string;
@@ -614,6 +617,96 @@ function motionStudioCommand(file: string, io: CliIo, flags: Flags): number {
   return 0;
 }
 
+/** Write `text` to `path`, reporting a failure as an environment problem. */
+function writeOutput(path: string, text: string, io: CliIo): boolean {
+  try {
+    mkdirSync(dirname(resolve(path)), { recursive: true });
+    writeFileSync(path, text, 'utf8');
+    return true;
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    io.stderr(`ak-render: cannot write ${path}: ${reason}\n`);
+    return false;
+  }
+}
+
+function composeCommand(args: string[], io: CliIo, flags: Flags): number {
+  const file = args[0];
+  if (file === 'intents') {
+    const listing = composeIntents();
+    if (flags.json) io.stdout(`${JSON.stringify(listing, null, 2)}\n`);
+    else for (const entry of listing) io.stdout(`${entry.intent}  ${entry.summary}\n`);
+    return 0;
+  }
+  if (file === undefined) {
+    io.stderr(
+      `ak-render: compose requires an input path (intents: ${COMPOSE_INTENTS.join(', ')})\n`,
+    );
+    return 2;
+  }
+  const text = readSpecFile(file, io);
+  if (text === undefined) return 2;
+
+  if (flags.dryRun && flags.out !== undefined) {
+    io.stderr('ak-render: --dry-run compiles nothing, so --out is ignored\n');
+  }
+  const composed = compose(text, {
+    dryRun: flags.dryRun,
+    themeCatalog: themeCatalogFor(flags, io),
+    ...(flags.theme === undefined ? {} : { theme: flags.theme }),
+  });
+  if (!composed.ok || composed.spec === undefined) {
+    if (flags.json)
+      io.stdout(`${JSON.stringify({ ok: false, diagnostics: composed.diagnostics }, null, 2)}\n`);
+    else reportDiagnostics(io, composed.diagnostics);
+    return 1;
+  }
+  const specText = stringify(composed.spec);
+  if (flags.specOut !== undefined && !writeOutput(flags.specOut, specText, io)) return 2;
+  const result = composed.result;
+  if (result !== undefined && flags.out !== undefined && !writeOutput(flags.out, result.html, io)) {
+    return 2;
+  }
+
+  if (flags.json) {
+    io.stdout(
+      `${JSON.stringify(
+        {
+          ok: true,
+          diagnostics: composed.diagnostics,
+          specOut: flags.specOut ?? null,
+          out: result === undefined ? null : (flags.out ?? null),
+          ...(result === undefined
+            ? { spec: composed.spec }
+            : {
+                bytes: result.bytes,
+                hash: result.hash,
+                title: result.ir.meta.title,
+                theme: result.theme.name,
+                nodes: result.ir.nodes.length,
+                warnings: result.warnings,
+              }),
+        },
+        null,
+        2,
+      )}\n`,
+    );
+  } else if (result === undefined) {
+    // A dry run's product is the spec itself.
+    if (flags.specOut === undefined) io.stdout(specText);
+  } else if (flags.out === undefined) {
+    io.stdout(result.html);
+  } else {
+    io.stdout(`wrote ${result.bytes} bytes to ${flags.out} (hash ${result.hash})\n`);
+  }
+  if (!flags.json) {
+    for (const warning of composed.diagnostics.filter((item) => item.severity === 'warning')) {
+      io.stderr(`warning: ${warning.path}: ${warning.message}\n`);
+    }
+  }
+  return 0;
+}
+
 /**
  * `ak-render patch <spec> <ops>`: edit the spec file in place. Ops are inline
  * JSON (an argument starting with `[`), a JSON or YAML file, or `-` for stdin.
@@ -685,6 +778,13 @@ const COMMANDS: Record<string, Command> = {
     summary: 'Compile a Page Spec to a standalone HTML artifact.',
     usage: 'ak-render <spec.yaml|spec.json|-> [--out <file.html>] [--theme <preset>] [--json]',
     run: compileCommand,
+  },
+  compose: {
+    summary:
+      'Build a page from a typed intent and content slots; writes the expanded spec on request.',
+    usage:
+      'ak-render compose <input.yaml|input.json|-> [--out <file.html>] [--spec-out <spec.yaml>] [--theme <preset>] [--dry-run] [--json]\n  ak-render compose intents [--json]',
+    run: composeCommand,
   },
   validate: {
     summary: 'Validate a Page Spec without rendering it.',
@@ -916,6 +1016,7 @@ command prompts, and every command except mcp accepts --json.
 
 const VALUE_FLAGS = [
   '--out',
+  '--spec-out',
   '--theme',
   '--theme-file',
   '--category',
@@ -961,12 +1062,12 @@ function parseArgs(args: string[]): ParsedArgs | { error: string } {
       flags.compact = true;
       continue;
     }
-    if (arg === '--suggest') {
-      flags.suggest = true;
-      continue;
-    }
     if (arg === '--dry-run') {
       flags.dryRun = true;
+      continue;
+    }
+    if (arg === '--suggest') {
+      flags.suggest = true;
       continue;
     }
     if (arg === '--no-theme-discovery') {
@@ -978,6 +1079,7 @@ function parseArgs(args: string[]): ParsedArgs | { error: string } {
       const value = args[index + 1];
       if (value === undefined) return { error: `${valueFlag} requires a value` };
       if (valueFlag === '--out') flags.out = value;
+      else if (valueFlag === '--spec-out') flags.specOut = value;
       else if (valueFlag === '--theme') flags.theme = value;
       else if (valueFlag === '--category') flags.category = value;
       else if (valueFlag === '--pack') flags.pack = value;

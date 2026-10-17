@@ -6,6 +6,23 @@
  * yet are not exported — the package never advertises a scaffold.
  */
 
+export type {
+  ComposeInput,
+  ComposeIntent,
+  ComposeIntentDescription,
+  ComposeOptions,
+  ComposeResult,
+  ComposeSpecResult,
+} from './compose/compose.js';
+export {
+  COMPOSE_INTENTS,
+  compose,
+  composeInputJsonSchema,
+  composeIntents,
+  composeSpec,
+} from './compose/compose.js';
+export type { InvestmentReportContent } from './compose/investment-report.js';
+export { INVESTMENT_REPORT_LIMITS } from './compose/investment-report.js';
 export type { DataRow, DataScalar, MaterializedData } from './data/dataset-types.js';
 export type { ValueFormat } from './data/format-value.js';
 export { VALUE_FORMATS } from './data/format-value.js';
