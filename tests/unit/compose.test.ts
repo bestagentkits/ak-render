@@ -161,6 +161,95 @@ describe('compose: diagnostics point into the compose input', () => {
   });
 });
 
+interface JsonSchemaNode {
+  type?: string;
+  properties?: Record<string, JsonSchemaNode>;
+  items?: JsonSchemaNode;
+  enum?: string[];
+  maxLength?: number;
+  maximum?: number;
+}
+
+/** A value at the schema's upper bound: longest strings, most permissive numbers. */
+function atMaximum(schema: JsonSchemaNode): unknown {
+  switch (schema.type) {
+    case 'object':
+      return Object.fromEntries(
+        Object.entries(schema.properties ?? {}).map(([key, child]) => [key, atMaximum(child)]),
+      );
+    case 'array':
+      return [atMaximum(schema.items ?? {})];
+    case 'string':
+      return schema.enum?.[0] ?? 'x'.repeat(schema.maxLength ?? 1);
+    default:
+      return schema.maximum ?? 1;
+  }
+}
+
+interface MaximalContent {
+  scenarios: { periods: string[]; items: Record<string, unknown>[] };
+  sources: Record<string, unknown>[];
+}
+
+describe('compose: slot caps match the blocks they fill', () => {
+  it('expands every slot at its advertised maximum without a spec diagnostic', () => {
+    const [intent] = composeIntents();
+    if (intent === undefined) throw new Error('no intent');
+    const content = atMaximum(intent.content as JsonSchemaNode) as MaximalContent;
+    const longest = content.scenarios.periods[0]?.length ?? 1;
+    content.scenarios.periods = ['a'.padEnd(longest, 'x'), 'b'.padEnd(longest, 'x')];
+    content.scenarios.items = [
+      { ...content.scenarios.items[0], values: [1e15, -1e15], probability: 1 },
+    ];
+    content.sources = [{ ...content.sources[0], href: 'https://example.com/a' }];
+    const result = composeSpec({ intent: intent.intent, content });
+    expect(result.diagnostics).toEqual([]);
+    expect(result.ok).toBe(true);
+  });
+
+  it('reports an over-long slot at its content path, before expansion', () => {
+    const result = composeSpec(minimal({ metrics: [{ label: 'ARR', value: 'x'.repeat(41) }] }));
+    expect(result.diagnostics.map((item) => item.path)).toEqual(['content.metrics[0].value']);
+  });
+
+  it('never accepts inherited property names as slots', () => {
+    const result = composeSpec(minimal({ constructor: 'x', toString: 1 }));
+    expect(result.diagnostics.map((item) => item.path)).toEqual([
+      'content.constructor',
+      'content.toString',
+    ]);
+  });
+
+  it('requires a whole-number year and bounded scenario values', () => {
+    const scenarios = {
+      periods: ['2026', '2027'],
+      items: [{ name: 'Base', values: [1, 1e16] }],
+    };
+    expect(
+      composeSpec(
+        minimal({ sources: [{ title: 'Memo', year: 2000.5 }], scenarios }),
+      ).diagnostics.map((item) => item.path),
+    ).toEqual(['content.scenarios.items[0].values[1]', 'content.sources[0].year']);
+  });
+
+  it('rejects a repeated period', () => {
+    const scenarios = { periods: ['2026', '2026'], items: [{ name: 'Base', values: [1, 2] }] };
+    expect(composeSpec(minimal({ scenarios })).diagnostics.map((item) => item.path)).toEqual([
+      'content.scenarios.periods[1]',
+    ]);
+  });
+
+  it('reports an unknown theme on a dry run too, and lets an override replace it', () => {
+    const unknown = composeSpec({ ...minimal(), theme: 'nope' });
+    expect(unknown.ok).toBe(false);
+    expect(unknown.diagnostics[0]).toMatchObject({ path: 'theme' });
+    expect(compose({ ...minimal(), theme: 'nope' }).ok).toBe(false);
+    const replaced = composeSpec({ ...minimal(), theme: 'nope' }, { theme: 'editorial' });
+    expect(replaced.ok).toBe(true);
+    expect(replaced.spec?.theme).toEqual({ preset: 'editorial' });
+  });
+});
+
 describe('compose: one schema for discovery and validation', () => {
   const ajv = new Ajv({ strict: false, allErrors: true });
   const check = ajv.compile(composeInputJsonSchema());
@@ -216,6 +305,18 @@ describe('compose: CLI', () => {
     const c = io();
     expect(run(['compose', '-', '--dry-run'], c.io)).toBe(0);
     expect(parse(c.out())).toEqual(parse(SPEC_TEXT));
+  });
+
+  it('applies --theme and reports no out on a dry run', () => {
+    const themed = io();
+    expect(run(['compose', '-', '--theme', 'editorial', '--json'], themed.io)).toBe(0);
+    expect(JSON.parse(themed.out())).toMatchObject({ ok: true, theme: 'editorial' });
+
+    const dry = io();
+    const out = join(workspace, 'never.html');
+    expect(run(['compose', '-', '--dry-run', '--out', out, '--json'], dry.io)).toBe(0);
+    expect(JSON.parse(dry.out())).toMatchObject({ ok: true, out: null });
+    expect(dry.err()).toContain('--out is ignored');
   });
 
   it('lists intents and fails on bad input with path diagnostics', () => {

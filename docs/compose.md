@@ -26,6 +26,7 @@ ak-render compose intents --json          # intents, summaries, content schemas
 ak-render compose input.yaml --out page.html --spec-out page.yaml
 ak-render compose input.yaml --dry-run    # print the expanded spec, compile nothing
 ak-render compose - --json < input.yaml   # read stdin, print a JSON summary
+ak-render compose input.yaml --theme editorial --out page.html   # override the theme
 ```
 
 `--json` prints `ok`, `diagnostics` and the render summary (`bytes`, `hash`,
@@ -49,7 +50,9 @@ Only `intent`, `content` and `theme` are allowed at the top level. Every slot
 is checked before anything is expanded, and each problem is a diagnostic with
 the JSON path of the offending value, such as `content.scenarios.items[1].values`.
 Unknown fields are errors that list the expected ones; nothing is silently
-dropped.
+dropped. Each text slot's length cap is read from the block prop it fills, so
+an input the schema accepts expands cleanly. An unknown theme is reported at
+`theme`, on a dry run too.
 
 A complete example is
 [`fixtures/compose/investment-report.input.yaml`](../fixtures/compose/investment-report.input.yaml),
@@ -78,10 +81,11 @@ required; every other section appears only when its slot is filled.
 
 ### Scenarios
 
-`periods` holds 2 to 24 labels. Each of the 1 to 6 `items` has a unique
+`periods` holds 2 to 24 distinct labels of at most 24 characters. Each of the 1 to 6 `items` has a unique
 `name`, exactly one number per period in `values`, and optional `probability`
-(0 to 1) and `note`. `format` is `number`, `integer`, `compact`, `currency` or
-`percent`. The chart and the summary table read the same data, so they cannot
+(0 to 1) and `note`. Values stay within ±10^15. `format` is `number`, `integer`,
+`compact`, `currency` or `percent`; with `percent`, values are whole percents
+(20 means 20%), while `probability` stays a 0 to 1 share. The chart and the summary table read the same data, so they cannot
 disagree. When every item has a probability and they do not sum to 1, compose
 warns but still builds the page.
 
@@ -117,7 +121,8 @@ returns each intent with its default theme and content schema, and
 - **Deterministic.** The same input and compiler version produce the same spec
   and the same bytes.
 - **No second compiler.** Expansion emits only existing blocks, then the
-  standard validate and compile run. Any diagnostic from that step is reported
-  at a `spec.` path you can inspect in the returned spec.
+  standard validate and compile run. The few problems only a block contract
+  catches, such as a link with a disallowed scheme in `sources[].href`, are
+  reported at a `spec.` path you can inspect in the returned spec.
 - **Bounded.** Lists have item caps, and dataset cells keep the dataset string
   limit.

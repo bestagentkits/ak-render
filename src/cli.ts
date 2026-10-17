@@ -563,9 +563,13 @@ function composeCommand(args: string[], io: CliIo, flags: Flags): number {
   const text = readSpecFile(file, io);
   if (text === undefined) return 2;
 
+  if (flags.dryRun && flags.out !== undefined) {
+    io.stderr('ak-render: --dry-run compiles nothing, so --out is ignored\n');
+  }
   const composed = compose(text, {
     dryRun: flags.dryRun,
     themeCatalog: themeCatalogFor(flags, io),
+    ...(flags.theme === undefined ? {} : { theme: flags.theme }),
   });
   if (!composed.ok || composed.spec === undefined) {
     if (flags.json)
@@ -587,7 +591,7 @@ function composeCommand(args: string[], io: CliIo, flags: Flags): number {
           ok: true,
           diagnostics: composed.diagnostics,
           specOut: flags.specOut ?? null,
-          out: flags.out ?? null,
+          out: result === undefined ? null : (flags.out ?? null),
           ...(result === undefined
             ? { spec: composed.spec }
             : {
@@ -629,7 +633,7 @@ const COMMANDS: Record<string, Command> = {
     summary:
       'Build a page from a typed intent and content slots; writes the expanded spec on request.',
     usage:
-      'ak-render compose <input.yaml|input.json|-> [--out <file.html>] [--spec-out <spec.yaml>] [--dry-run] [--json]\n  ak-render compose intents [--json]',
+      'ak-render compose <input.yaml|input.json|-> [--out <file.html>] [--spec-out <spec.yaml>] [--theme <preset>] [--dry-run] [--json]\n  ak-render compose intents [--json]',
     run: composeCommand,
   },
   validate: {

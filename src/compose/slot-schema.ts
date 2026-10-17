@@ -16,12 +16,19 @@ export type SlotField =
       kind: 'string';
       required?: boolean;
       enum?: readonly string[];
-      /** Tighter than the spec-wide single-line cap, e.g. for a dataset cell. */
+      /** Length cap of the block prop the slot fills; default the spec-wide cap. */
       max?: number;
       description?: string;
     }
-  | { kind: 'text'; required?: boolean; description?: string }
-  | { kind: 'number'; required?: boolean; min?: number; max?: number; description?: string }
+  | { kind: 'text'; required?: boolean; max?: number; description?: string }
+  | {
+      kind: 'number';
+      required?: boolean;
+      min?: number;
+      max?: number;
+      integer?: boolean;
+      description?: string;
+    }
   | {
       kind: 'list';
       of: SlotField;
@@ -44,15 +51,21 @@ export function slotJsonSchema(field: SlotField): Record<string, unknown> {
     case 'string':
       return {
         type: 'string',
+        minLength: 1,
         maxLength: field.max ?? LIMITS.maxStringLength,
         ...(field.enum === undefined ? {} : { enum: [...field.enum] }),
         ...described,
       };
     case 'text':
-      return { type: 'string', maxLength: LIMITS.maxTextLength, ...described };
+      return {
+        type: 'string',
+        minLength: 1,
+        maxLength: field.max ?? LIMITS.maxTextLength,
+        ...described,
+      };
     case 'number':
       return {
-        type: 'number',
+        type: field.integer === true ? 'integer' : 'number',
         ...(field.min === undefined ? {} : { minimum: field.min }),
         ...(field.max === undefined ? {} : { maximum: field.max }),
         ...described,
@@ -120,14 +133,18 @@ export function checkSlot(
         invalid(bag, path, 'must be non-empty text');
         return false;
       }
-      if (value.length > LIMITS.maxTextLength) {
-        invalid(bag, path, `must be at most ${LIMITS.maxTextLength} characters`);
+      if (value.length > (field.max ?? LIMITS.maxTextLength)) {
+        invalid(bag, path, `must be at most ${field.max ?? LIMITS.maxTextLength} characters`);
         return false;
       }
       return true;
     case 'number':
       if (typeof value !== 'number' || !Number.isFinite(value)) {
         invalid(bag, path, 'must be a finite number');
+        return false;
+      }
+      if (field.integer === true && !Number.isInteger(value)) {
+        invalid(bag, path, 'must be a whole number');
         return false;
       }
       if (
@@ -161,7 +178,7 @@ export function checkSlot(
       }
       let ok = true;
       for (const key of Object.keys(value)) {
-        if (!(key in field.fields)) {
+        if (!Object.hasOwn(field.fields, key)) {
           invalid(
             bag,
             pathKey(path, key),

@@ -397,22 +397,29 @@ export interface ComposeToolStep {
   returnSpec: boolean;
 }
 
-/**
- * Check the compose arguments and expand them. A failed expansion is returned
- * as the tool result, carrying every diagnostic with its path.
- */
-export function composeToolStep(args: Record<string, unknown>): ComposeToolStep | ToolResult {
+/** Reject a non-boolean flag before any work or metering happens. */
+export function checkComposeFlags(args: Record<string, unknown>): void {
   for (const key of ['dryRun', 'returnSpec'] as const) {
     if (args[key] !== undefined && typeof args[key] !== 'boolean') {
       throw new ToolArgumentError(`"${key}" must be a boolean`);
     }
   }
+}
+
+/**
+ * Check the compose arguments and expand them. A failed expansion is returned
+ * as the tool result, carrying every diagnostic with its path.
+ */
+export function composeToolStep(
+  args: Record<string, unknown>,
+  themeCatalog?: ThemeCatalog,
+): ComposeToolStep | ToolResult {
+  checkComposeFlags(args);
   const { intent, content, theme } = args;
-  const composed = composeSpec({
-    intent,
-    content,
-    ...(theme === undefined ? {} : { theme }),
-  });
+  const composed = composeSpec(
+    { intent, content, ...(theme === undefined ? {} : { theme }) },
+    themeCatalog === undefined ? {} : { themeCatalog },
+  );
   if (!composed.ok || composed.spec === undefined) {
     return failure({ ok: false, diagnostics: composed.diagnostics });
   }

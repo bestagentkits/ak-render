@@ -78,7 +78,7 @@ const LOCAL_RENDER_TOOL: McpTool<McpContext> = {
 const LOCAL_COMPOSE_TOOL: McpTool<McpContext> = {
   ...LOCAL_COMPOSE_DEFINITION,
   run: (args, context) => {
-    const step = composeToolStep(args);
+    const step = composeToolStep(args, themeCatalogFor(context));
     if (!isComposeToolStep(step)) return step;
     if (step.dryRun) return text({ ok: true, ...composeReplyExtras(step) });
     const out = resolve(context.cwd, requireString(args, 'out'));

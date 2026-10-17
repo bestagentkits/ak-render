@@ -17,6 +17,8 @@ import type { JsonValue } from '../json.js';
 import { type CompileResult, compile, type RenderOptions } from '../render/render.js';
 import { parseSpec } from '../spec/parse.js';
 import { validate } from '../spec/validate.js';
+import { themePresetNames } from '../theme/load-theme.js';
+import type { ThemeCatalog } from '../theme/theme-catalog.js';
 import {
   checkInvestmentReport,
   expandInvestmentReport,
@@ -109,6 +111,15 @@ export interface ComposeSpecResult {
 
 const INPUT_KEYS: ReadonlySet<string> = new Set(['intent', 'content', 'theme']);
 
+export interface ComposeSpecOptions {
+  /** Source label used in parse diagnostics. */
+  source?: string;
+  /** Theme preset that replaces the input's `theme`, e.g. from a CLI flag. */
+  theme?: string;
+  /** Presets the theme may name. Defaults to the built-ins. */
+  themeCatalog?: ThemeCatalog;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -117,7 +128,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * Expand a compose input (an object, or YAML/JSON text) into a Page Spec
  * without compiling it. Never throws for input problems.
  */
-export function composeSpec(input: unknown, options: { source?: string } = {}): ComposeSpecResult {
+export function composeSpec(input: unknown, options: ComposeSpecOptions = {}): ComposeSpecResult {
   const bag = new DiagnosticBag();
   let document: unknown;
   try {
@@ -141,7 +152,8 @@ export function composeSpec(input: unknown, options: { source?: string } = {}): 
       });
     }
   }
-  const { intent, content, theme } = document;
+  const { intent, content } = document;
+  const theme = options.theme ?? document.theme;
   if (!isComposeIntent(intent)) {
     bag.add({
       code: 'SPEC_VALIDATION_ERROR',
@@ -150,8 +162,16 @@ export function composeSpec(input: unknown, options: { source?: string } = {}): 
       details: { allowed: [...COMPOSE_INTENTS] },
     });
   }
-  if (theme !== undefined && (typeof theme !== 'string' || theme === '')) {
-    bag.add({ code: 'SPEC_VALIDATION_ERROR', path: 'theme', message: 'must be a preset name' });
+  if (theme !== undefined) {
+    const known = themePresetNames(options.themeCatalog);
+    if (typeof theme !== 'string' || !known.includes(theme)) {
+      bag.add({
+        code: 'SPEC_VALIDATION_ERROR',
+        path: 'theme',
+        message: `unknown theme preset ${JSON.stringify(theme)}`,
+        details: { known },
+      });
+    }
   }
   if (!isComposeIntent(intent) || bag.hasErrors) return { ok: false, diagnostics: bag.list() };
 
@@ -174,7 +194,7 @@ export function composeSpec(input: unknown, options: { source?: string } = {}): 
     ...bag.list(),
     ...checked.diagnostics.map((diagnostic) => ({
       ...diagnostic,
-      path: `spec.${diagnostic.path.replace(/^\$\.?/u, '')}`,
+      path: diagnostic.path === '$' ? 'spec' : `spec.${diagnostic.path.replace(/^\$\.?/u, '')}`,
     })),
   ];
   return { ok: checked.ok, diagnostics, spec };
@@ -183,6 +203,8 @@ export function composeSpec(input: unknown, options: { source?: string } = {}): 
 export interface ComposeOptions extends Omit<RenderOptions, 'theme' | 'source'> {
   /** Expand and validate only; skip compiling. */
   dryRun?: boolean;
+  /** Theme preset that replaces the input's `theme`. */
+  theme?: string;
 }
 
 export interface ComposeResult extends ComposeSpecResult {
@@ -195,9 +217,27 @@ export interface ComposeResult extends ComposeSpecResult {
  * returned spec, because that is exactly what runs.
  */
 export function compose(input: unknown, options: ComposeOptions = {}): ComposeResult {
-  const { dryRun, ...renderOptions } = options;
-  const expanded = composeSpec(input);
+  const { dryRun, theme, ...renderOptions } = options;
+  const expanded = composeSpec(input, {
+    ...(theme === undefined ? {} : { theme }),
+    ...(renderOptions.themeCatalog === undefined
+      ? {}
+      : { themeCatalog: renderOptions.themeCatalog }),
+  });
   if (!expanded.ok || expanded.spec === undefined || dryRun === true) return expanded;
-  const result = compile(expanded.spec, { ...renderOptions, source: '<composed spec>' });
-  return { ...expanded, result };
+  try {
+    const result = compile(expanded.spec, { ...renderOptions, source: '<composed spec>' });
+    return { ...expanded, result };
+  } catch (error) {
+    // A theme that resolves but cannot compile (a broken custom preset, say)
+    // is still reported as a diagnostic rather than thrown.
+    if (!isRenderError(error)) throw error;
+    const failed: Diagnostic = {
+      code: error.code,
+      severity: 'error',
+      message: error.message,
+      path: `spec.${(error.path ?? '').replace(/^\$\.?/u, '')}`.replace(/\.$/u, ''),
+    };
+    return { ok: false, diagnostics: [...expanded.diagnostics, failed], spec: expanded.spec };
+  }
 }

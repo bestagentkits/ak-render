@@ -46,6 +46,8 @@ const THEME_PRESET_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const LOCALE_PATTERN = /^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/;
 const DEFAULT_THEME_PRESET = 'editorial';
 const THEME_FIELDS: readonly string[] = ['preset', 'extends', 'tokens', 'dark', 'recipes', 'icons'];
+/** Length caps of the `meta` strings a page title and summary fill. */
+export const META_LIMITS = { title: 200, description: 400 } as const;
 export const NETWORK_CAPABILITIES = ['media', 'fonts', 'images'] as const;
 
 interface BuildContext {
@@ -117,11 +119,11 @@ function normalizeEnvelope(
   }
 
   const title = requireString(metaValue.title, '$.meta.title', bag, {
-    maxLength: 200,
+    maxLength: META_LIMITS.title,
     required: true,
   });
   const description = requireString(metaValue.description, '$.meta.description', bag, {
-    maxLength: 400,
+    maxLength: META_LIMITS.description,
   });
   const locale =
     requireString(metaValue.locale, '$.meta.locale', bag, {

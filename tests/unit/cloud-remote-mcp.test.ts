@@ -445,6 +445,17 @@ describe('remote MCP: render', () => {
     expect(bad.payload['diagnostics']).toBeDefined();
   });
 
+  it('rejects a malformed compose flag before metering it', async () => {
+    const { env, limits } = harness();
+    const input = {
+      intent: 'investment-report',
+      content: { title: 'Acme seed', thesis: { summary: 'Small bet, large market.' } },
+    };
+    const { reply } = await tool(env, 'compose', { ...input, dryRun: 'true' });
+    expect(reply.isError).toBe(true);
+    expect(limits.render.counts.size + limits.validate.counts.size).toBe(0);
+  });
+
   it('returns compact metadata and an artifact URL, never the HTML', async () => {
     const { env, r2 } = harness();
     const now = new Date('2026-10-06T00:00:00.000Z');

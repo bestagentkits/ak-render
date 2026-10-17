@@ -13,6 +13,8 @@ import { DATA_LIMITS } from '../data/dataset-types.js';
 import { CURRENCIES } from '../data/format-value.js';
 import { type DiagnosticBag, pathIndex, pathKey } from '../diagnostics.js';
 import type { JsonValue } from '../json.js';
+import { META_LIMITS } from '../spec/normalize.js';
+import { propMaxLength as cap } from './block-limits.js';
 import type { SlotField } from './slot-schema.js';
 
 const RECOMMENDATIONS = ['invest', 'pass', 'hold', 'watch', 'buy', 'sell'] as const;
@@ -37,16 +39,44 @@ export const INVESTMENT_REPORT_LIMITS = {
 
 const L = INVESTMENT_REPORT_LIMITS;
 
-/** Scenario names, periods and notes become dataset cells, which are shorter. */
+/** Scenario names and notes become dataset cells, which are shorter. */
 const CELL = { kind: 'string', max: DATA_LIMITS.maxStringLength } as const;
+
+/** A period is an axis label and part of a column header, so it stays short. */
+const PERIOD_MAX = 24;
+
+/** Keeps chart scales finite; far beyond any real projection. */
+const VALUE_LIMIT = 1e15;
+
+const CHART_TITLE_SUFFIX = ' by scenario';
+
+/**
+ * The metric names the chart axis, the chart title and the final-period
+ * column (`Revenue (2029)`), so it must fit the tightest of the three.
+ */
+const METRIC_MAX = Math.min(
+  cap('chart', 'y', 'label'),
+  cap('chart', 'title') - CHART_TITLE_SUFFIX.length,
+  cap('data-table', 'columns', 'label') - ' ()'.length - PERIOD_MAX,
+);
 
 export const INVESTMENT_REPORT_SLOTS: SlotField = {
   kind: 'object',
   fields: {
-    title: { kind: 'string', required: true, description: 'The report headline.' },
-    subtitle: { kind: 'string', description: 'One line under the headline.' },
+    title: {
+      kind: 'string',
+      required: true,
+      max: Math.min(cap('hero', 'title'), META_LIMITS.title),
+      description: 'The report headline.',
+    },
+    subtitle: {
+      kind: 'string',
+      max: Math.min(cap('hero', 'description'), META_LIMITS.description),
+      description: 'One line under the headline.',
+    },
     eyebrow: {
       kind: 'string',
+      max: cap('hero', 'eyebrow'),
       description: 'Label above the headline. Default "Investment report".',
     },
     currency: {
@@ -61,8 +91,8 @@ export const INVESTMENT_REPORT_SLOTS: SlotField = {
       of: {
         kind: 'object',
         fields: {
-          label: { kind: 'string', required: true },
-          value: { kind: 'string', required: true },
+          label: { kind: 'string', required: true, max: cap('key-value', 'items', 'key') },
+          value: { kind: 'string', required: true, max: cap('key-value', 'items', 'value') },
         },
       },
     },
@@ -70,12 +100,17 @@ export const INVESTMENT_REPORT_SLOTS: SlotField = {
       kind: 'object',
       required: true,
       fields: {
-        summary: { kind: 'text', required: true, description: 'The thesis in a few sentences.' },
+        summary: {
+          kind: 'text',
+          required: true,
+          max: cap('callout', 'text'),
+          description: 'The thesis in a few sentences.',
+        },
         recommendation: { kind: 'string', enum: RECOMMENDATIONS },
         points: {
           kind: 'list',
           max: L.points,
-          of: { kind: 'text' },
+          of: { kind: 'text', max: cap('list', 'items', 'text') },
           description: 'Supporting arguments, one per item.',
         },
       },
@@ -87,12 +122,12 @@ export const INVESTMENT_REPORT_SLOTS: SlotField = {
       of: {
         kind: 'object',
         fields: {
-          label: { kind: 'string', required: true },
-          value: { kind: 'string', required: true },
-          delta: { kind: 'string' },
+          label: { kind: 'string', required: true, max: cap('kpi', 'items', 'label') },
+          value: { kind: 'string', required: true, max: cap('kpi', 'items', 'value') },
+          delta: { kind: 'string', max: cap('kpi', 'items', 'delta') },
           trend: { kind: 'string', enum: TRENDS },
           good: { kind: 'string', enum: DIRECTIONS },
-          caption: { kind: 'string' },
+          caption: { kind: 'string', max: cap('kpi', 'items', 'caption') },
         },
       },
     },
@@ -100,15 +135,28 @@ export const INVESTMENT_REPORT_SLOTS: SlotField = {
       kind: 'object',
       description: 'Projected values per period for each scenario; one shared dataset.',
       fields: {
-        title: { kind: 'string', description: 'Default "Scenarios".' },
-        metric: { kind: 'string', description: 'What the values measure. Default "Value".' },
-        format: { kind: 'string', enum: SCENARIO_FORMATS, description: 'Default currency.' },
+        title: {
+          kind: 'string',
+          max: cap('section', 'title'),
+          description: 'Default "Scenarios".',
+        },
+        metric: {
+          kind: 'string',
+          max: METRIC_MAX,
+          description: 'What the values measure. Default "Value".',
+        },
+        format: {
+          kind: 'string',
+          enum: SCENARIO_FORMATS,
+          description: 'Default currency. With percent, 20 means 20%.',
+        },
         periods: {
           kind: 'list',
           required: true,
           min: 2,
           max: L.periods,
-          of: CELL,
+          of: { kind: 'string', max: PERIOD_MAX },
+          description: 'Distinct period labels in order, e.g. 2027 or Q3 2027.',
         },
         items: {
           kind: 'list',
@@ -125,7 +173,7 @@ export const INVESTMENT_REPORT_SLOTS: SlotField = {
                 required: true,
                 min: 2,
                 max: L.periods,
-                of: { kind: 'number' },
+                of: { kind: 'number', min: -VALUE_LIMIT, max: VALUE_LIMIT },
                 description: 'One value per period, in period order.',
               },
               note: CELL,
@@ -140,10 +188,10 @@ export const INVESTMENT_REPORT_SLOTS: SlotField = {
       of: {
         kind: 'object',
         fields: {
-          area: { kind: 'string', required: true },
+          area: { kind: 'string', required: true, max: cap('risk-matrix', 'items', 'area') },
           impact: { kind: 'string', required: true, enum: LEVELS },
           likelihood: { kind: 'string', required: true, enum: LEVELS },
-          mitigation: { kind: 'text' },
+          mitigation: { kind: 'text', max: cap('risk-matrix', 'items', 'note') },
         },
       },
     },
@@ -153,9 +201,9 @@ export const INVESTMENT_REPORT_SLOTS: SlotField = {
       of: {
         kind: 'object',
         fields: {
-          when: { kind: 'string', required: true },
-          title: { kind: 'string', required: true },
-          text: { kind: 'text' },
+          when: { kind: 'string', required: true, max: cap('timeline', 'items', 'when') },
+          title: { kind: 'string', required: true, max: cap('timeline', 'items', 'title') },
+          text: { kind: 'text', max: cap('timeline', 'items', 'text') },
         },
       },
     },
@@ -166,12 +214,12 @@ export const INVESTMENT_REPORT_SLOTS: SlotField = {
       of: {
         kind: 'object',
         fields: {
-          title: { kind: 'string', required: true },
-          href: { kind: 'string' },
-          authors: { kind: 'string' },
-          publisher: { kind: 'string' },
-          year: { kind: 'number', min: 1000, max: 9999 },
-          note: { kind: 'text' },
+          title: { kind: 'string', required: true, max: cap('references', 'items', 'title') },
+          href: { kind: 'string', description: 'An https link or a relative path.' },
+          authors: { kind: 'string', max: cap('references', 'items', 'authors') },
+          publisher: { kind: 'string', max: cap('references', 'items', 'source') },
+          year: { kind: 'number', integer: true, min: 1000, max: 9999 },
+          note: { kind: 'text', max: cap('references', 'items', 'note') },
         },
       },
     },
@@ -239,8 +287,8 @@ export interface InvestmentReportContent {
 }
 
 /**
- * Checks the slot schema cannot express: every scenario has one value per
- * period, scenario names are distinct, and stated probabilities add up to 1.
+ * Checks the slot schema cannot express: periods and scenario names are
+ * distinct, every scenario has one value per period, and stated probabilities add up to 1.
  */
 export function checkInvestmentReport(
   content: InvestmentReportContent,
@@ -250,6 +298,17 @@ export function checkInvestmentReport(
   const scenarios = content.scenarios;
   if (scenarios === undefined) return;
   const scenariosPath = pathKey(path, 'scenarios');
+  const seenPeriods = new Set<string>();
+  scenarios.periods.forEach((period, index) => {
+    if (seenPeriods.has(period)) {
+      bag.add({
+        code: 'SPEC_VALIDATION_ERROR',
+        path: pathIndex(pathKey(scenariosPath, 'periods'), index),
+        message: `duplicate period "${period}"`,
+      });
+    }
+    seenPeriods.add(period);
+  });
   const names = new Set<string>();
   scenarios.items.forEach((item, index) => {
     const itemPath = pathIndex(pathKey(scenariosPath, 'items'), index);
@@ -384,7 +443,7 @@ function scenarioBlocks(
           type: 'chart',
           id: 'scenarios-chart',
           kind: 'line',
-          title: `${metric} by scenario`,
+          title: `${metric}${CHART_TITLE_SUFFIX}`,
           dataRef: 'scenarios',
           x: { field: 'period' },
           y: { field: 'value', label: metric, ...valueFormat },

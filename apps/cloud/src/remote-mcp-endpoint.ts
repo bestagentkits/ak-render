@@ -45,6 +45,7 @@ import {
   BUILTIN_THEMES_TOOL,
   CATALOG_TOOL,
   composeReplyExtras,
+  checkComposeFlags,
   composeToolStep,
   DESCRIBE_ICON_TOOL,
   DESCRIBE_TOOL,
@@ -246,6 +247,7 @@ const REMOTE_RENDER_TOOL: RemoteTool = {
 const REMOTE_COMPOSE_TOOL: RemoteTool = {
   ...REMOTE_COMPOSE_DEFINITION,
   run: async (args, context) => {
+    checkComposeFlags(args);
     if (args.dryRun === true) {
       // A dry run stores nothing, so it is metered like validate.
       const guarded = await guard(context, ['render'], 'validate');
