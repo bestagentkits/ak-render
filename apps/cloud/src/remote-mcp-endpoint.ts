@@ -36,6 +36,7 @@ import {
   JSON_RPC_ERRORS,
   publicToolErrorResult,
   rpcError,
+  SUPPORTED_VERSIONS,
   text,
   type ToolResult,
 } from '../../../src/mcp/mcp-protocol.js';
@@ -57,6 +58,7 @@ import {
   SEARCH_ICONS_TOOL,
   VALIDATE_TOOL,
 } from '../../../src/mcp/mcp-tool-definitions.js';
+import { PACKAGE_NAME, VERSION } from '../../../src/version.js';
 import {
   type AuthOutcome,
   authenticate,
@@ -73,9 +75,9 @@ import { renderArtifact } from './render.js';
 import { createArtifact, createShare } from './share.js';
 
 export const REMOTE_INSTRUCTIONS = `AK Render compiles a Page Spec (YAML or JSON) into one self-contained, offline HTML file.
-Loop: call catalog once (or search-catalog with a few words), describe only the block types you plan to use (several at once with types, compact: true for the short form), find icons by meaning with search-icons (describe-icon, icon-packs for detail), optionally start from a recipe (list them with recipes), validate the spec and fix every diagnostic by its JSON path, then render. For a later edit, send patch ops (paths like /blocks/@<id>/title) instead of rewriting the spec.
+Loop: call catalog once (or search-catalog with a few words), describe only the block types you plan to use (several at once with types, compact: true for the short form), find icons by meaning with search-icons (describe-icon, icon-packs for detail), find motion recipes with motions, optionally start from a recipe (list them with recipes), validate the spec and fix every diagnostic by its JSON path (audit-motion checks the motion it names), then render (themes lists the presets). For a later edit, send patch ops (paths like /blocks/@<id>/title) instead of rewriting the spec.
 On this remote server render stores the page and returns its artifactUrl and a short summary, never the HTML. Pass share: true for a longer-lived share link.
-validate, patch and render need an AgentKit API key or OAuth access token as the bearer in the Authorization header.
+validate, audit-motion, patch and render need an AgentKit API key or OAuth access token as the bearer in the Authorization header.
 Describe meaning, not presentation: the compiler owns layout, colour, typography and motion.`;
 
 /** Per-request context every remote tool call receives. */
@@ -233,6 +235,26 @@ export const REMOTE_TOOLS: readonly RemoteTool[] = [
   REMOTE_RENDER_TOOL,
   anonymous(BUILTIN_THEMES_TOOL),
 ];
+
+/** What `GET /v1/version` reports: enough to tell whether a deploy is current. */
+export interface RemoteVersion {
+  name: string;
+  version: string;
+  /** Commit the Worker was built from, or null when the deploy did not say. */
+  build: string | null;
+  protocolVersions: readonly string[];
+  tools: string[];
+}
+
+export function remoteVersion(env: Pick<Env, 'BUILD_SHA'>): RemoteVersion {
+  return {
+    name: PACKAGE_NAME,
+    version: VERSION,
+    build: env.BUILD_SHA === undefined || env.BUILD_SHA === '' ? null : env.BUILD_SHA,
+    protocolVersions: SUPPORTED_VERSIONS,
+    tools: REMOTE_TOOLS.map((tool) => tool.name),
+  };
+}
 
 /** HTTP 401 for a rejected bearer, or a missing one where OAuth can supply it. */
 function rejectedBearer(request: Request, env: Env, message: string): Response {

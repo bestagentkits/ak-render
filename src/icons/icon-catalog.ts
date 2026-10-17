@@ -8,6 +8,7 @@
  * compiler version always resolve the same glyph.
  */
 
+import { foldText } from '../internal/fold-text.js';
 import { GENERATED_CONCEPTS, ICON_GLYPHS } from './icon-data.generated.js';
 import {
   ICON_FALLBACK_ORDER,
@@ -169,15 +170,6 @@ function variantGlyphName(pack: IconPackId, name: string, variant: string): stri
 }
 
 // --- validation and resolution --------------------------------------------
-
-function normalizeText(text: string): string {
-  return text
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/gu, '')
-    .replace(/đ/gu, 'd')
-    .replace(/Đ/gu, 'D')
-    .toLowerCase();
-}
 
 function editDistance(a: string, b: string): number {
   if (Math.abs(a.length - b.length) > 3) return 4;
@@ -348,7 +340,7 @@ function byCodeUnit(a: string, b: string): number {
 
 /** Query words, distinct and bounded, so a long query costs a fixed amount. */
 function tokens(text: string): string[] {
-  const words = normalizeText(text.slice(0, SEARCH_MAX_QUERY_LENGTH))
+  const words = foldText(text.slice(0, SEARCH_MAX_QUERY_LENGTH))
     .split(/[^a-z0-9]+/u)
     .filter((token) => token !== '');
   return [...new Set(words)].slice(0, SEARCH_MAX_TOKENS);
@@ -378,7 +370,7 @@ export function searchIcons(
   query: string,
   options: { pack?: IconPackId; limit?: number } = {},
 ): IconHit[] {
-  const normalized = normalizeText(query).trim().replace(/\s+/gu, '-');
+  const normalized = foldText(query).trim().replace(/\s+/gu, '-');
   const queryTokens = tokens(query);
   if (normalized === '' || queryTokens.length === 0) return [];
   const limit = Math.min(

@@ -26,7 +26,13 @@ Release mechanics and the compatibility contract live in
   Migration: additive. `RenderErrorCode` gains `SPEC_PATCH_ERROR` and
   `SPEC_PATCH_CONFLICT`, so an exhaustive `switch` over it needs two cases;
   `tools/list` gains `patch` after `validate`.
-
+- Vietnamese intent search. `search-catalog` (CLI, MCP and `searchCatalog`)
+  folds diacritics and `đ` before tokenizing and maps common Vietnamese words
+  and phrases ("biểu đồ", "bảng giá", "dòng thời gian") to the English words
+  the block index uses, longest phrase first. English queries over index
+  words rank as before; a few short Vietnamese words that are not English
+  index words ("bang", "nut", "loc") now find their blocks. Motion recipe
+  search shares the same tokenizer.
 - Motion Studio. `ak-render motion studio <spec>` serves a local,
   development-only dashboard over one Page Spec: a block list and a recipe
   gallery of compiled examples, an inspector with the phase timeline, timing,
@@ -155,8 +161,23 @@ Release mechanics and the compatibility contract live in
   A personal AgentKit API key (`ck_live_…`) also works as a static bearer and
   lasts until revoked.
 
+- MCP protocol revision 2026-07-28, next to the legacy revisions, over stdio
+  (`ak-render mcp`) and remote HTTP. `server/discover`, per-request `_meta`
+  revision and client capabilities, `resultType: "complete"`, list cache hints,
+  the `MCP-Protocol-Version`/`Mcp-Method`/`Mcp-Name` header checks (`-32020`)
+  and `-32022` with the supported revisions for an unknown one. `initialize`
+  still negotiates the legacy era.
+- `GET /v1/version` on the cloud renderer reports the deployed commit, package
+  version, MCP revisions and remote tool names. The deploy workflow stamps the
+  commit, and the smoke script fails when the deployed build or its MCP tool
+  list drifts from it.
+
 ### Changed
 
+- An unsupported `MCP-Protocol-Version` header now answers JSON-RPC `-32022`
+  with `data: { supported, requested }` instead of `-32600` (still HTTP 400).
+- The remote MCP instructions name `motions` and `audit-motion`, so every
+  remote tool appears in them.
 - The `ak-render` skill opens a page only when it writes the file for the
   first time. On a recompile it tells the user to refresh instead, so an
   updated page no longer opens one more browser tab.
