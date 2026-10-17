@@ -186,6 +186,12 @@ Release mechanics and the compatibility contract live in
 
 ### Fixed
 
+- A table row-width warning now names the authored row. An invalid row is
+  dropped during normalization, so later warnings used to shift onto an
+  earlier index (`rows[0]` instead of `rows[1]`), which misled agents fixing
+  by path.
+- `ak-render validate` lists each warning once. A spec with an error used to
+  print every warning twice in text mode; `--json` was not affected.
 - Malformed YAML no longer compiles silently. A duplicate key, an
   unterminated scalar, a second document or a recovered indentation error now
   fails with `SPEC_PARSE_ERROR` and its line and column, instead of producing a

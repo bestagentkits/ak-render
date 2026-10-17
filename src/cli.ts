@@ -640,7 +640,8 @@ const COMMANDS: Record<string, Command> = {
         reportDiagnostics(io, result.diagnostics);
         reportFixes(io, result.diagnostics);
       }
-      if (!flags.json) {
+      // A failed run already listed every diagnostic, warnings included.
+      if (!flags.json && result.ok) {
         for (const warning of result.diagnostics.filter((item) => item.severity === 'warning')) {
           io.stderr(`warning: ${warning.path}: ${warning.message}\n`);
         }
