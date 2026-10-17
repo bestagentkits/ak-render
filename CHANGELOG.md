@@ -211,6 +211,8 @@ Release mechanics and the compatibility contract live in
   feature-matrix rows, asset policy checks and other item lists reported
   later items one index too early. Nested item blocks are matched to their authored item
   the same way.
+- `feature-matrix` no longer reports a width error on every row when a plan
+  or value was dropped as invalid; that item's own error explains it.
 - `ak-render validate` lists each warning once. A spec with an error used to
   print every warning twice in text mode; `--json` was not affected.
 - Malformed YAML no longer compiles silently. A duplicate key, an

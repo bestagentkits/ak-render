@@ -1,6 +1,6 @@
 /** Feature matrix block: which plan includes which feature, as a real table. */
 
-import { authoredIndex } from '../../diagnostics.js';
+import { authoredIndex, wasCompacted } from '../../diagnostics.js';
 import type { JsonValue } from '../../json.js';
 import type { BlockModule } from '../../registry/block-module.js';
 import {
@@ -92,8 +92,12 @@ export const featureMatrixBlock: BlockModule = {
     );
   },
   check: (node, context) => {
+    // A dropped plan or value already has its own error; counting the
+    // compacted list would add a misleading width error to every row.
+    if (wasCompacted(node.props.plans)) return;
     const expected = listProp(node, 'plans').length;
     objectListProp(node, 'rows').forEach((row, index) => {
+      if (wasCompacted(row.values)) return;
       const actual = Array.isArray(row.values) ? row.values.length : 0;
       if (actual !== expected) {
         reportAt(

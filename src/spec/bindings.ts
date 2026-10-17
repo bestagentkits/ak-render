@@ -37,7 +37,7 @@ export function validateBindingsDeep(
       result.push(item);
       kept.push(authoredIndex(value, index));
     }
-    keepAuthoredIndexes(result, kept);
+    keepAuthoredIndexes(result, kept, value);
     return result;
   }
   if (!isPlainObject(value)) {
