@@ -48,6 +48,7 @@
 
 import { execFileSync } from 'node:child_process';
 import {
+  appendFileSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -78,7 +79,7 @@ import {
 } from './agent-ab/run-metrics.mjs';
 import { visibleText } from './visible-text.mjs';
 
-export const HARNESS_VERSION = 1;
+export const HARNESS_VERSION = 2;
 const REPO_ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const CLI = join(REPO_ROOT, 'dist/cli.js');
 
@@ -205,9 +206,15 @@ function findPage(dir, trace) {
 
 /** One tool call, refused when it names a tool outside the arm or an `out` outside the run. */
 async function callTool(server, allowed, dir, call) {
-  if (!allowed.has(call.name)) return { text: `unknown tool: ${call.name}`, isError: true };
+  if (!allowed.has(call.name)) {
+    return { text: `unknown tool: ${call.name}`, isError: true, refused: true };
+  }
   if (typeof call.args?.out === 'string' && !insideDir(dir, call.args.out)) {
-    return { text: '"out" must be a path inside the working directory', isError: true };
+    return {
+      text: '"out" must be a path inside the working directory',
+      isError: true,
+      refused: true,
+    };
   }
   try {
     const result = await server.callTool(call.name, call.args);
@@ -277,6 +284,7 @@ async function runOne({ task, arm, rep, provider, options, visual, scratch }) {
           turn: modelTurns,
           name: call.name,
           isError: result.isError,
+          ...(result.refused ? { refused: true } : {}),
           argsChars: JSON.stringify(call.args).length,
           resultChars: result.text.length,
           ms: Math.round(performance.now() - callStarted),
@@ -295,12 +303,15 @@ async function runOne({ task, arm, rep, provider, options, visual, scratch }) {
   const pagePath = findPage(dir, trace);
   const page =
     pagePath === undefined ? undefined : { text: visibleText(readFileSync(pagePath, 'utf8')) };
+  // A browser failure is the harness's, not the arm's: the run keeps its
+  // metrics and only goes unaudited.
   let audit;
+  let visualError;
   if (visual !== undefined && pagePath !== undefined) {
     try {
       audit = await visual.check(visual.browser, pagePath);
     } catch (caught) {
-      error ??= `visual check: ${caught instanceof Error ? caught.message : String(caught)}`;
+      visualError = redact(caught instanceof Error ? caught.message : String(caught));
     }
   }
   return {
@@ -308,6 +319,7 @@ async function runOne({ task, arm, rep, provider, options, visual, scratch }) {
     arm,
     rep,
     ...(error === undefined ? {} : { error }),
+    ...(visualError === undefined ? {} : { visualError }),
     retries,
     truncatedTurns,
     metrics: runMetrics({
@@ -429,10 +441,18 @@ async function main() {
   }
   const scratch = mkdtempSync(join(tmpdir(), 'ak-render-agent-ab-'));
   const startedAt = new Date().toISOString();
+  // Provenance of the code that runs, read before this run writes anything.
+  const provenance = gitProvenance();
+  // Every finished run is appended here first, so a run cut short (a CI
+  // timeout, a crash) keeps the measurements it already paid for.
+  mkdirSync(options.outDir, { recursive: true });
+  const partial = join(options.outDir, `${options.name}.runs.jsonl`);
+  writeFileSync(partial, '');
   let runs;
   try {
     runs = await pool(units, options.concurrency, async (unit, index) => {
       const run = await runOne({ ...unit, provider, options, visual, scratch });
+      appendFileSync(partial, `${JSON.stringify(run)}\n`);
       const m = run.metrics;
       const label = `agent-ab: [${index + 1}/${units.length}] ${unit.task.id} ${unit.arm} #${unit.rep}`;
       console.log(
@@ -449,7 +469,9 @@ async function main() {
 
   if (runs.every((run) => run.error !== undefined)) {
     // Never replace a baseline with a report that measured nothing.
-    console.log('agent-ab: every run errored. Nothing was measured and no report was written.');
+    console.log(
+      `agent-ab: every run errored. Nothing was measured and no report was written; the errors are in ${partial}.`,
+    );
     process.exitCode = 1;
     return;
   }
@@ -473,7 +495,7 @@ async function main() {
     harnessVersion: HARNESS_VERSION,
     taskSetVersion: taskSet.version,
     compilerVersion: inspection.serverVersion,
-    ...gitProvenance(),
+    ...provenance,
     startedAt,
     finishedAt: new Date().toISOString(),
     provider: provider.name,
@@ -516,12 +538,12 @@ async function main() {
     ],
     runs,
   };
-  mkdirSync(options.outDir, { recursive: true });
   writeFileSync(
     join(options.outDir, `${options.name}.json`),
     `${JSON.stringify(report, null, 2)}\n`,
   );
   writeFileSync(join(options.outDir, `${options.name}.md`), markdownReport(report, options.name));
+  rmSync(partial, { force: true });
   console.log(`agent-ab: wrote ${join(options.outDir, `${options.name}.{json,md}`)}`);
 }
 

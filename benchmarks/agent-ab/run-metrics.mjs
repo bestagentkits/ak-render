@@ -68,7 +68,8 @@ export function runMetrics({
   facts,
   visual,
 }) {
-  const submissions = trace.filter((call) => SUBMIT_TOOLS.has(call.name));
+  // A call the harness refused never reached the compiler, so it is no submission.
+  const submissions = trace.filter((call) => SUBMIT_TOOLS.has(call.name) && !call.refused);
   const firstValid = submissions.findIndex((call) => !call.isError);
   const text = squash(page?.text ?? '');
   const missingFacts = facts.filter((fact) => !text.includes(squash(fact)));
@@ -113,31 +114,48 @@ const NUMERIC = [
 ];
 const RATES = ['firstPassValid', 'completed', 'correct'];
 
+/** A run that did not error and finished with a rendered page. */
+const isCompleted = (run) => !run.error && run.metrics?.completed === true;
+
 /**
  * Per-arm aggregates over its runs (every task and repetition).
  *
  * Rates count every run, so a run that errored counts as not completed, not
  * first-pass valid and not correct instead of vanishing from the denominator.
- * Medians come from the runs that did not error: an errored run's partial
- * tokens and time would understate the cost of finishing the task.
+ * Medians of cost and time come from the completed runs only: a run that gave
+ * up or errored is cheap because it did not do the task, and counting it would
+ * make the arm that fails more often look cheaper.
  */
 export function aggregateArm(runs, options) {
   const summary = { runs: runs.length, errors: runs.filter((run) => run.error).length };
-  const clean = runs
-    .filter((run) => !run.error && run.metrics !== undefined)
-    .map((run) => run.metrics);
+  const completed = runs.filter(isCompleted).map((run) => run.metrics);
   for (const key of NUMERIC)
     summary[key] = describe(
-      clean.map((m) => m[key]),
+      completed.map((m) => m[key]),
       options,
     );
   for (const key of RATES)
     summary[key] = proportion(runs.map((run) => !run.error && run.metrics?.[key] === true));
-  summary.usageMissingRuns = clean.filter((m) => m.usageMissing).length;
-  const audited = clean.filter((m) => m.criticalMobileOverflow !== undefined);
+  summary.usageMissingRuns = completed.filter((m) => m.usageMissing).length;
+  const audited = runs.filter((run) => run.metrics?.criticalMobileOverflow !== undefined);
   summary.visualAudited = audited.length;
-  summary.criticalMobileOverflowRuns = audited.filter((m) => m.criticalMobileOverflow).length;
+  summary.criticalMobileOverflowRuns = audited.filter(
+    (run) => run.metrics.criticalMobileOverflow,
+  ).length;
+  summary.visualErrors = runs.filter((run) => run.visualError !== undefined).length;
   return summary;
+}
+
+/**
+ * `met` only when the whole 95% interval clears the threshold, `not met` when
+ * the whole interval misses it, and `inconclusive` otherwise, including when
+ * the sample is too small for an interval.
+ */
+function decide(point, ci95, meets) {
+  if (ci95 !== undefined && meets(ci95[0]) && meets(ci95[1])) return 'met';
+  if (ci95 !== undefined && !meets(ci95[0]) && !meets(ci95[1])) return 'not met';
+  if (ci95 === undefined && !meets(point)) return 'not met';
+  return 'inconclusive';
 }
 
 /**
@@ -146,7 +164,9 @@ export function aggregateArm(runs, options) {
  * the arms it needs, it is `not measured`.
  *
  * `tasks` orders the strata of the reductions, which compare the arms task by
- * task.
+ * task over completed runs. A reduction is `not comparable` when the
+ * compose-repair arm completes fewer runs than the existing arm, since its
+ * cost would then be measured on easier work.
  */
 export function evaluateTargets(byArm, runsByArm, tasks, options) {
   const before = byArm.existing;
@@ -156,15 +176,22 @@ export function evaluateTargets(byArm, runsByArm, tasks, options) {
   const strata = (arm, key) =>
     tasks.map((task) =>
       (runsByArm[arm] ?? [])
-        .filter((run) => run.task === task && !run.error)
-        .map((run) => run.metrics?.[key])
+        .filter((run) => run.task === task && isCompleted(run))
+        .map((run) => run.metrics[key])
         .filter((value) => Number.isFinite(value)),
     );
   const reduction = (key, threshold) => {
     if (before === undefined || afterRuns === 0) return notMeasured('needs both arms');
     const result = medianReduction(strata('existing', key), strata('compose-repair', key), options);
-    if (result === undefined) return notMeasured('no task measured in both arms');
-    return { status: result.point >= threshold ? 'met' : 'not met', ...result };
+    if (result === undefined) return notMeasured('no task completed in both arms');
+    if (after.completed.rate < before.completed.rate) {
+      return {
+        status: 'not comparable',
+        why: `compose-repair completed ${Math.round(after.completed.rate * 100)}% of runs, existing ${Math.round(before.completed.rate * 100)}%`,
+        ...result,
+      };
+    }
+    return { status: decide(result.point, result.ci95, (value) => value >= threshold), ...result };
   };
   const onAfter = (stat, evaluate) => {
     if (afterRuns === 0) return notMeasured('compose-repair arm not run');
@@ -178,7 +205,11 @@ export function evaluateTargets(byArm, runsByArm, tasks, options) {
       ...onAfter(
         () => after.firstPassValid,
         () => ({
-          status: after.firstPassValid.rate >= 0.95 ? 'met' : 'not met',
+          status: decide(
+            after.firstPassValid.rate,
+            after.firstPassValid.ci95,
+            (value) => value >= 0.95,
+          ),
           point: after.firstPassValid.rate,
           ci95: after.firstPassValid.ci95,
         }),
@@ -190,7 +221,11 @@ export function evaluateTargets(byArm, runsByArm, tasks, options) {
       ...onAfter(
         () => after.orchestrationCalls,
         () => ({
-          status: after.orchestrationCalls.median <= 2 ? 'met' : 'not met',
+          status: decide(
+            after.orchestrationCalls.median,
+            after.orchestrationCalls.medianCi95,
+            (value) => value <= 2,
+          ),
           point: after.orchestrationCalls.median,
           ci95: after.orchestrationCalls.medianCi95,
         }),
@@ -211,10 +246,22 @@ export function evaluateTargets(byArm, runsByArm, tasks, options) {
       target: '0 critical mobile overflow (compose-repair arm)',
       ...onAfter(
         () => ({ n: after.visualAudited }),
-        () => ({
-          status: after.criticalMobileOverflowRuns === 0 ? 'met' : 'not met',
-          point: after.criticalMobileOverflowRuns,
-        }),
+        () => {
+          const unaudited = after.runs - after.visualAudited;
+          const status =
+            after.criticalMobileOverflowRuns > 0
+              ? 'not met'
+              : unaudited === 0
+                ? 'met'
+                : 'inconclusive';
+          return {
+            status,
+            point: after.criticalMobileOverflowRuns,
+            ...(status === 'inconclusive'
+              ? { why: `${unaudited} of ${after.runs} runs have no audited page` }
+              : {}),
+          };
+        },
       ),
     },
   ];

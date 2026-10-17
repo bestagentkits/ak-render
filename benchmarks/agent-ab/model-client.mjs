@@ -53,7 +53,10 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const SECRET = /\b(sk|pk|rk|key)[-_][A-Za-z0-9_\-.*]{6,}/gu;
 export const redact = (text) => text.replace(SECRET, '[redacted]');
 
-/** POST with retries on 429, 5xx and network errors; `retryMs` is time spent backing off. */
+/**
+ * POST with retries on 429, 5xx and network errors. `retryMs` is the time lost
+ * to provider failures: every failed attempt plus the back-off after it.
+ */
 async function postJson(url, headers, body) {
   let retries = 0;
   let retryMs = 0;
@@ -64,6 +67,10 @@ async function postJson(url, headers, body) {
     await sleep(ms);
   };
   for (let attempt = 1; ; attempt += 1) {
+    const attemptStarted = performance.now();
+    const failed = () => {
+      retryMs += performance.now() - attemptStarted;
+    };
     let response;
     try {
       response = await fetch(url, {
@@ -74,16 +81,18 @@ async function postJson(url, headers, body) {
       });
     } catch (error) {
       if (attempt >= MAX_ATTEMPTS) throw error;
+      failed();
       await backOff(attempt);
       continue;
     }
-    if (response.ok) return { json: await response.json(), retries, retryMs };
+    if (response.ok) return { json: await response.json(), retries, retryMs: Math.round(retryMs) };
     // Error bodies end up in the committed report, so keep them short and keyless.
     const detail = redact((await response.text()).slice(0, 300));
     const retryable = response.status === 429 || response.status >= 500;
     if (!retryable || attempt >= MAX_ATTEMPTS) {
       throw new Error(`model request failed: HTTP ${response.status}: ${detail}`);
     }
+    failed();
     await backOff(attempt);
   }
 }

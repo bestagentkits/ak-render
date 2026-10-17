@@ -61,7 +61,7 @@ function armTable(report) {
         const stat = report.byArm[arm];
         return stat.visualAudited === 0
           ? 'not checked'
-          : `${stat.criticalMobileOverflowRuns} of ${stat.visualAudited} runs`;
+          : `${stat.criticalMobileOverflowRuns} of ${stat.visualAudited} audited runs (${stat.runs} runs${stat.visualErrors > 0 ? `, ${stat.visualErrors} browser failures` : ''})`;
       })
       .join(' | ')} |`,
     `| Runs (errored) | ${arms.map((arm) => `${report.byArm[arm].runs} (${report.byArm[arm].errors})`).join(' | ')} |`,
@@ -95,7 +95,7 @@ function targetTable(report) {
     const unit =
       target.id.endsWith('reduction') || target.id === 'first-pass-valid' ? 'pct' : 'count';
     const measured = target.point === undefined ? 'n/a' : format(target.point, unit);
-    const status = target.status === 'not measured' ? `not measured: ${target.why}` : target.status;
+    const status = target.why === undefined ? target.status : `${target.status}: ${target.why}`;
     lines.push(`| ${target.target} | ${status} | ${measured} | ${interval(target.ci95, unit)} |`);
   }
   return lines.join('\n');
@@ -140,11 +140,13 @@ ${(report.caveats ?? []).map((caveat) => `- Caveat: ${caveat}.`).join('\n')}
 ${skipped.length === 0 ? '' : `\n**Skipped arms:** ${skipped.map(([arm, why]) => `\`${arm}\`: ${why}.`).join(' ')}\n`}
 ## Per arm
 
-Orchestration calls are \`validate\`, \`render\`, \`compose\` and \`repair\`; every other tool call is discovery. A submission is a \`validate\`, \`render\` or \`compose\` call; repairs count the failed submissions before the first valid one. Rates count every run, an errored run as a failure; medians come from the runs that did not error. Wall time excludes provider back-off.
+Orchestration calls are \`validate\`, \`render\`, \`compose\` and \`repair\`; every other tool call is discovery. A submission is a \`validate\`, \`render\` or \`compose\` call; repairs count the failed submissions before the first valid one. Rates count every run, an errored run as a failure; medians come from the completed runs, since a run that gave up is cheap because it did not do the task. Wall time excludes provider back-off.
 
 ${armTable(report)}
 
 ## Targets
+
+A target is \`met\` only when its whole 95% interval clears the threshold, \`not met\` when the whole interval misses it, and \`inconclusive\` otherwise. A reduction is \`not comparable\` when the compose-repair arm completes fewer runs than the existing arm.
 
 ${targetTable(report)}
 

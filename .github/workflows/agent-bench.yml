@@ -54,7 +54,10 @@ jobs:
         run: >-
           node benchmarks/agent-ab-harness.mjs --provider "$PROVIDER" --model "$MODEL" --reps "$REPS" --visual
           --out-dir agent-ab-report
+      # Upload even after a failure or timeout: the partial runs file keeps
+      # every measurement already paid for.
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: agent-ab-report
           path: agent-ab-report/

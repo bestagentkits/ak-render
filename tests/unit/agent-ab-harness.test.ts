@@ -36,6 +36,7 @@ const USAGE = { input: 1000, output: 200, cost: undefined };
 interface Call {
   name: string;
   isError: boolean;
+  refused?: boolean;
 }
 
 function metrics(trace: Call[], overrides: Record<string, unknown> = {}) {
@@ -222,6 +223,77 @@ describe('agent A/B targets', () => {
     );
     expect(tokens.status).toBe('met');
     expect(tokens.point).toBeCloseTo(1 - 550 / 1050);
+  });
+});
+
+describe('agent A/B target decisions', () => {
+  const run = (arm: string, totalTokens: number, overrides: Record<string, unknown> = {}) => ({
+    arm,
+    task: 'only',
+    metrics: metrics([{ name: 'render', isError: false }], {
+      usage: { input: totalTokens, output: 0, cost: undefined },
+      ...overrides,
+    }),
+  });
+  const evaluate = (runsByArm: Record<string, ReturnType<typeof run>[]>) =>
+    evaluateTargets(
+      Object.fromEntries(Object.entries(runsByArm).map(([arm, runs]) => [arm, aggregateArm(runs)])),
+      runsByArm,
+      ['only'],
+    );
+  const target = (targets: { id: string; status: string; why?: string }[], id: string) =>
+    targets.find((entry) => entry.id === id);
+
+  it('calls a single-run reduction inconclusive, not met, without an interval', () => {
+    const targets = evaluate({
+      existing: [run('existing', 1000)],
+      'compose-repair': [run('compose-repair', 500)],
+    });
+    expect(target(targets, 'total-token-reduction')?.status).toBe('inconclusive');
+  });
+
+  it('calls 20 of 20 first-pass valid inconclusive against a 95% target', () => {
+    const runs = Array.from({ length: 20 }, () => run('compose-repair', 500));
+    const targets = evaluate({ existing: [run('existing', 1000)], 'compose-repair': runs });
+    expect(target(targets, 'first-pass-valid')?.status).toBe('inconclusive');
+  });
+
+  it('refuses a saving from an arm that completes fewer runs', () => {
+    const gaveUp = run('compose-repair', 100, { page: undefined });
+    const targets = evaluate({
+      existing: [run('existing', 1000), run('existing', 1100)],
+      'compose-repair': [run('compose-repair', 500), run('compose-repair', 600), gaveUp],
+    });
+    expect(target(targets, 'total-token-reduction')?.status).toBe('not comparable');
+  });
+
+  it('leaves a run that gave up out of the cost medians', () => {
+    const summary = aggregateArm([run('x', 1000), run('x', 10, { page: undefined })]);
+    expect(summary.totalTokens.median).toBe(1000);
+    expect(summary.completed.rate).toBe(0.5);
+  });
+
+  it('meets the overflow target only when every run was audited', () => {
+    const audited = { criticalMobileOverflow: false };
+    const targets = evaluate({
+      existing: [run('existing', 1000)],
+      'compose-repair': [
+        run('compose-repair', 500, { visual: audited }),
+        run('compose-repair', 500, { page: undefined }),
+      ],
+    });
+    expect(target(targets, 'critical-mobile-overflow')).toMatchObject({
+      status: 'inconclusive',
+      why: '1 of 2 runs have no audited page',
+    });
+  });
+
+  it('does not count a call the harness refused as a submission', () => {
+    const result = metrics([
+      { name: 'compose', isError: true, refused: true } as Call,
+      { name: 'render', isError: false },
+    ]);
+    expect(result).toMatchObject({ submissions: 1, firstPassValid: true, repairs: 0 });
   });
 });
 
