@@ -9,7 +9,13 @@
 export type { DataRow, DataScalar, MaterializedData } from './data/dataset-types.js';
 export type { ValueFormat } from './data/format-value.js';
 export { VALUE_FORMATS } from './data/format-value.js';
-export type { Diagnostic, DiagnosticSeverity } from './diagnostics.js';
+export type {
+  Diagnostic,
+  DiagnosticFix,
+  DiagnosticSeverity,
+  FixClassification,
+  PatchOperation,
+} from './diagnostics.js';
 export type {
   AdapterMarkupCheck,
   DiagramAdapter,
@@ -118,7 +124,9 @@ export {
   hostMatchesProvider,
   isEmbedProvider,
 } from './spec/providers.js';
-export type { ValidateResult, ValidateSummary } from './spec/validate.js';
+export type { RepairChange, RepairMode, RepairOptions, RepairResult } from './spec/repair.js';
+export { REPAIR_MAX_ATTEMPTS, repair } from './spec/repair.js';
+export type { ValidateOptions, ValidateResult, ValidateSummary } from './spec/validate.js';
 export { validate, validateOrThrow } from './spec/validate.js';
 export type { LoadThemeOptions, ResolvedTheme, ThemeInput } from './theme/load-theme.js';
 export { loadTheme, resolveTheme, themeDiagnostics, themePresetNames } from './theme/load-theme.js';
