@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { describeMany, isRenderError, type RenderError, searchCatalog } from '../../src/index.js';
+import { MOTION_RECIPES } from '../../src/motion/recipes.js';
 import {
   catalogSearchTokens,
   STOP_WORDS,
@@ -134,7 +135,18 @@ describe('searchCatalog in Vietnamese', () => {
     ];
   });
   const indexed = (word: string) => vocabulary.some((entry) => sameWord(word, entry));
-  const english = (word: string) => STOP_WORDS.has(word) || indexed(word);
+  // Motion search shares the tokenizer, so its words count as English too.
+  const motionVocabulary = MOTION_RECIPES.flatMap((recipe) => [
+    ...words(recipe.id),
+    ...recipe.aliases.flatMap(words),
+    ...(recipe.targets === '*' ? [] : recipe.targets.flatMap(words)),
+    ...recipe.triggers.flatMap(words),
+    ...words(recipe.purpose),
+  ]);
+  const english = (word: string) =>
+    STOP_WORDS.has(word) ||
+    indexed(word) ||
+    motionVocabulary.some((entry) => sameWord(word, entry));
 
   it('folds diacritics and đ, so accented and unaccented queries match alike', () => {
     expect(words('Biểu ĐỒ cột, Đường')).toEqual(['bieu', 'do', 'cot', 'duong']);
@@ -193,10 +205,24 @@ describe('searchCatalog in Vietnamese', () => {
       ['bảng giá', 'pricing'],
       ['lọc các dòng theo trạng thái', 'filter rows by status'],
       ['lọc bảng theo trạng thái', 'filter table status'],
+      ['bảng dữ liệu có bộ lọc', 'data table filter'],
+      ['hai cột', 'two column'],
+      ['báo cáo kiểm thử', 'report tests'],
     ];
     for (const [vietnamese, englishQuery] of pairs) {
       expect(searchCatalog(vietnamese), vietnamese).toEqual(searchCatalog(englishQuery));
     }
+  });
+
+  it('reads a phrase that shares a word with an alias by the phrase', () => {
+    // "giá trị" is value, not "giá" (price); "báo cáo" is a report, not a newspaper.
+    expect(searchCatalog('giá trị kpi')[0]?.type).toBe('kpi');
+    expect(catalogSearchTokens('báo cáo')).toEqual(['report']);
+    expect(catalogSearchTokens('ma trận rủi ro')).toEqual(['matrix', 'risk']);
+    expect(searchCatalog('ma trận rủi ro')[0]?.type).toBe('risk-matrix');
+    expect(catalogSearchTokens('lịch sự kiện')).toEqual(['calendar', 'events']);
+    expect(catalogSearchTokens('chuyển động')).toEqual([]);
+    expect(catalogSearchTokens('đồng hồ')).toEqual([]);
   });
 
   it('keeps every alias key out of the English index and every value inside it', () => {
