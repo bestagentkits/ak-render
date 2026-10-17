@@ -229,7 +229,10 @@ rendering never needs the token or the network.
   from `ak-render recipe newspaper`.
 - Put shared numbers in `datasets` once and bind blocks with `dataRef`, instead
   of repeating rows in a chart and a table. A field a block names that the rows
-  lack comes back with `details.allowed`. `percent` takes `87` for "87%". See
+  lack comes back with `details.allowed`. `percent` takes `87` for "87%".
+  Compute ratios, deltas and totals with `transform.derive` and
+  `transform.rollup`, and let a `kpi` item `cite` its dataset instead of
+  copying the number. See
   [data-and-state.md](./data-and-state.md).
 - State keys are lowercase kebab case (`state.show-details`), and every key a
   control binds must be declared under `state`.

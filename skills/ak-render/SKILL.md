@@ -163,7 +163,10 @@ bento tiles can hold blocks in `items[i].blocks`. Use `grid`, `split`, and
 
 Put numbers that several blocks show in top-level `datasets` and bind each
 block with `dataRef`. Native controls write page `state`, and `visibleWhen`
-switches views from it. `percent` takes `87` for "87%".
+switches views from it. `percent` takes `87` for "87%". Derive ratios,
+deltas, percent changes and totals with `transform.derive` and
+`transform.rollup` (data-table footer only) instead of computing them by hand, and give a `kpi` item a
+`cite` (omit `value`) so its number comes from the same dataset.
 
 ## Themes
 
