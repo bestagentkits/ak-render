@@ -22,6 +22,10 @@
  * Vars are configuration, never secrets. The bearer a caller presents is
  * validated against ENTITLEMENTS_URL, or, when it is an OAuth access token for
  * OAUTH_RESOURCE, against OAUTH_ISSUER's public JWKS. It is never stored here.
+ *
+ * Secrets (`wrangler secret put`, never in this file):
+ *   DOWNLOAD_SIGNING_KEY  signs artifact-export download URLs (32+ characters).
+ *                         Without it artifact-export answers DOWNLOAD_UNAVAILABLE.
  */
 {
   "$schema": "node_modules/wrangler/config-schema.json",

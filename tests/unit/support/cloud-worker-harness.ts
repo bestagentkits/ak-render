@@ -13,6 +13,7 @@ import type {
   R2Bucket,
   R2Listing,
   R2ObjectBody,
+  R2ObjectHead,
   RateLimitBinding,
 } from '../../../apps/cloud/src/bindings.js';
 import { RATE_LIMITS, type RateLimitKey } from '../../../apps/cloud/src/config.js';
@@ -25,30 +26,58 @@ import { RATE_LIMIT_BINDINGS } from '../../../apps/cloud/src/rate-limit.js';
  * and every call is recorded so a test can assert how a caller used it.
  */
 export class FakeR2 implements R2Bucket {
-  readonly objects = new Map<string, { value: string; customMetadata?: Record<string, string> }>();
-  readonly calls: { method: 'get' | 'put' | 'delete' | 'list'; detail: unknown }[] = [];
+  readonly objects = new Map<
+    string,
+    {
+      value: string | ArrayBuffer;
+      customMetadata?: Record<string, string>;
+      httpMetadata?: { contentType?: string };
+    }
+  >();
+  readonly calls: { method: 'get' | 'head' | 'put' | 'delete' | 'list'; detail: unknown }[] = [];
 
   async get(key: string): Promise<R2ObjectBody | null> {
     this.calls.push({ method: 'get', detail: key });
     const entry = this.objects.get(key);
     if (entry === undefined) return null;
+    const { value } = entry;
+    const bytes =
+      typeof value === 'string' ? new TextEncoder().encode(value) : new Uint8Array(value);
     return {
       key,
-      size: entry.value.length,
-      text: async () => entry.value,
+      size: bytes.byteLength,
+      text: async () => new TextDecoder().decode(bytes),
+      arrayBuffer: async () => bytes.slice().buffer,
       ...(entry.customMetadata === undefined ? {} : { customMetadata: entry.customMetadata }),
+      ...(entry.httpMetadata === undefined ? {} : { httpMetadata: entry.httpMetadata }),
+    };
+  }
+
+  async head(key: string): Promise<R2ObjectHead | null> {
+    this.calls.push({ method: 'head', detail: key });
+    const entry = this.objects.get(key);
+    if (entry === undefined) return null;
+    return {
+      key,
+      size: typeof entry.value === 'string' ? entry.value.length : entry.value.byteLength,
+      ...(entry.customMetadata === undefined ? {} : { customMetadata: entry.customMetadata }),
+      ...(entry.httpMetadata === undefined ? {} : { httpMetadata: entry.httpMetadata }),
     };
   }
 
   async put(
     key: string,
-    value: string,
-    options?: { customMetadata?: Record<string, string> },
+    value: string | ArrayBuffer,
+    options?: {
+      customMetadata?: Record<string, string>;
+      httpMetadata?: { contentType?: string };
+    },
   ): Promise<void> {
     this.calls.push({ method: 'put', detail: key });
     this.objects.set(key, {
       value,
       ...(options?.customMetadata === undefined ? {} : { customMetadata: options.customMetadata }),
+      ...(options?.httpMetadata === undefined ? {} : { httpMetadata: options.httpMetadata }),
     });
   }
 
@@ -81,8 +110,11 @@ export class FakeR2 implements R2Bucket {
     };
   }
 
+  /** Every stored value as text, for assertions about what was persisted. */
   get values(): string[] {
-    return [...this.objects.values()].map((entry) => entry.value);
+    return [...this.objects.values()].map((entry) =>
+      typeof entry.value === 'string' ? entry.value : new TextDecoder().decode(entry.value),
+    );
   }
 }
 
@@ -109,6 +141,8 @@ export type FakeRateLimits = Record<RateLimitKey, FakeRateLimit>;
 export const TOKEN = 'test-bearer-token-value';
 export const ENTITLEMENTS_ORIGIN = 'https://entitlements.example.test';
 export const ORIGIN = 'https://render.example.test';
+/** A test-only download signing key, long enough to be accepted. */
+export const SIGNING_KEY = 'test-download-signing-key-0123456789abcdef';
 
 /** A live-shaped active entitlements body for `userId`. */
 export function activeEntitlements(userId = 'user-1'): Record<string, unknown> {
@@ -186,6 +220,7 @@ export function harness(
     RATE_LIMIT_VALIDATE: limits.validate,
     RATE_LIMIT_ANON_IP: limits['anon-ip'],
     RATE_LIMIT_AUTH_IP: limits['auth-ip'],
+    DOWNLOAD_SIGNING_KEY: SIGNING_KEY,
     ...(options.browser === true ? { BROWSER: browser } : {}),
   };
   // Every class must be wired to the binding the worker reads for it.

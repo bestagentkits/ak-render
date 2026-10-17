@@ -294,6 +294,10 @@ and returns only a summary, so the page never enters the agent's context.
 `render` takes no `out`: it stores the page and returns the same summary plus an
 `artifactUrl` that lives for one hour, or a share link that lives for 30 days
 with `share: true`. The HTML still never enters the agent's context.
+Pass `retainSpec: true` to keep the spec beside the page, and call the
+remote-only `artifact-export` with the `artifactUrl` for signed, expiring
+download URLs of the HTML, a PNG, a PDF or the retained spec, so the page can be
+saved and edited locally without its bytes passing through the agent.
 ```json
 {
   "mcpServers": {

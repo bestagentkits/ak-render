@@ -15,6 +15,7 @@ import { compile, isRenderError, VERSION } from '../../../src/index.js';
 import { type RenderSummary, renderSummary } from '../../../src/mcp/mcp-tool-definitions.js';
 import type { Env } from './bindings.js';
 import { checkNodes, checkOutputBytes, type BudgetViolation } from './config.js';
+import type { RetainedSpec } from './share.js';
 
 export interface RenderPayload {
   /** A Page Spec as an object (JSON) or a string (YAML or JSON text). */
@@ -94,4 +95,16 @@ export function renderArtifact(payload: RenderPayload, _env: Env): RenderOutcome
       summary: renderSummary(result),
     },
   };
+}
+
+/**
+ * The spec source to keep for `retainSpec`, as the caller sent it: text stays
+ * byte for byte (JSON when it opens with `{`, YAML otherwise), and a parsed
+ * object is written back as indented JSON, which the compiler reads the same.
+ */
+export function retainedSpec(spec: unknown): RetainedSpec {
+  if (typeof spec === 'string') {
+    return { source: spec, format: spec.trimStart().startsWith('{') ? 'json' : 'yaml' };
+  }
+  return { source: `${JSON.stringify(spec, null, 2)}\n`, format: 'json' };
 }

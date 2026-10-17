@@ -30,6 +30,15 @@ export const MAX_SHARE_RETENTION_DAYS = 365;
 export const ARTIFACT_TTL_SECONDS = 60 * 60;
 
 /**
+ * Lifetime of a signed `artifact-export` download URL: 1 hour, and never past
+ * the stored object's own expiry. Export again for a fresh URL.
+ */
+export const DOWNLOAD_URL_TTL_SECONDS = 60 * 60;
+
+/** Shortest accepted DOWNLOAD_SIGNING_KEY; a shorter one counts as unset. */
+export const MIN_SIGNING_KEY_LENGTH = 32;
+
+/**
  * Rate limits per minute, one Workers Rate Limiting binding each. The numbers
  * are enforced by the `ratelimits` entries in wrangler.jsonc; this table is the
  * typed mirror the code and docs read, and a unit test keeps the two equal.
@@ -41,7 +50,10 @@ export const RATE_LIMITS = {
   render: 60,
   share: 20,
   export: 10,
-  /** MCP `validate` and `audit-motion`: cheaper than a render, so a looser limit. */
+  /**
+   * MCP `validate`, `audit-motion`, and `artifact-export` without png or pdf:
+   * cheaper than a render, so a looser limit.
+   */
   validate: 120,
   /** MCP `catalog`, `describe` and `themes`, which answer without a bearer. */
   'anon-ip': 120,
