@@ -343,8 +343,12 @@ With the compact workflow the agent guide recommends,
   of each page is visible text; the rest is markup, CSS and script. The
   projected median output saving is 54%. A page that is mostly prose saves
   little or nothing: one of the twelve grew by 32%.
-- **Not measured yet:** live model token counts, repair loops, wall time and
-  output quality.
+- **Measured with a live model, existing flow only:** the
+  [agent A/B baseline](./docs/artifacts/agent-ab-baseline.md) records
+  provider-reported tokens, tool calls, repairs, wall time and a 375 px
+  overflow check per task, with confidence intervals. The compose/repair arm
+  is skipped until those tools ship, so no saving from them is claimed yet.
+- **Not measured yet:** human-rated output quality.
 
 Characters are measured; tokens are estimated at 4 characters per token. Method
 and per-page data: [agent token cost](./docs/artifacts/agent-token-cost.md),
@@ -488,6 +492,7 @@ pnpm test:browser    # Playwright, after: pnpm exec playwright install chromium
 pnpm test:package    # pack, install into a temp project, exercise API and bin
 pnpm bench:baseline  # re-run the legacy presentation-context measurement
 pnpm bench:spec      # spec compression for the composition fixtures
+pnpm bench:agent --model <id> --visual  # live-model A/B; skips without a model API key
 pnpm build && pnpm bench:render --agentkit ../agentkit --repeat 9  # committed render artifact
 pnpm site:build      # compile the landing page and gallery into site/dist
 pnpm site:deploy     # build, then deploy site/dist with wrangler
