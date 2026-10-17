@@ -117,7 +117,9 @@ error at `.as`.
 `data-table` renders as its footer, outside the sortable and filterable body:
 `fields` (1–12 numeric fields) are summed, or averaged with `aggregate: mean`;
 every other field is empty except `labelField` (default: the first field that
-is not totalled), which reads `label` (default `Total`). A total that overflows
+is not totalled), which reads `label` (default `Total`); when the table does
+not show that field, the label moves to its first shown column that is not
+totalled. A total that overflows
 is `null`. Only `data-table` takes it: on a chart, a widget or a `kpi` cite it
 is an error at `.rollup`, because a total among the data rows would be drawn,
 counted and sorted as one more row. Use a `groupBy` aggregate there.

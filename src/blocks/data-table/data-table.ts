@@ -41,6 +41,22 @@ export const DATA_TABLE_FEATURE = 'data-table';
 const NUMERIC_TEXT = /^-?\d+(?:\.\d+)?(?:e[+-]?\d+)?$/i;
 
 /** Compare two raw cell values the way the sort runtime does. */
+/**
+ * The rollup labels a dataset field, which the table may not show. Move the
+ * label to the first shown column that is not totalled, so the footer always
+ * says what it is.
+ */
+function labelledTotal(
+  total: DataRow | undefined,
+  columns: readonly { key: string }[],
+): DataRow | undefined {
+  if (total === undefined) return undefined;
+  const label = Object.entries(total).find(([, value]) => typeof value === 'string');
+  if (label === undefined || columns.some((column) => column.key === label[0])) return total;
+  const home = columns.find((column) => fieldValue(total, column.key) === null);
+  return home === undefined ? total : { ...total, [home.key]: label[1] };
+}
+
 function compareRaw(a: string, b: string, numeric: boolean): number {
   if (numeric) return Number(a) - Number(b);
   return a < b ? -1 : a > b ? 1 : 0;
@@ -135,7 +151,7 @@ function render(node: IrNode, context: RenderContext): string {
           .join('')}</tr>`,
     )
     .join('');
-  const total = node.data?.total;
+  const total = labelledTotal(node.data?.total, columns);
   const foot =
     total === undefined
       ? ''

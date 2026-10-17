@@ -467,6 +467,28 @@ describe('rollup rendering', () => {
     expect(result.html).toMatch(/<tfoot><tr class="ak-dt-total">.*Total.*370.*<\/tr><\/tfoot>/su);
   });
 
+  it('moves the total label to a shown column when its field is hidden', () => {
+    const html = compile({
+      version: 1,
+      meta: { title: 'Totals' },
+      datasets: {
+        sales: [
+          { id: 1, region: 'north', revenue: 100 },
+          { id: 2, region: 'south', revenue: 50 },
+        ],
+      },
+      blocks: [
+        {
+          type: 'data-table',
+          dataRef: 'sales',
+          transform: { rollup: { fields: ['revenue'] } },
+          columns: [{ key: 'region' }, { key: 'revenue', format: 'number' }],
+        },
+      ],
+    }).html;
+    expect(html).toMatch(/<tfoot><tr class="ak-dt-total"><th[^>]*>Total<\/th><td[^>]*>150<\/td>/u);
+  });
+
   it('rejects a rollup on a chart', () => {
     const { diagnostics } = normalizeSpec({
       version: 1,

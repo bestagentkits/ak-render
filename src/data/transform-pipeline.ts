@@ -177,7 +177,7 @@ export const TRANSFORM_PROP_SCHEMA: PropSchema = {
       minItems: 1,
       maxItems: TRANSFORM_LIMITS.maxDerive,
       description:
-        'New numeric fields, in order. ratio = field/base; percentOf = field/base*100; delta = field-base; percentChange = (field-base)/|base|*100; share = field/column total*100; cumulative = running sum. delta and percentChange without base use the previous row. A zero or missing operand gives null.',
+        'New numeric fields, in order. ratio = field/base; percentOf = field/base*100; delta = field-base; percentChange = (field-base)/|base|*100; share = field/column total*100; cumulative = running sum. delta and percentChange without base use the previous row in source order, before sort. A zero or missing operand gives null.',
       of: {
         kind: 'object',
         fields: {

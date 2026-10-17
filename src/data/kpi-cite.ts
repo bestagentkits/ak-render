@@ -92,7 +92,9 @@ export function citeAggregate(
 const COMPACT_SCALE: Readonly<Record<string, number>> = {
   k: 1e3,
   K: 1e3,
+  m: 1e6,
   M: 1e6,
+  b: 1e9,
   B: 1e9,
   bn: 1e9,
   T: 1e12,
