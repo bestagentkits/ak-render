@@ -1,6 +1,6 @@
 /** Chart block: a deterministic SVG chart with a text summary. */
 
-import { type DiagnosticBag, pathIndex, pathKey } from '../../diagnostics.js';
+import type { DiagnosticBag } from '../../diagnostics.js';
 import type { IrNode } from '../../ir.js';
 import { isPlainObject } from '../../json.js';
 import type { BlockModule } from '../../registry/block-module.js';
@@ -13,7 +13,7 @@ import {
   str as strProp,
   txt,
 } from '../../registry/define-helpers.js';
-import { nodeAttributes } from '../../render/block-helpers.js';
+import { nodeAttributes, propItemPath } from '../../render/block-helpers.js';
 import { renderChart } from '../../render/charts.js';
 import { renderAttributes } from '../../render/escape.js';
 import { checkChart } from './chart-check.js';
@@ -39,7 +39,7 @@ export function checkSeriesLengths(node: IrNode, bag: DiagnosticBag): void {
         code: 'SPEC_VALIDATION_ERROR',
         severity: 'warning',
         message: `series "${String(entry.label ?? index)}" has ${values.length} values for ${labels.length} labels`,
-        path: pathIndex(pathKey(node.path, 'series'), index),
+        path: propItemPath(node, 'series', index),
         nodeId: node.id,
       });
     }

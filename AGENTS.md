@@ -33,7 +33,7 @@ Inlining in the compiler is the point, not overhead: the theme stylesheet, embed
 
 - Do not trade output semantics, visual quality, no-JS and print readability, accessibility, security or determinism for a few kilobytes of output.
 - Do not add a minified-output or file-size target, budget or gate. Byte counts in benchmarks and render summaries are reported for transparency and determinism checks, not as goals.
-- Judge a change by task-level agent cost: the median and p95 tokens per task (guidance read, spec written, tool round-trips and repairs), task completion rate, iterations to a valid page, and page quality. `benchmarks/agent-token-cost.mjs` and `benchmarks/spec-compression.mjs` measure the parts that do not need a live model; `agent-token-cost.mjs` lists live token counts and repair loops as not measured yet.
+- Judge a change by task-level agent cost: the median and p95 tokens per task (guidance read, spec written, tool round-trips and repairs), task completion rate, iterations to a valid page, and page quality. `benchmarks/agent-token-cost.mjs` and `benchmarks/spec-compression.mjs` measure the parts that do not need a live model. `benchmarks/agent-ab-harness.mjs` (`pnpm bench:agent`) runs identical tasks through a live model on the existing flow and, when the build exposes `compose` or `repair`, on the compose/repair flow, and records provider-reported tokens, round-trips, repairs, wall time and, with `--visual`, a viewport overflow check; its versioned baseline is `docs/artifacts/agent-ab-baseline.md`. Report a saving as measured only when it comes from that harness with both arms run; anything else is an estimate and is labelled so.
 
 ## Working rules
 

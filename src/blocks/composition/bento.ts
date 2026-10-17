@@ -1,6 +1,6 @@
 /** Bento block: a feature mosaic of mixed-size tiles. */
 
-import { pathIndex, pathKey } from '../../diagnostics.js';
+import { pathKey } from '../../diagnostics.js';
 import type { IrNode } from '../../ir.js';
 import { isPlainObject } from '../../json.js';
 import type { BlockModule } from '../../registry/block-module.js';
@@ -18,6 +18,7 @@ import {
   element,
   nodeAttributes,
   objectListProp,
+  propItemPath,
   str,
   titleHeader,
 } from '../../render/block-helpers.js';
@@ -111,7 +112,7 @@ export const bentoBlock: BlockModule = {
       bag.add({
         code: 'SPEC_VALIDATION_ERROR',
         message: 'a bento tile with src needs alt text (use "" for a decorative image)',
-        path: pathKey(pathIndex(pathKey(node.path, 'items'), index), 'alt'),
+        path: pathKey(propItemPath(node, 'items', index), 'alt'),
         nodeId: node.id,
       });
     });
