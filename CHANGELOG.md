@@ -11,6 +11,17 @@ Release mechanics and the compatibility contract live in
 
 ### Added
 
+- Derived metrics and KPI citations. `transform.derive` adds fields from a
+  closed list of operations (`ratio`, `percentOf`, `delta`, `percentChange`,
+  `share`, `cumulative`), and on a `data-table` `transform.rollup` adds a sum
+  or mean total row as the table footer; neither accepts an expression. Value formats take `signed: true` for a
+  leading `+` (not the benchmark and breakdown widgets, which sign their own
+  differences). A `kpi` item may `cite` a dataset field with an aggregate: the
+  compiler fills an omitted `value` from it, or warns (`rule: kpi-cite`) when
+  the written value disagrees with the data. `value` is now optional on a
+  `kpi` item that has a `cite`. See
+  [docs/data-and-state.md](./docs/data-and-state.md#derived-fields).
+
 - Motion Studio. `ak-render motion studio <spec>` serves a local,
   development-only dashboard over one Page Spec: a block list and a recipe
   gallery of compiled examples, an inspector with the phase timeline, timing,

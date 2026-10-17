@@ -52,8 +52,9 @@ blocks:
 ## Transforms
 
 `transform` reshapes a block's rows before it renders. It is a fixed pipeline,
-not an expression: the stages always run in the order filter → groupBy → sort →
-select → limit, whatever order the spec writes them in.
+not an expression: the stages always run in the order filter → groupBy → derive
+→ sort → select → limit, whatever order the spec writes them in. A
+`data-table` may add `rollup`, which totals the rows that remain.
 
 ```yaml
 - type: chart
@@ -73,6 +74,88 @@ order keeps a transform readable and keeps every result reproducible: filters
 are ANDed, sorting is stable with nulls last, and comparison never consults a
 locale.
 
+### Derived fields
+
+`derive` adds up to eight numeric fields from a closed list of operations, in
+the order written; a later one may read an earlier one, and `sort`, `select`
+and `rollup` see them all. There is no expression language: an agent picks an
+operation, never writes arithmetic.
+
+| `op` | Result | `base` |
+| --- | --- | --- |
+| `ratio` | `field / base` | required |
+| `percentOf` | `field / base × 100` | required |
+| `delta` | `field − base`, or `field` minus the previous row's | optional |
+| `percentChange` | `(field − base) / abs(base) × 100`, or against the previous row | optional |
+| `share` | `field / column total × 100` | refused |
+| `cumulative` | running sum of `field` | refused |
+
+A missing or non-numeric operand, or a zero divisor, gives `null`, which
+renders as an em dash; nothing is guessed. "Previous row" means the order the
+earlier stages left (dataset order, or first-seen group order), not the order
+after `sort`. A derived name must be a new field key: overwriting a field is an
+error at `.as`.
+
+```yaml
+- type: data-table
+  dataRef: monthly
+  transform:
+    derive:
+      - { as: growth, op: percentChange, field: revenue }
+      - { as: margin, op: percentOf, field: profit, base: revenue }
+    rollup: { fields: [revenue, profit] }
+  columns:
+    - { key: month, label: Month }
+    - { key: revenue, label: Revenue, type: currency }
+    - { key: growth, label: Growth, type: percent, signed: true }
+    - { key: margin, label: Margin, type: percent }
+```
+
+### Rollup
+
+`rollup` totals the rows the pipeline leaves (after `limit`) into one row that
+`data-table` renders as its footer, outside the sortable and filterable body:
+`fields` (1–12 numeric fields) are summed, or averaged with `aggregate: mean`;
+every other field is empty except `labelField` (default: the first field that
+is not totalled), which reads `label` (default `Total`). A total that overflows
+is `null`. Only `data-table` takes it: on a chart, a widget or a `kpi` cite it
+is an error at `.rollup`, because a total among the data rows would be drawn,
+counted and sorted as one more row. Use a `groupBy` aggregate there.
+
+## KPI citations
+
+A `kpi` item may name the dataset its number comes from:
+
+```yaml
+- type: kpi
+  items:
+    - label: Q3 revenue
+      cite: { dataRef: monthly, field: revenue, aggregate: sum, format: currency }
+    - label: September growth
+      cite:
+        dataRef: monthly
+        field: growth
+        transform: { derive: [{ as: growth, op: percentChange, field: revenue }] }
+        format: percent
+        signed: true
+```
+
+`cite` takes `dataRef`, `field`, an optional `transform` (the same pipeline),
+`aggregate` (`last`, the default, `first`, `sum`, `mean`, `min`, `max` or
+`count`) and the value-format fields. With `value` omitted, the compiler fills
+it with the cited value formatted once, so the card, the chart and the table
+cannot drift apart; a filled value longer than a card's 40 characters is an
+error at `.cite`. With `value` written too, the compiler reads every number in
+the written text (with a currency symbol, `k`/`M`/`B`/`T` or
+`thousand`/`million`/`billion`, and for `duration` and `bytes` their units; a
+suffix equal to the cite's `unit` is a label) and the text agrees when any of
+them equals the cited value to the precision the author wrote: `$1.2M` and
+`FY24 $1.2M` agree with 1,234,000, `$1.3M` does not. Spacing around a unit
+does not matter. A disagreement
+is a warning at `.value` whose `details` carry `rule: kpi-cite`, the `cited`
+number, the `expected` text and the `authored` text. The page still compiles
+with the authored value; the compiler never rewrites a number it was given.
+
 ## Value formats
 
 Every data-bound block formats values through one function,
@@ -87,6 +170,8 @@ table cell, a chart axis and a metric. Columns and encodings take `format`,
   reads `Intl`, the host locale or the clock. That is what keeps a compiled
   page byte-identical across machines.
 - `null` renders as an em dash.
+- `signed: true` prefixes a positive value with `+` (`+12.5%`), for deltas and
+  changes. A value that rounds to zero carries no sign.
 
 ## State
 

@@ -127,7 +127,10 @@ ak-render recipe dashboard > page.yaml     # the starter spec as YAML
 ### Datasets and state
 
 Declare a table once under `datasets` and bind charts, tables and widgets to it
-with `dataRef`, reshaped by a bounded `transform`. Native controls write page
+with `dataRef`, reshaped by a bounded `transform` that can also derive ratios,
+deltas, percent changes, shares, running totals and a table total row. A `kpi` card
+can `cite` the dataset it reports, so the compiler fills the value or warns when
+the written value disagrees. Native controls write page
 `state`, `visibleWhen` switches views from it, and `filter-bar` filters a table,
 board or log. All of it is data, and every page still reads completely with
 scripts off. See [docs/data-and-state.md](./docs/data-and-state.md).

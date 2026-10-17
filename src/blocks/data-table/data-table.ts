@@ -135,6 +135,13 @@ function render(node: IrNode, context: RenderContext): string {
           .join('')}</tr>`,
     )
     .join('');
+  const total = node.data?.total;
+  const foot =
+    total === undefined
+      ? ''
+      : `<tfoot><tr class="ak-dt-total">${columns
+          .map((column, index) => renderCell(column, total, index === 0))
+          .join('')}</tr></tfoot>`;
   const searchable = rows.length > SEARCH_THRESHOLD && !filteredByBar(node, context);
   const empty =
     rows.length === 0
@@ -152,7 +159,7 @@ function render(node: IrNode, context: RenderContext): string {
     [
       titleHeader(node),
       searchable ? tools(node, rows.length) : '',
-      `<div class="ak-table-wrap"><table>${caption(node)}<thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`,
+      `<div class="ak-table-wrap"><table>${caption(node)}<thead><tr>${head}</tr></thead><tbody>${body}</tbody>${foot}</table></div>`,
       empty,
     ].join(''),
   );
@@ -168,7 +175,12 @@ export const dataTableBlock: BlockModule = {
     purpose: 'Typed, sortable, searchable table of dataset rows.',
     summary:
       'Data table: typed columns (number, percent, badge, link, progress, sparkline), sort, search.',
-    data: { required: true, description: 'Rows to list; each column reads one field.' },
+    data: {
+      required: true,
+      description:
+        'Rows to list; each column reads one field. A transform.rollup total renders as the table footer.',
+      total: true,
+    },
     filterable: true,
     props: {
       title: OPTIONAL_TITLE,
