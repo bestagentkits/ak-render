@@ -16,7 +16,9 @@ can keep editing with the loop below. See [compose](./compose.md).
 
 1. **Find the blocks.** `ak-render search-catalog <intent words>` ranks block
    types for what the page needs, for example `search-catalog sortable table`
-   or `search-catalog pricing`. `ak-render catalog --category <c>` lists one
+   or `search-catalog pricing`. Vietnamese works too, with or without
+   diacritics (`search-catalog biểu đồ`, `search-catalog bang gia`).
+   `ak-render catalog --category <c>` lists one
    category; `ak-render catalog` lists every block and action (about 8 kB).
 2. **Describe only what you use.** `ak-render describe <type...> --compact`
    returns one line per prop for up to 12 types at once. Use
@@ -137,7 +139,9 @@ compiler code such as `SPEC_UNKNOWN_BLOCK` with the JSON path to fix. A token
 that is missing or rejected fails the whole request with HTTP 401 instead: an
 OAuth client signs in again, and an API key must be replaced in the client
 configuration. Under protocol revision 2025-06-18 or later
-send one message per request: batches are refused. Local
+send one message per request: batches are refused. The remote server also
+speaks the stateless 2026-07-28 revision, and `GET /v1/version` lists the tools
+it currently serves. Local
 rendering never needs the token or the network.
 
 ## Rules that save retries
