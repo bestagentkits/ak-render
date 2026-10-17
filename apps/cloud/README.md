@@ -36,6 +36,7 @@ adds authorization, rate limits and storage in
 | `audit-motion` | yes | `render` | `validate` | Parses an arbitrary spec or page. |
 | `render` | yes | `render` | `render` | Stores a one-hour artifact. |
 | `render` with `share: true` | yes | `render` + `share` | `share` | Stores a share for the retention period. |
+| `artifact-export` | yes | `render` | `export` or `validate` | Remote only. Signed download URLs for a page you own. |
 
 `catalog`, `describe`, `themes`, `search-catalog`, `recipes`, `recipe` and
 `motions` take no spec and read only static data, so they answer without a bearer: a client
@@ -58,6 +59,58 @@ HTML:
   "expiresAt": "…", "shared": false, "version": "0.3.0"
 }
 ```
+
+`retainSpec: true` on `render` (shared or not) also keeps the spec source,
+under the page's owner and expiry, and the summary adds `"specRetained": true`.
+Without it no spec is stored.
+
+## Artifact export
+
+`artifact-export` turns a page the caller rendered into download URLs, so an
+agent can hand over or keep the HTML, a PNG, a PDF or the spec without any of
+those bytes entering its context. It exists only on the remote server: a local
+`render` already wrote the file.
+
+```json
+{ "artifact": "https://render.agentkit.best/v1/artifact/<uuid>", "formats": ["html", "spec", "pdf"] }
+```
+
+`artifact` is the `artifactUrl` render returned (an artifact or a share), or
+the bare id of an artifact. `formats` defaults to `["html"]`. The reply:
+
+```json
+{
+  "kind": "artifact", "id": "<uuid>", "expiresAt": "…", "urlsExpireAt": "…",
+  "downloads": { "html": "https://render.agentkit.best/v1/download/artifact/<uuid>/html?exp=…&sig=…" },
+  "themeOverride": "editorial"
+}
+```
+
+- **Owner only.** The page must belong to the bearer's subject. Someone else's
+  page answers `NOT_FOUND`, exactly like a missing one.
+- **Signed URLs.** Each URL names one object and format and carries an expiry
+  and an HMAC-SHA256 signature keyed by the `DOWNLOAD_SIGNING_KEY` secret. It
+  lasts one hour and never past the page's own expiry; export again for a fresh
+  one. `GET /v1/download/…` needs no bearer, checks the signature before any
+  storage read (`403 INVALID_SIGNATURE`), then the link expiry
+  (`410 LINK_EXPIRED`), then the page itself, so a revoked share or an expired
+  artifact stops downloading at once. Every download is
+  `content-disposition: attachment`, `private, no-store`, with the stored-page
+  sandbox CSP.
+- **PNG and PDF** are made once through Browser Run (the same Quick Action and
+  options as `POST /v1/screenshot` and `/v1/pdf`), stored beside the page with
+  its owner and expiry, and reused by later exports.
+- **Spec** needs a page rendered with `retainSpec: true`, otherwise
+  `SPEC_NOT_RETAINED`. YAML or JSON text comes back byte for byte; a spec sent as
+  an object comes back as indented JSON, which compiles the same. A `theme`
+  argument is not part of the spec, so the reply names it as `themeOverride`
+  (a preset name, or `custom`) for a local `--theme`. The local file stays
+  canonical; the retained copy is a convenience that expires with the page.
+- **Cost.** A call that has to make a PNG or PDF counts against `export`;
+  any other call counts against `validate`. Without a Browser Run binding a
+  PNG or PDF answers `EXPORT_UNAVAILABLE`; without a signing key (or one
+  shorter than 32 characters) every call answers `DOWNLOAD_UNAVAILABLE` and
+  the download route `501`.
 
 Transport behaviour:
 
@@ -133,6 +186,7 @@ Client configuration. Pick one:
 | `GET /v1/share/:id` | none | Serves one valid, unexpired share. |
 | `DELETE /v1/share/:id` | `share` | Deletes a share the caller owns. |
 | `GET /v1/artifact/:id` | none | Serves one unexpired artifact a remote MCP `render` stored. |
+| `GET /v1/download/:kind/:id/:format` | signed URL | Serves one download `artifact-export` minted. |
 
 ```bash
 curl -sS https://render.agentkit.best/v1/render \
@@ -217,6 +271,7 @@ account with no active kit and no app grant gets no scope (`403 FORBIDDEN`).
 | `auth-ip` | 30/min per client IP | Bearer checks the principal cache cannot answer. |
 | MCP batch | 16 members | Only under revisions with batching. |
 | MCP render artifact | 1 hour | Long enough to open the page; a durable link is a share. |
+| Download URL | 1 hour, never past the page | Export again for a fresh one. |
 | Share retention | 30 days default, 365 max | A share is a link, not an archive. |
 
 **One class per call.** Every call counts against exactly one class, the one
@@ -242,8 +297,9 @@ run before a bearer is known; everything a bearer unlocks counts per subject.
 - **Opaque ids.** Ids are random UUIDs. A caller cannot address an object it was
   not given, and a non-UUID path is rejected before any lookup.
 - **REST render responses are not stored.** Only an explicit share, export, or
-  remote MCP render persists anything, and only the artifact — never the spec
-  source.
+  remote MCP render persists anything. The spec source is stored only when a
+  remote `render` asks for `retainSpec: true`, and then under the page's owner
+  and expiry.
 - **The bearer is never persisted.** It is not written to R2, to logs, or into
   a response, and the entitlements request does not follow redirects. To avoid
   one upstream round trip per call, each isolate keeps the entitlements answer
@@ -268,7 +324,10 @@ run before a bearer is known; everything a bearer unlocks counts per subject.
 
 ## Expiry and revocation
 
-Shares and artifacts carry `expiresAt` in their object metadata. Expiry is
+Shares and artifacts carry `expiresAt` in their object metadata. A retained
+spec and an exported PNG or PDF sit beside their page under the same prefix
+(`artifact/<id>.spec`, `share/<id>.png`, …) with the page's `expiresAt`, so
+the sweep and the lifecycle rules below cover them too. Expiry is
 enforced at read time (an expired object answers `410`, not `404`, so a caller
 can tell the difference). Bytes are removed two ways:
 
@@ -282,7 +341,8 @@ can tell the difference). Bytes are removed two ways:
   R2 applies them within about a day, so they never cut a share short. If
   `SHARE_RETENTION_DAYS` changes, change the share rule with it (a unit test
   fails until they agree) and re-apply the rules.
-`DELETE /v1/share/:id` revokes immediately, and only the owner may revoke.
+`DELETE /v1/share/:id` revokes immediately, with its retained spec and
+exports, and only the owner may revoke.
 
 `SHARE_RETENTION_DAYS` is configurable and capped at 365 days, so a deployment
 cannot accidentally make shares permanent.
@@ -315,6 +375,10 @@ One-time resources (already created for the current account):
 
 ```bash
 npx wrangler@4.147.0 r2 bucket create ak-render-shares
+# Signs artifact-export download URLs. Any random value of 32+ characters;
+# rotating it invalidates every outstanding download URL and nothing else.
+openssl rand -base64 48 | npx wrangler@4.147.0 secret put DOWNLOAD_SIGNING_KEY \
+  --config apps/cloud/wrangler.jsonc
 ```
 
 The rate-limit bindings need no resource to be created: each `namespace_id` in
@@ -363,8 +427,9 @@ Account prerequisites:
 that render is refused without a bearer; that a rejected bearer answers `401`
 with a Bearer challenge; and, with `TOKEN`, MCP `validate` and
 `render`, that the artifact is an HTML document identical to `POST /v1/render`,
-the share lifecycle (create, read, revoke, gone), an MCP share, and a PNG and a
-PDF export. It revokes every share it creates.
+the share lifecycle (create, read, revoke, gone), an MCP share, a `retainSpec`
+render exported through `artifact-export` with its HTML and spec downloads,
+and a PNG and a PDF export. It revokes every share it creates.
 
 ## Parity
 

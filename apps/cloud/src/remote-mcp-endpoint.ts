@@ -40,6 +40,8 @@ import {
   type ToolResult,
 } from '../../../src/mcp/mcp-protocol.js';
 import {
+  ARTIFACT_EXPORT_FORMATS,
+  type ArtifactExportFormat,
   AUDIT_MOTION_TOOL,
   BUILTIN_THEMES_TOOL,
   CATALOG_TOOL,
@@ -51,6 +53,7 @@ import {
   optionalTheme,
   RECIPE_TOOL,
   RECIPES_TOOL,
+  REMOTE_ARTIFACT_EXPORT_DEFINITION,
   REMOTE_RENDER_DEFINITION,
   SEARCH_CATALOG_TOOL,
   SEARCH_ICONS_TOOL,
@@ -66,15 +69,17 @@ import {
 } from './auth.js';
 import type { Env } from './bindings.js';
 import { MAX_REQUEST_BYTES, type RateLimitKey } from './config.js';
+import { exportLinks, parseArtifactRef } from './download.js';
 import { oauthConfig } from './oauth-access-token.js';
 import { clientIp, withinRateLimit } from './rate-limit.js';
-import { renderArtifact } from './render.js';
+import { renderArtifact, retainedSpec } from './render.js';
 import { createArtifact, createShare } from './share.js';
 
 export const REMOTE_INSTRUCTIONS = `AK Render compiles a Page Spec (YAML or JSON) into one self-contained, offline HTML file.
 Loop: call catalog once (or search-catalog with a few words), describe only the block types you plan to use (several at once with types, compact: true for the short form), find icons by meaning with search-icons (describe-icon, icon-packs for detail), optionally start from a recipe (list them with recipes), validate the spec and fix every diagnostic by its JSON path, then render.
-On this remote server render stores the page and returns its artifactUrl and a short summary, never the HTML. Pass share: true for a longer-lived share link.
-validate and render need an AgentKit API key or OAuth access token as the bearer in the Authorization header.
+On this remote server render stores the page and returns its artifactUrl and a short summary, never the HTML. Pass share: true for a longer-lived share link, and retainSpec: true to keep the spec for later local editing.
+artifact-export turns an artifactUrl into signed download URLs for html, png, pdf or the retained spec.
+validate, render and artifact-export need an AgentKit API key or OAuth access token as the bearer in the Authorization header.
 Describe meaning, not presentation: the compiler owns layout, colour, typography and motion.`;
 
 /** Per-request context every remote tool call receives. */
@@ -105,12 +110,22 @@ async function guard(
   scopes: readonly Scope[],
   limit: RateLimitKey,
 ): Promise<{ ok: true; principal: Principal } | { ok: false; result: ToolResult }> {
+  const authorized = await authorize(context, scopes);
+  if (!authorized.ok) return authorized;
+  if (!(await withinRateLimit(context.env, limit, authorized.principal.subject))) {
+    return { ok: false, result: rateLimited(limit) };
+  }
+  return authorized;
+}
+
+/** The authorization half of `guard`, for a call that picks its limit later. */
+async function authorize(
+  context: RemoteMcpContext,
+  scopes: readonly Scope[],
+): Promise<{ ok: true; principal: Principal } | { ok: false; result: ToolResult }> {
   const outcome = authorizeAll(await context.principal(), scopes);
   if (!outcome.ok) {
     return { ok: false, result: failure({ code: outcome.code, message: outcome.message }) };
-  }
-  if (!(await withinRateLimit(context.env, limit, outcome.principal.subject))) {
-    return { ok: false, result: rateLimited(limit) };
   }
   return { ok: true, principal: outcome.principal };
 }
@@ -169,6 +184,9 @@ const REMOTE_RENDER_TOOL: RemoteTool = {
     if (args.share !== undefined && typeof args.share !== 'boolean') {
       return failure('"share" must be a boolean');
     }
+    if (args.retainSpec !== undefined && typeof args.retainSpec !== 'boolean') {
+      return failure('"retainSpec" must be a boolean');
+    }
     // A shared render counts against `share` only, exactly like POST /v1/share:
     // each call consumes the one class that matches what it stores.
     const guarded = await guard(
@@ -192,20 +210,91 @@ const REMOTE_RENDER_TOOL: RemoteTool = {
         ...(rendered.details === undefined ? {} : { details: rendered.details }),
       });
     }
-    const stored = share
-      ? await createShare(context.env, guarded.principal, rendered.artifact, context.now)
-      : await createArtifact(context.env, guarded.principal, rendered.artifact, context.now);
+    // The retained spec is the caller's own input, kept only on request and
+    // with the page's owner and expiry. A theme argument is not part of it, so
+    // the export names the override for a local re-render.
+    const retain = args.retainSpec === true;
+    const options = retain
+      ? {
+          spec: retainedSpec(args.spec),
+          ...(theme === undefined
+            ? {}
+            : { themeOverride: typeof theme === 'string' ? theme : 'custom' }),
+        }
+      : {};
+    const create = share ? createShare : createArtifact;
+    const stored = await create(
+      context.env,
+      guarded.principal,
+      rendered.artifact,
+      context.now,
+      options,
+    );
     return text({
       ...rendered.artifact.summary,
       artifactUrl: `${context.origin}${stored.url}`,
       expiresAt: stored.expiresAt,
       shared: share,
+      ...(retain ? { specRetained: true } : {}),
       version: rendered.artifact.version,
     });
   },
 };
 
-/** Remote tools, in the same order and with the same names as the stdio server. */
+function exportFormats(value: unknown): ArtifactExportFormat[] | undefined {
+  if (value === undefined) return ['html'];
+  if (!Array.isArray(value) || value.length === 0) return undefined;
+  const known = ARTIFACT_EXPORT_FORMATS as readonly unknown[];
+  if (!value.every((entry) => known.includes(entry))) return undefined;
+  // Duplicates collapse instead of failing: the answer is keyed by format.
+  return [...new Set(value as ArtifactExportFormat[])];
+}
+
+/**
+ * Signed download URLs for a page the caller owns. Reading needs the render
+ * grant only, whichever kind the page is. The call counts against `export`
+ * when it has to make a PNG or PDF and against `validate` otherwise: one class
+ * per call, the one matching what it costs, counted after authorization.
+ */
+const REMOTE_ARTIFACT_EXPORT_TOOL: RemoteTool = {
+  ...REMOTE_ARTIFACT_EXPORT_DEFINITION,
+  run: async (args, context) => {
+    const ref = parseArtifactRef(args.artifact);
+    if (ref === undefined) {
+      return failure('"artifact" must be an artifactUrl or share URL from render, or its id');
+    }
+    const formats = exportFormats(args.formats);
+    if (formats === undefined) {
+      return failure(`"formats" must be a non-empty list of ${ARTIFACT_EXPORT_FORMATS.join(', ')}`);
+    }
+    const authorized = await authorize(context, ['render']);
+    if (!authorized.ok) return authorized.result;
+    const { subject } = authorized.principal;
+    const outcome = await exportLinks(context.env, subject, ref, formats, context.now, (browser) =>
+      withinRateLimit(context.env, browser ? 'export' : 'validate', subject),
+    );
+    if (!outcome.ok) return failure({ code: outcome.code, message: outcome.message });
+    const downloads = Object.fromEntries(
+      Object.entries(outcome.downloads).map(([format, path]) => [
+        format,
+        `${context.origin}${path}`,
+      ]),
+    );
+    return text({
+      kind: outcome.kind,
+      id: outcome.id,
+      expiresAt: outcome.expiresAt,
+      urlsExpireAt: outcome.urlsExpireAt,
+      downloads,
+      ...(outcome.themeOverride === undefined ? {} : { themeOverride: outcome.themeOverride }),
+    });
+  },
+};
+
+/**
+ * Remote tools: the stdio server's, in its order and with its names, then the
+ * tools only a hosted server has.
+ */
 export const REMOTE_TOOLS: readonly RemoteTool[] = [
   anonymous(CATALOG_TOOL),
   anonymous(SEARCH_CATALOG_TOOL),
@@ -220,6 +309,8 @@ export const REMOTE_TOOLS: readonly RemoteTool[] = [
   REMOTE_AUDIT_MOTION_TOOL,
   REMOTE_RENDER_TOOL,
   anonymous(BUILTIN_THEMES_TOOL),
+  // Remote only: a local render writes the file itself.
+  REMOTE_ARTIFACT_EXPORT_TOOL,
 ];
 
 /** HTTP 401 for a rejected bearer, or a missing one where OAuth can supply it. */

@@ -11,6 +11,16 @@ Release mechanics and the compatibility contract live in
 
 ### Added
 
+- Remote artifact export. The hosted MCP server adds `artifact-export`: given
+  an `artifactUrl`, share URL or id the caller owns, it returns signed URLs
+  (HMAC-SHA256, one hour, never past the page's own expiry) for the HTML, a
+  PNG, a PDF or the retained spec, never the bytes. PNG and PDF are made once
+  through Browser Run and reused. Remote `render` takes `retainSpec: true` to
+  keep the spec source with the page's owner and expiry; revoking a share
+  deletes its spec and exports. Deployments need the `DOWNLOAD_SIGNING_KEY`
+  secret; without it the tool answers `DOWNLOAD_UNAVAILABLE`. See
+  [apps/cloud/README.md](./apps/cloud/README.md#artifact-export).
+
 - Motion Studio. `ak-render motion studio <spec>` serves a local,
   development-only dashboard over one Page Spec: a block list and a recipe
   gallery of compiled examples, an inspector with the phase timeline, timing,

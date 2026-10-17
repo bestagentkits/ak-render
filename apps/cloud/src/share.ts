@@ -11,6 +11,12 @@
  *     preview route after the expiry and revocation checks pass;
  *   - expiry is enforced at read time and swept by the scheduled handler, so an
  *     artifact stops resolving even if the sweep is late.
+ *
+ * What `artifact-export` adds lives beside the page under the same prefix, at
+ * `<key>.spec` (only when the caller asked for `retainSpec`), `<key>.png` and
+ * `<key>.pdf`, with the page's owner and expiry. The sweep and the lifecycle
+ * rules therefore cover them with no rule of their own, and revoking a share
+ * deletes them with it.
  */
 
 import type { Principal } from './auth.js';
@@ -28,7 +34,13 @@ export interface ShareRecord {
 }
 
 export type ShareReadOutcome =
-  | { ok: true; html: string; expiresAt: string; owner: string }
+  | {
+      ok: true;
+      html: string;
+      expiresAt: string;
+      owner: string;
+      metadata: Readonly<Record<string, string>>;
+    }
   | { ok: false; status: 404 | 410; code: string; message: string };
 
 /** Object-key prefix and preview-route path per kind. */
@@ -37,9 +49,34 @@ const KINDS: Readonly<Record<StoredKind, { prefix: string; route: string }>> = {
   artifact: { prefix: 'artifact/', route: '/v1/artifact/' },
 };
 
-function keyOf(kind: StoredKind, id: string): string {
-  return `${KINDS[kind].prefix}${id}`;
+/** What may sit beside a stored page, by key suffix. */
+export type SiblingSuffix = 'spec' | 'png' | 'pdf';
+const SIBLING_SUFFIXES: readonly SiblingSuffix[] = ['spec', 'png', 'pdf'];
+
+export function keyOf(kind: StoredKind, id: string, suffix?: SiblingSuffix): string {
+  return `${KINDS[kind].prefix}${id}${suffix === undefined ? '' : `.${suffix}`}`;
 }
+
+/** The spec source a caller asked to keep, as it was sent. */
+export interface RetainedSpec {
+  source: string;
+  format: 'yaml' | 'json';
+}
+
+export interface StoreOptions {
+  /** Keep the spec source beside the page (`retainSpec`). */
+  spec?: RetainedSpec;
+  /**
+   * The `theme` argument, when one overrode the spec: a preset name, or
+   * `custom` for an inline theme. The retained spec does not carry it.
+   */
+  themeOverride?: string;
+}
+
+export const SPEC_CONTENT_TYPES: Readonly<Record<RetainedSpec['format'], string>> = {
+  yaml: 'application/yaml; charset=utf-8',
+  json: 'application/json; charset=utf-8',
+};
 
 export function shareIdPattern(): RegExp {
   // Opaque ids only: a caller cannot address an object it was not given.
@@ -53,16 +90,30 @@ async function store(
   artifact: RenderedArtifact,
   now: Date,
   lifetimeMs: number,
+  options: StoreOptions,
 ): Promise<ShareRecord> {
   const id = crypto.randomUUID();
   const expiresAt = new Date(now.getTime() + lifetimeMs);
+  const shared = {
+    owner: principal.subject,
+    createdAt: now.toISOString(),
+    expiresAt: expiresAt.toISOString(),
+  };
+  // The spec goes first: a page whose metadata says the spec is retained must
+  // never resolve without it.
+  if (options.spec !== undefined) {
+    await env.RENDER_SHARES.put(keyOf(kind, id, 'spec'), options.spec.source, {
+      customMetadata: shared,
+      httpMetadata: { contentType: SPEC_CONTENT_TYPES[options.spec.format] },
+    });
+  }
   await env.RENDER_SHARES.put(keyOf(kind, id), artifact.html, {
     customMetadata: {
-      owner: principal.subject,
-      createdAt: now.toISOString(),
-      expiresAt: expiresAt.toISOString(),
+      ...shared,
       hash: artifact.hash,
       version: artifact.version,
+      ...(options.spec === undefined ? {} : { spec: options.spec.format }),
+      ...(options.themeOverride === undefined ? {} : { themeOverride: options.themeOverride }),
     },
     httpMetadata: { contentType: 'text/html; charset=utf-8' },
   });
@@ -75,8 +126,10 @@ export function createShare(
   principal: Principal,
   artifact: RenderedArtifact,
   now: Date = new Date(),
+  options: StoreOptions = {},
 ): Promise<ShareRecord> {
-  return store(env, 'share', principal, artifact, now, retentionDays(env) * 24 * 60 * 60 * 1000);
+  const lifetimeMs = retentionDays(env) * 24 * 60 * 60 * 1000;
+  return store(env, 'share', principal, artifact, now, lifetimeMs, options);
 }
 
 /** Store a short-lived render artifact for a remote MCP `render`. */
@@ -85,8 +138,9 @@ export function createArtifact(
   principal: Principal,
   artifact: RenderedArtifact,
   now: Date = new Date(),
+  options: StoreOptions = {},
 ): Promise<ShareRecord> {
-  return store(env, 'artifact', principal, artifact, now, ARTIFACT_TTL_SECONDS * 1000);
+  return store(env, 'artifact', principal, artifact, now, ARTIFACT_TTL_SECONDS * 1000, options);
 }
 
 /** Read one stored object of a kind, enforcing id shape and expiry. */
@@ -108,7 +162,13 @@ export async function readStored(
   if (expiresAt !== '' && Date.parse(expiresAt) <= now.getTime()) {
     return { ok: false, status: 410, code: 'EXPIRED', message: `this ${kind} has expired` };
   }
-  return { ok: true, html: await object.text(), expiresAt, owner };
+  return {
+    ok: true,
+    html: await object.text(),
+    expiresAt,
+    owner,
+    metadata: object.customMetadata ?? {},
+  };
 }
 
 export function readShare(env: Env, id: string, now: Date = new Date()): Promise<ShareReadOutcome> {
@@ -128,7 +188,12 @@ export async function revokeShare(
   if ((object.customMetadata?.['owner'] ?? '') !== principal.subject) {
     return { ok: false, status: 403 };
   }
-  await env.RENDER_SHARES.delete(keyOf('share', id));
+  // The retained spec and any exports go with the page; deleting an absent
+  // key is a no-op.
+  await env.RENDER_SHARES.delete([
+    keyOf('share', id),
+    ...SIBLING_SUFFIXES.map((suffix) => keyOf('share', id, suffix)),
+  ]);
   return { ok: true, status: 200 };
 }
 

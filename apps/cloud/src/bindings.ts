@@ -11,6 +11,7 @@ export interface R2ObjectBody {
   readonly key: string;
   readonly size: number;
   text(): Promise<string>;
+  arrayBuffer(): Promise<ArrayBuffer>;
   readonly httpMetadata?: { contentType?: string };
   readonly customMetadata?: Record<string, string>;
 }
@@ -26,7 +27,7 @@ export interface R2Bucket {
   get(key: string): Promise<R2ObjectBody | null>;
   put(
     key: string,
-    value: string,
+    value: string | ArrayBuffer,
     options?: { customMetadata?: Record<string, string>; httpMetadata?: { contentType?: string } },
   ): Promise<unknown>;
   /** One key, or up to 1,000 keys in one call. */
@@ -88,4 +89,10 @@ export interface Env {
   BROWSER?: BrowserRun;
   /** Share retention in days. Defaults to the conservative value in config.ts. */
   SHARE_RETENTION_DAYS?: string;
+  /**
+   * Secret (`wrangler secret put`) that signs `artifact-export` download URLs,
+   * at least 32 characters. Without it, artifact-export and the download route
+   * answer `DOWNLOAD_UNAVAILABLE`.
+   */
+  DOWNLOAD_SIGNING_KEY?: string;
 }
