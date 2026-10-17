@@ -222,6 +222,30 @@ describe('normalizer', () => {
     expect(result.diagnostics.some((item) => item.severity === 'error')).toBe(false);
   });
 
+  it('keeps the authored row index in a row-width warning after an invalid row', () => {
+    const result = normalizeSpec({
+      version: 1,
+      meta: { title: 'X' },
+      blocks: [{ type: 'table', columns: ['Name', 'Age'], rows: ['Alice', ['30'], ['Bob', '41']] }],
+    });
+    const found = result.diagnostics.map(({ severity, path }) => ({ severity, path }));
+    expect(found).toEqual([
+      { severity: 'error', path: '$.blocks[0].rows[0]' },
+      { severity: 'warning', path: '$.blocks[0].rows[1]' },
+    ]);
+  });
+
+  it('skips row-width warnings when the rows list itself is rejected', () => {
+    const rows = Array.from({ length: 501 }, () => ['only-one']);
+    const result = normalizeSpec({
+      version: 1,
+      meta: { title: 'X' },
+      blocks: [{ type: 'table', columns: ['a', 'b'], rows }],
+    });
+    expect(result.diagnostics.filter((item) => item.severity === 'warning')).toEqual([]);
+    expect(result.diagnostics.some((item) => item.code === 'SPEC_BOUNDS_ERROR')).toBe(true);
+  });
+
   it('warns when a button has no bindings', () => {
     const result = normalizeSpec({
       version: 1,

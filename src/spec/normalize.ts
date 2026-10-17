@@ -644,6 +644,10 @@ function buildNode(
   const validated = validateProps(definition.props, rawProps, path, context.bag);
   const withBindings = validateBindingsDeep(validated, path, context.bag);
   const props = (isPlainObject(withBindings) ? withBindings : {}) as Record<string, JsonValue>;
+  // An over-long or otherwise rejected rows list is already an error.
+  if (definition.type === 'table' && Array.isArray(props.rows)) {
+    checkTableRowWidths(props.columns, rawProps.rows, path, resolved.id, context.bag);
+  }
   const rawBindings = props.on;
   const bindings: BindingMap = isPlainObject(rawBindings)
     ? (rawBindings as unknown as BindingMap)
@@ -762,6 +766,30 @@ function buildNode(
   return resolved.id;
 }
 
+/**
+ * Reads the authored rows, not the normalized ones: normalization drops an
+ * invalid row, which would shift every later warning onto the wrong index.
+ */
+function checkTableRowWidths(
+  columns: JsonValue | undefined,
+  rows: unknown,
+  path: string,
+  nodeId: string,
+  bag: DiagnosticBag,
+): void {
+  if (!Array.isArray(columns) || !Array.isArray(rows)) return;
+  rows.forEach((row, index) => {
+    if (!Array.isArray(row) || row.length === columns.length) return;
+    bag.add({
+      code: 'SPEC_VALIDATION_ERROR',
+      severity: 'warning',
+      message: `row has ${row.length} cells but the table declares ${columns.length} columns`,
+      path: pathIndex(pathKey(path, 'rows'), index),
+      nodeId,
+    });
+  });
+}
+
 function numberProp(node: IrNode, key: string): number | undefined {
   const value = node.props[key];
   return typeof value === 'number' ? value : undefined;
@@ -856,25 +884,6 @@ function postChecks(
           path: pathKey(node.path, 'step'),
           nodeId: node.id,
         });
-      }
-    }
-
-    if (node.type === 'table') {
-      const columns = node.props.columns;
-      const rows = node.props.rows;
-      if (Array.isArray(columns) && Array.isArray(rows)) {
-        for (let index = 0; index < rows.length; index += 1) {
-          const row = rows[index];
-          if (Array.isArray(row) && row.length !== columns.length) {
-            bag.add({
-              code: 'SPEC_VALIDATION_ERROR',
-              severity: 'warning',
-              message: `row has ${row.length} cells but the table declares ${columns.length} columns`,
-              path: pathIndex(pathKey(node.path, 'rows'), index),
-              nodeId: node.id,
-            });
-          }
-        }
       }
     }
 
