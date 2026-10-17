@@ -155,9 +155,10 @@ export function keepAuthoredIndexes(
   authoredLists.set(list, { indexes, length });
 }
 
-/** True when validation dropped an item from this list, so its length is not the authored one. */
-export function wasCompacted(list: unknown): boolean {
-  return Array.isArray(list) && authoredLists.has(list);
+/** The authored length of a validated list, counting items validation dropped. */
+export function authoredLength(list: unknown): number {
+  if (!Array.isArray(list)) return 0;
+  return authoredLists.get(list)?.length ?? list.length;
 }
 
 /** The authored index of item `index` of a validated list. */
