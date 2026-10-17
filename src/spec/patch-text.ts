@@ -9,7 +9,7 @@
  * the patched data and `preserved` is false.
  */
 
-import { isNode, isSeq, parseDocument, stringify } from 'yaml';
+import { isNode, isScalar, isSeq, parseDocument, stringify } from 'yaml';
 import { canonicalStringify, type JsonValue } from '../json.js';
 import { type PatchChange, type PatchOptions, type PatchResult, patch } from './patch.js';
 
@@ -31,19 +31,22 @@ export function patchSpecText(
   if (!result.applied || result.changes.length === 0) {
     return { ...result, text, format, preserved: true };
   }
+  // A file written with CRLF line endings keeps them.
+  const lines = (output: string): string =>
+    text.includes('\r\n') ? output.replace(/\r?\n/gu, '\r\n') : output;
   if (format === 'json') {
     const indent = /\n([ \t]+)\S/u.exec(text)?.[1] ?? '  ';
     const ending = text.endsWith('\n') ? '\n' : '';
     return {
       ...result,
-      text: `${JSON.stringify(result.spec, null, indent)}${ending}`,
+      text: lines(`${JSON.stringify(result.spec, null, indent)}${ending}`),
       format,
       preserved: true,
     };
   }
   const edited = editYaml(text, ops as { op: string; value?: unknown }[], result);
-  if (edited !== undefined) return { ...result, text: edited, format, preserved: true };
-  return { ...result, text: stringify(result.spec), format, preserved: false };
+  if (edited !== undefined) return { ...result, text: lines(edited), format, preserved: true };
+  return { ...result, text: lines(stringify(result.spec)), format, preserved: false };
 }
 
 /** Replay the resolved changes on the YAML document; undefined when it diverges. */
@@ -71,10 +74,21 @@ function editYaml(
         case 'remove':
           document.deleteIn(path);
           return;
-        case 'replace':
-          if (path.length === 0) insert(document, path, document.createNode(op?.value));
-          else document.setIn(path, document.createNode(op?.value));
+        case 'replace': {
+          if (path.length === 0) {
+            insert(document, path, document.createNode(op?.value));
+            return;
+          }
+          // A scalar replaced by a scalar keeps its node, and so its comments.
+          const current = document.getIn(path, true);
+          const value = op?.value;
+          if (isScalar(current) && (value === null || typeof value !== 'object')) {
+            current.value = value;
+          } else {
+            document.setIn(path, document.createNode(value));
+          }
           return;
+        }
         case 'add':
           insert(document, path, document.createNode(op?.value));
           return;

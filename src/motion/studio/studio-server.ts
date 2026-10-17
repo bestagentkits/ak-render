@@ -225,7 +225,7 @@ export function startMotionStudio(options: MotionStudioOptions): Promise<MotionS
     // Write beside the file, then rename, so a crash never leaves half a spec.
     // The copy keeps the file's mode, and the hash is read again just before
     // the rename, so an editor save during the compile is not overwritten.
-    replaceFile(file, state.proposedText, session, () => {
+    replaceFile(file, state.proposedText, () => {
       const current = hashText(readFileSync(file, 'utf8'));
       if (current !== source.hash) throw stale(current);
     });

@@ -6,11 +6,14 @@
  * interrupted write never leaves half a spec, and is refused when the file
  * changed between the read and the write. A patch that adds errors is not
  * written, so a broken edit never replaces a working page; a patch that fixes
- * some of a broken spec's errors is.
+ * some of a broken spec's errors is. Only a file that reads as a Page Spec is
+ * edited, so the tool cannot be pointed at a package manifest or a CI config.
  */
 
 import { readFileSync } from 'node:fs';
 import { replaceFile } from '../internal/replace-file.js';
+import { isPlainObject } from '../json.js';
+import { parseSpec } from './parse.js';
 import type { PatchOptions } from './patch.js';
 import { type PatchTextResult, patchSpecText } from './patch-text.js';
 
@@ -25,6 +28,21 @@ export interface PatchFileResult extends Omit<PatchTextResult, 'spec' | 'text'> 
 
 const SPEC_FILE = /\.(?:ya?ml|json)$/iu;
 
+/**
+ * A Page Spec's shape: `version` and a `blocks` list. Unknown keys still pass,
+ * so a patch can fix a misspelt one.
+ */
+function isPageSpec(text: string, file: string): boolean {
+  let parsed: unknown;
+  try {
+    parsed = parseSpec(text, { source: file });
+  } catch {
+    // Unparsable text is reported by the patch itself and never written.
+    return true;
+  }
+  return isPlainObject(parsed) && 'version' in parsed && Array.isArray(parsed.blocks);
+}
+
 export function patchSpecFile(
   file: string,
   ops: unknown,
@@ -32,6 +50,7 @@ export function patchSpecFile(
 ): PatchFileResult {
   if (!SPEC_FILE.test(file)) throw new TypeError('the spec file must end in .yaml, .yml or .json');
   const before = readFileSync(file, 'utf8');
+  if (!isPageSpec(before, file)) throw new TypeError(`${file} is not a Page Spec`);
   const { dryRun = false, ...patchOptions } = options;
   const {
     spec: _spec,
@@ -47,7 +66,7 @@ export function patchSpecFile(
 
   const changed = new Error('changed');
   try {
-    replaceFile(file, text, String(process.pid), () => {
+    replaceFile(file, text, () => {
       if (readFileSync(file, 'utf8') !== before) throw changed;
     });
   } catch (error) {

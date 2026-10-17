@@ -15,6 +15,7 @@ import { MAX_PATCH_OPERATIONS, patch, patchSpecText, specHash } from '../../src/
 import { handleMcpMessage } from '../../src/mcp-server.js';
 import { compile } from '../../src/render/render.js';
 import { parseSpec } from '../../src/spec/parse.js';
+import { MAX_PATCHED_SPEC_BYTES } from '../../src/spec/patch.js';
 
 const SPEC = `# Quarterly report, edited by hand.
 version: 1
@@ -171,8 +172,40 @@ describe('patch', () => {
   });
 
   it('refuses a move into its own child', () => {
-    const result = patch(SPEC, [{ op: 'move', from: '/blocks/0', path: '/blocks/0/blocks/0' }]);
+    for (const path of ['/blocks/0/blocks/0', '/blocks/@overview/blocks/-']) {
+      const result = patch(SPEC, [{ op: 'move', from: '/blocks/@overview', path }]);
+      expect(result.applied).toBe(false);
+      expect(result.diagnostics[0]?.message).toMatch(/into one of its own children/u);
+    }
+  });
+
+  it('moves a block into a later sibling by id', () => {
+    const result = patch(SPEC, [
+      { op: 'move', from: '/blocks/@intro', path: '/blocks/@revenue/items/-' },
+      { op: 'move', from: '/blocks/@overview', path: '/blocks/@details/items/0/blocks/-' },
+    ]);
+    expect(result.applied).toBe(true);
+    expect(result.changes[1]).toEqual({
+      op: 'move',
+      from: '/blocks/0',
+      path: '/blocks/0/items/0/blocks/1',
+    });
+  });
+
+  it('refuses a patch that grows the spec without bound', () => {
+    const ops: unknown[] = [{ op: 'add', path: '/state', value: { list: ['x'.repeat(1024)] } }];
+    for (let index = 0; index < 40; index += 1) {
+      ops.push({ op: 'copy', from: '/state/list', path: '/state/list/-' });
+    }
+    const result = patch(SPEC, ops);
     expect(result.applied).toBe(false);
+    expect(result.diagnostics[0]?.message).toContain(String(MAX_PATCHED_SPEC_BYTES));
+  });
+
+  it('edits through a YAML alias without changing the other alias', () => {
+    const text = `version: 1\nmeta: &m\n  title: T\nblocks:\n  - type: text\n    text: x\nstate: *m\n`;
+    const result = patch(text, [{ op: 'replace', path: '/state/title', value: 'U' }]);
+    expect(result.spec).toMatchObject({ meta: { title: 'T' }, state: { title: 'U' } });
   });
 
   it('rejects prototype keys, malformed operations and oversized patches', () => {
@@ -228,6 +261,25 @@ describe('patchSpecText', () => {
     expect(result.text).toContain('title: Quarterly report # keep this comment');
     expect(result.text).toContain('$1.4M');
     expect(parseSpec(result.text)).toEqual(result.spec);
+  });
+
+  it('keeps the comment on a replaced scalar', () => {
+    const result = patchSpecText(SPEC, [{ op: 'replace', path: '/meta/title', value: 'Q4' }]);
+    expect(result.preserved).toBe(true);
+    expect(result.text).toContain('title: Q4 # keep this comment');
+  });
+
+  it('keeps CRLF line endings', () => {
+    const crlf = SPEC.replace(/\n/gu, '\r\n');
+    const yaml = patchSpecText(crlf, [{ op: 'replace', path: '/blocks/@intro/text', value: 'y' }]);
+    expect(yaml.text).toBe(crlf.replace('text: Revenue grew.', 'text: y'));
+    const json = `${JSON.stringify(parseSpec(SPEC), null, 2)}\n`.replace(/\n/gu, '\r\n');
+    const edited = patchSpecText(json, [{ op: 'remove', path: '/blocks/@intro' }]);
+    expect(
+      edited.text
+        .split('\n')
+        .every((line, index, all) => index === all.length - 1 || line.endsWith('\r')),
+    ).toBe(true);
   });
 
   it('keeps numeric-looking map keys as keys', () => {
@@ -331,6 +383,24 @@ describe('ak-render patch', () => {
     expect(run(['patch', notes, '[]'], io().io)).toBe(2);
     expect(run(['patch', specFile('one.yaml')], io().io)).toBe(2);
   });
+
+  it('edits only a file that reads as a Page Spec', () => {
+    const manifest = specFile('package.json', '{"name":"x","scripts":{"test":"vitest"}}\n');
+    const c = io();
+    expect(
+      run(['patch', manifest, '[{"op":"replace","path":"/scripts/test","value":"y"}]'], c.io),
+    ).toBe(2);
+    expect(c.err()).toMatch(/not a Page Spec/u);
+    expect(readFileSync(manifest, 'utf8')).toContain('vitest');
+  });
+
+  it('leaves no temporary file behind', () => {
+    const dir = mkdtempSync(join(workspace, 'clean-'));
+    const file = join(dir, 'page.yaml');
+    writeFileSync(file, SPEC);
+    run(['patch', file, '[{"op":"replace","path":"/meta/title","value":"Z"}]'], io().io);
+    expect(readdirSync(dir)).toEqual(['page.yaml']);
+  });
 });
 
 describe('patch over MCP', () => {
@@ -375,6 +445,22 @@ describe('patch over MCP', () => {
     const { isError, body } = call({ spec: SPEC, ops: [], baseHash: 's-stale' });
     expect(isError).toBe(true);
     expect(body.diagnostics[0].details.currentHash).toBe(body.hash);
+  });
+
+  it('edits only spec files inside the working directory', () => {
+    const outside = mkdtempSync(join(tmpdir(), 'ak-render-outside-'));
+    try {
+      writeFileSync(join(outside, 'page.yaml'), SPEC);
+      symlinkSync(join(outside, 'page.yaml'), join(workspace, 'escape.yaml'));
+      const ops = [{ op: 'replace', path: '/meta/title', value: 'x' }];
+      expect(call({ file: join(outside, 'page.yaml'), ops }).raw).toMatch(/outside/u);
+      expect(call({ file: 'escape.yaml', ops }).raw).toMatch(/outside/u);
+      expect(call({ file: 'missing.yaml', ops }).raw).toMatch(/does not exist/u);
+      specFile('settings.json', '{"hooks":{}}');
+      expect(call({ file: 'settings.json', ops }).raw).toMatch(/not a Page Spec/u);
+    } finally {
+      rmSync(outside, { recursive: true, force: true });
+    }
   });
 
   it('asks for exactly one of spec and file', () => {

@@ -16,10 +16,12 @@ Release mechanics and the compatibility contract live in
   the block with that author `id` at any depth, operations are all or nothing,
   YAML comments and layout are kept, and the reply is a content hash plus the
   applied changes, never the spec. `--base-hash` refuses an edit made against
-  a stale spec (`SPEC_PATCH_CONFLICT`); a patch that adds validation errors is
-  not written. The `patch` MCP tool (local: `file` or `spec`; remote: `spec`,
+  a stale spec (`SPEC_PATCH_CONFLICT`); a patch that raises the error count is
+  not written, and only a file that reads as a Page Spec is edited. The `patch`
+  MCP tool (local: `file` under the working directory, or `spec`; remote: `spec`,
   authenticated like `validate`) and the library `patch`, `patchSpecText` and
-  `specHash` expose the same contract. See
+  `specHash` expose the same contract. Motion Studio's atomic save now creates
+  its temporary file exclusively under a random name. See
   [docs/agent-guide.md](./docs/agent-guide.md#edit-an-existing-page).
   Migration: additive. `RenderErrorCode` gains `SPEC_PATCH_ERROR` and
   `SPEC_PATCH_CONFLICT`, so an exhaustive `switch` over it needs two cases;

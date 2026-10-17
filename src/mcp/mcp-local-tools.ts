@@ -9,8 +9,8 @@
  * network.
  */
 
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { mkdirSync, realpathSync, writeFileSync } from 'node:fs';
+import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { compile } from '../render/render.js';
 import { patchSpecFile } from '../spec/patch-file.js';
 import { buildThemeCatalog, type ThemeCatalog } from '../theme/theme-catalog.js';
@@ -100,16 +100,38 @@ const LOCAL_PATCH_TOOL: McpTool<McpContext> = {
       return PATCH_TOOL.run(args, context);
     }
     if (args.spec !== undefined) throw new ToolArgumentError('pass "spec" or "file", not both');
-    const file = resolve(context.cwd, requireString(args, 'file'));
+    const file = specFileInside(context.cwd, requireString(args, 'file'));
     const baseHash =
       typeof args.baseHash === 'string' && args.baseHash !== '' ? args.baseHash : undefined;
-    const result = {
-      file,
-      ...patchSpecFile(file, args.ops, baseHash === undefined ? {} : { baseHash }),
-    };
+    let patched: ReturnType<typeof patchSpecFile>;
+    try {
+      patched = patchSpecFile(file, args.ops, baseHash === undefined ? {} : { baseHash });
+    } catch (error) {
+      if (error instanceof TypeError) throw new ToolArgumentError(error.message);
+      throw error;
+    }
+    const result = { file, ...patched };
     return result.ok ? text(result) : failure(result);
   },
 };
+
+/**
+ * The real path of `file` when it lies under the working directory. An agent
+ * edits the project's specs, never a file elsewhere on the machine.
+ */
+function specFileInside(cwd: string, file: string): string {
+  let real: string;
+  try {
+    real = realpathSync(resolve(cwd, file));
+  } catch {
+    throw new ToolArgumentError(`${file} does not exist`);
+  }
+  const inside = relative(realpathSync(cwd), real);
+  if (inside === '' || inside.split(sep)[0] === '..' || isAbsolute(inside)) {
+    throw new ToolArgumentError(`${file} is outside the working directory`);
+  }
+  return real;
+}
 
 const LOCAL_THEMES_TOOL: McpTool<McpContext> = {
   ...THEMES_DEFINITION,

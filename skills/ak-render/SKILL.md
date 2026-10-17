@@ -82,7 +82,8 @@ spec from stdin (`-`) and the `mcp` command need version 0.2.0 or later, and
    send RFC 6902 ops; `/blocks/@<id>` addresses the block with that `id` at
    any depth, so give blocks you will edit an `id`. The file keeps its
    comments, the reply is a hash and the changes, never the spec, and a patch
-   that adds errors is not written. Pass the previous reply's `hash` as
+   that raises the error count is not written (check `written`; exit 1 still
+   means errors remain). Pass the previous reply's `hash` as
    `--base-hash` so a stale edit is refused. Needs a release newer than 0.3.0
    (`ak-render patch --help` prints its usage when it exists):
 

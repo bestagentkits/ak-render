@@ -63,6 +63,12 @@ export interface PatchResult {
 /** At most this many operations in one patch. */
 export const MAX_PATCH_OPERATIONS = 256;
 
+/**
+ * A patch may not grow the spec past this many bytes of JSON, so a handful of
+ * self-copies cannot double it until the process runs out of memory.
+ */
+export const MAX_PATCHED_SPEC_BYTES = 4 * 1024 * 1024;
+
 const OPERATIONS = new Set(['add', 'remove', 'replace', 'move', 'copy', 'test']);
 const FORBIDDEN_SEGMENTS = new Set(['__proto__', 'prototype', 'constructor']);
 const ARRAY_INDEX = /^(?:0|[1-9][0-9]*)$/u;
@@ -106,7 +112,9 @@ export function patch(input: unknown, ops: unknown, options: PatchOptions = {}):
     ]);
   }
 
-  const base = structuredClone(parsed);
+  // A JSON round-trip, not structuredClone: YAML aliases parse to shared
+  // objects, and an edit through one alias path must not change the others.
+  const base = JSON.parse(JSON.stringify(parsed)) as JsonValue;
   const baseHash = specHash(base);
   const baseErrors = errorCount(validate(base).diagnostics);
   if (options.baseHash !== undefined && options.baseHash !== baseHash) {
@@ -213,15 +221,32 @@ function applyOperations(
   ops: readonly PatchOperation[],
 ): { spec: JsonValue; changes: PatchChange[] } {
   let doc = initial;
+  let size = JSON.stringify(initial).length;
+  const grow = (value: JsonValue, at: string): void => {
+    size += JSON.stringify(value).length;
+    if (size > MAX_PATCHED_SPEC_BYTES) {
+      throw new PatchFailure(at, `a patched spec holds at most ${MAX_PATCHED_SPEC_BYTES} bytes`);
+    }
+  };
   const changes: PatchChange[] = [];
   ops.forEach((op, index) => {
     const at = pathIndex('ops', index);
-    // A move removes first, so its target resolves against the spec without
-    // the moved value, as RFC 6902 specifies.
     const from =
       op.op === 'move' || op.op === 'copy' ? resolvePointer(doc, op.from, `${at}.from`) : [];
     const value = op.op === 'move' || op.op === 'copy' ? read(doc, from, `${at}.from`) : null;
-    if (op.op === 'move') doc = remove(doc, from, `${at}.from`).doc;
+    if (op.op === 'move') {
+      // The own-child check compares the locations as written, before the
+      // removal shifts the indexes a block id resolves to.
+      const written = resolvePointer(doc, op.path, `${at}.path`);
+      if (isPrefix(from, written) && from.length < written.length) {
+        throw new PatchFailure(`${at}.path`, 'cannot move a value into one of its own children');
+      }
+      // The target then resolves against the spec without the moved value,
+      // as RFC 6902 specifies.
+      doc = remove(doc, from, `${at}.from`).doc;
+    }
+    if (op.op === 'copy') grow(value as JsonValue, `${at}.path`);
+    else if (op.op === 'add' || op.op === 'replace') grow(op.value, `${at}.path`);
     const path = resolvePointer(doc, op.path, `${at}.path`);
     const change: PatchChange = { op: op.op, path: format(path) };
     switch (op.op) {
@@ -248,9 +273,6 @@ function applyOperations(
       case 'move':
       case 'copy': {
         change.from = format(from);
-        if (op.op === 'move' && isPrefix(from, path) && from.length < path.length) {
-          throw new PatchFailure(`${at}.path`, 'cannot move a value into one of its own children');
-        }
         const target = add(doc, path, structuredClone(value as JsonValue), `${at}.path`);
         doc = target.doc;
         change.path = format(target.path);

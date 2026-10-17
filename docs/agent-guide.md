@@ -54,8 +54,9 @@ ak-render patch page.yaml ops.json --base-hash s-0h3k2...   # ops from a file, o
   block whose `id` field is `<id>`, at any depth (sections, columns, tab
   panels), so a nested edit needs no array indexes. Give a block an `id` to
   make it addressable; compiler-derived ids are not, because they change when
-  the page changes. An unknown or duplicate id is refused and lists the ids
-  that exist (`details.known`). Plain pointers such as `/meta/title` and
+  the page changes. An unknown id is refused and lists the ids that exist
+  (`details.known`); a duplicate id lists the blocks that share it
+  (`details.matches`). Plain pointers such as `/meta/title` and
   `/blocks/2` work as RFC 6902 specifies.
 - **Optimistic concurrency.** Every reply carries `hash`, the spec's content
   hash (formatting and comments do not change it). Pass it back as
@@ -65,15 +66,20 @@ ak-render patch page.yaml ops.json --base-hash s-0h3k2...   # ops from a file, o
 - **All or nothing.** Operations run in order on a copy. One failing
   operation (missing target, failed `test`, unknown id) applies none and
   reports `SPEC_PATCH_ERROR` at `ops[i].path`, `ops[i].from` or `ops[i].value`.
+  A patch may not grow the spec past 4 MiB of JSON.
 - **Canonical file kept.** YAML comments, key order and untouched blocks stay as
-  written; JSON keeps its indentation. The file is replaced atomically and the
-  patch is refused if the file changed during the write. A patch that adds
-  validation errors is not written (exit 1, `written: false`); one that fixes
-  some errors of an already broken spec is. `--dry-run` reports without writing.
+  written; JSON keeps its indentation, and CRLF line endings stay CRLF. The
+  file is replaced atomically and the patch is refused if the file changed
+  during the write. Only a file that reads as a Page Spec (`version` and a
+  `blocks` list) is edited. A patch that raises the error count is not written
+  (`written: false`); one that lowers it on an already broken spec is. The exit
+  code is 0 only when the patched spec has no errors, so a written partial fix
+  still exits 1: read `written`. `--dry-run` reports without writing.
 
 The patched spec is validated like any other, so the reply's `diagnostics`
 list what to fix next. Over MCP, `patch` takes `ops`, optional `baseHash`, and
-either `file` (local server: edit in place, no spec in the reply) or `spec`
+either `file` (local server: a spec file under its working directory, edited
+in place, no spec in the reply) or `spec`
 (the reply carries the patched spec, as text when you sent text). The
 library exports `patch(spec, ops, { baseHash })`, `patchSpecText(text, ops)`
 and `specHash(spec)`.
