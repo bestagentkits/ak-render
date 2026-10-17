@@ -457,7 +457,7 @@ function checkPlacement(
   }
 }
 
-interface SlotList {
+export interface SlotList {
   key: string;
   path: string;
   entries: unknown[];
@@ -468,7 +468,7 @@ interface SlotList {
  * Nested slot lists in schema-key order, then item index. Only array values
  * are collected: a wrong shape was already reported by prop validation.
  */
-function collectSlotLists(
+export function collectSlotLists(
   definition: BlockDefinition,
   rawProps: Record<string, unknown>,
   path: string,
