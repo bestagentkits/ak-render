@@ -80,6 +80,23 @@ describe('authored list indexes in diagnostics', () => {
     );
   });
 
+  it('reports a second highlighted pricing plan at the authored plan', () => {
+    const plan = (name: string) => ({ name, price: 1, highlight: true });
+    const found = diagnosticsFor({ type: 'pricing', plans: ['oops', plan('A'), plan('B')] });
+    expect(found).toContainEqual(
+      expect.objectContaining({ path: '$.blocks[0].plans[2].highlight', severity: 'error' }),
+    );
+  });
+
+  it('reports a blocked remote asset at the authored item', () => {
+    const found = diagnosticsFor({
+      type: 'testimonial',
+      items: ['oops', { quote: 'Q', name: 'N', logo: 'https://example.com/logo.png' }],
+    });
+    expect(found).toContainEqual(expect.objectContaining({ path: '$.blocks[0].items[1].logo' }));
+    expect(found.filter((item) => item.path === '$.blocks[0].items[0].logo')).toEqual([]);
+  });
+
   it('keeps authored indexes for nested lists inside a kept item', () => {
     const found = diagnosticsFor({
       type: 'table',
