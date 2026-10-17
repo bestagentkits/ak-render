@@ -25,6 +25,7 @@ import {
   CARTESIAN,
   clampTo,
   type Frame,
+  flatPadding,
   formatNumber,
   niceBounds,
   plotWidth,
@@ -200,7 +201,9 @@ export function sparkline(input: ChartInput): string {
   const values = input.series.flatMap((series) => series.values);
   const low = values.length === 0 ? 0 : Math.min(...values);
   const high = values.length === 0 ? 1 : Math.max(...values);
-  const bounds = high === low ? { min: low - 1, max: high + 1 } : { min: low, max: high };
+  const padding = flatPadding(low);
+  const bounds =
+    high === low ? { min: low - padding, max: high + padding } : { min: low, max: high };
   const ticks = { ...bounds, step: 1 };
   const parts: string[] = [];
   input.series.forEach((series, seriesIndex) => {

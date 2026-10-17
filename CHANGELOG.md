@@ -186,6 +186,22 @@ Release mechanics and the compatibility contract live in
 
 ### Fixed
 
+- Charts no longer draw at `NaN` or stop compiling on extreme or near-equal
+  numbers. A dataset value such as `1e308` used to pass `validate` while the
+  chart's range overflowed to `Infinity`, so the page carried `NaN`
+  coordinates, and some kinds (bar, line, area, waterfall) never finished
+  compiling. Two values a few ulps apart (`0.3` and `0.30000000000000004`)
+  could also collapse a scatter axis to zero width (`NaN`) or loop the
+  histogram ticks forever; ticks are now counted by index and a collapsed
+  axis keeps the raw range. A flat range above 2⁵³ is padded so scatter and
+  sparkline axes keep a width.
+- Validation is stricter: every dataset number, and every inline number a
+  chart plots (series value, `target`, overlay position, axis bound), must be
+  `0` or have a magnitude from `1e-100` to `1e100`. Anything else is a
+  `SPEC_BOUNDS_ERROR` at the cell or prop path. This also applies to datasets
+  only a table reads, so a spec that held such a value and validated before
+  now fails. The published schema bounds `dataCell` and the chart number
+  props the same way; filter and `visibleWhen` operands are unchanged.
 - A table row-width warning now names the authored row. An invalid row is
   dropped during normalization, so later warnings used to shift onto an
   earlier index (`rows[0]` instead of `rows[1]`), which misled agents fixing

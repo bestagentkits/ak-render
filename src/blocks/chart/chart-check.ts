@@ -7,9 +7,9 @@
  * resolved input the renderer draws.
  */
 
-import { type DataScalar, fieldValue } from '../../data/dataset-types.js';
+import { type DataScalar, fieldValue, numberMagnitudeProblem } from '../../data/dataset-types.js';
 import { reportUnknownField } from '../../data/resolve-block-data.js';
-import { type DiagnosticBag, type DiagnosticInput, pathKey } from '../../diagnostics.js';
+import { type DiagnosticBag, type DiagnosticInput, pathIndex, pathKey } from '../../diagnostics.js';
 import type { IrNode } from '../../ir.js';
 import { isPlainObject } from '../../json.js';
 import { listProp, stringProp } from '../../render/block-helpers.js';
@@ -206,6 +206,46 @@ function checkBounds(node: IrNode, key: string, prop: EncodingProp | undefined, 
   return true;
 }
 
+/**
+ * Inline numbers the chart plots (series values, target, overlay positions,
+ * axis bounds) obey the same magnitude bounds as dataset cells, so a scale or
+ * a sum never overflows into a NaN coordinate.
+ */
+function checkMagnitudes(node: IrNode, report: Report): void {
+  const check = (value: unknown, path: string) => {
+    if (typeof value !== 'number') return;
+    const problem = numberMagnitudeProblem(value);
+    if (problem === undefined) return;
+    report({ code: 'SPEC_BOUNDS_ERROR', path, message: problem });
+  };
+  const series = node.props.series;
+  if (Array.isArray(series)) {
+    series.forEach((entry, index) => {
+      if (!isPlainObject(entry) || !Array.isArray(entry.values)) return;
+      const valuesPath = pathKey(pathIndex(pathKey(node.path, 'series'), index), 'values');
+      entry.values.forEach((value, at) => {
+        check(value, pathIndex(valuesPath, at));
+      });
+    });
+  }
+  check(node.props.target, pathKey(node.path, 'target'));
+  for (const key of ['markers', 'annotations']) {
+    const items = node.props[key];
+    if (!Array.isArray(items)) continue;
+    items.forEach((item, index) => {
+      if (!isPlainObject(item)) return;
+      const itemPath = pathIndex(pathKey(node.path, key), index);
+      check(item.x, pathKey(itemPath, 'x'));
+      check(item.y, pathKey(itemPath, 'y'));
+    });
+  }
+  for (const key of ['x', 'y', 'value']) {
+    const prop = encodingProp(node, key);
+    check(prop?.min, pathKey(pathKey(node.path, key), 'min'));
+    check(prop?.max, pathKey(pathKey(node.path, key), 'max'));
+  }
+}
+
 export function checkChart(node: IrNode, bag: DiagnosticBag): void {
   const kind = stringProp(node, 'kind');
   const before = bag.errorCount;
@@ -216,6 +256,7 @@ export function checkChart(node: IrNode, bag: DiagnosticBag): void {
     node.data === undefined
       ? checkInline(node, kind, report, bag)
       : checkBound(node, kind, report, bag);
+  checkMagnitudes(node, report);
   const bounded = ['x', 'y', 'value'].every((key) =>
     checkBounds(node, key, encodingProp(node, key), report),
   );

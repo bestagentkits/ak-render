@@ -103,15 +103,27 @@ export function niceBounds(series: ChartSeries[]): TickBounds {
   return niceRange(Math.min(0, ...values), Math.max(0, ...values));
 }
 
+/**
+ * How far a flat range is padded: 1, unless the value is so large that adding
+ * 1 no longer changes it (|v| > 2⁵³), where a zero-width range would scale to NaN.
+ */
+export function flatPadding(value: number): number {
+  return value + 1 !== value ? 1 : niceStep(Math.abs(value), 4);
+}
+
 /** Clean-tick bounds around a raw range. */
 export function niceRange(rawMin: number, rawMax: number): TickBounds {
-  if (rawMax === rawMin) return { min: rawMin, max: rawMin + 1, step: 0.25 };
+  if (rawMax === rawMin) {
+    const padding = flatPadding(rawMin);
+    return { min: rawMin, max: rawMin + padding, step: padding / 4 };
+  }
   const step = niceStep(rawMax - rawMin, 4);
-  return {
-    min: Math.floor(rawMin / step) * step,
-    max: Math.ceil(rawMax / step) * step,
-    step,
-  };
+  const min = Math.floor(rawMin / step) * step;
+  const max = Math.ceil(rawMax / step) * step;
+  // Two values a few ulps apart can round onto the same tick, which would
+  // leave a zero-width axis; the raw range keeps its width.
+  if (!(max > min)) return { min: rawMin, max: rawMax, step: rawMax - rawMin };
+  return { min, max, step };
 }
 
 /**

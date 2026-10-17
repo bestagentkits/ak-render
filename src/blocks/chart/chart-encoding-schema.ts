@@ -1,5 +1,6 @@
 /** Prop schemas for chart encodings and overlays. Descriptions stay terse: `describe` carries them. */
 
+import { DATA_LIMITS } from '../../data/dataset-types.js';
 import { FORMAT_FIELDS } from '../../data/format-value.js';
 import {
   enumStr,
@@ -17,17 +18,24 @@ export const CHART_SORTS = ['none', 'ascending', 'descending'] as const;
 
 const FIELD = str({ maxLength: 64, description: 'Field of the bound rows.' });
 
+/**
+ * A number the chart plots. Its magnitude is bounded like a dataset cell, so a
+ * scale or a sum cannot overflow; `checkMagnitudes` also refuses tiny values.
+ */
+const plotted = (o: { required?: boolean; description?: string } = {}) =>
+  num({ min: -DATA_LIMITS.maxMagnitude, max: DATA_LIMITS.maxMagnitude, ...o });
+
 /** One encoding: the field it reads, how it is titled and formatted, and optional bounds. */
 const ENCODING_FIELDS: Record<string, PropSchema> = {
   field: FIELD,
   label: str({ maxLength: 80 }),
   ...FORMAT_FIELDS,
-  min: num(),
-  max: num(),
+  min: plotted(),
+  max: plotted(),
 };
 
 /** A category name or a number on a numeric x axis. */
-const X_POSITION = oneOf([str({ maxLength: 80 }), num()], { required: true });
+const X_POSITION = oneOf([str({ maxLength: 80 }), plotted()], { required: true });
 
 export const CHART_ENCODING_PROPS: Record<string, PropSchema> = {
   x: obj(ENCODING_FIELDS),
@@ -42,19 +50,19 @@ export const CHART_ENCODING_PROPS: Record<string, PropSchema> = {
   annotations: list(
     obj({
       x: X_POSITION,
-      y: num({ required: true }),
+      y: plotted({ required: true }),
       text: str({ required: true, maxLength: 160 }),
     }),
     { maxItems: 8 },
   ),
   sort: enumStr(CHART_SORTS, { description: 'bar, stacked-bar, funnel, treemap.' }),
-  target: num({ description: 'Gauge only.' }),
+  target: plotted({ description: 'Gauge only.' }),
 };
 
 /** `series`: inline `[{ label, values }]`, or `{ field }` to pivot bound rows. */
 export const SERIES_PROP: PropSchema = oneOf([
   itemsOf(
-    { label: LABEL, values: list(num(), { required: true, minItems: 1, maxItems: 200 }) },
+    { label: LABEL, values: list(plotted(), { required: true, minItems: 1, maxItems: 200 }) },
     { minItems: 1 },
   ),
   obj({ field: str({ required: true, maxLength: 64 }) }),

@@ -24,7 +24,29 @@ export const DATA_LIMITS = {
   maxFields: 32,
   /** Length of one string cell. */
   maxStringLength: 400,
+  /**
+   * Largest magnitude of a number cell, and the smallest non-zero one. Inside
+   * these bounds no sum, range or scale a chart computes overflows to
+   * Infinity, and no tick step underflows to 0.
+   */
+  maxMagnitude: 1e100,
+  minMagnitude: 1e-100,
 } as const;
+
+/**
+ * Why a number cannot be charted, or undefined when it can: it must be 0 or
+ * have a magnitude between `DATA_LIMITS.minMagnitude` and `maxMagnitude`.
+ */
+export function numberMagnitudeProblem(value: number): string | undefined {
+  const magnitude = Math.abs(value);
+  if (
+    value === 0 ||
+    (magnitude >= DATA_LIMITS.minMagnitude && magnitude <= DATA_LIMITS.maxMagnitude)
+  ) {
+    return undefined;
+  }
+  return `number ${value} is out of range: use 0 or a magnitude from ${DATA_LIMITS.minMagnitude} to ${DATA_LIMITS.maxMagnitude}, so a chart can scale it (rescale the unit, e.g. store millions)`;
+}
 
 /**
  * Field keys: an identifier that may also contain dashes. Dataset names follow

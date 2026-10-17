@@ -35,6 +35,13 @@ blocks:
 
 - Cells are scalars only: a string, a finite number, a boolean or `null`.
   Nested objects and lists are rejected, so a dataset is always a table.
+- A number is `0` or has a magnitude from `1e-100` to `1e100`. Beyond that a
+  chart's range or total can overflow to `Infinity` (or a tick step underflow
+  to `0`) and its marks would land at `NaN`, so the cell is a
+  `SPEC_BOUNDS_ERROR` at its own path (`$.datasets.d[0].v`). The rule covers
+  every dataset, including one only a table reads. Inline chart numbers
+  (series values, `target`, overlay positions, axis `min`/`max`) follow the
+  same rule at their own paths.
 - Field names are identifiers that may contain dashes (`FIELD_KEY_PATTERN` in
   [`src/data/dataset-types.ts`](../src/data/dataset-types.ts)). `__proto__`, `constructor` and `prototype` are refused,
   because a row is a plain object and those names would reach its prototype
