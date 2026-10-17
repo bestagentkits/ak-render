@@ -197,6 +197,11 @@ Release mechanics and the compatibility contract live in
   feature-matrix rows, asset policy checks and other item lists reported
   later items one index too early. Nested item blocks are matched to their authored item
   the same way.
+- Feature-matrix row and chart/progress series count checks count the items
+  the author wrote. A dropped plan, label or value used to add a spurious
+  "expected N values" error or "has N values for M labels" warning on every
+  row or series on top of its own error. A plans list rejected outright no
+  longer makes every row report "expected 0 values".
 - `ak-render validate` lists each warning once. A spec with an error used to
   print every warning twice in text mode; `--json` was not affected.
 - Malformed YAML no longer compiles silently. A duplicate key, an

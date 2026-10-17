@@ -1,6 +1,6 @@
 /** Feature matrix block: which plan includes which feature, as a real table. */
 
-import { authoredIndex } from '../../diagnostics.js';
+import { authoredIndex, authoredLength } from '../../diagnostics.js';
 import type { JsonValue } from '../../json.js';
 import type { BlockModule } from '../../registry/block-module.js';
 import {
@@ -91,10 +91,16 @@ export const featureMatrixBlock: BlockModule = {
       }<thead>${head}</thead><tbody>${body}</tbody></table></div>`,
     );
   },
+  // Counts the plans and values the author wrote: validation drops an invalid
+  // one, and its own error already explains it. A list rejected outright is
+  // already an error too, so it is not counted again here.
   check: (node, context) => {
-    const expected = listProp(node, 'plans').length;
+    const plans = node.props.plans;
+    if (!Array.isArray(plans)) return;
+    const expected = authoredLength(plans);
     objectListProp(node, 'rows').forEach((row, index) => {
-      const actual = Array.isArray(row.values) ? row.values.length : 0;
+      if (!Array.isArray(row.values)) return;
+      const actual = authoredLength(row.values);
       if (actual !== expected) {
         reportAt(
           context,

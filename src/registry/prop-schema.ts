@@ -505,7 +505,7 @@ export function validateProp(
         result.push(item);
         kept.push(index);
       }
-      keepAuthoredIndexes(result, kept);
+      keepAuthoredIndexes(result, kept, value.length);
       return result;
     }
     case 'object': {
