@@ -28,10 +28,12 @@ do not try to position or style blocks: there is no field for it.
    `rule` id and a `classification`. `safe` fixes keep the author's meaning
    (a single item or block where a list is required, an enum value that
    differs only in letter case); `ambiguous` ones are guesses (a near block,
-   action or property name) for you to choose. `ak-render repair page.yaml
-   --out page.yaml` applies only the safe fixes, revalidates, keeps YAML
-   comments and logs each change; it never deletes a field, changes data or
-   picks between guesses.
+   action or property name, or wrapping text such as `a, b` that may mean
+   several items) for you to choose. Apply one fix per diagnostic, then
+   validate again. `ak-render repair page.yaml --out page.yaml` applies only
+   the safe fixes, revalidates and logs each change; it keeps YAML comments
+   when it can replay the edit in place (otherwise it re-emits the spec), and
+   it never deletes a field, changes data or picks between guesses.
    Icons are named by meaning (`icon: gauge`); find names with
    `ak-render icons search <words>` and see [icons.md](./icons.md).
 5. **Compile.** `ak-render page.yaml --out page.html --json` writes the file and

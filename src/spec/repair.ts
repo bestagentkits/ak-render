@@ -22,7 +22,7 @@ import {
 import type { Diagnostic, DiagnosticFix, PatchOperation } from '../diagnostics.js';
 import { isRenderError } from '../errors.js';
 import { isJsonValue, type JsonValue } from '../json.js';
-import { applyPatch, jsonEqual } from './json-patch.js';
+import { jsonEqual, patchInPlace } from './json-patch.js';
 import { type ParseOptions, parseSpec } from './parse.js';
 import { type ValidateResult, type ValidateSummary, validate } from './validate.js';
 
@@ -55,7 +55,8 @@ export interface RepairResult {
   spec?: JsonValue;
   /**
    * The repaired spec as text in the input's format, present when the input
-   * was text and something changed. YAML keeps its comments and layout.
+   * was text and something changed. YAML keeps its comments and layout when
+   * every edit replays in place; otherwise the spec is re-emitted without them.
    */
   text?: string;
 }
@@ -90,7 +91,7 @@ export function repair(input: unknown, options: RepairOptions = {}): RepairResul
     };
   }
   if (!isJsonValue(parsed)) {
-    const report = validate(parsed, { suggest: true });
+    const report = validate(parsed, { ...options, suggest: true });
     return {
       ok: false,
       changed: false,
@@ -108,37 +109,32 @@ export function repair(input: unknown, options: RepairOptions = {}): RepairResul
   for (let pass = 0; pass < MAX_PASSES && attempts < REPAIR_MAX_ATTEMPTS; pass += 1) {
     const candidates = report.diagnostics
       .map((diagnostic) => ({ diagnostic, fix: onlySafeFix(diagnostic) }))
-      .filter((candidate): candidate is Candidate => candidate.fix !== undefined)
-      .slice(0, REPAIR_MAX_ATTEMPTS - attempts);
+      .filter((candidate): candidate is Candidate => candidate.fix !== undefined);
     if (candidates.length === 0) break;
 
     // The common case costs one revalidation: every fix of the pass at once.
-    // Only when the batch is refused is each fix tried on its own.
-    attempts += 1;
-    const batch = applyAll(spec, candidates);
-    const batchReport = batch === undefined ? undefined : validate(batch, { suggest: true });
-    let accepted: Candidate[] = [];
-    if (
-      batch !== undefined &&
-      batchReport !== undefined &&
-      clears(candidates, report, batchReport)
-    ) {
-      spec = batch;
-      report = batchReport;
-      accepted = candidates;
-    } else {
-      for (const candidate of candidates) {
-        if (attempts >= REPAIR_MAX_ATTEMPTS) break;
-        const next = applyPatch(spec, candidate.fix.patch);
-        if (next === undefined) continue;
+    // A refused batch is bisected, so one bad fix among n costs about 2·log2(n)
+    // revalidations rather than n.
+    const accepted: Candidate[] = [];
+    const settle = (group: readonly Candidate[]): void => {
+      if (group.length === 0 || attempts >= REPAIR_MAX_ATTEMPTS) return;
+      const next = applyAll(spec, group);
+      if (next !== undefined) {
         attempts += 1;
         const after = validate(next, { suggest: true });
-        if (!clears([candidate], report, after)) continue;
-        spec = next;
-        report = after;
-        accepted.push(candidate);
+        if (clears(group, report, after)) {
+          spec = next;
+          report = after;
+          accepted.push(...group);
+          return;
+        }
       }
-    }
+      if (group.length === 1) return;
+      const middle = Math.ceil(group.length / 2);
+      settle(group.slice(0, middle));
+      settle(group.slice(middle));
+    };
+    settle(candidates);
     if (accepted.length === 0) break;
     for (const { diagnostic, fix } of accepted) {
       changes.push({
@@ -180,12 +176,8 @@ function within(path: string, root: string): boolean {
 }
 
 function applyAll(spec: JsonValue, candidates: readonly Candidate[]): JsonValue | undefined {
-  let next: JsonValue | undefined = spec;
-  for (const { fix } of candidates) {
-    next = applyPatch(next, fix.patch);
-    if (next === undefined) return undefined;
-  }
-  return next;
+  const next = structuredClone(spec);
+  return candidates.every(({ fix }) => patchInPlace(next, fix.patch)) ? next : undefined;
 }
 
 /**
@@ -199,7 +191,8 @@ function clears(
 ): boolean {
   for (const { diagnostic } of candidates) {
     const remains = after.diagnostics.some(
-      (item) => item.code === diagnostic.code && item.path === diagnostic.path,
+      (item) =>
+        item.severity === 'error' && item.code === diagnostic.code && item.path === diagnostic.path,
     );
     if (remains) return false;
   }

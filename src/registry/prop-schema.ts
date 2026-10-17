@@ -297,7 +297,28 @@ function wrapInListHints(schema: ListPropSchema, value: unknown, path: string): 
   const probe = new DiagnosticBag();
   validateProp(schema.of, value, pathIndex(path, 0), probe);
   if (probe.hasErrors) return [];
-  return [{ rule: 'list/wrap-scalar', classification: 'safe', replaceWith: [value as JsonValue] }];
+  return [
+    {
+      rule: 'list/wrap-scalar',
+      classification: wrapKeepsMeaning(schema, value, path) ? 'safe' : 'ambiguous',
+      replaceWith: [value as JsonValue],
+    },
+  ];
+}
+
+/** Text that reads as several items: `a, b`, `a; b`, `a | b` or one per line. */
+const ITEM_SEPARATOR = /[,;|\n\r]/u;
+
+/**
+ * A one-item list keeps the author's meaning only when nothing suggests more
+ * items. A list nested in a list (table rows) reads as one row or as several
+ * one-cell rows, and separated text reads as several items: both are the
+ * author's call.
+ */
+function wrapKeepsMeaning(schema: ListPropSchema, value: unknown, path: string): boolean {
+  if (schema.of.kind === 'list' || schema.of.kind === 'blocks') return false;
+  if (path.endsWith(']')) return false;
+  return typeof value !== 'string' || !ITEM_SEPARATOR.test(value);
 }
 
 /**

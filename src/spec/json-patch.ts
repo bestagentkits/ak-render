@@ -148,35 +148,54 @@ export function applyPatch(
   patch: readonly PatchOperation[],
 ): JsonValue | undefined {
   const copy = structuredClone(document);
+  return patchInPlace(copy, patch) ? copy : undefined;
+}
+
+/**
+ * Apply a patch to `document` itself. On false the document may be partly
+ * edited, so only call this on a copy the caller discards on failure.
+ */
+export function patchInPlace(document: JsonValue, patch: readonly PatchOperation[]): boolean {
+  const copy = document;
   for (const operation of patch) {
     if (operation.op === 'test') {
       const tokens = parsePointer(operation.path);
-      if (tokens === undefined) return undefined;
+      if (tokens === undefined) return false;
       const actual = valueAt(copy, tokens);
-      if (actual === undefined || !jsonEqual(actual, operation.value)) return undefined;
+      if (actual === undefined || !jsonEqual(actual, operation.value)) return false;
       continue;
     }
     const target = locate(copy, operation.path);
-    if (target === undefined) return undefined;
+    if (target === undefined) return false;
     if (operation.op === 'replace') {
-      if (!exists(target)) return undefined;
+      if (!exists(target)) return false;
       setAt(target, structuredClone(operation.value));
       continue;
     }
     // move: renames an object member; array reordering is not a fix any rule makes.
     const source = locate(copy, operation.from);
-    if (source === undefined || !exists(source) || exists(target)) return undefined;
-    if (Array.isArray(source.parent) || Array.isArray(target.parent)) return undefined;
-    if (source.parent !== target.parent) return undefined;
+    if (source === undefined || !exists(source) || exists(target)) return false;
+    if (Array.isArray(source.parent) || Array.isArray(target.parent)) return false;
+    if (source.parent !== target.parent) return false;
     const value = source.parent[source.key as string];
     renameMember(source.parent, source.key as string, target.key as string, value);
   }
-  return copy;
+  return true;
+}
+
+/** Define an own member, so a key such as `__proto__` stays data and never sets the prototype. */
+function defineMember(object: Record<string, unknown>, key: string, value: unknown): void {
+  Object.defineProperty(object, key, {
+    value,
+    writable: true,
+    enumerable: true,
+    configurable: true,
+  });
 }
 
 function setAt(location: Location, value: unknown): void {
   if (Array.isArray(location.parent)) location.parent[location.key as number] = value;
-  else location.parent[location.key as string] = value;
+  else defineMember(location.parent, location.key as string, value);
 }
 
 /** Rename a key in place, keeping its position so the spec reads in the same order. */
@@ -189,7 +208,6 @@ function renameMember(
   const entries = Object.entries(object);
   for (const key of Object.keys(object)) delete object[key];
   for (const [key, entry] of entries) {
-    if (key === from) object[to] = value;
-    else object[key] = entry;
+    defineMember(object, key === from ? to : key, key === from ? value : entry);
   }
 }

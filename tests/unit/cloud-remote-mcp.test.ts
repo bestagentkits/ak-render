@@ -537,8 +537,8 @@ describe('remote MCP: motion tools', () => {
     expect(r2.objects.size).toBe(0);
   });
 
-  it('repairs only with a bearer, under the validate limit', async () => {
-    const { env, fetchMock } = harness();
+  it('repairs only with a bearer, under the render limit', async () => {
+    const { env, fetchMock, limits } = harness();
     const spec =
       'version: 1\nmeta:\n  title: R\nblocks:\n  - type: badge\n    text: x\n    tone: Info\n';
     const anonymous = await tool(env, 'repair', { spec }, null);
@@ -550,6 +550,9 @@ describe('remote MCP: motion tools', () => {
     expect(reply.isError).toBeUndefined();
     expect(payload['changed']).toBe(true);
     expect(payload['spec']).toContain('tone: info');
+    // Repair revalidates many times per call, so it is charged like a render.
+    expect(limits.render.counts.size).toBe(1);
+    expect(limits.validate.counts.size).toBe(0);
   });
 
   it('audits a spec with a bearer and returns the report', async () => {

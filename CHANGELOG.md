@@ -17,7 +17,8 @@ Release mechanics and the compatibility contract live in
   current value, with a rule id, the diagnostic path and a `safe` or
   `ambiguous` classification. `repair(spec, { mode: 'safe' })` (CLI
   `ak-render repair`, MCP `repair`) applies only the safe fixes, revalidates,
-  keeps YAML comments and returns a change log; near-name guesses for block
+  keeps YAML comments where the edit can be replayed in place and returns a
+  change log; near-name guesses for block
   types, actions, events, properties and enum values stay with the author.
   Without `suggest`, diagnostics are unchanged.
 

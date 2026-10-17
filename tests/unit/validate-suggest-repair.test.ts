@@ -221,6 +221,37 @@ describe('repair({ mode: "safe" })', () => {
     expect(at(result.diagnostics, '$.blocks[0].items').fixes).toBeUndefined();
   });
 
+  it('leaves a wrap ambiguous when the author may have meant several items', () => {
+    const result = repair(
+      spec(
+        '  - type: table\n    columns: Name, Age\n    rows: [Alice, "30"]\n  - type: list\n    items:\n      text: Only\n',
+      ),
+    );
+    // Only the plain object is wrapped; separated text and table rows are guesses.
+    expect(result.changes.map((change) => change.path)).toEqual(['$.blocks[1].items']);
+    for (const path of ['$.blocks[0].columns', '$.blocks[0].rows[0]', '$.blocks[0].rows[1]']) {
+      expect(at(result.diagnostics, path).fixes?.[0]).toMatchObject({
+        rule: 'list/wrap-scalar',
+        classification: 'ambiguous',
+      });
+    }
+  });
+
+  it('bisects a refused batch and still applies every other safe fix', () => {
+    const badges = Array.from(
+      { length: 9 },
+      (_, index) => `  - type: badge\n    text: b${index}\n    tone: Info\n`,
+    ).join('');
+    const result = repair(
+      spec(
+        `  - type: grid\n    blocks:\n      type: card\n      id: dup\n      title: A\n  - type: card\n    id: dup\n    title: B\n${badges}`,
+      ),
+    );
+    expect(result.changes).toHaveLength(9);
+    expect(result.changes.every((change) => change.rule === 'enum/case')).toBe(true);
+    expect(at(result.diagnostics, '$.blocks[0].blocks').fixes?.[0]?.rule).toBe('blocks/wrap-block');
+  });
+
   it('emits JSON for JSON input and leaves an already-valid spec alone', () => {
     const input = JSON.stringify({
       version: 1,
@@ -255,6 +286,17 @@ describe('patch helpers', () => {
   it('refuses a move that would overwrite a member', () => {
     const document = { a: 1, b: 2 };
     expect(applyPatch(document, [{ op: 'move', from: '/a', path: '/b' }])).toBeUndefined();
+  });
+
+  it('keeps a `__proto__` member as data', () => {
+    const document = JSON.parse('{"titel":"x","__proto__":{"evil":1}}');
+    const out = applyPatch(document, [
+      { op: 'move', from: '/titel', path: '/title' },
+      { op: 'replace', path: '/__proto__', value: { safe: 1 } },
+    ]) as Record<string, unknown>;
+    expect(Object.keys(out)).toEqual(['title', '__proto__']);
+    expect(Object.getPrototypeOf(out)).toBe(Object.prototype);
+    expect(Object.getOwnPropertyDescriptor(out, '__proto__')?.value).toEqual({ safe: 1 });
   });
 
   it('only maps paths that name one location', () => {

@@ -132,7 +132,8 @@ function anonymous(tool: McpTool<unknown>): RemoteTool {
 const REMOTE_REPAIR_TOOL: RemoteTool = {
   ...REPAIR_TOOL,
   run: async (args, context) => {
-    const guarded = await guard(context, ['render'], 'validate');
+    // Up to REPAIR_MAX_ATTEMPTS revalidations per call: charged like a render.
+    const guarded = await guard(context, ['render'], 'render');
     if (!guarded.ok) return guarded.result;
     return REPAIR_TOOL.run(args, context);
   },
