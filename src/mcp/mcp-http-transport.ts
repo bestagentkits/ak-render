@@ -11,19 +11,29 @@
  * The server is stateless: it issues no `Mcp-Session-Id`, opens no
  * server-initiated stream (GET answers 405), and replies to every POST with a
  * single JSON body rather than an SSE stream, which the specification allows.
+ *
+ * A request with `MCP-Protocol-Version: 2026-07-28` (or later modern revision)
+ * must also mirror its body in headers: the header revision equals the `_meta`
+ * revision, `Mcp-Method` equals `method`, and `Mcp-Name` equals the tool name
+ * for `tools/call`. A mismatch or a missing header answers 400 with the
+ * `HeaderMismatch` error, so an intermediary routing on headers never sees a
+ * different request from the one this server runs.
  */
 
-import { routeMcpMessage } from './mcp-json-rpc-dispatch.js';
+import { routeMcpMessage, toolCallResponse } from './mcp-json-rpc-dispatch.js';
 import {
   DEFAULT_HTTP_PROTOCOL,
+  isModernProtocol,
   isSupportedProtocol,
   JSON_RPC_ERRORS,
   type JsonRpcResponse,
+  metaProtocolVersion,
   type ProtocolVersion,
   protocolAllowsBatching,
   rpcError,
   type ToolResult,
   toolErrorResult,
+  unsupportedProtocolError,
 } from './mcp-protocol.js';
 import type { McpTool } from './mcp-tool-definitions.js';
 
@@ -103,21 +113,92 @@ function batchRefusal(
   return initializes ? 'initialize must not be part of a batch' : undefined;
 }
 
+/** Methods whose `Mcp-Name` header mirrors `params.name` or `params.uri`. */
+const NAMED_METHODS = new Set(['tools/call', 'resources/read', 'prompts/get']);
+
+const BASE64_SENTINEL = /^=\?base64\?([A-Za-z0-9+/]*={0,2})\?=$/u;
+
+/** Decode a header value that uses the `=?base64?…?=` sentinel; plain values pass through. */
+export function decodeMcpHeaderValue(value: string): string | undefined {
+  const encoded = BASE64_SENTINEL.exec(value);
+  if (encoded === null) return value;
+  try {
+    const binary = atob(encoded[1] ?? '');
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Why one message's headers disagree with its body, or `undefined` when they
+ * agree. Only requests are checked: notifications and responses carry no
+ * header contract. Legacy requests are checked only for a modern `_meta`
+ * revision the header does not announce.
+ */
+function headerMismatch(
+  message: unknown,
+  request: Request,
+  header: string | null,
+): string | undefined {
+  if (typeof message !== 'object' || message === null) return undefined;
+  const { id, method, params } = message as { id?: unknown; method?: unknown; params?: unknown };
+  if (id === undefined || typeof method !== 'string') return undefined;
+  const body = metaProtocolVersion(message);
+  if (!isModernProtocol(header)) {
+    return isModernProtocol(body)
+      ? `MCP-Protocol-Version header ${header ?? '(missing)'} does not match _meta revision ${body}`
+      : undefined;
+  }
+  // A modern request without the `_meta` revision is malformed; the dispatcher
+  // would serve it as legacy, so it is refused here rather than silently
+  // downgraded.
+  if (body === undefined) return 'missing _meta field io.modelcontextprotocol/protocolVersion';
+  if (body !== header) {
+    return `MCP-Protocol-Version header ${header} does not match _meta revision ${String(body)}`;
+  }
+  const methodHeader = request.headers.get('mcp-method');
+  if (methodHeader !== method) {
+    return `Mcp-Method header ${methodHeader ?? '(missing)'} does not match body method ${method}`;
+  }
+  if (NAMED_METHODS.has(method)) {
+    const named = params as { name?: unknown; uri?: unknown } | undefined;
+    const expected = method === 'resources/read' ? named?.uri : named?.name;
+    const raw = request.headers.get('mcp-name');
+    const decoded = raw === null ? undefined : decodeMcpHeaderValue(raw);
+    if (decoded === undefined || decoded !== expected) {
+      return `Mcp-Name header ${raw ?? '(missing)'} does not match body value ${String(expected)}`;
+    }
+  }
+  return undefined;
+}
+
+/** The request id to echo in a transport-level error, when one can be read. */
+function messageId(message: unknown): string | number | null {
+  const id = (message as { id?: unknown } | null)?.id;
+  return typeof id === 'string' || typeof id === 'number' ? id : null;
+}
+
 /** Run one routed message to completion. Tool errors become tool results. */
 async function answer<C>(
   message: unknown,
   options: McpHttpOptions<C>,
-): Promise<JsonRpcResponse | undefined> {
+): Promise<{ response: JsonRpcResponse; status?: number } | undefined> {
   const route = routeMcpMessage(message, options.tools, { instructions: options.instructions });
   if (route.kind === 'silent') return undefined;
-  if (route.kind === 'reply') return route.response;
+  if (route.kind === 'reply') {
+    return route.status === undefined
+      ? { response: route.response }
+      : { response: route.response, status: route.status };
+  }
   let result: ToolResult;
   try {
     result = await route.tool.run(route.args, options.context);
   } catch (error) {
     result = (options.toolError ?? toolErrorResult)(error);
   }
-  return { jsonrpc: '2.0', id: route.id, result };
+  return { response: toolCallResponse(route, result) };
 }
 
 /**
@@ -131,7 +212,10 @@ async function answer<C>(
  *   carries `initialize`, which must be sent alone.
  * - Any other method answers 405: this server has no server-initiated stream
  *   and no session to delete.
- * - An unsupported `MCP-Protocol-Version` header answers 400.
+ * - An unsupported `MCP-Protocol-Version` header answers 400 with the
+ *   `UnsupportedProtocolVersion` error listing the supported revisions.
+ * - A modern request whose headers disagree with its body answers 400 with
+ *   `HeaderMismatch`; a modern request for an unknown method answers 404.
  */
 export async function handleMcpHttpRequest<C>(
   request: Request,
@@ -149,11 +233,7 @@ export async function handleMcpHttpRequest<C>(
   }
   const header = request.headers.get('mcp-protocol-version');
   if (header !== null && !isSupportedProtocol(header)) {
-    return transportError(
-      400,
-      JSON_RPC_ERRORS.invalidRequest,
-      `unsupported MCP-Protocol-Version: ${header}`,
-    );
+    return jsonResponse(400, unsupportedProtocolError(null, header));
   }
   // A client that omits the header is assumed to speak the revision the
   // transport specification names for that case.
@@ -196,6 +276,15 @@ export async function handleMcpHttpRequest<C>(
     const refused = batchRefusal(message, version, options.maxBatchSize);
     if (refused !== undefined) return transportError(400, JSON_RPC_ERRORS.invalidRequest, refused);
   }
+  for (const member of Array.isArray(message) ? message : [message]) {
+    const mismatch = headerMismatch(member, request, header);
+    if (mismatch !== undefined) {
+      return jsonResponse(
+        400,
+        rpcError(messageId(member), JSON_RPC_ERRORS.headerMismatch, `Header mismatch: ${mismatch}`),
+      );
+    }
+  }
 
   const gated = await options.preflight?.();
   if (gated !== undefined) return gated;
@@ -204,17 +293,18 @@ export async function handleMcpHttpRequest<C>(
     // Members run in order so per-subject rate limits count deterministically.
     const responses: JsonRpcResponse[] = [];
     for (const member of message) {
-      const response = await answer(member, options);
-      if (response !== undefined) responses.push(response);
+      const answered = await answer(member, options);
+      if (answered !== undefined) responses.push(answered.response);
     }
     return responses.length === 0
       ? new Response(null, { status: 202 })
       : jsonResponse(200, responses);
   }
 
-  const response = await answer(message, options);
-  if (response === undefined) return new Response(null, { status: 202 });
+  const answered = await answer(message, options);
+  if (answered === undefined) return new Response(null, { status: 202 });
+  const { response, status } = answered;
   const malformed =
     response.error?.code === JSON_RPC_ERRORS.invalidRequest && response.result === undefined;
-  return jsonResponse(malformed ? 400 : 200, response);
+  return jsonResponse(status ?? (malformed ? 400 : 200), response);
 }

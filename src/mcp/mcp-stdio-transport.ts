@@ -16,11 +16,13 @@
 import { homedir } from 'node:os';
 import type { Interface } from 'node:readline';
 import { createInterface } from 'node:readline';
-import { routeMcpMessage } from './mcp-json-rpc-dispatch.js';
+import { routeMcpMessage, toolCallResponse } from './mcp-json-rpc-dispatch.js';
 import { LOCAL_INSTRUCTIONS, LOCAL_TOOLS, type McpContext } from './mcp-local-tools.js';
 import {
+  isModernProtocol,
   JSON_RPC_ERRORS,
   type JsonRpcResponse,
+  metaProtocolVersion,
   rpcError,
   type ToolResult,
   toolErrorResult,
@@ -43,7 +45,7 @@ export function handleMcpMessage(
   } catch (error) {
     result = toolErrorResult(error);
   }
-  return { jsonrpc: '2.0', id: route.id, result };
+  return toolCallResponse(route, result);
 }
 
 /** Answer one line of the stdio transport, or return `undefined` for no reply. */
@@ -57,7 +59,11 @@ export function handleMcpLine(line: string, context: McpContext): string | undef
   }
   // Revision 2025-03-26 allows batches: answer each member, omit the silent ones.
   if (Array.isArray(message)) {
-    if (message.length === 0) {
+    // Revision 2026-07-28 has no batching, so a batch never carries its requests.
+    if (
+      message.length === 0 ||
+      message.some((member) => isModernProtocol(metaProtocolVersion(member)))
+    ) {
       return JSON.stringify(rpcError(null, JSON_RPC_ERRORS.invalidRequest, 'invalid request'));
     }
     const responses = message

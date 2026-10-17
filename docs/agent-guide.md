@@ -131,7 +131,9 @@ compiler code such as `SPEC_UNKNOWN_BLOCK` with the JSON path to fix. A token
 that is missing or rejected fails the whole request with HTTP 401 instead: an
 OAuth client signs in again, and an API key must be replaced in the client
 configuration. Under protocol revision 2025-06-18 or later
-send one message per request: batches are refused. Local
+send one message per request: batches are refused. The remote server also
+speaks the stateless 2026-07-28 revision, and `GET /v1/version` lists the tools
+it currently serves. Local
 rendering never needs the token or the network.
 
 ## Rules that save retries

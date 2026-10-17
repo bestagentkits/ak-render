@@ -9,10 +9,44 @@
 
 import { isRenderError } from '../errors.js';
 
-/** Protocol revisions this server answers with; the newest is the default. */
-export const PROTOCOL_VERSIONS = ['2024-11-05', '2025-03-26', '2025-06-18', '2025-11-25'] as const;
+/**
+ * Revisions that open with an `initialize` handshake (the legacy era). A client
+ * that sends `initialize` is answered with one of these.
+ */
+export const LEGACY_PROTOCOL_VERSIONS = [
+  '2024-11-05',
+  '2025-03-26',
+  '2025-06-18',
+  '2025-11-25',
+] as const;
+
+/**
+ * Revisions with no handshake (the modern era): every request carries its
+ * version and client capabilities in `_meta`, and `server/discover` replaces
+ * `initialize` for up-front discovery.
+ */
+export const MODERN_PROTOCOL_VERSIONS = ['2026-07-28'] as const;
+
+/** Every revision this server answers, oldest first. */
+export const PROTOCOL_VERSIONS = [
+  ...LEGACY_PROTOCOL_VERSIONS,
+  ...MODERN_PROTOCOL_VERSIONS,
+] as const;
+export type LegacyProtocolVersion = (typeof LEGACY_PROTOCOL_VERSIONS)[number];
+export type ModernProtocolVersion = (typeof MODERN_PROTOCOL_VERSIONS)[number];
 export type ProtocolVersion = (typeof PROTOCOL_VERSIONS)[number];
-export const LATEST_PROTOCOL: ProtocolVersion = '2025-11-25';
+
+/** The newest revision this server speaks. */
+export const LATEST_PROTOCOL: ProtocolVersion = '2026-07-28';
+
+/**
+ * Revision `initialize` falls back to when the client asks for one this server
+ * cannot negotiate there. A handshake can only select a legacy revision.
+ */
+export const LATEST_LEGACY_PROTOCOL: LegacyProtocolVersion = '2025-11-25';
+
+/** Supported revisions newest first, as `server/discover` and version errors list them. */
+export const SUPPORTED_VERSIONS: readonly ProtocolVersion[] = [...PROTOCOL_VERSIONS].reverse();
 
 /**
  * Revision a Streamable HTTP server assumes when a client omits the
@@ -24,6 +58,14 @@ export function isSupportedProtocol(value: unknown): value is ProtocolVersion {
   return PROTOCOL_VERSIONS.some((version) => version === value);
 }
 
+export function isLegacyProtocol(value: unknown): value is LegacyProtocolVersion {
+  return LEGACY_PROTOCOL_VERSIONS.some((version) => version === value);
+}
+
+export function isModernProtocol(value: unknown): value is ModernProtocolVersion {
+  return MODERN_PROTOCOL_VERSIONS.some((version) => version === value);
+}
+
 /**
  * JSON-RPC batching exists only in revision 2025-03-26 (and is tolerated for
  * 2024-11-05 clients); revision 2025-06-18 removed it. Revisions are ISO dates,
@@ -31,6 +73,28 @@ export function isSupportedProtocol(value: unknown): value is ProtocolVersion {
  */
 export function protocolAllowsBatching(version: ProtocolVersion): boolean {
   return version < '2025-06-18';
+}
+
+/** Reserved `_meta` keys of the modern era. */
+export const META_KEYS = {
+  protocolVersion: 'io.modelcontextprotocol/protocolVersion',
+  clientCapabilities: 'io.modelcontextprotocol/clientCapabilities',
+  serverInfo: 'io.modelcontextprotocol/serverInfo',
+} as const;
+
+/** The `_meta` object of a message's params, when it has one. */
+export function requestMeta(message: unknown): Record<string, unknown> | undefined {
+  const params = (message as { params?: unknown } | null)?.params;
+  if (typeof params !== 'object' || params === null) return undefined;
+  const meta = (params as { _meta?: unknown })._meta;
+  return typeof meta === 'object' && meta !== null && !Array.isArray(meta)
+    ? (meta as Record<string, unknown>)
+    : undefined;
+}
+
+/** The protocol revision a message names in `_meta`, if any. */
+export function metaProtocolVersion(message: unknown): unknown {
+  return requestMeta(message)?.[META_KEYS.protocolVersion];
 }
 
 export interface JsonRpcRequest {
@@ -44,7 +108,7 @@ export interface JsonRpcResponse {
   jsonrpc: '2.0';
   id: string | number | null;
   result?: unknown;
-  error?: { code: number; message: string };
+  error?: { code: number; message: string; data?: unknown };
 }
 
 /** JSON-RPC 2.0 error codes this server emits. */
@@ -53,14 +117,30 @@ export const JSON_RPC_ERRORS = {
   invalidRequest: -32600,
   methodNotFound: -32601,
   invalidParams: -32602,
+  /** Revision 2026-07-28: an HTTP header disagrees with the body, or is missing. */
+  headerMismatch: -32020,
+  /** Revision 2026-07-28: the requested protocol revision is not served here. */
+  unsupportedProtocolVersion: -32022,
 } as const;
 
 export function rpcError(
   id: string | number | null,
   code: number,
   message: string,
+  data?: unknown,
 ): JsonRpcResponse {
-  return { jsonrpc: '2.0', id, error: { code, message } };
+  return { jsonrpc: '2.0', id, error: { code, message, ...(data === undefined ? {} : { data }) } };
+}
+
+/** The `UnsupportedProtocolVersion` error, listing what this server does support. */
+export function unsupportedProtocolError(
+  id: string | number | null,
+  requested: unknown,
+): JsonRpcResponse {
+  return rpcError(id, JSON_RPC_ERRORS.unsupportedProtocolVersion, 'Unsupported protocol version', {
+    supported: SUPPORTED_VERSIONS,
+    requested,
+  });
 }
 
 export interface ToolResult {
