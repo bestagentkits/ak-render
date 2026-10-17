@@ -116,6 +116,15 @@ export type { NormalizeResult } from './spec/normalize.js';
 export { normalize, normalizeSpec } from './spec/normalize.js';
 export type { ParseOptions } from './spec/parse.js';
 export { parseSpec } from './spec/parse.js';
+export type {
+  JsonPatchOperation,
+  PatchChange,
+  PatchOptions,
+  PatchResult,
+} from './spec/patch.js';
+export { MAX_PATCH_OPERATIONS, patch, specHash } from './spec/patch.js';
+export type { PatchTextResult } from './spec/patch-text.js';
+export { patchSpecText } from './spec/patch-text.js';
 export type { EmbedProvider } from './spec/providers.js';
 export {
   EMBED_PROVIDER_NAMES,

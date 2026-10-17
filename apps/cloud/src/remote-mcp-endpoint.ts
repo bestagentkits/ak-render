@@ -49,6 +49,7 @@ import {
   ICON_PACKS_TOOL,
   type McpTool,
   MOTIONS_TOOL,
+  PATCH_TOOL,
   optionalTheme,
   RECIPE_TOOL,
   RECIPES_TOOL,
@@ -75,9 +76,9 @@ import { renderArtifact } from './render.js';
 import { createArtifact, createShare } from './share.js';
 
 export const REMOTE_INSTRUCTIONS = `AK Render compiles a Page Spec (YAML or JSON) into one self-contained, offline HTML file.
-Loop: call catalog once (or search-catalog with a few words), describe only the block types you plan to use (several at once with types, compact: true for the short form), find icons by meaning with search-icons (describe-icon, icon-packs for detail), find motion recipes with motions, optionally start from a recipe (list them with recipes), validate the spec and fix every diagnostic by its JSON path (repair applies the safe fixes; validate with suggest: true lists the rest as JSON Patches; audit-motion checks the motion it names), then render (themes lists the presets).
+Loop: call catalog once (or search-catalog with a few words), describe only the block types you plan to use (several at once with types, compact: true for the short form), find icons by meaning with search-icons (describe-icon, icon-packs for detail), find motion recipes with motions, optionally start from a recipe (list them with recipes), validate the spec and fix every diagnostic by its JSON path (repair applies the safe fixes; validate with suggest: true lists the rest as JSON Patches; audit-motion checks the motion it names), then render (themes lists the presets). For a later edit, send patch ops (paths like /blocks/@<id>/title) instead of rewriting the spec.
 On this remote server render stores the page and returns its artifactUrl and a short summary, never the HTML. Pass share: true for a longer-lived share link.
-validate, repair, audit-motion and render need an AgentKit API key or OAuth access token as the bearer in the Authorization header.
+validate, repair, patch, audit-motion and render need an AgentKit API key or OAuth access token as the bearer in the Authorization header.
 Describe meaning, not presentation: the compiler owns layout, colour, typography and motion.`;
 
 /** Per-request context every remote tool call receives. */
@@ -147,6 +148,16 @@ const REMOTE_VALIDATE_TOOL: RemoteTool = {
     const guarded = await guard(context, ['render'], 'validate');
     if (!guarded.ok) return guarded.result;
     return VALIDATE_TOOL.run(args, context);
+  },
+};
+
+/** `patch` is metered like `validate`: it parses and validates, and stores nothing. */
+const REMOTE_PATCH_TOOL: RemoteTool = {
+  ...PATCH_TOOL,
+  run: async (args, context) => {
+    const guarded = await guard(context, ['render'], 'validate');
+    if (!guarded.ok) return guarded.result;
+    return PATCH_TOOL.run(args, context);
   },
 };
 
@@ -231,6 +242,7 @@ export const REMOTE_TOOLS: readonly RemoteTool[] = [
   anonymous(RECIPE_TOOL),
   REMOTE_VALIDATE_TOOL,
   REMOTE_REPAIR_TOOL,
+  REMOTE_PATCH_TOOL,
   REMOTE_AUDIT_MOTION_TOOL,
   REMOTE_RENDER_TOOL,
   anonymous(BUILTIN_THEMES_TOOL),
