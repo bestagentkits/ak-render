@@ -1,10 +1,10 @@
 {
   "artifact": "benchmark-browser",
   "producer": "tests/browser/benchmark.spec.ts",
-  "measuredAt": "2026-09-22T06:40:18.558Z",
+  "measuredAt": "2026-10-17T12:36:10.102Z",
   "compiler": {
     "name": "@bestagentkits/render",
-    "version": "0.1.1-next.1"
+    "version": "0.3.0"
   },
   "method": {
     "environment": "Playwright chromium, artifacts opened over file://",
@@ -20,11 +20,11 @@
   "fixtures": [
     {
       "fixture": "all-components.yaml",
-      "bytes": 64972,
+      "bytes": 247008,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-SF3ZEE/all-components.html",
-        "file:///tmp/ak-render-benchmark-SF3ZEE/assets/demo-poster.svg"
+        "file:///tmp/ak-render-benchmark-29148/all-components.html",
+        "file:///tmp/ak-render-benchmark-29148/assets/demo-poster.svg"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -72,11 +72,164 @@
       ]
     },
     {
-      "fixture": "brainstorm.yaml",
-      "bytes": 27694,
+      "fixture": "benchmark-report.yaml",
+      "bytes": 184349,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-SF3ZEE/brainstorm.html"
+        "file:///tmp/ak-render-benchmark-29148/benchmark-report.html"
+      ],
+      "externalRequests": [],
+      "a11yCritical": [],
+      "overflow": [
+        {
+          "width": 375,
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "overflows": false
+        },
+        {
+          "width": 768,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "overflows": false
+        },
+        {
+          "width": 1440,
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "overflows": false
+        }
+      ],
+      "interactions": [
+        {
+          "name": "theme-toggle",
+          "ok": true,
+          "detail": "dark -> light"
+        },
+        {
+          "name": "tabs-keyboard",
+          "ok": true,
+          "detail": "selected Table"
+        }
+      ]
+    },
+    {
+      "fixture": "brainstorm.yaml",
+      "bytes": 121313,
+      "consoleErrors": [],
+      "networkRequests": [
+        "file:///tmp/ak-render-benchmark-29148/brainstorm.html"
+      ],
+      "externalRequests": [],
+      "a11yCritical": [],
+      "overflow": [
+        {
+          "width": 375,
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "overflows": false
+        },
+        {
+          "width": 768,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "overflows": false
+        },
+        {
+          "width": 1440,
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "overflows": false
+        }
+      ],
+      "interactions": [
+        {
+          "name": "theme-toggle",
+          "ok": true,
+          "detail": "light -> dark"
+        }
+      ]
+    },
+    {
+      "fixture": "charts-v2.yaml",
+      "bytes": 187143,
+      "consoleErrors": [],
+      "networkRequests": [
+        "file:///tmp/ak-render-benchmark-29148/charts-v2.html"
+      ],
+      "externalRequests": [],
+      "a11yCritical": [],
+      "overflow": [
+        {
+          "width": 375,
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "overflows": false
+        },
+        {
+          "width": 768,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "overflows": false
+        },
+        {
+          "width": 1440,
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "overflows": false
+        }
+      ],
+      "interactions": [
+        {
+          "name": "theme-toggle",
+          "ok": true,
+          "detail": "dark -> light"
+        }
+      ]
+    },
+    {
+      "fixture": "complex-dashboard.yaml",
+      "bytes": 214642,
+      "consoleErrors": [],
+      "networkRequests": [
+        "file:///tmp/ak-render-benchmark-29148/complex-dashboard.html"
+      ],
+      "externalRequests": [],
+      "a11yCritical": [],
+      "overflow": [
+        {
+          "width": 375,
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "overflows": false
+        },
+        {
+          "width": 768,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "overflows": false
+        },
+        {
+          "width": 1440,
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "overflows": false
+        }
+      ],
+      "interactions": [
+        {
+          "name": "theme-toggle",
+          "ok": true,
+          "detail": "light -> dark"
+        }
+      ]
+    },
+    {
+      "fixture": "controls.yaml",
+      "bytes": 130513,
+      "consoleErrors": [],
+      "networkRequests": [
+        "file:///tmp/ak-render-benchmark-29148/controls.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -110,10 +263,10 @@
     },
     {
       "fixture": "dashboard.yaml",
-      "bytes": 36636,
+      "bytes": 147638,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-SF3ZEE/dashboard.html"
+        "file:///tmp/ak-render-benchmark-29148/dashboard.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -146,11 +299,11 @@
       ]
     },
     {
-      "fixture": "diff.yaml",
-      "bytes": 26488,
+      "fixture": "data-tables.yaml",
+      "bytes": 182061,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-SF3ZEE/diff.html"
+        "file:///tmp/ak-render-benchmark-29148/data-tables.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -183,11 +336,11 @@
       ]
     },
     {
-      "fixture": "explain.yaml",
-      "bytes": 30302,
+      "fixture": "diff.yaml",
+      "bytes": 118562,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-SF3ZEE/explain.html"
+        "file:///tmp/ak-render-benchmark-29148/diff.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -216,6 +369,118 @@
           "name": "theme-toggle",
           "ok": true,
           "detail": "light -> dark"
+        }
+      ]
+    },
+    {
+      "fixture": "engineering-widgets.yaml",
+      "bytes": 190063,
+      "consoleErrors": [],
+      "networkRequests": [
+        "file:///tmp/ak-render-benchmark-29148/engineering-widgets.html"
+      ],
+      "externalRequests": [],
+      "a11yCritical": [],
+      "overflow": [
+        {
+          "width": 375,
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "overflows": false
+        },
+        {
+          "width": 768,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "overflows": false
+        },
+        {
+          "width": 1440,
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "overflows": false
+        }
+      ],
+      "interactions": [
+        {
+          "name": "theme-toggle",
+          "ok": true,
+          "detail": "dark -> light"
+        }
+      ]
+    },
+    {
+      "fixture": "evidence-widgets.yaml",
+      "bytes": 136130,
+      "consoleErrors": [],
+      "networkRequests": [
+        "file:///tmp/ak-render-benchmark-29148/evidence-widgets.html",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-dashboard.webp"
+      ],
+      "externalRequests": [],
+      "a11yCritical": [],
+      "overflow": [
+        {
+          "width": 375,
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "overflows": false
+        },
+        {
+          "width": 768,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "overflows": false
+        },
+        {
+          "width": 1440,
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "overflows": false
+        }
+      ],
+      "interactions": [
+        {
+          "name": "theme-toggle",
+          "ok": true,
+          "detail": "light -> dark"
+        }
+      ]
+    },
+    {
+      "fixture": "explain.yaml",
+      "bytes": 128174,
+      "consoleErrors": [],
+      "networkRequests": [
+        "file:///tmp/ak-render-benchmark-29148/explain.html"
+      ],
+      "externalRequests": [],
+      "a11yCritical": [],
+      "overflow": [
+        {
+          "width": 375,
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "overflows": false
+        },
+        {
+          "width": 768,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "overflows": false
+        },
+        {
+          "width": 1440,
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "overflows": false
+        }
+      ],
+      "interactions": [
+        {
+          "name": "theme-toggle",
+          "ok": true,
+          "detail": "dark -> light"
         },
         {
           "name": "tabs-keyboard",
@@ -225,11 +490,122 @@
       ]
     },
     {
-      "fixture": "interactive.yaml",
-      "bytes": 41571,
+      "fixture": "icons.yaml",
+      "bytes": 125278,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-SF3ZEE/interactive.html"
+        "file:///tmp/ak-render-benchmark-29148/icons.html"
+      ],
+      "externalRequests": [],
+      "a11yCritical": [],
+      "overflow": [
+        {
+          "width": 375,
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "overflows": false
+        },
+        {
+          "width": 768,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "overflows": false
+        },
+        {
+          "width": 1440,
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "overflows": false
+        }
+      ],
+      "interactions": [
+        {
+          "name": "theme-toggle",
+          "ok": true,
+          "detail": "light -> dark"
+        }
+      ]
+    },
+    {
+      "fixture": "incident-report.yaml",
+      "bytes": 168933,
+      "consoleErrors": [],
+      "networkRequests": [
+        "file:///tmp/ak-render-benchmark-29148/incident-report.html"
+      ],
+      "externalRequests": [],
+      "a11yCritical": [],
+      "overflow": [
+        {
+          "width": 375,
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "overflows": false
+        },
+        {
+          "width": 768,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "overflows": false
+        },
+        {
+          "width": 1440,
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "overflows": false
+        }
+      ],
+      "interactions": [
+        {
+          "name": "theme-toggle",
+          "ok": true,
+          "detail": "dark -> light"
+        }
+      ]
+    },
+    {
+      "fixture": "interactive-data-explorer.yaml",
+      "bytes": 177473,
+      "consoleErrors": [],
+      "networkRequests": [
+        "file:///tmp/ak-render-benchmark-29148/interactive-data-explorer.html"
+      ],
+      "externalRequests": [],
+      "a11yCritical": [],
+      "overflow": [
+        {
+          "width": 375,
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "overflows": false
+        },
+        {
+          "width": 768,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "overflows": false
+        },
+        {
+          "width": 1440,
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "overflows": false
+        }
+      ],
+      "interactions": [
+        {
+          "name": "theme-toggle",
+          "ok": true,
+          "detail": "light -> dark"
+        }
+      ]
+    },
+    {
+      "fixture": "interactive.yaml",
+      "bytes": 136987,
+      "consoleErrors": [],
+      "networkRequests": [
+        "file:///tmp/ak-render-benchmark-29148/interactive.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -278,15 +654,21 @@
     },
     {
       "fixture": "media.yaml",
-      "bytes": 29874,
+      "bytes": 130341,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-SF3ZEE/media.html",
-        "file:///tmp/ak-render-benchmark-SF3ZEE/assets/demo-poster.svg",
-        "file:///tmp/ak-render-benchmark-SF3ZEE/assets/compiler-pipeline.svg",
-        "file:///tmp/ak-render-benchmark-SF3ZEE/assets/theme-presets.svg",
-        "file:///tmp/ak-render-benchmark-SF3ZEE/assets/interaction-trace.svg",
-        "file:///tmp/ak-render-benchmark-SF3ZEE/assets/cover.svg"
+        "file:///tmp/ak-render-benchmark-29148/media.html",
+        "file:///tmp/ak-render-benchmark-29148/assets/walkthrough-poster.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/demo-poster.svg",
+        "file:///tmp/ak-render-benchmark-29148/assets/walkthrough.webm",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-dashboard.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-explain-light.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-diff.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-plan.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-gallery.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-components.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-dashboard-dark.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/cover.svg"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -317,6 +699,11 @@
           "detail": "light -> dark"
         },
         {
+          "name": "slider-keyboard",
+          "ok": true,
+          "detail": "value 51"
+        },
+        {
           "name": "carousel-next",
           "ok": true,
           "detail": "1 / 3 -> 2 / 3"
@@ -324,11 +711,91 @@
       ]
     },
     {
-      "fixture": "plan.yaml",
-      "bytes": 27224,
+      "fixture": "motion-recipes.yaml",
+      "bytes": 151461,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-SF3ZEE/plan.html"
+        "file:///tmp/ak-render-benchmark-29148/motion-recipes.html"
+      ],
+      "externalRequests": [],
+      "a11yCritical": [],
+      "overflow": [
+        {
+          "width": 375,
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "overflows": false
+        },
+        {
+          "width": 768,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "overflows": false
+        },
+        {
+          "width": 1440,
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "overflows": false
+        }
+      ],
+      "interactions": [
+        {
+          "name": "theme-toggle",
+          "ok": true,
+          "detail": "dark -> light"
+        },
+        {
+          "name": "tabs-keyboard",
+          "ok": true,
+          "detail": "selected Pricing"
+        }
+      ]
+    },
+    {
+      "fixture": "newspaper-frontpage.yaml",
+      "bytes": 208138,
+      "consoleErrors": [],
+      "networkRequests": [
+        "file:///tmp/ak-render-benchmark-29148/newspaper-frontpage.html",
+        "file:///tmp/ak-render-benchmark-29148/assets/press-harbour.svg"
+      ],
+      "externalRequests": [],
+      "a11yCritical": [],
+      "overflow": [
+        {
+          "width": 375,
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "overflows": false
+        },
+        {
+          "width": 768,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "overflows": false
+        },
+        {
+          "width": 1440,
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "overflows": false
+        }
+      ],
+      "interactions": [
+        {
+          "name": "theme-toggle",
+          "ok": true,
+          "detail": "light -> dark"
+        }
+      ]
+    },
+    {
+      "fixture": "plan-review.yaml",
+      "bytes": 145924,
+      "consoleErrors": [],
+      "networkRequests": [
+        "file:///tmp/ak-render-benchmark-29148/plan-review.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -361,11 +828,347 @@
       ]
     },
     {
-      "fixture": "recap.yaml",
-      "bytes": 30834,
+      "fixture": "plan.yaml",
+      "bytes": 111899,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-SF3ZEE/recap.html"
+        "file:///tmp/ak-render-benchmark-29148/plan.html"
+      ],
+      "externalRequests": [],
+      "a11yCritical": [],
+      "overflow": [
+        {
+          "width": 375,
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "overflows": false
+        },
+        {
+          "width": 768,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "overflows": false
+        },
+        {
+          "width": 1440,
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "overflows": false
+        }
+      ],
+      "interactions": [
+        {
+          "name": "theme-toggle",
+          "ok": true,
+          "detail": "light -> dark"
+        }
+      ]
+    },
+    {
+      "fixture": "product-case-study.yaml",
+      "bytes": 136079,
+      "consoleErrors": [],
+      "networkRequests": [
+        "file:///tmp/ak-render-benchmark-29148/product-case-study.html",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-dashboard.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-plan.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-diff.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-recap.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-explain-light.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-showcase.webp"
+      ],
+      "externalRequests": [],
+      "a11yCritical": [],
+      "overflow": [
+        {
+          "width": 375,
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "overflows": false
+        },
+        {
+          "width": 768,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "overflows": false
+        },
+        {
+          "width": 1440,
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "overflows": false
+        }
+      ],
+      "interactions": [
+        {
+          "name": "theme-toggle",
+          "ok": true,
+          "detail": "dark -> light"
+        }
+      ]
+    },
+    {
+      "fixture": "product-widgets.yaml",
+      "bytes": 162624,
+      "consoleErrors": [],
+      "networkRequests": [
+        "file:///tmp/ak-render-benchmark-29148/product-widgets.html",
+        "file:///tmp/ak-render-benchmark-29148/assets/logo-northwind.svg",
+        "file:///tmp/ak-render-benchmark-29148/assets/logo-lumen.svg",
+        "file:///tmp/ak-render-benchmark-29148/assets/logo-orbit.svg",
+        "file:///tmp/ak-render-benchmark-29148/assets/logo-harbor.svg",
+        "file:///tmp/ak-render-benchmark-29148/assets/logo-quill.svg",
+        "file:///tmp/ak-render-benchmark-29148/assets/logo-vertex.svg"
+      ],
+      "externalRequests": [],
+      "a11yCritical": [],
+      "overflow": [
+        {
+          "width": 375,
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "overflows": false
+        },
+        {
+          "width": 768,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "overflows": false
+        },
+        {
+          "width": 1440,
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "overflows": false
+        }
+      ],
+      "interactions": [
+        {
+          "name": "theme-toggle",
+          "ok": true,
+          "detail": "light -> dark"
+        }
+      ]
+    },
+    {
+      "fixture": "recap.yaml",
+      "bytes": 132954,
+      "consoleErrors": [],
+      "networkRequests": [
+        "file:///tmp/ak-render-benchmark-29148/recap.html"
+      ],
+      "externalRequests": [],
+      "a11yCritical": [],
+      "overflow": [
+        {
+          "width": 375,
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "overflows": false
+        },
+        {
+          "width": 768,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "overflows": false
+        },
+        {
+          "width": 1440,
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "overflows": false
+        }
+      ],
+      "interactions": [
+        {
+          "name": "theme-toggle",
+          "ok": true,
+          "detail": "dark -> light"
+        }
+      ]
+    },
+    {
+      "fixture": "research-report.yaml",
+      "bytes": 139758,
+      "consoleErrors": [],
+      "networkRequests": [
+        "file:///tmp/ak-render-benchmark-29148/research-report.html",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-dashboard.webp"
+      ],
+      "externalRequests": [],
+      "a11yCritical": [],
+      "overflow": [
+        {
+          "width": 375,
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "overflows": false
+        },
+        {
+          "width": 768,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "overflows": false
+        },
+        {
+          "width": 1440,
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "overflows": false
+        }
+      ],
+      "interactions": [
+        {
+          "name": "theme-toggle",
+          "ok": true,
+          "detail": "light -> dark"
+        }
+      ]
+    },
+    {
+      "fixture": "responsive-layouts.yaml",
+      "bytes": 157439,
+      "consoleErrors": [],
+      "networkRequests": [
+        "file:///tmp/ak-render-benchmark-29148/responsive-layouts.html"
+      ],
+      "externalRequests": [],
+      "a11yCritical": [],
+      "overflow": [
+        {
+          "width": 375,
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "overflows": false
+        },
+        {
+          "width": 768,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "overflows": false
+        },
+        {
+          "width": 1440,
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "overflows": false
+        }
+      ],
+      "interactions": [
+        {
+          "name": "theme-toggle",
+          "ok": true,
+          "detail": "dark -> light"
+        }
+      ]
+    },
+    {
+      "fixture": "rich-composition.yaml",
+      "bytes": 154761,
+      "consoleErrors": [],
+      "networkRequests": [
+        "file:///tmp/ak-render-benchmark-29148/rich-composition.html",
+        "file:///tmp/ak-render-benchmark-29148/assets/compiler-pipeline.svg"
+      ],
+      "externalRequests": [],
+      "a11yCritical": [],
+      "overflow": [
+        {
+          "width": 375,
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "overflows": false
+        },
+        {
+          "width": 768,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "overflows": false
+        },
+        {
+          "width": 1440,
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "overflows": false
+        }
+      ],
+      "interactions": [
+        {
+          "name": "theme-toggle",
+          "ok": true,
+          "detail": "light -> dark"
+        },
+        {
+          "name": "tabs-keyboard",
+          "ok": true,
+          "detail": "selected Coverage"
+        },
+        {
+          "name": "carousel-next",
+          "ok": true,
+          "detail": "1 / 3 -> 2 / 3"
+        }
+      ]
+    },
+    {
+      "fixture": "showcase.yaml",
+      "bytes": 154873,
+      "consoleErrors": [],
+      "networkRequests": [
+        "file:///tmp/ak-render-benchmark-29148/showcase.html",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-dashboard.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/walkthrough-poster.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-explain-light.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/crop-chart.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/crop-compare.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/walkthrough.webm",
+        "file:///tmp/ak-render-benchmark-29148/assets/crop-timeline.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/crop-diagram.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/crop-donut.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-explain-dark.webp",
+        "file:///tmp/ak-render-benchmark-29148/assets/shot-dashboard-dark.webp"
+      ],
+      "externalRequests": [],
+      "a11yCritical": [],
+      "overflow": [
+        {
+          "width": 375,
+          "scrollWidth": 375,
+          "clientWidth": 375,
+          "overflows": false
+        },
+        {
+          "width": 768,
+          "scrollWidth": 768,
+          "clientWidth": 768,
+          "overflows": false
+        },
+        {
+          "width": 1440,
+          "scrollWidth": 1440,
+          "clientWidth": 1440,
+          "overflows": false
+        }
+      ],
+      "interactions": [
+        {
+          "name": "theme-toggle",
+          "ok": true,
+          "detail": "dark -> light"
+        },
+        {
+          "name": "slider-keyboard",
+          "ok": true,
+          "detail": "value 51"
+        }
+      ]
+    },
+    {
+      "fixture": "theme-dialects.yaml",
+      "bytes": 179363,
+      "consoleErrors": [],
+      "networkRequests": [
+        "file:///tmp/ak-render-benchmark-29148/theme-dialects.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -399,10 +1202,10 @@
     },
     {
       "fixture": "theme-showcase.yaml",
-      "bytes": 33842,
+      "bytes": 134358,
       "consoleErrors": [],
       "networkRequests": [
-        "file:///tmp/ak-render-benchmark-SF3ZEE/theme-showcase.html"
+        "file:///tmp/ak-render-benchmark-29148/theme-showcase.html"
       ],
       "externalRequests": [],
       "a11yCritical": [],
@@ -441,7 +1244,7 @@
     }
   ],
   "totals": {
-    "fixtures": 10,
+    "fixtures": 30,
     "consoleErrors": 0,
     "externalRequests": 0,
     "a11yCritical": 0,

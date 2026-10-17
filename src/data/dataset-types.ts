@@ -46,6 +46,8 @@ export interface MaterializedData {
    */
   fields: string[];
   rows: DataRow[];
+  /** The `transform.rollup` total, kept apart from `rows`; only a block that shows totals takes one. */
+  total?: DataRow;
 }
 
 export function isDataScalar(value: unknown): value is DataScalar {

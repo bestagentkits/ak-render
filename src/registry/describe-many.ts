@@ -36,7 +36,7 @@ export interface CompactBlockDescription {
   /** Allowed direct parents, when the block may only sit inside some types. */
   parents?: string[];
   /** Present when the block reads rows from `dataRef` or inline `data`. */
-  data?: { required: boolean; description: string };
+  data?: { required: boolean; description: string; total?: boolean };
   /** Actions the block can trigger, when it has any. */
   actions?: string[];
   /**

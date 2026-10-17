@@ -27,6 +27,18 @@ Release mechanics and the compatibility contract live in
   an incomplete run fails the gate. The MCP servers add `audit-ui` (quick only
   remotely); the library exports `auditUi`, `auditUiQuick` and `UI_RULES`.
   See [docs/audit-ui.md](./docs/audit-ui.md).
+- Derived metrics and KPI citations. `transform.derive` adds fields from a
+  closed list of operations (`ratio`, `percentOf`, `delta`, `percentChange`,
+  `share`, `cumulative`), and on a `data-table` `transform.rollup` adds a sum
+  or mean total row as the table footer; neither accepts an expression. Value
+  formats take `signed: true` for a leading `+` (not the benchmark and
+  breakdown widgets, which sign their own differences). A `kpi` item may
+  `cite` a dataset field with an aggregate: the compiler fills an omitted
+  `value` from it, or warns (`rule: kpi-cite`) when the written value
+  disagrees with the data. `value` is now optional on a `kpi` item that has a
+  `cite`. See
+  [docs/data-and-state.md](./docs/data-and-state.md#derived-fields).
+
 - Compose. `ak-render compose input.yaml --out page.html` builds a whole page
   from a typed intent and content slots, with no Page Spec to write. The first
   intent is `investment-report` (thesis and recommendation, key facts,

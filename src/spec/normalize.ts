@@ -10,6 +10,7 @@
 
 import { checkSeriesLengths } from '../blocks/chart/chart.js';
 import type { DataRow } from '../data/dataset-types.js';
+import { resolveKpiCites } from '../data/kpi-cite.js';
 import { type BlockDataInput, resolveBlockData } from '../data/resolve-block-data.js';
 import { validateDatasets } from '../data/validate-datasets.js';
 import { type Diagnostic, DiagnosticBag, pathIndex, pathKey } from '../diagnostics.js';
@@ -713,8 +714,13 @@ function buildNode(
       if (!node.runtimeFeatures.includes('motion')) node.runtimeFeatures.push('motion');
     }
   }
+  if (definition.type === 'kpi') {
+    resolveKpiCites(node, rawProps.items, context.datasets, context.bag);
+  }
   if (definition.data !== undefined) {
-    const data = resolveBlockData(dataInput, context.datasets, path, context.bag);
+    const data = resolveBlockData(dataInput, context.datasets, path, context.bag, {
+      total: definition.data.total === true,
+    });
     if (data !== undefined) node.data = data;
     else if (
       definition.data.required &&

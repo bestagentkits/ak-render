@@ -41,6 +41,22 @@ export const DATA_TABLE_FEATURE = 'data-table';
 const NUMERIC_TEXT = /^-?\d+(?:\.\d+)?(?:e[+-]?\d+)?$/i;
 
 /** Compare two raw cell values the way the sort runtime does. */
+/**
+ * The rollup labels a dataset field, which the table may not show. Move the
+ * label to the first shown column that is not totalled, so the footer always
+ * says what it is.
+ */
+function labelledTotal(
+  total: DataRow | undefined,
+  columns: readonly { key: string }[],
+): DataRow | undefined {
+  if (total === undefined) return undefined;
+  const label = Object.entries(total).find(([, value]) => typeof value === 'string');
+  if (label === undefined || columns.some((column) => column.key === label[0])) return total;
+  const home = columns.find((column) => fieldValue(total, column.key) === null);
+  return home === undefined ? total : { ...total, [home.key]: label[1] };
+}
+
 function compareRaw(a: string, b: string, numeric: boolean): number {
   if (numeric) return Number(a) - Number(b);
   return a < b ? -1 : a > b ? 1 : 0;
@@ -135,6 +151,13 @@ function render(node: IrNode, context: RenderContext): string {
           .join('')}</tr>`,
     )
     .join('');
+  const total = labelledTotal(node.data?.total, columns);
+  const foot =
+    total === undefined
+      ? ''
+      : `<tfoot><tr class="ak-dt-total">${columns
+          .map((column, index) => renderCell(column, total, index === 0))
+          .join('')}</tr></tfoot>`;
   const searchable = rows.length > SEARCH_THRESHOLD && !filteredByBar(node, context);
   const empty =
     rows.length === 0
@@ -152,7 +175,7 @@ function render(node: IrNode, context: RenderContext): string {
     [
       titleHeader(node),
       searchable ? tools(node, rows.length) : '',
-      `<div class="ak-table-wrap"><table>${caption(node)}<thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`,
+      `<div class="ak-table-wrap"><table>${caption(node)}<thead><tr>${head}</tr></thead><tbody>${body}</tbody>${foot}</table></div>`,
       empty,
     ].join(''),
   );
@@ -168,7 +191,12 @@ export const dataTableBlock: BlockModule = {
     purpose: 'Typed, sortable, searchable table of dataset rows.',
     summary:
       'Data table: typed columns (number, percent, badge, link, progress, sparkline), sort, search.',
-    data: { required: true, description: 'Rows to list; each column reads one field.' },
+    data: {
+      required: true,
+      description:
+        'Rows to list; each column reads one field. A transform.rollup total renders as the table footer.',
+      total: true,
+    },
     filterable: true,
     props: {
       title: OPTIONAL_TITLE,

@@ -890,6 +890,231 @@
         }
       }
     },
+    "transform": {
+      "type": "object",
+      "properties": {
+        "filter": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "equals": {
+                "description": "A string, number, boolean, or null.",
+                "$ref": "#/$defs/dataScalar"
+              },
+              "notEquals": {
+                "description": "A string, number, boolean, or null.",
+                "$ref": "#/$defs/dataScalar"
+              },
+              "in": {
+                "type": "array",
+                "items": {
+                  "description": "A string, number, boolean, or null.",
+                  "$ref": "#/$defs/dataScalar"
+                },
+                "minItems": 1,
+                "maxItems": 20
+              },
+              "gt": {
+                "type": "number"
+              },
+              "gte": {
+                "type": "number"
+              },
+              "lt": {
+                "type": "number"
+              },
+              "lte": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "field"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 8
+        },
+        "groupBy": {
+          "type": "object",
+          "properties": {
+            "field": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "aggregate": {
+              "type": "string",
+              "maxLength": 2000,
+              "enum": [
+                "count",
+                "sum",
+                "mean",
+                "min",
+                "max"
+              ]
+            },
+            "value": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "as": {
+              "type": "string",
+              "maxLength": 64
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "field",
+            "aggregate"
+          ]
+        },
+        "derive": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "as": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "op": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "ratio",
+                  "percentOf",
+                  "delta",
+                  "percentChange",
+                  "share",
+                  "cumulative"
+                ]
+              },
+              "field": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "base": {
+                "type": "string",
+                "maxLength": 64
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "as",
+              "op",
+              "field"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 8
+        },
+        "sort": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "by": {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                "direction": {
+                  "type": "string",
+                  "maxLength": 2000,
+                  "enum": [
+                    "asc",
+                    "desc"
+                  ]
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "by"
+              ]
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "by": {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  "direction": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "enum": [
+                      "asc",
+                      "desc"
+                    ]
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "by"
+                ]
+              },
+              "minItems": 1,
+              "maxItems": 3
+            }
+          ]
+        },
+        "select": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "minItems": 1,
+          "maxItems": 24
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "rollup": {
+          "type": "object",
+          "properties": {
+            "fields": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "minItems": 1,
+              "maxItems": 12
+            },
+            "aggregate": {
+              "type": "string",
+              "maxLength": 2000,
+              "enum": [
+                "sum",
+                "mean"
+              ]
+            },
+            "label": {
+              "type": "string",
+              "maxLength": 40
+            },
+            "labelField": {
+              "type": "string",
+              "maxLength": 64
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "fields"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
     "datasets": {
       "type": "object",
       "description": "Named datasets that blocks reference with `dataRef`.",
@@ -2966,6 +3191,86 @@
                 "type": "string",
                 "maxLength": 40
               },
+              "cite": {
+                "type": "object",
+                "properties": {
+                  "dataRef": {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  "field": {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  "aggregate": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "enum": [
+                      "last",
+                      "first",
+                      "sum",
+                      "mean",
+                      "min",
+                      "max",
+                      "count"
+                    ]
+                  },
+                  "transform": {
+                    "description": "The bounded transform a data block takes, applied before the aggregate.",
+                    "$ref": "#/$defs/transform"
+                  },
+                  "format": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "enum": [
+                      "text",
+                      "number",
+                      "integer",
+                      "compact",
+                      "percent",
+                      "currency",
+                      "duration",
+                      "bytes",
+                      "date"
+                    ]
+                  },
+                  "unit": {
+                    "type": "string",
+                    "maxLength": 12
+                  },
+                  "currency": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "enum": [
+                      "USD",
+                      "EUR",
+                      "GBP",
+                      "JPY",
+                      "CNY",
+                      "INR",
+                      "VND",
+                      "AUD",
+                      "CAD",
+                      "CHF",
+                      "SGD",
+                      "KRW"
+                    ]
+                  },
+                  "decimals": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 4
+                  },
+                  "signed": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "dataRef",
+                  "field"
+                ]
+              },
               "delta": {
                 "type": "string",
                 "maxLength": 24
@@ -3003,8 +3308,7 @@
             },
             "additionalProperties": false,
             "required": [
-              "label",
-              "value"
+              "label"
             ]
           },
           "minItems": 1,
@@ -4617,6 +4921,9 @@
                 "minimum": 0,
                 "maximum": 4
               },
+              "signed": {
+                "type": "boolean"
+              },
               "align": {
                 "type": "string",
                 "maxLength": 2000,
@@ -4680,155 +4987,7 @@
           "$ref": "#/$defs/dataRows"
         },
         "transform": {
-          "type": "object",
-          "properties": {
-            "filter": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "field": {
-                    "type": "string",
-                    "maxLength": 64
-                  },
-                  "equals": {
-                    "description": "A string, number, boolean, or null.",
-                    "$ref": "#/$defs/dataScalar"
-                  },
-                  "notEquals": {
-                    "description": "A string, number, boolean, or null.",
-                    "$ref": "#/$defs/dataScalar"
-                  },
-                  "in": {
-                    "type": "array",
-                    "items": {
-                      "description": "A string, number, boolean, or null.",
-                      "$ref": "#/$defs/dataScalar"
-                    },
-                    "minItems": 1,
-                    "maxItems": 20
-                  },
-                  "gt": {
-                    "type": "number"
-                  },
-                  "gte": {
-                    "type": "number"
-                  },
-                  "lt": {
-                    "type": "number"
-                  },
-                  "lte": {
-                    "type": "number"
-                  }
-                },
-                "additionalProperties": false,
-                "required": [
-                  "field"
-                ]
-              },
-              "minItems": 1,
-              "maxItems": 8
-            },
-            "groupBy": {
-              "type": "object",
-              "properties": {
-                "field": {
-                  "type": "string",
-                  "maxLength": 64
-                },
-                "aggregate": {
-                  "type": "string",
-                  "maxLength": 2000,
-                  "enum": [
-                    "count",
-                    "sum",
-                    "mean",
-                    "min",
-                    "max"
-                  ]
-                },
-                "value": {
-                  "type": "string",
-                  "maxLength": 64
-                },
-                "as": {
-                  "type": "string",
-                  "maxLength": 64
-                }
-              },
-              "additionalProperties": false,
-              "required": [
-                "field",
-                "aggregate"
-              ]
-            },
-            "sort": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "by": {
-                      "type": "string",
-                      "maxLength": 64
-                    },
-                    "direction": {
-                      "type": "string",
-                      "maxLength": 2000,
-                      "enum": [
-                        "asc",
-                        "desc"
-                      ]
-                    }
-                  },
-                  "additionalProperties": false,
-                  "required": [
-                    "by"
-                  ]
-                },
-                {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "by": {
-                        "type": "string",
-                        "maxLength": 64
-                      },
-                      "direction": {
-                        "type": "string",
-                        "maxLength": 2000,
-                        "enum": [
-                          "asc",
-                          "desc"
-                        ]
-                      }
-                    },
-                    "additionalProperties": false,
-                    "required": [
-                      "by"
-                    ]
-                  },
-                  "minItems": 1,
-                  "maxItems": 3
-                }
-              ]
-            },
-            "select": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "maxLength": 64
-              },
-              "minItems": 1,
-              "maxItems": 24
-            },
-            "limit": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 200
-            }
-          },
-          "additionalProperties": false
+          "$ref": "#/$defs/transform"
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
@@ -4987,6 +5146,9 @@
               "minimum": 0,
               "maximum": 4
             },
+            "signed": {
+              "type": "boolean"
+            },
             "min": {
               "type": "number"
             },
@@ -5049,6 +5211,9 @@
               "minimum": 0,
               "maximum": 4
             },
+            "signed": {
+              "type": "boolean"
+            },
             "min": {
               "type": "number"
             },
@@ -5110,6 +5275,9 @@
               "type": "integer",
               "minimum": 0,
               "maximum": 4
+            },
+            "signed": {
+              "type": "boolean"
             },
             "min": {
               "type": "number"
@@ -5213,155 +5381,7 @@
           "$ref": "#/$defs/dataRows"
         },
         "transform": {
-          "type": "object",
-          "properties": {
-            "filter": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "field": {
-                    "type": "string",
-                    "maxLength": 64
-                  },
-                  "equals": {
-                    "description": "A string, number, boolean, or null.",
-                    "$ref": "#/$defs/dataScalar"
-                  },
-                  "notEquals": {
-                    "description": "A string, number, boolean, or null.",
-                    "$ref": "#/$defs/dataScalar"
-                  },
-                  "in": {
-                    "type": "array",
-                    "items": {
-                      "description": "A string, number, boolean, or null.",
-                      "$ref": "#/$defs/dataScalar"
-                    },
-                    "minItems": 1,
-                    "maxItems": 20
-                  },
-                  "gt": {
-                    "type": "number"
-                  },
-                  "gte": {
-                    "type": "number"
-                  },
-                  "lt": {
-                    "type": "number"
-                  },
-                  "lte": {
-                    "type": "number"
-                  }
-                },
-                "additionalProperties": false,
-                "required": [
-                  "field"
-                ]
-              },
-              "minItems": 1,
-              "maxItems": 8
-            },
-            "groupBy": {
-              "type": "object",
-              "properties": {
-                "field": {
-                  "type": "string",
-                  "maxLength": 64
-                },
-                "aggregate": {
-                  "type": "string",
-                  "maxLength": 2000,
-                  "enum": [
-                    "count",
-                    "sum",
-                    "mean",
-                    "min",
-                    "max"
-                  ]
-                },
-                "value": {
-                  "type": "string",
-                  "maxLength": 64
-                },
-                "as": {
-                  "type": "string",
-                  "maxLength": 64
-                }
-              },
-              "additionalProperties": false,
-              "required": [
-                "field",
-                "aggregate"
-              ]
-            },
-            "sort": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "by": {
-                      "type": "string",
-                      "maxLength": 64
-                    },
-                    "direction": {
-                      "type": "string",
-                      "maxLength": 2000,
-                      "enum": [
-                        "asc",
-                        "desc"
-                      ]
-                    }
-                  },
-                  "additionalProperties": false,
-                  "required": [
-                    "by"
-                  ]
-                },
-                {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "by": {
-                        "type": "string",
-                        "maxLength": 64
-                      },
-                      "direction": {
-                        "type": "string",
-                        "maxLength": 2000,
-                        "enum": [
-                          "asc",
-                          "desc"
-                        ]
-                      }
-                    },
-                    "additionalProperties": false,
-                    "required": [
-                      "by"
-                    ]
-                  },
-                  "minItems": 1,
-                  "maxItems": 3
-                }
-              ]
-            },
-            "select": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "maxLength": 64
-              },
-              "minItems": 1,
-              "maxItems": 24
-            },
-            "limit": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 200
-            }
-          },
-          "additionalProperties": false
+          "$ref": "#/$defs/transform"
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
@@ -5494,155 +5514,7 @@
           "$ref": "#/$defs/dataRows"
         },
         "transform": {
-          "type": "object",
-          "properties": {
-            "filter": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "field": {
-                    "type": "string",
-                    "maxLength": 64
-                  },
-                  "equals": {
-                    "description": "A string, number, boolean, or null.",
-                    "$ref": "#/$defs/dataScalar"
-                  },
-                  "notEquals": {
-                    "description": "A string, number, boolean, or null.",
-                    "$ref": "#/$defs/dataScalar"
-                  },
-                  "in": {
-                    "type": "array",
-                    "items": {
-                      "description": "A string, number, boolean, or null.",
-                      "$ref": "#/$defs/dataScalar"
-                    },
-                    "minItems": 1,
-                    "maxItems": 20
-                  },
-                  "gt": {
-                    "type": "number"
-                  },
-                  "gte": {
-                    "type": "number"
-                  },
-                  "lt": {
-                    "type": "number"
-                  },
-                  "lte": {
-                    "type": "number"
-                  }
-                },
-                "additionalProperties": false,
-                "required": [
-                  "field"
-                ]
-              },
-              "minItems": 1,
-              "maxItems": 8
-            },
-            "groupBy": {
-              "type": "object",
-              "properties": {
-                "field": {
-                  "type": "string",
-                  "maxLength": 64
-                },
-                "aggregate": {
-                  "type": "string",
-                  "maxLength": 2000,
-                  "enum": [
-                    "count",
-                    "sum",
-                    "mean",
-                    "min",
-                    "max"
-                  ]
-                },
-                "value": {
-                  "type": "string",
-                  "maxLength": 64
-                },
-                "as": {
-                  "type": "string",
-                  "maxLength": 64
-                }
-              },
-              "additionalProperties": false,
-              "required": [
-                "field",
-                "aggregate"
-              ]
-            },
-            "sort": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "by": {
-                      "type": "string",
-                      "maxLength": 64
-                    },
-                    "direction": {
-                      "type": "string",
-                      "maxLength": 2000,
-                      "enum": [
-                        "asc",
-                        "desc"
-                      ]
-                    }
-                  },
-                  "additionalProperties": false,
-                  "required": [
-                    "by"
-                  ]
-                },
-                {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "by": {
-                        "type": "string",
-                        "maxLength": 64
-                      },
-                      "direction": {
-                        "type": "string",
-                        "maxLength": 2000,
-                        "enum": [
-                          "asc",
-                          "desc"
-                        ]
-                      }
-                    },
-                    "additionalProperties": false,
-                    "required": [
-                      "by"
-                    ]
-                  },
-                  "minItems": 1,
-                  "maxItems": 3
-                }
-              ]
-            },
-            "select": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "maxLength": 64
-              },
-              "minItems": 1,
-              "maxItems": 24
-            },
-            "limit": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 200
-            }
-          },
-          "additionalProperties": false
+          "$ref": "#/$defs/transform"
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
@@ -5938,155 +5810,7 @@
           "$ref": "#/$defs/dataRows"
         },
         "transform": {
-          "type": "object",
-          "properties": {
-            "filter": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "field": {
-                    "type": "string",
-                    "maxLength": 64
-                  },
-                  "equals": {
-                    "description": "A string, number, boolean, or null.",
-                    "$ref": "#/$defs/dataScalar"
-                  },
-                  "notEquals": {
-                    "description": "A string, number, boolean, or null.",
-                    "$ref": "#/$defs/dataScalar"
-                  },
-                  "in": {
-                    "type": "array",
-                    "items": {
-                      "description": "A string, number, boolean, or null.",
-                      "$ref": "#/$defs/dataScalar"
-                    },
-                    "minItems": 1,
-                    "maxItems": 20
-                  },
-                  "gt": {
-                    "type": "number"
-                  },
-                  "gte": {
-                    "type": "number"
-                  },
-                  "lt": {
-                    "type": "number"
-                  },
-                  "lte": {
-                    "type": "number"
-                  }
-                },
-                "additionalProperties": false,
-                "required": [
-                  "field"
-                ]
-              },
-              "minItems": 1,
-              "maxItems": 8
-            },
-            "groupBy": {
-              "type": "object",
-              "properties": {
-                "field": {
-                  "type": "string",
-                  "maxLength": 64
-                },
-                "aggregate": {
-                  "type": "string",
-                  "maxLength": 2000,
-                  "enum": [
-                    "count",
-                    "sum",
-                    "mean",
-                    "min",
-                    "max"
-                  ]
-                },
-                "value": {
-                  "type": "string",
-                  "maxLength": 64
-                },
-                "as": {
-                  "type": "string",
-                  "maxLength": 64
-                }
-              },
-              "additionalProperties": false,
-              "required": [
-                "field",
-                "aggregate"
-              ]
-            },
-            "sort": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "by": {
-                      "type": "string",
-                      "maxLength": 64
-                    },
-                    "direction": {
-                      "type": "string",
-                      "maxLength": 2000,
-                      "enum": [
-                        "asc",
-                        "desc"
-                      ]
-                    }
-                  },
-                  "additionalProperties": false,
-                  "required": [
-                    "by"
-                  ]
-                },
-                {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "by": {
-                        "type": "string",
-                        "maxLength": 64
-                      },
-                      "direction": {
-                        "type": "string",
-                        "maxLength": 2000,
-                        "enum": [
-                          "asc",
-                          "desc"
-                        ]
-                      }
-                    },
-                    "additionalProperties": false,
-                    "required": [
-                      "by"
-                    ]
-                  },
-                  "minItems": 1,
-                  "maxItems": 3
-                }
-              ]
-            },
-            "select": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "maxLength": 64
-              },
-              "minItems": 1,
-              "maxItems": 24
-            },
-            "limit": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 200
-            }
-          },
-          "additionalProperties": false
+          "$ref": "#/$defs/transform"
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
@@ -6503,155 +6227,7 @@
           "$ref": "#/$defs/dataRows"
         },
         "transform": {
-          "type": "object",
-          "properties": {
-            "filter": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "field": {
-                    "type": "string",
-                    "maxLength": 64
-                  },
-                  "equals": {
-                    "description": "A string, number, boolean, or null.",
-                    "$ref": "#/$defs/dataScalar"
-                  },
-                  "notEquals": {
-                    "description": "A string, number, boolean, or null.",
-                    "$ref": "#/$defs/dataScalar"
-                  },
-                  "in": {
-                    "type": "array",
-                    "items": {
-                      "description": "A string, number, boolean, or null.",
-                      "$ref": "#/$defs/dataScalar"
-                    },
-                    "minItems": 1,
-                    "maxItems": 20
-                  },
-                  "gt": {
-                    "type": "number"
-                  },
-                  "gte": {
-                    "type": "number"
-                  },
-                  "lt": {
-                    "type": "number"
-                  },
-                  "lte": {
-                    "type": "number"
-                  }
-                },
-                "additionalProperties": false,
-                "required": [
-                  "field"
-                ]
-              },
-              "minItems": 1,
-              "maxItems": 8
-            },
-            "groupBy": {
-              "type": "object",
-              "properties": {
-                "field": {
-                  "type": "string",
-                  "maxLength": 64
-                },
-                "aggregate": {
-                  "type": "string",
-                  "maxLength": 2000,
-                  "enum": [
-                    "count",
-                    "sum",
-                    "mean",
-                    "min",
-                    "max"
-                  ]
-                },
-                "value": {
-                  "type": "string",
-                  "maxLength": 64
-                },
-                "as": {
-                  "type": "string",
-                  "maxLength": 64
-                }
-              },
-              "additionalProperties": false,
-              "required": [
-                "field",
-                "aggregate"
-              ]
-            },
-            "sort": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "by": {
-                      "type": "string",
-                      "maxLength": 64
-                    },
-                    "direction": {
-                      "type": "string",
-                      "maxLength": 2000,
-                      "enum": [
-                        "asc",
-                        "desc"
-                      ]
-                    }
-                  },
-                  "additionalProperties": false,
-                  "required": [
-                    "by"
-                  ]
-                },
-                {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "by": {
-                        "type": "string",
-                        "maxLength": 64
-                      },
-                      "direction": {
-                        "type": "string",
-                        "maxLength": 2000,
-                        "enum": [
-                          "asc",
-                          "desc"
-                        ]
-                      }
-                    },
-                    "additionalProperties": false,
-                    "required": [
-                      "by"
-                    ]
-                  },
-                  "minItems": 1,
-                  "maxItems": 3
-                }
-              ]
-            },
-            "select": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "maxLength": 64
-              },
-              "minItems": 1,
-              "maxItems": 24
-            },
-            "limit": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 200
-            }
-          },
-          "additionalProperties": false
+          "$ref": "#/$defs/transform"
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
@@ -6798,155 +6374,7 @@
           "$ref": "#/$defs/dataRows"
         },
         "transform": {
-          "type": "object",
-          "properties": {
-            "filter": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "field": {
-                    "type": "string",
-                    "maxLength": 64
-                  },
-                  "equals": {
-                    "description": "A string, number, boolean, or null.",
-                    "$ref": "#/$defs/dataScalar"
-                  },
-                  "notEquals": {
-                    "description": "A string, number, boolean, or null.",
-                    "$ref": "#/$defs/dataScalar"
-                  },
-                  "in": {
-                    "type": "array",
-                    "items": {
-                      "description": "A string, number, boolean, or null.",
-                      "$ref": "#/$defs/dataScalar"
-                    },
-                    "minItems": 1,
-                    "maxItems": 20
-                  },
-                  "gt": {
-                    "type": "number"
-                  },
-                  "gte": {
-                    "type": "number"
-                  },
-                  "lt": {
-                    "type": "number"
-                  },
-                  "lte": {
-                    "type": "number"
-                  }
-                },
-                "additionalProperties": false,
-                "required": [
-                  "field"
-                ]
-              },
-              "minItems": 1,
-              "maxItems": 8
-            },
-            "groupBy": {
-              "type": "object",
-              "properties": {
-                "field": {
-                  "type": "string",
-                  "maxLength": 64
-                },
-                "aggregate": {
-                  "type": "string",
-                  "maxLength": 2000,
-                  "enum": [
-                    "count",
-                    "sum",
-                    "mean",
-                    "min",
-                    "max"
-                  ]
-                },
-                "value": {
-                  "type": "string",
-                  "maxLength": 64
-                },
-                "as": {
-                  "type": "string",
-                  "maxLength": 64
-                }
-              },
-              "additionalProperties": false,
-              "required": [
-                "field",
-                "aggregate"
-              ]
-            },
-            "sort": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "by": {
-                      "type": "string",
-                      "maxLength": 64
-                    },
-                    "direction": {
-                      "type": "string",
-                      "maxLength": 2000,
-                      "enum": [
-                        "asc",
-                        "desc"
-                      ]
-                    }
-                  },
-                  "additionalProperties": false,
-                  "required": [
-                    "by"
-                  ]
-                },
-                {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "by": {
-                        "type": "string",
-                        "maxLength": 64
-                      },
-                      "direction": {
-                        "type": "string",
-                        "maxLength": 2000,
-                        "enum": [
-                          "asc",
-                          "desc"
-                        ]
-                      }
-                    },
-                    "additionalProperties": false,
-                    "required": [
-                      "by"
-                    ]
-                  },
-                  "minItems": 1,
-                  "maxItems": 3
-                }
-              ]
-            },
-            "select": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "maxLength": 64
-              },
-              "minItems": 1,
-              "maxItems": 24
-            },
-            "limit": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 200
-            }
-          },
-          "additionalProperties": false
+          "$ref": "#/$defs/transform"
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
