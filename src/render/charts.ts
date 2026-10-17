@@ -200,7 +200,10 @@ export function sparkline(input: ChartInput): string {
   const values = input.series.flatMap((series) => series.values);
   const low = values.length === 0 ? 0 : Math.min(...values);
   const high = values.length === 0 ? 1 : Math.max(...values);
-  const bounds = high === low ? { min: low - 1, max: high + 1 } : { min: low, max: high };
+  // A flat line sits mid-height; past 2^53 one unit is lost to rounding, so
+  // the margin grows with the value and the span is never 0.
+  const margin = Math.max(1, Math.abs(low) * Number.EPSILON * 4);
+  const bounds = high > low ? { min: low, max: high } : { min: low - margin, max: high + margin };
   const ticks = { ...bounds, step: 1 };
   const parts: string[] = [];
   input.series.forEach((series, seriesIndex) => {

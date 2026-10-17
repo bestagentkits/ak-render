@@ -32,6 +32,9 @@ import {
 import type { ChartInput, EncodedChart, KindRender } from './chart-types.js';
 import { escapeText } from './escape.js';
 
+/** Most x-axis ticks a histogram draws. */
+const MAX_HISTOGRAM_TICKS = 100;
+
 /**
  * Bin edges on clean steps (1, 2, 2.5 or 5 × 10ⁿ). `bins` is a target count:
  * the clean step whose bin count lands closest to it wins, the wider step on a
@@ -48,6 +51,7 @@ export function histogramEdges(samples: readonly number[], bins: number): number
   if (low === high) return single;
   const target = Math.max(1, bins);
   const magnitude = 10 ** Math.floor(Math.log10((high - low) / target));
+  if (!(magnitude > 0 && Number.isFinite(magnitude))) return single;
   const layout = (step: number) => {
     const start = Math.floor(low / step) * step;
     return { step, start, count: Math.max(1, Math.ceil((high - start) / step - 1e-9)) };
@@ -57,6 +61,7 @@ export function histogramEdges(samples: readonly number[], bins: number): number
     const candidate = layout(factor * magnitude);
     if (Math.abs(candidate.count - target) < Math.abs(best.count - target)) best = candidate;
   }
+  if (!Number.isFinite(best.count)) return single;
   const edges: number[] = [];
   for (let index = 0; index <= best.count; index += 1) {
     edges.push(Number((best.start + best.step * index).toPrecision(12)));
@@ -96,12 +101,13 @@ export function histogramChart(input: ChartInput, encoded: EncodedChart): KindRe
   // Ticks on clean multiples inside the binned range, not on every edge.
   const tickStep = niceStep(Math.max(last - first, step), 5);
   const xTicks: number[] = [];
-  for (
-    let tick = Math.ceil(first / tickStep) * tickStep;
-    tick <= last + tickStep / 1000;
-    tick += tickStep
-  ) {
-    xTicks.push(Number(tick.toPrecision(12)));
+  const firstTick = Math.ceil(first / tickStep) * tickStep;
+  // Counted, not accumulated: a step below the float spacing at a large
+  // magnitude would never advance `tick += tickStep`.
+  for (let index = 0; index <= MAX_HISTOGRAM_TICKS; index += 1) {
+    const tick = Number((firstTick + tickStep * index).toPrecision(12));
+    if (!(tick <= last + tickStep / 1000)) break;
+    if (tick !== xTicks[xTicks.length - 1]) xTicks.push(tick);
   }
   const yBounds = axisBounds(counts, encoded.y, true);
   const zeroY = scaleY(clampTo(0, yBounds), yBounds, frame);

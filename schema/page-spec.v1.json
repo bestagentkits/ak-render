@@ -865,7 +865,9 @@
           "maxLength": 400
         },
         {
-          "type": "number"
+          "type": "number",
+          "minimum": -1e+300,
+          "maximum": 1e+300
         },
         {
           "type": "boolean"

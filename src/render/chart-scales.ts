@@ -103,15 +103,40 @@ export function niceBounds(series: ChartSeries[]): TickBounds {
   return niceRange(Math.min(0, ...values), Math.max(0, ...values));
 }
 
+/** Most ticks an axis draws; a step finer than this is treated as unusable. */
+const MAX_TICKS = 100;
+
+/**
+ * Whether `step` divides `min`..`max` into a drawable number of ticks. A span
+ * below the float spacing at a large magnitude (1e16 + 2) or a step that
+ * underflows to zero would otherwise loop forever or divide 0 by 0.
+ */
+function usableStep(min: number, max: number, step: number): boolean {
+  const ticks = (max - min) / step;
+  return step > 0 && max > min && min + step > min && ticks >= 1 && ticks <= MAX_TICKS;
+}
+
+/**
+ * Bounds around a single value: one unit, or a few float steps where one unit
+ * is lost to rounding (an epoch-nanosecond timestamp), so the span is never 0.
+ */
+export function flatRange(value: number): TickBounds {
+  const width = Math.abs(value) * Number.EPSILON * 4;
+  // Quarter ticks only where they are representable; otherwise just the ends.
+  return width <= 1
+    ? { min: value, max: value + 1, step: 0.25 }
+    : { min: value, max: value + width, step: width };
+}
+
 /** Clean-tick bounds around a raw range. */
 export function niceRange(rawMin: number, rawMax: number): TickBounds {
-  if (rawMax === rawMin) return { min: rawMin, max: rawMin + 1, step: 0.25 };
-  const step = niceStep(rawMax - rawMin, 4);
-  return {
-    min: Math.floor(rawMin / step) * step,
-    max: Math.ceil(rawMax / step) * step,
-    step,
-  };
+  if (rawMax > rawMin) {
+    const step = niceStep(rawMax - rawMin, 4);
+    const min = Math.floor(rawMin / step) * step;
+    const max = Math.ceil(rawMax / step) * step;
+    if (usableStep(min, max, step)) return { min, max, step };
+  }
+  return flatRange(rawMin);
 }
 
 /**
@@ -131,7 +156,8 @@ export function axisBounds(
   const max = axis.max ?? nice.max;
   if (max <= min) return nice;
   if (axis.min === undefined && axis.max === undefined) return nice;
-  return { min, max, step: niceStep(max - min, 4) };
+  const step = niceStep(max - min, 4);
+  return usableStep(min, max, step) ? { min, max, step } : nice;
 }
 
 export function plotWidth(frame: Frame): number {
@@ -176,7 +202,7 @@ export function safeId(id: string): string {
 
 /** Ticks from `min` to `max` in `step` increments, rounded. */
 export function tickValues(bounds: TickBounds): number[] {
-  const steps = Math.round((bounds.max - bounds.min) / bounds.step);
+  const steps = Math.min(MAX_TICKS, Math.round((bounds.max - bounds.min) / bounds.step));
   const values: number[] = [];
   for (let index = 0; index <= steps; index += 1) {
     const value = denoise(bounds.min + bounds.step * index);

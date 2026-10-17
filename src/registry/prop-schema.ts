@@ -409,11 +409,6 @@ export function validateProp(
         bag.add({ code: 'SPEC_VALIDATION_ERROR', path, message: 'expected a finite number' });
         return undefined;
       }
-      const magnitude = numberMagnitudeProblem(value);
-      if (magnitude !== undefined) {
-        bag.add({ code: 'SPEC_BOUNDS_ERROR', path, message: magnitude });
-        return undefined;
-      }
       if (schema.integer === true && !Number.isInteger(value)) {
         bag.add({ code: 'SPEC_VALIDATION_ERROR', path, message: 'expected an integer' });
         return undefined;
@@ -432,6 +427,12 @@ export function validateProp(
           path,
           message: `${value} is above the maximum ${schema.max}`,
         });
+        return undefined;
+      }
+      // After the schema's own range, whose message names the useful limit.
+      const magnitude = numberMagnitudeProblem(value);
+      if (magnitude !== undefined) {
+        bag.add({ code: 'SPEC_BOUNDS_ERROR', path, message: magnitude });
         return undefined;
       }
       return value;

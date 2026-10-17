@@ -25,18 +25,28 @@ export const DATA_LIMITS = {
   /** Length of one string cell. */
   maxStringLength: 400,
   /**
-   * Magnitude of any number in a spec. Chart geometry subtracts and sums
-   * values, and near the float maximum that overflows to Infinity and draws
-   * NaN coordinates; this ceiling leaves headroom for every such sum.
+   * Magnitude of a dataset value or numeric prop. Chart geometry subtracts and
+   * sums values, and near the float maximum that overflows to Infinity and
+   * draws NaN coordinates; this ceiling leaves headroom for every such sum.
    */
   maxNumberMagnitude: 1e300,
+  /**
+   * Smallest nonzero magnitude. Below the normal float range, tick steps
+   * underflow to zero, so a chart scale cannot divide the range.
+   */
+  minNumberMagnitude: 1e-300,
 } as const;
 
-/** The bounds diagnostic for a number beyond `maxNumberMagnitude`, if any. */
+/** The bounds diagnostic for a number outside the drawable magnitudes, if any. */
 export function numberMagnitudeProblem(value: number): string | undefined {
-  return Math.abs(value) > DATA_LIMITS.maxNumberMagnitude
-    ? `${value} is beyond the ±1e300 a page can draw`
-    : undefined;
+  const magnitude = Math.abs(value);
+  if (magnitude > DATA_LIMITS.maxNumberMagnitude) {
+    return `${value} is beyond the limit of ±${DATA_LIMITS.maxNumberMagnitude}`;
+  }
+  if (magnitude !== 0 && magnitude < DATA_LIMITS.minNumberMagnitude) {
+    return `${value} is closer to zero than ${DATA_LIMITS.minNumberMagnitude}; use 0 or a larger magnitude`;
+  }
+  return undefined;
 }
 
 /**

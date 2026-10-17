@@ -149,63 +149,142 @@ describe('SVG chart polish', () => {
 
 describe('extreme chart values', () => {
   const limit = DATA_LIMITS.maxNumberMagnitude;
-  const encoded = (value: number) => ({
+  type Row = Record<string, number | string>;
+  const page = (blocks: object[], rows?: Row[]) => ({
     version: 1,
     meta: { title: 'Extreme' },
-    datasets: {
-      d: [
-        { x: 'a', v: value },
-        { x: 'b', v: -value },
-      ],
-    },
-    blocks: [
-      {
-        type: 'chart',
-        kind: 'line',
-        title: 'T',
-        dataRef: 'd',
-        x: { field: 'x' },
-        y: { field: 'v' },
-      },
-    ],
+    ...(rows === undefined ? {} : { datasets: { d: rows } }),
+    blocks,
   });
+  const encoded = (kind: string, rows: Row[], extra: object = {}) =>
+    page([{ type: 'chart', kind, title: kind, dataRef: 'd', ...extra }], rows);
+  /** Chart markup only: embedded fonts are base64 and may spell "NaN". */
+  const chartMarkup = (spec: object) => {
+    const result = validate(spec);
+    expect(result.diagnostics.filter((item) => item.severity === 'error')).toEqual([]);
+    return (compile(spec).html.match(/<figure class="ak-chart[\s\S]*?<\/figure>/gu) ?? []).join('');
+  };
+  const xy = { x: { field: 'n' }, y: { field: 'v' } };
 
-  it('draws values at the magnitude limit without NaN coordinates', () => {
-    const inline = KINDS.map((kind) => ({
-      type: 'chart',
-      kind,
-      title: kind,
-      labels: ['a', 'b'],
-      series: [
-        {
-          label: 'S',
-          values: [
-            limit,
-            kind === 'pie' || kind === 'donut' || kind === 'progress' ? limit : -limit,
+  const cases: [string, object][] = [
+    [
+      'every v1 kind at the limit',
+      page(
+        KINDS.map((kind) => ({
+          type: 'chart',
+          kind,
+          title: kind,
+          labels: ['a', 'b'],
+          series: [
+            {
+              label: 'S',
+              values: [limit, ['pie', 'donut', 'progress'].includes(kind) ? limit : -limit],
+            },
           ],
+        })),
+      ),
+    ],
+    [
+      'a line spanning ±limit',
+      encoded(
+        'line',
+        [
+          { x: 'a', v: limit },
+          { x: 'b', v: -limit },
+        ],
+        { x: { field: 'x' }, y: { field: 'v' } },
+      ),
+    ],
+    ['a single epoch-nanosecond point', encoded('scatter', [{ n: 1729000000000000000, v: 3 }], xy)],
+    [
+      'equal points at the limit with a marker',
+      encoded(
+        'scatter',
+        [
+          { n: -limit, v: 1 },
+          { n: -limit, v: 2 },
+        ],
+        { ...xy, markers: [{ x: 1, label: 'm' }] },
+      ),
+    ],
+    [
+      'flat sparklines',
+      page([
+        {
+          type: 'chart',
+          kind: 'sparkline',
+          title: 'a',
+          labels: ['a', 'b'],
+          series: [{ label: 'S', values: [limit, limit] }],
         },
-      ],
-    }));
-    const spec = encoded(limit);
-    spec.blocks.push(...(inline as never[]));
-    const { html } = compile(spec);
-    expect(html).not.toMatch(/[",( =ML]-?(?:NaN|Infinity)/u);
-  });
+        {
+          type: 'chart',
+          kind: 'sparkline',
+          title: 'b',
+          labels: ['a'],
+          series: [{ label: 'S', values: [1e16] }],
+        },
+      ]),
+    ],
+    [
+      'a histogram finer than the float spacing',
+      encoded('histogram', [{ n: 1e16 }, { n: 10000000000000002 }], { x: { field: 'n' } }),
+    ],
+    [
+      'a funnel whose conversion overflows',
+      page([
+        {
+          type: 'chart',
+          kind: 'funnel',
+          title: 'f',
+          labels: ['a', 'b', 'c'],
+          series: [{ label: 'S', values: [1e-300, -limit, 1e-300] }],
+        },
+      ]),
+    ],
+    [
+      'an axis narrower than a tick',
+      encoded('line', [{ x: 'a', v: 1e-300 }], {
+        x: { field: 'x' },
+        y: { field: 'v', min: 1e-300, max: 1.0000000000000002e-300 },
+      }),
+    ],
+  ];
+
+  for (const [name, spec] of cases) {
+    it(`draws ${name} without NaN or Infinity`, () => {
+      expect(chartMarkup(spec)).not.toMatch(/NaN|Infinity/u);
+    });
+  }
 
   it('rejects a value beyond the limit at its dataset cell', () => {
-    const result = validate(encoded(1e308));
-    expect(result.ok).toBe(false);
+    const result = validate(
+      encoded(
+        'line',
+        [
+          { x: 'a', v: 1e308 },
+          { x: 'b', v: 5e-324 },
+        ],
+        { x: { field: 'x' }, y: { field: 'v' } },
+      ),
+    );
     expect(result.diagnostics.map((item) => [item.code, item.path])).toEqual([
       ['SPEC_BOUNDS_ERROR', '$.datasets.d[0].v'],
       ['SPEC_BOUNDS_ERROR', '$.datasets.d[1].v'],
     ]);
   });
 
-  it('rejects a number prop beyond the limit at its path', () => {
-    const spec = encoded(1);
-    Object.assign(spec.blocks[0] ?? {}, { y: { field: 'v', min: -1e305 } });
+  it('rejects a number prop beyond the limit at its path, after its own range', () => {
+    const spec = encoded('line', [{ x: 'a', v: 1 }], {
+      x: { field: 'x' },
+      y: { field: 'v', min: -1e305 },
+    });
     expect(validate(spec).diagnostics.map((item) => [item.code, item.path])).toEqual([
       ['SPEC_BOUNDS_ERROR', '$.blocks[0].y.min'],
+    ]);
+    const bins = encoded('histogram', [{ n: 1 }], { x: { field: 'n' }, bins: 1e305 });
+    expect(validate(bins).diagnostics.map((item) => item.message)).toEqual([
+      expect.stringContaining('above the maximum'),
     ]);
   });
 });

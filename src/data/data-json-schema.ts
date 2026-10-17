@@ -13,7 +13,11 @@ export const DATA_JSON_SCHEMA_DEFS: Record<string, unknown> = {
     description: 'A dataset value: a string, a finite number, a boolean, or null.',
     oneOf: [
       { type: 'string', maxLength: DATA_LIMITS.maxStringLength },
-      { type: 'number' },
+      {
+        type: 'number',
+        minimum: -DATA_LIMITS.maxNumberMagnitude,
+        maximum: DATA_LIMITS.maxNumberMagnitude,
+      },
       { type: 'boolean' },
       { type: 'null' },
     ],

@@ -156,7 +156,10 @@ export function funnelChart(input: ChartInput, encoded: EncodedChart): KindRende
   const right = WIDTH - 150;
   const centre = (left + right) / 2;
   const parts: string[] = [];
-  const conversion = (value: number) => (first > 0 ? share((value / first) * 100) : '');
+  const conversion = (value: number) => {
+    const ratio = (value / first) * 100;
+    return first > 0 && Number.isFinite(ratio) ? share(ratio) : '';
+  };
   input.labels.forEach((label, index) => {
     const value = values[index] ?? 0;
     const width = max <= 0 ? 0 : Math.max(2, ((right - left) * Math.max(0, value)) / max);
