@@ -1,8 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ARTIFACT_TTL_SECONDS } from '../../apps/cloud/src/config.js';
 import { handleRequest } from '../../apps/cloud/src/index.js';
+import {
+  REMOTE_INSTRUCTIONS,
+  REMOTE_TOOLS,
+  remoteVersion,
+} from '../../apps/cloud/src/remote-mcp-endpoint.js';
 import { compile } from '../../src/index.js';
+import { LOCAL_INSTRUCTIONS, LOCAL_TOOLS } from '../../src/mcp/mcp-local-tools.js';
 import { handleMcpMessage } from '../../src/mcp-server.js';
+import { PACKAGE_NAME, VERSION } from '../../src/version.js';
 import {
   activeEntitlements,
   harness,
@@ -119,6 +126,81 @@ describe('remote MCP: discovery', () => {
     ).find((entry) => entry.name === 'audit-motion');
     expect(audit?.inputSchema.properties.html.maxLength).toBe(1024 * 1024);
     // Discovery never reaches the entitlements endpoint.
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('names every tool it lists in its instructions, like the stdio server', () => {
+    // Instructions are what an agent reads first; a tool missing from them is
+    // a tool the agent does not reach for. Both transports keep every name.
+    for (const [instructions, tools] of [
+      [REMOTE_INSTRUCTIONS, REMOTE_TOOLS],
+      [LOCAL_INSTRUCTIONS, LOCAL_TOOLS],
+    ] as const) {
+      for (const { name } of tools) {
+        expect(instructions, name).toMatch(new RegExp(`(^|[^\\w-])${name}([^\\w-]|$)`, 'u'));
+      }
+    }
+  });
+
+  it('reports the deployed build, revisions and tool names at /v1/version', async () => {
+    const { env, fetchMock } = harness();
+    const response = await handleRequest(new Request(`${ORIGIN}/v1/version`), {
+      ...env,
+      BUILD_SHA: 'abc123',
+    });
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('public, max-age=60');
+    const body = (await response.json()) as Record<string, unknown>;
+    expect(body).toEqual({
+      name: PACKAGE_NAME,
+      version: VERSION,
+      build: 'abc123',
+      protocolVersions: ['2026-07-28', '2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'],
+      tools: LOCAL_TOOLS.map((tool) => tool.name),
+    });
+    const unbuilt = await handleRequest(new Request(`${ORIGIN}/v1/version`), env);
+    expect(((await unbuilt.json()) as { build: unknown }).build).toBeNull();
+    const posted = await handleRequest(
+      new Request(`${ORIGIN}/v1/version`, { method: 'POST' }),
+      env,
+    );
+    expect(posted.status).toBe(404);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('serves a stateless 2026-07-28 client the same tools without a bearer', async () => {
+    const { env, fetchMock } = harness();
+    const meta = {
+      'io.modelcontextprotocol/protocolVersion': '2026-07-28',
+      'io.modelcontextprotocol/clientCapabilities': {},
+    };
+    const request = (method: string, params: Record<string, unknown>, name?: string) =>
+      new Request(`${ORIGIN}/mcp`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'mcp-protocol-version': '2026-07-28',
+          'mcp-method': method,
+          ...(name === undefined ? {} : { 'mcp-name': name }),
+        },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params: { ...params, _meta: meta } }),
+      });
+    const discover = await handleRequest(request('server/discover', {}), env);
+    expect(discover.status).toBe(200);
+    const discovered = ((await discover.json()) as { result: Record<string, unknown> }).result;
+    expect(discovered.instructions).toBe(REMOTE_INSTRUCTIONS);
+    expect(discovered.supportedVersions).toEqual(remoteVersion(env).protocolVersions);
+    const listed = await handleRequest(request('tools/list', {}), env);
+    const tools = ((await listed.json()) as { result: { tools: { name: string }[] } }).result.tools;
+    expect(tools.map((tool) => tool.name)).toEqual(remoteVersion(env).tools);
+    const called = await handleRequest(
+      request('tools/call', { name: 'recipes', arguments: {} }, 'recipes'),
+      env,
+    );
+    const result = ((await called.json()) as { result: { resultType: string; isError?: boolean } })
+      .result;
+    expect(result.resultType).toBe('complete');
+    expect(result.isError).toBeUndefined();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

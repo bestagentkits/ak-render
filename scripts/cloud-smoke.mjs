@@ -18,6 +18,12 @@
  * Screenshot and PDF are checked when the deployment answers them; a 501
  * (no Browser Run binding) is reported, and fails only with EXPECT_EXPORT=1.
  *
+ * GET /v1/version is always checked, and MCP tools/list must name exactly the
+ * tools it reports, over both the 2025-11-25 handshake and a stateless
+ * 2026-07-28 request. EXPECT_BUILD=<sha> fails unless the Worker reports that
+ * commit (the deploy job sets it); CURRENT_SHA=<sha> only notes a mismatch, so
+ * a smoke-only run shows deploy lag without failing.
+ *
  * The token is sent only as an Authorization header to BASE_URL and is never
  * printed. Every share this script creates is revoked before it exits.
  */
@@ -25,6 +31,9 @@
 const BASE_URL = (process.env.BASE_URL ?? 'https://render.agentkit.best').replace(/\/+$/u, '');
 const TOKEN = process.env.TOKEN ?? '';
 const EXPECT_EXPORT = process.env.EXPECT_EXPORT === '1';
+const EXPECT_BUILD = process.env.EXPECT_BUILD ?? '';
+const CURRENT_SHA = process.env.CURRENT_SHA ?? '';
+const MODERN_PROTOCOL = '2026-07-28';
 
 const SPEC = {
   version: 1,
@@ -82,6 +91,71 @@ async function mcp(method, params, withToken = false) {
     body = { raw: text.slice(0, 200) };
   }
   return { status: response.status, body };
+}
+
+/** POST one stateless 2026-07-28 request, with its body mirrored in headers. */
+async function modernMcp(method, params, withToken = false) {
+  rpcId += 1;
+  const response = await fetch(`${BASE_URL}/mcp`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      accept: 'application/json, text/event-stream',
+      'mcp-protocol-version': MODERN_PROTOCOL,
+      'mcp-method': method,
+      ...auth(withToken),
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: rpcId,
+      method,
+      params: {
+        ...params,
+        _meta: {
+          'io.modelcontextprotocol/protocolVersion': MODERN_PROTOCOL,
+          'io.modelcontextprotocol/clientInfo': { name: 'ak-render-cloud-smoke', version: '1' },
+          'io.modelcontextprotocol/clientCapabilities': {},
+        },
+      },
+    }),
+  });
+  const text = await response.text();
+  let body;
+  try {
+    body = text === '' ? undefined : JSON.parse(text);
+  } catch {
+    body = { raw: text.slice(0, 200) };
+  }
+  return { status: response.status, body };
+}
+
+/** GET /v1/version: the deployed build and the tool names it serves. */
+async function versionCheck() {
+  const response = await fetch(`${BASE_URL}/v1/version`);
+  let body;
+  try {
+    body = await response.json();
+  } catch {
+    body = undefined;
+  }
+  const ok = check(
+    response.status === 200 && Array.isArray(body?.tools) && body.tools.length > 0,
+    'GET /v1/version reports the deployed tools',
+    `status ${response.status}`,
+  );
+  if (!ok) return [];
+  notice(`deployed ${body.name}@${body.version} build ${body.build ?? '(unknown)'}`);
+  if (EXPECT_BUILD !== '') {
+    check(body.build === EXPECT_BUILD, 'deployed build matches the commit', `${body.build}`);
+  } else if (CURRENT_SHA !== '' && body.build !== CURRENT_SHA) {
+    notice(`deployed build ${body.build ?? '(unknown)'} lags ${CURRENT_SHA}; redeploy to sync`);
+  }
+  check(
+    body.protocolVersions?.[0] === MODERN_PROTOCOL,
+    `deployment serves MCP ${MODERN_PROTOCOL}`,
+    JSON.stringify(body.protocolVersions),
+  );
+  return body.tools;
 }
 
 /** Call one tool and parse its text content as JSON when it is JSON. */
@@ -147,17 +221,18 @@ async function oauthDiscovery() {
 }
 
 async function unauthenticatedSurface() {
+  const deployedTools = await versionCheck();
   const oauth = await oauthDiscovery();
   if (oauth && TOKEN === '') {
     notice('OAuth is on and TOKEN is not set; MCP discovery calls skipped');
   } else {
-    await mcpDiscovery(oauth);
+    await mcpDiscovery(oauth, deployedTools);
   }
   await rejectedBearerChecks();
 }
 
 /** initialize, tools/list, catalog and recipe; with a bearer where OAuth requires one. */
-async function mcpDiscovery(withToken) {
+async function mcpDiscovery(withToken, deployedTools) {
   const init = await mcp(
     'initialize',
     {
@@ -194,6 +269,27 @@ async function mcpDiscovery(withToken) {
     ].every((name) => names.includes(name)),
     'mcp tools/list',
     names.join(','),
+  );
+  check(
+    names.join(',') === deployedTools.join(','),
+    'mcp tools/list matches /v1/version',
+    `${names.join(',')} vs ${deployedTools.join(',')}`,
+  );
+
+  const discover = await modernMcp('server/discover', {}, withToken);
+  check(
+    discover.status === 200 &&
+      discover.body?.result?.resultType === 'complete' &&
+      discover.body.result.supportedVersions?.includes(MODERN_PROTOCOL),
+    `mcp ${MODERN_PROTOCOL} server/discover`,
+    `status ${discover.status}`,
+  );
+  const modernList = await modernMcp('tools/list', {}, withToken);
+  const modernNames = (modernList.body?.result?.tools ?? []).map((tool) => tool.name);
+  check(
+    modernList.status === 200 && modernNames.join(',') === names.join(','),
+    `mcp ${MODERN_PROTOCOL} tools/list matches the handshake list`,
+    `status ${modernList.status}`,
   );
 
   const how = withToken ? 'with a bearer' : 'without a bearer';
