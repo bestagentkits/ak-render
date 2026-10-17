@@ -11,6 +11,16 @@ Release mechanics and the compatibility contract live in
 
 ### Added
 
+- Suggested fixes and a safe repair mode. `validate(spec, { suggest: true })`
+  (CLI `validate --suggest`, MCP `validate` with `suggest: true`) attaches
+  `fixes` to diagnostics: RFC 6902 patches that start with a `test` of the
+  current value, with a rule id, the diagnostic path and a `safe` or
+  `ambiguous` classification. `repair(spec, { mode: 'safe' })` (CLI
+  `ak-render repair`, MCP `repair`) applies only the safe fixes, revalidates,
+  keeps YAML comments and returns a change log; near-name guesses for block
+  types, actions, events, properties and enum values stay with the author.
+  Without `suggest`, diagnostics are unchanged.
+
 - Motion Studio. `ak-render motion studio <spec>` serves a local,
   development-only dashboard over one Page Spec: a block list and a recipe
   gallery of compiled examples, an inspector with the phase timeline, timing,

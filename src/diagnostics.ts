@@ -8,6 +8,7 @@
  */
 
 import type { RenderErrorCode } from './errors.js';
+import type { JsonValue } from './json.js';
 
 export type DiagnosticSeverity = 'error' | 'warning';
 
@@ -20,7 +21,41 @@ export interface Diagnostic {
   /** Normalized node ID, when the diagnostic belongs to a node. */
   nodeId?: string;
   details?: Record<string, unknown>;
+  /**
+   * Suggested edits, present only when the caller asked for them
+   * (`validate(spec, { suggest: true })`). Each entry is one alternative.
+   */
+  fixes?: DiagnosticFix[];
 }
+
+/** `safe`: provably keeps the author's meaning. `ambiguous`: a guess to confirm. */
+export type FixClassification = 'safe' | 'ambiguous';
+
+/** An RFC 6902 operation; `path` and `from` are JSON Pointers into the spec. */
+export type PatchOperation =
+  | { op: 'test'; path: string; value: JsonValue }
+  | { op: 'replace'; path: string; value: JsonValue }
+  | { op: 'move'; from: string; path: string };
+
+/** One suggested edit: an RFC 6902 patch whose first operation is a `test` precondition. */
+export interface DiagnosticFix {
+  /** Stable rule id, e.g. `list/wrap-scalar`. */
+  rule: string;
+  classification: FixClassification;
+  /** The diagnostic's spec path the patch edits. */
+  path: string;
+  patch: PatchOperation[];
+}
+
+/**
+ * The edit a validation site knows would clear its diagnostic, before it is
+ * anchored to the document as a patch: replace the value at the diagnostic
+ * path, or rename the key at the diagnostic path.
+ */
+export type FixHint = { rule: string; classification: FixClassification } & (
+  | { replaceWith: JsonValue }
+  | { renameTo: string }
+);
 
 export interface DiagnosticInput {
   code: RenderErrorCode;
@@ -29,6 +64,17 @@ export interface DiagnosticInput {
   severity?: DiagnosticSeverity;
   nodeId?: string;
   details?: Record<string, unknown>;
+  /** Candidate edits; kept off the diagnostic until a caller asks for them. */
+  fixes?: readonly FixHint[];
+}
+
+// Hints ride beside a diagnostic instead of on it, so default diagnostics stay
+// byte-identical whether or not a site knows a fix.
+const FIX_HINTS = new WeakMap<Diagnostic, readonly FixHint[]>();
+
+/** The fix hints recorded for a diagnostic by the site that reported it. */
+export function fixHintsOf(diagnostic: Diagnostic): readonly FixHint[] {
+  return FIX_HINTS.get(diagnostic) ?? [];
 }
 
 /** Ordered, de-duplicating collector for diagnostics. */
@@ -48,6 +94,7 @@ export class DiagnosticBag {
     };
     if (input.nodeId !== undefined) diagnostic.nodeId = input.nodeId;
     if (input.details !== undefined) diagnostic.details = input.details;
+    if (input.fixes !== undefined && input.fixes.length > 0) FIX_HINTS.set(diagnostic, input.fixes);
     this.items.push(diagnostic);
   }
 

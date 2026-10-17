@@ -7,10 +7,11 @@
  * stops the documentation from drifting away from the validator.
  */
 
-import { DiagnosticBag, pathIndex, pathKey } from '../diagnostics.js';
+import { DiagnosticBag, type FixHint, pathIndex, pathKey } from '../diagnostics.js';
 import { checkIconRequest, parseIconValue } from '../icons/icon-catalog.js';
 import { ICON_PACK_IDS, ICON_SIZES } from '../icons/icon-packs.js';
 import { isPlainObject, type JsonValue } from '../json.js';
+import { enumFixHints, renameFixHints, wrapBlockFixHints } from './fix-hints.js';
 
 export type PropSchema =
   | StringPropSchema
@@ -286,6 +287,20 @@ function intendedOption(options: readonly PropSchema[], value: unknown): PropSch
 }
 
 /**
+ * A single value where a list is required keeps its meaning as a one-item
+ * list, provided the list takes one item and the value is a valid item. The
+ * value itself is never altered, split or guessed at.
+ */
+function wrapInListHints(schema: ListPropSchema, value: unknown, path: string): FixHint[] {
+  if (value === undefined || value === null) return [];
+  if ((schema.minItems ?? 0) > 1 || (schema.maxItems ?? 1) < 1) return [];
+  const probe = new DiagnosticBag();
+  validateProp(schema.of, value, pathIndex(path, 0), probe);
+  if (probe.hasErrors) return [];
+  return [{ rule: 'list/wrap-scalar', classification: 'safe', replaceWith: [value as JsonValue] }];
+}
+
+/**
  * Validate one property value against its schema, appending diagnostics and
  * returning the normalized value (or `undefined` when absent/optional).
  */
@@ -331,6 +346,7 @@ export function validateProp(
           path,
           message: `"${value}" is not one of: ${schema.enum.join(', ')}`,
           details: { allowed: [...schema.enum] },
+          fixes: enumFixHints(value, schema.enum, 'enum'),
         });
         return undefined;
       }
@@ -430,7 +446,12 @@ export function validateProp(
     }
     case 'list': {
       if (!Array.isArray(value)) {
-        bag.add({ code: 'SPEC_VALIDATION_ERROR', path, message: 'expected a list' });
+        bag.add({
+          code: 'SPEC_VALIDATION_ERROR',
+          path,
+          message: 'expected a list',
+          fixes: wrapInListHints(schema, value, path),
+        });
         return undefined;
       }
       if (schema.minItems !== undefined && value.length < schema.minItems) {
@@ -473,6 +494,7 @@ export function validateProp(
             path: pathKey(path, key),
             message: `unknown property "${key}"`,
             details: { allowed: Object.keys(schema.fields) },
+            fixes: renameFixHints(key, Object.keys(schema.fields), Object.keys(value)),
           });
         }
       }
@@ -531,7 +553,16 @@ export function validateProp(
       // Only the list shape is checked here; each entry is validated as a
       // block when the normalizer builds the slot.
       if (!Array.isArray(value)) {
-        bag.add({ code: 'SPEC_VALIDATION_ERROR', path, message: 'expected a list of blocks' });
+        bag.add({
+          code: 'SPEC_VALIDATION_ERROR',
+          path,
+          message: 'expected a list of blocks',
+          fixes: wrapBlockFixHints(
+            value,
+            schema.minItems ?? BLOCKS_PROP_DEFAULTS.minItems,
+            schema.maxItems ?? BLOCKS_PROP_DEFAULTS.maxItems,
+          ),
+        });
         return undefined;
       }
       const minItems = schema.minItems ?? BLOCKS_PROP_DEFAULTS.minItems;
@@ -593,6 +624,7 @@ export function validateProps(
         path: pathKey(path, key),
         message: `unknown property "${key}" for this block`,
         details: { allowed: Object.keys(fields) },
+        fixes: renameFixHints(key, Object.keys(fields), Object.keys(value)),
       });
     }
   }
