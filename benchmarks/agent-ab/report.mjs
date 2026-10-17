@@ -10,6 +10,7 @@ const ROWS = [
   ['discoveryCalls', 'Discovery calls', 'count'],
   ['repairs', 'Repairs before first valid submission', 'count'],
   ['repairToolCalls', '`repair` tool calls', 'count'],
+  ['refusedCalls', 'Calls refused (tool outside the arm)', 'count'],
   ['wallMs', 'Wall time (s)', 'ms'],
   ['costUsd', 'Billed cost (USD)', 'usd'],
 ];

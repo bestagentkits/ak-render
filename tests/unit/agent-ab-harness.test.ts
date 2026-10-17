@@ -10,6 +10,7 @@ import {
 } from '../../benchmarks/agent-ab/model-client.mjs';
 import {
   aggregateArm,
+  armInstructions,
   armTools,
   evaluateTargets,
   runMetrics,
@@ -113,6 +114,17 @@ describe('agent A/B arms', () => {
 
   it('skips the after arm with a reason when the build lacks the new tools', () => {
     expect(armTools('compose-repair', current).skip).toMatch(/neither compose nor repair/u);
+  });
+
+  it('removes only the clauses naming after-flow tools from the existing arm', () => {
+    const shipped =
+      'Intro.\nValidate and fix it (repair applies the safe fixes; audit-motion checks motion), then render. Call compose for a draft.\nDone.';
+    expect(armInstructions('existing', shipped)).toEqual({
+      text: 'Intro.\nValidate and fix it (audit-motion checks motion), then render.\nDone.',
+      adjusted: true,
+      leftover: false,
+    });
+    expect(armInstructions('compose-repair', shipped).text).toBe(shipped);
   });
 
   it('hides compose and repair from the existing arm once they ship', () => {

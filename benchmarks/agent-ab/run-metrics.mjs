@@ -40,6 +40,32 @@ export function armTools(arm, serverTools) {
   throw new Error(`unknown arm: ${arm}`);
 }
 
+const namesAfterTool = (text) =>
+  AFTER_FLOW_TOOLS.some((name) => new RegExp(`\\b${name}\\b`, 'u').test(text));
+
+/**
+ * The server instructions as an arm sees them. The existing arm cannot call
+ * compose or repair, so the clauses that tell the model to use them are
+ * removed: a model sent after a tool it lacks spends turns on refused calls,
+ * which would charge the existing flow for guidance it was never meant to
+ * have. `adjusted` says whether anything was removed; `leftover` whether an
+ * after tool is still named, which the report then flags.
+ */
+export function armInstructions(arm, instructions) {
+  if (arm !== 'existing') return { text: instructions, adjusted: false, leftover: false };
+  const keep = (clauses, separator) =>
+    clauses.filter((clause) => !namesAfterTool(clause)).join(separator);
+  const text = instructions
+    .replace(/\s*\(([^()]*)\)/gu, (_, inner) => {
+      const kept = keep(inner.split(/\s*;\s*/u), '; ');
+      return kept === '' ? '' : ` (${kept})`;
+    })
+    .split('\n')
+    .map((line) => keep(line.split(/(?<=\.)\s+/u), ' '))
+    .join('\n');
+  return { text, adjusted: text !== instructions, leftover: namesAfterTool(text) };
+}
+
 /** Calls that submit a whole spec or intent and can fail validation. */
 export const SUBMIT_TOOLS = new Set(['validate', 'render', 'compose']);
 /** Calls that orchestrate the page rather than discover the catalog. */
@@ -89,6 +115,7 @@ export function runMetrics({
     // Failed submissions before the first valid one: the repair iterations.
     repairs: firstValid === -1 ? submissions.length : firstValid,
     repairToolCalls: trace.filter((call) => call.name === 'repair').length,
+    refusedCalls: trace.filter((call) => call.refused).length,
     wallMs: wallMs - retryMs,
     retryMs,
     completed: finished && page !== undefined,
@@ -110,6 +137,7 @@ const NUMERIC = [
   'discoveryCalls',
   'repairs',
   'repairToolCalls',
+  'refusedCalls',
   'wallMs',
 ];
 const RATES = ['firstPassValid', 'completed', 'correct'];

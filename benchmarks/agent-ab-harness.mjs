@@ -69,9 +69,9 @@ import {
 } from './agent-ab/model-client.mjs';
 import { markdownReport } from './agent-ab/report.mjs';
 import {
-  AFTER_FLOW_TOOLS,
   ARMS,
   aggregateArm,
+  armInstructions,
   armTools,
   evaluateTargets,
   runMetrics,
@@ -253,7 +253,7 @@ async function runOne({ task, arm, rep, provider, options, visual, scratch }) {
       model: options.model,
       maxTokens: options.maxTokens,
       temperature: options.temperature,
-      system: `${server.instructions}\n\n${TASK_RULES}`,
+      system: `${armInstructions(arm, server.instructions).text}\n\n${TASK_RULES}`,
       tools: selection.tools,
     });
     const allowed = new Set(selection.tools.map((tool) => tool.name));
@@ -364,8 +364,8 @@ async function inspectArms(options) {
     try {
       return {
         serverVersion: server.serverVersion,
-        instructionsMentionAfterTools: AFTER_FLOW_TOOLS.some((name) =>
-          new RegExp(`\\b${name}\\b`, 'u').test(server.instructions),
+        existingInstructions: (({ adjusted, leftover }) => ({ adjusted, leftover }))(
+          armInstructions('existing', server.instructions),
         ),
         arms: Object.fromEntries(
           options.arms.map((arm) => {
@@ -519,9 +519,14 @@ async function main() {
       taskSet.tasks.map((task) => task.id),
     ),
     caveats: [
-      ...(inspection.instructionsMentionAfterTools
+      ...(liveArms.includes('existing') && inspection.existingInstructions.adjusted
         ? [
-            'the server instructions mention compose/repair, and the existing arm receives them although it cannot call those tools',
+            'the existing arm receives the server instructions without the clauses that name compose/repair, since it cannot call them',
+          ]
+        : []),
+      ...(liveArms.includes('existing') && inspection.existingInstructions.leftover
+        ? [
+            'the server instructions still name compose/repair for the existing arm after the adjustment, so a model may call a tool it lacks',
           ]
         : []),
       ...(Object.values(byArm).some((arm) => arm.usageMissingRuns > 0)
