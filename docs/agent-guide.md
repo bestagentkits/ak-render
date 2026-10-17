@@ -27,6 +27,10 @@ do not try to position or style blocks: there is no field for it.
    `ak-render icons search <words>` and see [icons.md](./icons.md).
 5. **Compile.** `ak-render page.yaml --out page.html --json` writes the file and
    prints a summary (bytes, hash, features, warnings).
+6. **Check the page (optional).** `ak-render audit-ui page.yaml --json` lists
+   visual problems in the compiled page, each with the block's `path` and a
+   `fix`; add `--preset publication` when a Chromium is available for the
+   real-browser pass. See [audit-ui.md](./audit-ui.md).
 
 Pass `-` instead of a path to read the spec from standard input, so no temporary
 file is needed:
@@ -76,7 +80,7 @@ Check every block's real props with `describe` before relying on this shape.
 `types` with optional `compact`), `search-icons` (`query`, optional `pack`, `limit`),
 `describe-icon` (`icon`), `icon-packs`, `motions` (optional `query`, or `id`
 with `compact`), `recipes`, `recipe` (`name`), `validate`, `audit-motion`
-(`spec` or `html`), `render` and `themes`. `render` writes the HTML to the
+(`spec` or `html`), `audit-ui` (`spec` or `html`, optional `preset`), `render` and `themes`. `render` writes the HTML to the
 `out` path and returns only the summary, so the page never enters your context.
 `out` must end in `.html` or `.htm`. A relative path resolves against the
 directory the server was started in; an absolute or `..` path is written where
@@ -94,7 +98,7 @@ it points, so review it like any file write. `spec` may be YAML/JSON text or the
 
 Without Node, use the hosted server at `https://render.agentkit.best/mcp` (MCP
 Streamable HTTP). It serves `catalog`, `search-catalog`, `describe`,
-`search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `audit-motion`, `render` and `themes` with the same names and
+`search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `audit-motion`, `audit-ui` (quick preset only), `render` and `themes` with the same names and
 contracts, and the
 loop is the same. Two things differ:
 

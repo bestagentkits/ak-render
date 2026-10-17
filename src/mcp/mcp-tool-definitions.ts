@@ -12,6 +12,8 @@
  * No Node-only import is allowed here; the Worker bundles this module.
  */
 
+import { auditUiQuick } from '../audit/ui-audit-quick.js';
+import { UI_AUDIT_PRESETS, type UiAuditPreset } from '../audit/ui-audit-rules.js';
 import {
   describeIcon,
   iconPackSummaries,
@@ -369,6 +371,113 @@ export const AUDIT_MOTION_TOOL: McpTool<unknown> = {
       return text(auditMotionHtml(html));
     }
     return text(auditMotionSpec(args.spec, { source: '<spec>' }));
+  },
+};
+
+/** The bounds `audit-ui` accepts for its browser budget, in milliseconds. */
+export const AUDIT_UI_TIMEOUT_LIMITS = { min: 1_000, max: 300_000 } as const;
+
+/**
+ * `audit-ui` for a server that runs `presets`. Only a server with a browser
+ * offers `publication`, so a schema never advertises a preset it cannot run.
+ */
+export function auditUiDefinition(presets: readonly UiAuditPreset[]): McpToolDefinition {
+  const publication = presets.includes('publication');
+  return {
+    name: 'audit-ui',
+    description: publication
+      ? 'Visual QA of the compiled page. quick: no browser. publication: real browser at 375/768/1440, light/dark, print, no-JS, reduced motion, network blocked. Findings carry rule, path, fix.'
+      : 'Visual QA of the compiled page (quick preset: theme contrast, wide tables, long chart labels; no browser). Findings carry rule, severity, path and fix.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        spec: SPEC_INPUT,
+        html: {
+          type: 'string',
+          maxLength: AUDIT_HTML_MAX_LENGTH,
+          description: 'A compiled page; use instead of spec. Its scripts do not run.',
+        },
+        preset: { type: 'string', enum: [...presets], description: 'Default quick.' },
+        theme: THEME_INPUT,
+        ...(publication
+          ? {
+              timeoutMs: {
+                type: 'integer',
+                minimum: AUDIT_UI_TIMEOUT_LIMITS.min,
+                maximum: AUDIT_UI_TIMEOUT_LIMITS.max,
+                description: 'Browser budget for publication; default 60000.',
+              },
+            }
+          : {}),
+      },
+      additionalProperties: false,
+    },
+  };
+}
+
+export interface AuditUiArgs {
+  /** The spec, or the compiled HTML. */
+  input: unknown;
+  preset: UiAuditPreset;
+  theme?: string;
+  timeoutMs?: number;
+}
+
+/** Check `audit-ui` arguments against what this server runs. */
+export function auditUiArgs(
+  args: Record<string, unknown>,
+  presets: readonly UiAuditPreset[],
+): AuditUiArgs {
+  if ((args.spec === undefined) === (args.html === undefined)) {
+    throw new ToolArgumentError('pass exactly one of "spec" or "html"');
+  }
+  const preset = optionalString(args, 'preset') ?? 'quick';
+  if (!(UI_AUDIT_PRESETS as readonly string[]).includes(preset)) {
+    throw new ToolArgumentError(`"preset" must be one of ${UI_AUDIT_PRESETS.join(', ')}`);
+  }
+  if (!(presets as readonly string[]).includes(preset)) {
+    throw new ToolArgumentError(
+      `the ${preset} preset needs a browser, which this server does not run; use quick, or run ak-render audit-ui locally`,
+    );
+  }
+  let input: unknown = args.spec;
+  if (args.html !== undefined) {
+    const html = requireString(args, 'html');
+    if (html.length > AUDIT_HTML_MAX_LENGTH) {
+      throw new ToolArgumentError(`"html" is longer than ${AUDIT_HTML_MAX_LENGTH} characters`);
+    }
+    if (!/^\uFEFF?\s*</u.test(html)) throw new ToolArgumentError('"html" must be an HTML document');
+    input = html;
+  }
+  const timeoutMs = args.timeoutMs;
+  if (
+    timeoutMs !== undefined &&
+    (typeof timeoutMs !== 'number' ||
+      !Number.isInteger(timeoutMs) ||
+      timeoutMs < AUDIT_UI_TIMEOUT_LIMITS.min ||
+      timeoutMs > AUDIT_UI_TIMEOUT_LIMITS.max)
+  ) {
+    throw new ToolArgumentError(
+      `"timeoutMs" must be an integer from ${AUDIT_UI_TIMEOUT_LIMITS.min} to ${AUDIT_UI_TIMEOUT_LIMITS.max}`,
+    );
+  }
+  const theme = optionalTheme(args);
+  return {
+    input,
+    preset: preset as UiAuditPreset,
+    ...(theme === undefined ? {} : { theme }),
+    ...(timeoutMs === undefined ? {} : { timeoutMs }),
+  };
+}
+
+/** `audit-ui` for a server with no browser, such as a remote one: the quick preset only. */
+export const AUDIT_UI_QUICK_TOOL: McpTool<unknown> = {
+  ...auditUiDefinition(['quick']),
+  run: (args) => {
+    const parsed = auditUiArgs(args, ['quick']);
+    return text(
+      auditUiQuick(parsed.input, parsed.theme === undefined ? {} : { theme: parsed.theme }),
+    );
   },
 };
 

@@ -8,7 +8,7 @@ The agent writes meaning (blocks such as hero, prose, table, chart, timeline, co
 
 - CLI: `npx -y @bestagentkits/render validate plan.yaml`, then `npx -y @bestagentkits/render plan.yaml --out plan.html`
 - Agent skill: `npx skills add bestagentkits/ak-render`
-- Local MCP server (stdio, no account, no network): `npx -y @bestagentkits/render mcp`. Tools: `catalog`, `search-catalog`, `describe`, `search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `audit-motion`, `render`, `themes`.
+- Local MCP server (stdio, no account, no network): `npx -y @bestagentkits/render mcp`. Tools: `catalog`, `search-catalog`, `describe`, `search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `audit-motion`, `audit-ui`, `render`, `themes`. `ak-render audit-ui <spec|page.html> [--preset publication]` checks the compiled page (overflow, clipped chart labels, wide tables, contrast, interaction smoke) and gives each finding a spec path and a fix.
 - Hosted MCP server (Streamable HTTP): `https://render.agentkit.best/mcp`. Sign-in is OAuth at agentkit.best or an API key. Reserved for owners of AgentKit Engineer, AgentKit Marketing or the Bundle. Anyone can run the local server or deploy their own copy on Cloudflare from the GitHub repository.
 
 ## Links

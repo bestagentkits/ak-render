@@ -34,6 +34,7 @@ adds authorization, rate limits and storage in
 | `motions` | no | — | `anon-ip` | Motion recipe list, search or descriptor; static data. |
 | `validate` | yes | `render` | `validate` | Parses an arbitrary spec. |
 | `audit-motion` | yes | `render` | `validate` | Parses an arbitrary spec or page. |
+| `audit-ui` | yes | `render` | `validate` | Quick preset only; parses an arbitrary spec or page. |
 | `render` | yes | `render` | `render` | Stores a one-hour artifact. |
 | `render` with `share: true` | yes | `render` + `share` | `share` | Stores a share for the retention period. |
 
@@ -41,7 +42,7 @@ adds authorization, rate limits and storage in
 `motions` take no spec and read only static data, so they answer without a bearer: a client
 can discover the server before it is configured with a token. Each call still builds a response of several
 kilobytes, so they count per client IP (`anon-ip`), and a batch counts every
-member. `validate` and `audit-motion` parse untrusted input, so they are authenticated
+member. `validate`, `audit-motion` and `audit-ui` parse untrusted input, so they are authenticated
 and share the `validate` limit.
 
 `render` compiles through `renderArtifact`, the exact path `POST /v1/render`

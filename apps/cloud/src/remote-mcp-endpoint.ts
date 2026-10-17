@@ -41,6 +41,7 @@ import {
 } from '../../../src/mcp/mcp-protocol.js';
 import {
   AUDIT_MOTION_TOOL,
+  AUDIT_UI_QUICK_TOOL,
   BUILTIN_THEMES_TOOL,
   CATALOG_TOOL,
   DESCRIBE_ICON_TOOL,
@@ -74,7 +75,8 @@ import { createArtifact, createShare } from './share.js';
 export const REMOTE_INSTRUCTIONS = `AK Render compiles a Page Spec (YAML or JSON) into one self-contained, offline HTML file.
 Loop: call catalog once (or search-catalog with a few words), describe only the block types you plan to use (several at once with types, compact: true for the short form), find icons by meaning with search-icons (describe-icon, icon-packs for detail), optionally start from a recipe (list them with recipes), validate the spec and fix every diagnostic by its JSON path, then render.
 On this remote server render stores the page and returns its artifactUrl and a short summary, never the HTML. Pass share: true for a longer-lived share link.
-validate and render need an AgentKit API key or OAuth access token as the bearer in the Authorization header.
+audit-ui runs the quick visual checks here; the publication preset needs the local CLI.
+validate, audit-motion, audit-ui and render need an AgentKit API key or OAuth access token as the bearer in the Authorization header.
 Describe meaning, not presentation: the compiler owns layout, colour, typography and motion.`;
 
 /** Per-request context every remote tool call receives. */
@@ -162,6 +164,28 @@ const REMOTE_AUDIT_MOTION_TOOL: RemoteTool = {
   },
 };
 
+/**
+ * `audit-ui` with the quick preset only: a Worker has no browser to drive, so
+ * the schema offers no publication preset and a call that asks for one is
+ * refused with a pointer to the local CLI. Counted like `validate`.
+ */
+const AUDIT_UI_PROPERTIES = AUDIT_UI_QUICK_TOOL.inputSchema.properties as Record<string, object>;
+const REMOTE_AUDIT_UI_TOOL: RemoteTool = {
+  ...AUDIT_UI_QUICK_TOOL,
+  inputSchema: {
+    ...AUDIT_UI_QUICK_TOOL.inputSchema,
+    properties: {
+      ...AUDIT_UI_PROPERTIES,
+      html: { ...AUDIT_UI_PROPERTIES.html, maxLength: MAX_REQUEST_BYTES },
+    },
+  },
+  run: async (args, context) => {
+    const guarded = await guard(context, ['render'], 'validate');
+    if (!guarded.ok) return guarded.result;
+    return AUDIT_UI_QUICK_TOOL.run(args, context);
+  },
+};
+
 const REMOTE_RENDER_TOOL: RemoteTool = {
   ...REMOTE_RENDER_DEFINITION,
   run: async (args, context) => {
@@ -218,6 +242,7 @@ export const REMOTE_TOOLS: readonly RemoteTool[] = [
   anonymous(RECIPE_TOOL),
   REMOTE_VALIDATE_TOOL,
   REMOTE_AUDIT_MOTION_TOOL,
+  REMOTE_AUDIT_UI_TOOL,
   REMOTE_RENDER_TOOL,
   anonymous(BUILTIN_THEMES_TOOL),
 ];

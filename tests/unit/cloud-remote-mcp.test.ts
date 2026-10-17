@@ -106,12 +106,12 @@ describe('remote MCP: discovery', () => {
     const listed = await handleRequest(mcpRequest('tools/list', {}, null), env);
     const remote = ((await listed.json()) as { result: { tools: { name: string }[] } }).result
       .tools;
-    const stdio = handleMcpMessage(
+    const stdio = await handleMcpMessage(
       { jsonrpc: '2.0', id: 1, method: 'tools/list' },
       { cwd: '/', home: '/' },
     );
     const local = (stdio?.result as { tools: { name: string }[] } | undefined)?.tools ?? [];
-    expect(local.length).toBe(13);
+    expect(local.length).toBe(14);
     expect(remote.map((entry) => entry.name)).toEqual(local.map((entry) => entry.name));
     // The remote audit schema advertises the Worker's body cap, not the local one.
     const audit = (
@@ -554,5 +554,53 @@ describe('remote MCP: motion tools', () => {
     });
     const { payload } = await tool(env, 'audit-motion', { spec: MOTION_SPEC });
     expect(payload['code']).toBe('FORBIDDEN');
+  });
+});
+
+describe('remote MCP: audit-ui', () => {
+  it('advertises the quick preset only, with the Worker body cap', async () => {
+    const { env } = harness();
+    const listed = await handleRequest(mcpRequest('tools/list', {}, null), env);
+    const tools = (
+      (await listed.json()) as {
+        result: {
+          tools: {
+            name: string;
+            inputSchema: { properties: Record<string, { enum?: string[]; maxLength?: number }> };
+          }[];
+        };
+      }
+    ).result.tools;
+    const audit = tools.find((entry) => entry.name === 'audit-ui');
+    expect(audit?.inputSchema.properties.preset?.enum).toEqual(['quick']);
+    expect(audit?.inputSchema.properties.html?.maxLength).toBe(1024 * 1024);
+    expect(audit?.inputSchema.properties).not.toHaveProperty('timeoutMs');
+  });
+
+  it('refuses audit-ui without a bearer, before any work', async () => {
+    const { env, fetchMock } = harness();
+    const { reply, payload } = await tool(env, 'audit-ui', { spec: SPEC }, null);
+    expect(reply.isError).toBe(true);
+    expect(payload['code']).toBe('UNAUTHENTICATED');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('runs the quick preset with a bearer', async () => {
+    const { env } = harness();
+    const { reply, payload } = await tool(env, 'audit-ui', { spec: SPEC });
+    expect(reply.isError).toBeUndefined();
+    expect(payload['preset']).toBe('quick');
+    expect(payload['input']).toBe('spec');
+    expect(payload['complete']).toBe(true);
+  });
+
+  it('refuses the publication preset with a pointer to the local CLI', async () => {
+    const { env } = harness();
+    const { reply, payload } = await tool(env, 'audit-ui', {
+      spec: SPEC,
+      preset: 'publication',
+    });
+    expect(reply.isError).toBe(true);
+    expect(String(payload['text'] ?? payload['message'])).toContain('ak-render audit-ui');
   });
 });

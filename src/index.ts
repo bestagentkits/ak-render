@@ -6,6 +6,19 @@
  * yet are not exported — the package never advertises a scaffold.
  */
 
+export type { UiAuditOptions, UiQuickOptions } from './audit/ui-audit.js';
+export { auditUi, auditUiQuick, isHtmlInput } from './audit/ui-audit.js';
+export type { BrowserLauncher, BrowserLike } from './audit/ui-audit-browser.js';
+export type {
+  UiAuditCheck,
+  UiAuditMode,
+  UiAuditReport,
+  UiColorScheme,
+  UiFinding,
+} from './audit/ui-audit-report.js';
+export { UI_FINDINGS_PER_RULE, uiAuditFails } from './audit/ui-audit-report.js';
+export type { UiAuditPreset, UiRule, UiSeverity } from './audit/ui-audit-rules.js';
+export { UI_AUDIT_PRESETS, UI_RULE_IDS, UI_RULES } from './audit/ui-audit-rules.js';
 export type { DataRow, DataScalar, MaterializedData } from './data/dataset-types.js';
 export type { ValueFormat } from './data/format-value.js';
 export { VALUE_FORMATS } from './data/format-value.js';

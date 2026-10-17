@@ -526,7 +526,7 @@ blocks:
           codex plugin marketplace add bestagentkits/ak-render
           codex plugin add ak-render@ak-render
       - type: text
-        text: '`ak-render mcp` serves the same loop over stdio as MCP tools: `catalog`, `search-catalog`, `describe`, the icon tools, `motions`, `recipes`, `recipe`, `validate`, `audit-motion`, `render` and `themes`. The `render` tool writes the file and returns only a summary, so **the page never enters the context**.'
+        text: '`ak-render mcp` serves the same loop over stdio as MCP tools: `catalog`, `search-catalog`, `describe`, the icon tools, `motions`, `recipes`, `recipe`, `validate`, `audit-motion`, `audit-ui`, `render` and `themes`. The `render` tool writes the file and returns only a summary, so **the page never enters the context**.'
       - type: code
         language: json
         title: MCP client configuration

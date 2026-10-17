@@ -11,6 +11,23 @@ Release mechanics and the compatibility contract live in
 
 ### Added
 
+- Visual audit. `ak-render audit-ui <spec|page.html>` checks the compiled
+  artifact. The `quick` preset (default) reads the resolved theme and the
+  markup without a browser: theme text contrast, wide tables and long chart
+  labels. `--preset publication` adds a headless Chromium pass at 375, 768
+  and 1440 px in light and dark, then no-JS, reduced motion and print:
+  horizontal overflow (also with disclosures open), clipped chart labels,
+  rendered text contrast, small text, touch targets, broken images, runtime
+  errors, a tab/disclosure/theme-toggle smoke test, content hidden without
+  JavaScript and motion under reduced motion. It runs under a time budget
+  (`--timeout`), blocks every network request, runs only the runtime it
+  compiled (HTML from elsewhere runs with JavaScript off) and writes one
+  screenshot per check with `--evidence-dir`. Findings carry a rule,
+  severity, spec path, viewport, evidence and fix; `--fail-on` gates CI and
+  an incomplete run fails the gate. The MCP servers add `audit-ui` (quick only
+  remotely); the library exports `auditUi`, `auditUiQuick` and `UI_RULES`.
+  See [docs/audit-ui.md](./docs/audit-ui.md).
+
 - Motion Studio. `ak-render motion studio <spec>` serves a local,
   development-only dashboard over one Page Spec: a block list and a recipe
   gallery of compiled examples, an inspector with the phase timeline, timing,
@@ -151,6 +168,11 @@ Release mechanics and the compatibility contract live in
   refused it. A deployment without OAuth keeps anonymous discovery.
 
 ### Fixed
+
+- Chart data tables scroll inside their own box instead of widening the page
+  on a phone when the chart's table is opened, the y-axis title no longer
+  starts outside the chart, and the kanban board no longer overflows the
+  printed page.
 
 - Malformed YAML no longer compiles silently. A duplicate key, an
   unterminated scalar, a second document or a recovered indentation error now
