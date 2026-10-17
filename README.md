@@ -293,7 +293,7 @@ that cannot install Node or need a URL to hand someone.
 **Local CLI.** The loop above, with `ak-render` on the path or through `npx`.
 
 **Local MCP over stdio.** `ak-render mcp` serves `catalog`, `search-catalog`,
-`describe`, `search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `audit-motion`, `compose`, `render` and `themes` as MCP
+`describe`, `search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `repair`, `audit-motion`, `compose`, `render` and `themes` as MCP
 tools. `render` and `compose` write the HTML to disk
 and returns only a summary, so the page never enters the agent's context.
 
@@ -307,7 +307,7 @@ and returns only a summary, so the page never enters the agent's context.
 
 **Remote MCP over Streamable HTTP.** `https://render.agentkit.best/mcp` serves
 `catalog`, `search-catalog`, `describe`, `search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`,
-`audit-motion`, `compose`, `render` and `themes` with the same contracts. A remote server cannot write into your filesystem, so
+`repair`, `audit-motion`, `compose`, `render` and `themes` with the same contracts. A remote server cannot write into your filesystem, so
 `render` and `compose` take no `out`: it stores the page and returns the same summary plus an
 `artifactUrl` that lives for one hour, or a share link that lives for 30 days
 with `share: true`. The HTML still never enters the agent's context.
@@ -429,6 +429,8 @@ import {
 | `validate(spec)` | Report spec diagnostics without rendering | Available |
 | `compose(input, options)`, `composeSpec(input)` | Expand a typed intent into a Page Spec, then compile it (or not, with `dryRun`) | Available |
 | `composeIntents()`, `composeInputJsonSchema()` | Compose intents with their content schemas | Available |
+| `validate(spec, { suggest: true })` | Diagnostics with suggested JSON Patch `fixes` | Available |
+| `repair(spec, { mode: 'safe' })` | Apply only semantics-preserving fixes, revalidate, log changes | Available |
 | `normalize(spec)` | Produce the flat internal IR | Available |
 | `catalog(options)` | Compact list of blocks and actions, optionally one `category` | Available |
 | `searchCatalog(query)` | Block types ranked by intent words | Available |
@@ -445,9 +447,10 @@ import {
 ```bash
 ak-render page.yaml --out page.html
 ak-render - --out page.html < page.yaml   # read the spec from stdin
-ak-render validate page.json
+ak-render validate page.json [--suggest]
 ak-render compose <input|-> [--out <file.html>] [--spec-out <spec.yaml>] [--dry-run]
 ak-render compose intents
+ak-render repair page.yaml --out page.yaml   # apply safe fixes only
 ak-render catalog [--category <c>]
 ak-render search-catalog <terms...>
 ak-render icons <search <terms...>|describe <icon>|packs>

@@ -67,7 +67,9 @@ Otherwise, or to change the page further, use the full loop:
    The result is `{ ok, diagnostics[] }`. Each diagnostic has a stable `code`
    and a JSON `path` to fix, such as `$.blocks[0].titl`. For an unknown prop,
    `details.allowed` lists the valid props. Fix every diagnostic by its path,
-   then validate again.
+   then validate again. `validate --suggest` adds `fixes` (JSON Patches marked
+   `safe` or `ambiguous`), and `repair page.yaml --out page.yaml` applies only
+   the safe ones; pick ambiguous ones yourself.
 
 5. **Compile** to an `.html` file. The first argument is the spec path, or
    `-` for stdin. `--theme` overrides the spec's preset:
@@ -201,7 +203,7 @@ reader; the compiler handles reduced motion and print.
 `npx -y @bestagentkits/render mcp` serves the same loop over stdio as the tools
 `catalog` (optional `category`), `search-catalog` (`query`), `describe`
 (`type`, or `types` with optional `compact`), `search-icons` (`query`), `describe-icon`, `icon-packs`, `motions` (optional `query`, or `id` with `compact`), `recipes`, `recipe` (`name`),
-`validate` (`spec`), `audit-motion` (`spec` or `html`), `compose` (`intent`, `content`, optional `theme`, `out`, `dryRun`, `returnSpec`), `render` (`spec`, `out`, optional `theme`), and `themes`. `spec` may be YAML or JSON text, or the parsed
+`validate` (`spec`, optional `suggest`), `repair` (`spec`), `audit-motion` (`spec` or `html`), `compose` (`intent`, `content`, optional `theme`, `out`, `dryRun`, `returnSpec`), `render` (`spec`, `out`, optional `theme`), and `themes`. `spec` may be YAML or JSON text, or the parsed
 object. `render` writes the file to `out` and returns only the summary. When
 these tools are available, use them instead of the shell commands.
 

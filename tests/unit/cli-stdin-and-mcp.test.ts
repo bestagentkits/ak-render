@@ -23,6 +23,13 @@ blocks:
     txt: hello
 `;
 
+/** Every suggested fix in a reply's diagnostics, in order. */
+function withFixes(
+  diagnostics: { fixes?: { rule: string; classification: string; patch: { op: string }[] }[] }[],
+) {
+  return diagnostics.flatMap((diagnostic) => diagnostic.fixes ?? []);
+}
+
 const workspace = mkdtempSync(join(tmpdir(), 'ak-render-agent-'));
 afterAll(() => rmSync(workspace, { recursive: true, force: true }));
 
@@ -57,6 +64,42 @@ describe('spec from standard input', () => {
     const c = io(BAD_SPEC);
     expect(run(['validate', '-', '--json'], c.io)).toBe(1);
     expect(JSON.parse(c.out()).diagnostics[0].path).toMatch(/^\$\.blocks\[0\]/u);
+  });
+
+  it('lists suggested fixes with validate --suggest, and only then', () => {
+    const plain = io(BAD_SPEC);
+    expect(run(['validate', '-', '--json'], plain.io)).toBe(1);
+    expect(plain.out()).not.toContain('"fixes"');
+
+    const suggested = io(BAD_SPEC);
+    expect(run(['validate', '-', '--suggest', '--json'], suggested.io)).toBe(1);
+    const fix = withFixes(JSON.parse(suggested.out()).diagnostics)[0];
+    expect(fix).toMatchObject({ rule: 'property/rename', classification: 'ambiguous' });
+
+    const text = io(BAD_SPEC);
+    run(['validate', '-', '--suggest'], text.io);
+    expect(text.err()).toContain(
+      'fix (ambiguous, property/rename) $.blocks[0].txt: rename /blocks/0/txt to /blocks/0/text',
+    );
+  });
+
+  it('repairs safe problems in place and leaves guesses to the author', () => {
+    const file = join(workspace, 'repair-me.yaml');
+    writeFileSync(file, `${SPEC}  - type: badge\n    text: x\n    tone: Info # keep me\n`, 'utf8');
+    const c = io();
+    expect(run(['repair', file, '--out', file], c.io)).toBe(0);
+    expect(c.err()).toContain('repaired: $.blocks[1].tone: enum/case');
+    expect(readFileSync(file, 'utf8')).toContain('tone: info # keep me');
+
+    const left = io(BAD_SPEC);
+    expect(run(['repair', '-', '--json'], left.io)).toBe(1);
+    const report = JSON.parse(left.out());
+    expect(report).toMatchObject({ ok: false, changed: false, changes: [] });
+    expect(report.text).toBeUndefined();
+    expect(withFixes(report.diagnostics)[0]?.classification).toBe('ambiguous');
+
+    const unreadable = io();
+    expect(run(['repair', join(workspace, 'missing.yaml')], unreadable.io)).toBe(2);
   });
 
   it('produces the same bytes from stdin as from the same text on disk', () => {
@@ -128,6 +171,7 @@ describe('MCP server', () => {
       'recipes',
       'recipe',
       'validate',
+      'repair',
       'audit-motion',
       'compose',
       'render',
@@ -215,6 +259,27 @@ describe('MCP server', () => {
     const unknown = call('describe', { types: ['diagram-chart'] });
     expect(unknown.isError).toBe(true);
     expect(unknown.content[0]?.text).toContain('closest: ');
+  });
+
+  it('suggests fixes on request and repairs only what is safe', () => {
+    const plain = call('validate', { spec: BAD_SPEC });
+    expect(plain.content[0]?.text).not.toContain('"fixes"');
+    const suggested = JSON.parse(
+      call('validate', { spec: BAD_SPEC, suggest: true }).content[0]?.text ?? '',
+    );
+    expect(withFixes(suggested.diagnostics)[0]?.patch[0]?.op).toBe('test');
+    expect(call('validate', { spec: SPEC, suggest: 'yes' }).isError).toBe(true);
+
+    const fixed = call('repair', { spec: `${SPEC}  - type: badge\n    text: x\n    tone: Info\n` });
+    expect(fixed.isError).toBeUndefined();
+    const reply = JSON.parse(fixed.content[0]?.text ?? '');
+    expect(reply.changes.map((change: { rule: string }) => change.rule)).toEqual(['enum/case']);
+    expect(reply.spec).toContain('tone: info');
+
+    const unchanged = call('repair', { spec: BAD_SPEC });
+    expect(unchanged.isError).toBe(true);
+    expect(JSON.parse(unchanged.content[0]?.text ?? '').spec).toBeUndefined();
+    expect(call('repair', { spec: SPEC, mode: 'aggressive' }).isError).toBe(true);
   });
 
   it('flags an invalid spec with paths to fix', () => {

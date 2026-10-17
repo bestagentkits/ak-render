@@ -23,6 +23,17 @@ Release mechanics and the compatibility contract live in
   `composeIntents()` and `composeInputJsonSchema()`, and both MCP servers gain
   a `compose` tool (`dryRun`, `returnSpec`; remote stores it like `render`).
   Additive: `render` and `validate` are unchanged.
+- Suggested fixes and a safe repair mode. `validate(spec, { suggest: true })`
+  (CLI `validate --suggest`, MCP `validate` with `suggest: true`) attaches
+  `fixes` to diagnostics: RFC 6902 patches that start with a `test` of the
+  current value, with a rule id, the diagnostic path and a `safe` or
+  `ambiguous` classification. `repair(spec, { mode: 'safe' })` (CLI
+  `ak-render repair`, MCP `repair`) applies only the safe fixes, revalidates,
+  keeps YAML comments where the edit can be replayed in place and returns a
+  change log; near-name guesses for block
+  types, actions, events, properties and enum values stay with the author.
+  Without `suggest`, diagnostics are unchanged.
+
 - Vietnamese intent search. `search-catalog` (CLI, MCP and `searchCatalog`)
   folds diacritics and `đ` before tokenizing and maps common Vietnamese words
   and phrases ("biểu đồ", "bảng giá", "dòng thời gian") to the English words
@@ -30,6 +41,7 @@ Release mechanics and the compatibility contract live in
   words rank as before; a few short Vietnamese words that are not English
   index words ("bang", "nut", "loc") now find their blocks. Motion recipe
   search shares the same tokenizer.
+
 - Motion Studio. `ak-render motion studio <spec>` serves a local,
   development-only dashboard over one Page Spec: a block list and a recipe
   gallery of compiled examples, an inspector with the phase timeline, timing,
@@ -186,6 +198,12 @@ Release mechanics and the compatibility contract live in
 
 ### Fixed
 
+- A table row-width warning now names the authored row. An invalid row is
+  dropped during normalization, so later warnings used to shift onto an
+  earlier index (`rows[0]` instead of `rows[1]`), which misled agents fixing
+  by path.
+- `ak-render validate` lists each warning once. A spec with an error used to
+  print every warning twice in text mode; `--json` was not affected.
 - Malformed YAML no longer compiles silently. A duplicate key, an
   unterminated scalar, a second document or a recovered indentation error now
   fails with `SPEC_PARSE_ERROR` and its line and column, instead of producing a

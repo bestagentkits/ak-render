@@ -18,7 +18,7 @@
  * configured with a token. They take no spec and read only static compiler
  * data (a search query is at most 200 characters), but each call still builds a response of
  * several kilobytes, so they count per client IP, and the transport caps a
- * batch at 16 members. `validate` parses an arbitrary spec, so it needs a
+ * batch at 16 members. `validate` and `repair` parse an arbitrary spec, so they need a
  * bearer with the render grant and counts against its own limit.
  *
  * A request that presents a bearer is authenticated before any message runs.
@@ -60,6 +60,7 @@ import {
   REMOTE_RENDER_DEFINITION,
   SEARCH_CATALOG_TOOL,
   SEARCH_ICONS_TOOL,
+  REPAIR_TOOL,
   VALIDATE_TOOL,
 } from '../../../src/mcp/mcp-tool-definitions.js';
 import { PACKAGE_NAME, VERSION } from '../../../src/version.js';
@@ -80,9 +81,9 @@ import { createArtifact, createShare } from './share.js';
 
 export const REMOTE_INSTRUCTIONS = `AK Render compiles a Page Spec (YAML or JSON) into one self-contained, offline HTML file.
 Fastest path: compose builds a whole page from a typed intent and content (e.g. investment-report) in one call; pass dryRun or returnSpec to get the Page Spec back for edits.
-Full control: call catalog once (or search-catalog with a few words), describe only the block types you plan to use (several at once with types, compact: true for the short form), find icons by meaning with search-icons (describe-icon, icon-packs for detail), find motion recipes with motions, optionally start from a recipe (list them with recipes), validate the spec and fix every diagnostic by its JSON path (audit-motion checks the motion it names), then render (themes lists the presets).
+Full control: call catalog once (or search-catalog with a few words), describe only the block types you plan to use (several at once with types, compact: true for the short form), find icons by meaning with search-icons (describe-icon, icon-packs for detail), find motion recipes with motions, optionally start from a recipe (list them with recipes), validate the spec and fix every diagnostic by its JSON path (repair applies the safe fixes; validate with suggest: true lists the rest as JSON Patches; audit-motion checks the motion it names), then render (themes lists the presets).
 On this remote server render stores the page and returns its artifactUrl and a short summary, never the HTML. Pass share: true for a longer-lived share link.
-validate, audit-motion, compose and render need an AgentKit API key or OAuth access token as the bearer in the Authorization header.
+validate, repair, audit-motion, compose and render need an AgentKit API key or OAuth access token as the bearer in the Authorization header.
 Describe meaning, not presentation: the compiler owns layout, colour, typography and motion.`;
 
 /** Per-request context every remote tool call receives. */
@@ -135,6 +136,16 @@ function anonymous(tool: McpTool<unknown>): RemoteTool {
     },
   };
 }
+
+const REMOTE_REPAIR_TOOL: RemoteTool = {
+  ...REPAIR_TOOL,
+  run: async (args, context) => {
+    // Up to REPAIR_MAX_ATTEMPTS revalidations per call: charged like a render.
+    const guarded = await guard(context, ['render'], 'render');
+    if (!guarded.ok) return guarded.result;
+    return REPAIR_TOOL.run(args, context);
+  },
+};
 
 const REMOTE_VALIDATE_TOOL: RemoteTool = {
   ...VALIDATE_TOOL,
@@ -283,6 +294,7 @@ export const REMOTE_TOOLS: readonly RemoteTool[] = [
   anonymous(RECIPES_TOOL),
   anonymous(RECIPE_TOOL),
   REMOTE_VALIDATE_TOOL,
+  REMOTE_REPAIR_TOOL,
   REMOTE_AUDIT_MOTION_TOOL,
   REMOTE_COMPOSE_TOOL,
   REMOTE_RENDER_TOOL,
