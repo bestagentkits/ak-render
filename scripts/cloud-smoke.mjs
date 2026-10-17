@@ -131,12 +131,19 @@ async function modernMcp(method, params, withToken = false) {
 
 /** GET /v1/version: the deployed build and the tool names it serves. */
 async function versionCheck() {
-  const response = await fetch(`${BASE_URL}/v1/version`);
+  let response;
   let body;
-  try {
-    body = await response.json();
-  } catch {
-    body = undefined;
+  // Right after a deploy some edge locations still serve the old build for a
+  // few seconds, so wait for the expected one before judging it.
+  for (let attempt = 1; ; attempt += 1) {
+    response = await fetch(`${BASE_URL}/v1/version`);
+    try {
+      body = await response.json();
+    } catch {
+      body = undefined;
+    }
+    if (EXPECT_BUILD === '' || body?.build === EXPECT_BUILD || attempt >= 6) break;
+    await new Promise((resolve) => setTimeout(resolve, 5000));
   }
   const ok = check(
     response.status === 200 && Array.isArray(body?.tools) && body.tools.length > 0,

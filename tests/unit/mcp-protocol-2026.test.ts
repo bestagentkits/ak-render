@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { decodeMcpHeaderValue, handleMcpHttpRequest } from '../../src/mcp/mcp-http-transport.js';
 import { LOCAL_INSTRUCTIONS, LOCAL_TOOLS } from '../../src/mcp/mcp-local-tools.js';
 import { LATEST_LEGACY_PROTOCOL, LATEST_PROTOCOL } from '../../src/mcp/mcp-protocol.js';
+import { handleMcpLine } from '../../src/mcp/mcp-stdio-transport.js';
 import { CATALOG_TOOL, VALIDATE_TOOL } from '../../src/mcp/mcp-tool-definitions.js';
 import { handleMcpMessage } from '../../src/mcp-server.js';
 import { PACKAGE_NAME, VERSION } from '../../src/version.js';
@@ -179,7 +180,7 @@ describe('MCP 2026-07-28 over Streamable HTTP', () => {
   });
 
   it('answers 404 for a method the revision removed or never had', async () => {
-    for (const method of ['ping', 'logging/setLevel', 'resources/list']) {
+    for (const method of ['initialize', 'ping', 'logging/setLevel', 'resources/list']) {
       const body = modernRequest(method);
       const { status, body: reply } = await post(body, modernHeaders(body));
       expect(status).toBe(404);
@@ -243,5 +244,40 @@ describe('MCP 2026-07-28 over stdio', () => {
       context,
     );
     expect(reply?.error?.code).toBe(-32602);
+  });
+
+  it('answers server/discover under a legacy revision as method not found', () => {
+    const reply = handleMcpMessage(
+      {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'server/discover',
+        params: { _meta: { ...META, 'io.modelcontextprotocol/protocolVersion': '2025-11-25' } },
+      },
+      context,
+    );
+    expect(reply?.error?.code).toBe(-32601);
+  });
+
+  it('answers a non-string _meta revision as invalid params', () => {
+    const reply = handleMcpMessage(
+      {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'tools/list',
+        params: { _meta: { ...META, 'io.modelcontextprotocol/protocolVersion': 5 } },
+      },
+      context,
+    );
+    expect(reply?.error?.code).toBe(-32602);
+  });
+
+  it('refuses a batch that carries 2026-07-28 requests', () => {
+    const line = JSON.stringify([
+      modernRequest('tools/list', {}, 1),
+      modernRequest('tools/list', {}, 2),
+    ]);
+    const reply = JSON.parse(handleMcpLine(line, context) ?? '{}') as RpcBody;
+    expect(reply.error?.code).toBe(-32600);
   });
 });

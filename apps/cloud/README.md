@@ -69,9 +69,10 @@ Transport behaviour:
   removed batching, a batch answers `400`. A batch carries at most 16 members
   and never `initialize`; otherwise it answers `400` before any member runs.
 - Stateless: no `Mcp-Session-Id` is issued. `GET` and `DELETE` answer `405`.
-- An unsupported `MCP-Protocol-Version` header, or an unknown revision in a
-  request's `_meta`, answers `400` with JSON-RPC `-32022` and
-  `data: { supported, requested }`, so a client can pick a mutual revision.
+- An unsupported `MCP-Protocol-Version` header answers `400` with JSON-RPC
+  `-32022` and `data: { supported, requested }`, so a client can pick a mutual
+  revision. An unknown revision in a request's `_meta` answers the same once
+  the request is authorized; with a modern header it is a header mismatch.
 - Both protocol eras are served from one endpoint. `initialize` selects the
   legacy era and negotiates a revision up to 2025-11-25. A request whose
   `_meta` carries `io.modelcontextprotocol/protocolVersion: 2026-07-28` is
@@ -79,10 +80,12 @@ Transport behaviour:
   capabilities and instructions; every result carries `resultType: "complete"`
   and the server info in `_meta`; `tools/list` adds `ttlMs` and `cacheScope`.
   Such a request must carry `io.modelcontextprotocol/clientCapabilities`
-  (otherwise `-32602`), and its `MCP-Protocol-Version`, `Mcp-Method` and
+  (otherwise `-32602`), and its `_meta` revision plus its `MCP-Protocol-Version`, `Mcp-Method` and
   `Mcp-Name` headers (Base64 `=?base64?…?=` values accepted) must match the
-  body, or it answers `400` with `-32020`. `ping` and `logging/setLevel` were
-  removed in that revision and answer `404` with `-32601` there.
+  body, or it answers `400` with `-32020`. `initialize`, `ping` and
+  `logging/setLevel` were removed in that revision and answer `404` with
+  `-32601` there; `server/discover` under a legacy revision is likewise
+  `-32601`.
 - A browser `Origin` other than the endpoint's own answers `403`; requests
   without `Origin` (non-browser clients) are unaffected.
 - The body ceiling is the REST request budget (1 MiB), answered with `413`.
@@ -373,10 +376,12 @@ curl -sS https://render.agentkit.best/v1/version
 
 A `build` other than the commit you expect (or `null`, a deploy from outside
 the workflow) means production lags the source. After a deploy the smoke
-script fails unless `build` equals the deployed commit, and on every run it
-checks that MCP `tools/list`, in both protocol eras, matches the tool names
-`/v1/version` reports. A smoke-only run against an older build prints a notice
-naming both commits instead of failing.
+script waits up to half a minute for `build` to equal the deployed commit and
+fails otherwise. It also checks that MCP `tools/list`, in both protocol eras,
+matches the tool names `/v1/version` reports; with OAuth on that check needs
+`TOKEN`. A smoke-only run against an older build that already has
+`/v1/version` prints a notice naming both commits instead of failing; one from
+before the endpoint existed fails.
 
 Migrating from the KV limiter: the first deploy with this configuration drops
 the `RATE_LIMIT` KV binding. The old namespace (`ak-render-rate-limit`) is then

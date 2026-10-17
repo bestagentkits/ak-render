@@ -137,12 +137,28 @@ export function routeMcpMessage<T extends McpToolDefinition>(
 
   // A request that names a revision in `_meta` is either modern, a legacy
   // revision (served as legacy: the handshake was never stateful here), or one
-  // this server does not speak. `server/discover` exists only in the modern era.
-  if (
-    (requested !== undefined && !modern && !isLegacyProtocol(requested)) ||
-    (message.method === 'server/discover' && requested !== undefined && !modern)
-  ) {
+  // this server does not speak.
+  if (requested !== undefined && typeof requested !== 'string') {
+    return {
+      kind: 'reply',
+      response: rpcError(
+        id,
+        JSON_RPC_ERRORS.invalidParams,
+        `_meta field ${META_KEYS.protocolVersion} must be a string`,
+      ),
+      status: 400,
+    };
+  }
+  if (requested !== undefined && !modern && !isLegacyProtocol(requested)) {
     return { kind: 'reply', response: unsupportedProtocolError(id, requested), status: 400 };
+  }
+  // `server/discover` exists only in the modern era; a legacy revision has no
+  // such method, which is not the same as an unsupported revision.
+  if (message.method === 'server/discover' && requested !== undefined && !modern) {
+    return {
+      kind: 'reply',
+      response: rpcError(id, JSON_RPC_ERRORS.methodNotFound, 'method not found: server/discover'),
+    };
   }
   if (modern) {
     const capabilities = requestMeta(message)?.[META_KEYS.clientCapabilities];
@@ -176,8 +192,9 @@ export function routeMcpMessage<T extends McpToolDefinition>(
 
   switch (message.method) {
     case 'initialize': {
-      // A handshake can only select a legacy revision; a modern client never
-      // sends one.
+      // A handshake can only select a legacy revision; revision 2026-07-28
+      // removed it.
+      if (modern) break;
       const asked = params.protocolVersion;
       return {
         kind: 'reply',
