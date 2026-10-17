@@ -11,19 +11,11 @@
  */
 
 import { randomBytes } from 'node:crypto';
-import {
-  chmodSync,
-  readFileSync,
-  realpathSync,
-  renameSync,
-  rmSync,
-  statSync,
-  writeFileSync,
-} from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { basename, dirname, join } from 'node:path';
 import { RenderError } from '../../errors.js';
+import { replaceFile } from '../../internal/replace-file.js';
 import { compile } from '../../render/render.js';
 import { motionCatalog } from '../motion-catalog.js';
 import { getMotionRecipe } from '../recipes.js';
@@ -233,16 +225,10 @@ export function startMotionStudio(options: MotionStudioOptions): Promise<MotionS
     // Write beside the file, then rename, so a crash never leaves half a spec.
     // The copy keeps the file's mode, and the hash is read again just before
     // the rename, so an editor save during the compile is not overwritten.
-    const temporary = join(dirname(file), `.${basename(file)}.${session}.tmp`);
-    try {
-      writeFileSync(temporary, state.proposedText, { encoding: 'utf8', mode: 0o600 });
-      chmodSync(temporary, statSync(file).mode & 0o7777);
+    replaceFile(file, state.proposedText, session, () => {
       const current = hashText(readFileSync(file, 'utf8'));
       if (current !== source.hash) throw stale(current);
-      renameSync(temporary, file);
-    } finally {
-      rmSync(temporary, { force: true });
-    }
+    });
     return { accepted: true, diff: state.diff, hash: load().hash };
   };
 

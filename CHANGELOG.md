@@ -11,6 +11,20 @@ Release mechanics and the compatibility contract live in
 
 ### Added
 
+- Revisioned spec editing. `ak-render patch <spec> <ops>` applies an RFC 6902
+  JSON Patch to a spec file in place: a path starting `/blocks/@<id>` addresses
+  the block with that author `id` at any depth, operations are all or nothing,
+  YAML comments and layout are kept, and the reply is a content hash plus the
+  applied changes, never the spec. `--base-hash` refuses an edit made against
+  a stale spec (`SPEC_PATCH_CONFLICT`); a patch that adds validation errors is
+  not written. The `patch` MCP tool (local: `file` or `spec`; remote: `spec`,
+  authenticated like `validate`) and the library `patch`, `patchSpecText` and
+  `specHash` expose the same contract. See
+  [docs/agent-guide.md](./docs/agent-guide.md#edit-an-existing-page).
+  Migration: additive. `RenderErrorCode` gains `SPEC_PATCH_ERROR` and
+  `SPEC_PATCH_CONFLICT`, so an exhaustive `switch` over it needs two cases;
+  `tools/list` gains `patch` after `validate`.
+
 - Motion Studio. `ak-render motion studio <spec>` serves a local,
   development-only dashboard over one Page Spec: a block list and a recipe
   gallery of compiled examples, an inspector with the phase timeline, timing,

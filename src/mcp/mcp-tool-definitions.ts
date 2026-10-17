@@ -35,6 +35,8 @@ import { CATALOG_SEARCH_LIMITS, searchCatalog } from '../registry/catalog-search
 import { DESCRIBE_MANY_LIMIT, describeMany } from '../registry/describe-many.js';
 import { catalog, describe, formatCatalogJson } from '../registry/registry.js';
 import type { CompileResult } from '../render/render.js';
+import { MAX_PATCH_OPERATIONS, type PatchResult, patch } from '../spec/patch.js';
+import { patchSpecText } from '../spec/patch-text.js';
 import { validate } from '../spec/validate.js';
 import { builtinPresetEntries } from '../theme/presets.js';
 import type { ThemeCatalog } from '../theme/theme-catalog.js';
@@ -299,6 +301,65 @@ export const VALIDATE_TOOL: McpTool<unknown> = {
   },
   run: (args) => {
     const result = validate(args.spec, { source: '<spec>' });
+    return result.ok ? text(result) : failure(result);
+  },
+};
+
+/** The `patch` arguments every transport shares; local adds `file`. */
+export const PATCH_PROPERTIES = {
+  ops: {
+    type: 'array',
+    maxItems: MAX_PATCH_OPERATIONS,
+    description:
+      'RFC 6902 operations (add, remove, replace, move, copy, test), applied in order, all or nothing. A path starting /blocks/@<id> addresses the block with that id at any depth, e.g. /blocks/@revenue-chart/title.',
+    items: {
+      type: 'object',
+      properties: {
+        op: { enum: ['add', 'remove', 'replace', 'move', 'copy', 'test'] },
+        path: { type: 'string' },
+        from: { type: 'string' },
+        value: {},
+      },
+      required: ['op', 'path'],
+    },
+  },
+  baseHash: {
+    type: 'string',
+    description:
+      'The hash a previous patch returned. If the spec changed since, nothing is applied and the reply carries the current hash.',
+  },
+};
+
+function patchOptions(args: Record<string, unknown>): { baseHash?: string; source: string } {
+  const baseHash = optionalString(args, 'baseHash');
+  return { source: '<spec>', ...(baseHash === undefined ? {} : { baseHash }) };
+}
+
+export const PATCH_TOOL: McpTool<unknown> = {
+  name: 'patch',
+  description:
+    'Edit a Page Spec with JSON Patch ops instead of resending it. Returns the patched spec (YAML keeps comments), its hash for the next baseHash, the changes and diagnostics.',
+  inputSchema: {
+    type: 'object',
+    properties: { spec: SPEC_INPUT, ...PATCH_PROPERTIES },
+    required: ['spec', 'ops'],
+    additionalProperties: false,
+  },
+  run: (args) => {
+    const options = patchOptions(args);
+    // YAML or JSON text comes back as text, with its comments and layout.
+    let result: Omit<PatchResult, 'spec'> & { spec: unknown };
+    if (typeof args.spec === 'string') {
+      const {
+        text: patched,
+        format: _format,
+        preserved: _preserved,
+        ...rest
+      } = patchSpecText(args.spec, args.ops, options);
+      result = { ...rest, spec: patched };
+    } else {
+      result = patch(args.spec, args.ops, options);
+    }
     return result.ok ? text(result) : failure(result);
   },
 };

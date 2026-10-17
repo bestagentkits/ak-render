@@ -38,6 +38,46 @@ cat spec.yaml | ak-render validate - --json
 
 Every command accepts `--json` and never prompts.
 
+## Edit an existing page
+
+Change a page with a small patch instead of rewriting or resending its spec.
+`ak-render patch` applies an [RFC 6902](https://www.rfc-editor.org/rfc/rfc6902)
+JSON Patch to the spec file in place and prints a hash and the applied changes,
+never the spec:
+
+```bash
+ak-render patch page.yaml '[{"op":"replace","path":"/blocks/@revenue/title","value":"Revenue, FY26"}]' --json
+ak-render patch page.yaml ops.json --base-hash s-0h3k2...   # ops from a file, or - for stdin
+```
+
+- **Address blocks by id.** A path that starts `/blocks/@<id>` resolves to the
+  block whose `id` field is `<id>`, at any depth (sections, columns, tab
+  panels), so a nested edit needs no array indexes. Give a block an `id` to
+  make it addressable; compiler-derived ids are not, because they change when
+  the page changes. An unknown or duplicate id is refused and lists the ids
+  that exist (`details.known`). Plain pointers such as `/meta/title` and
+  `/blocks/2` work as RFC 6902 specifies.
+- **Optimistic concurrency.** Every reply carries `hash`, the spec's content
+  hash (formatting and comments do not change it). Pass it back as
+  `--base-hash` (MCP `baseHash`): if the spec changed since, nothing is applied
+  and the diagnostic `SPEC_PATCH_CONFLICT` carries the current hash. `patch
+  page.yaml '[]'` reads the hash without changing anything.
+- **All or nothing.** Operations run in order on a copy. One failing
+  operation (missing target, failed `test`, unknown id) applies none and
+  reports `SPEC_PATCH_ERROR` at `ops[i].path`, `ops[i].from` or `ops[i].value`.
+- **Canonical file kept.** YAML comments, key order and untouched blocks stay as
+  written; JSON keeps its indentation. The file is replaced atomically and the
+  patch is refused if the file changed during the write. A patch that adds
+  validation errors is not written (exit 1, `written: false`); one that fixes
+  some errors of an already broken spec is. `--dry-run` reports without writing.
+
+The patched spec is validated like any other, so the reply's `diagnostics`
+list what to fix next. Over MCP, `patch` takes `ops`, optional `baseHash`, and
+either `file` (local server: edit in place, no spec in the reply) or `spec`
+(the reply carries the patched spec, as text when you sent text). The
+library exports `patch(spec, ops, { baseHash })`, `patchSpecText(text, ops)`
+and `specHash(spec)`.
+
 ## Minimal spec
 
 ```yaml
@@ -75,7 +115,8 @@ Check every block's real props with `describe` before relying on this shape.
 (optional `category`), `search-catalog` (`query`), `describe` (`type`, or
 `types` with optional `compact`), `search-icons` (`query`, optional `pack`, `limit`),
 `describe-icon` (`icon`), `icon-packs`, `motions` (optional `query`, or `id`
-with `compact`), `recipes`, `recipe` (`name`), `validate`, `audit-motion`
+with `compact`), `recipes`, `recipe` (`name`), `validate`, `patch` (`ops` with `file`
+or `spec`, optional `baseHash`), `audit-motion`
 (`spec` or `html`), `render` and `themes`. `render` writes the HTML to the
 `out` path and returns only the summary, so the page never enters your context.
 `out` must end in `.html` or `.htm`. A relative path resolves against the
@@ -94,7 +135,7 @@ it points, so review it like any file write. `spec` may be YAML/JSON text or the
 
 Without Node, use the hosted server at `https://render.agentkit.best/mcp` (MCP
 Streamable HTTP). It serves `catalog`, `search-catalog`, `describe`,
-`search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `audit-motion`, `render` and `themes` with the same names and
+`search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `patch`, `audit-motion`, `render` and `themes` with the same names and
 contracts, and the
 loop is the same. Two things differ:
 

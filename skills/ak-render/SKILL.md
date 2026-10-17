@@ -78,6 +78,20 @@ spec from stdin (`-`) and the `mcp` command need version 0.2.0 or later, and
    every opener call adds one more tab. Tell the user to refresh the page to
    see the update.
 
+7. **Edit with a patch, not a rewrite.** For a change to an existing spec,
+   send RFC 6902 ops; `/blocks/@<id>` addresses the block with that `id` at
+   any depth, so give blocks you will edit an `id`. The file keeps its
+   comments, the reply is a hash and the changes, never the spec, and a patch
+   that adds errors is not written. Pass the previous reply's `hash` as
+   `--base-hash` so a stale edit is refused. Needs a release newer than 0.3.0
+   (`ak-render patch --help` prints its usage when it exists):
+
+   ```bash
+   npx -y @bestagentkits/render patch page.yaml '[{"op":"replace","path":"/blocks/@revenue/title","value":"Revenue, FY26"}]' --json
+   ```
+
+   Then compile again.
+
 ## Minimal spec
 
 ```yaml
@@ -190,7 +204,7 @@ reader; the compiler handles reduced motion and print.
 `npx -y @bestagentkits/render mcp` serves the same loop over stdio as the tools
 `catalog` (optional `category`), `search-catalog` (`query`), `describe`
 (`type`, or `types` with optional `compact`), `search-icons` (`query`), `describe-icon`, `icon-packs`, `motions` (optional `query`, or `id` with `compact`), `recipes`, `recipe` (`name`),
-`validate` (`spec`), `audit-motion` (`spec` or `html`), `render` (`spec`, `out`, optional `theme`), and `themes`. `spec` may be YAML or JSON text, or the parsed
+`validate` (`spec`), `patch` (`ops` with `file` or `spec`, optional `baseHash`), `audit-motion` (`spec` or `html`), `render` (`spec`, `out`, optional `theme`), and `themes`. `spec` may be YAML or JSON text, or the parsed
 object. `render` writes the file to `out` and returns only the summary. When
 these tools are available, use them instead of the shell commands.
 
