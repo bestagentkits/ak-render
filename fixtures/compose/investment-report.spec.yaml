@@ -1,0 +1,186 @@
+version: 1
+meta:
+  title: Northwind Robotics Series B
+  description: A $40M round to scale warehouse picking robots across three regions.
+theme:
+  preset: executive-report
+datasets:
+  scenarios:
+    - period: "2026"
+      scenario: Bear
+      value: 18000000
+    - period: "2027"
+      scenario: Bear
+      value: 24000000
+    - period: "2028"
+      scenario: Bear
+      value: 31000000
+    - period: "2029"
+      scenario: Bear
+      value: 38000000
+    - period: "2026"
+      scenario: Base
+      value: 18000000
+    - period: "2027"
+      scenario: Base
+      value: 32000000
+    - period: "2028"
+      scenario: Base
+      value: 52000000
+    - period: "2029"
+      scenario: Base
+      value: 78000000
+    - period: "2026"
+      scenario: Bull
+      value: 18000000
+    - period: "2027"
+      scenario: Bull
+      value: 38000000
+    - period: "2028"
+      scenario: Bull
+      value: 70000000
+    - period: "2029"
+      scenario: Bull
+      value: 120000000
+  scenario-summary:
+    - scenario: Bear
+      probability: 25
+      final: 38000000
+      note: Europe slips a year
+    - scenario: Base
+      probability: 50
+      final: 78000000
+      note: ""
+    - scenario: Bull
+      probability: 25
+      final: 120000000
+      note: Second 3PL rollout lands early
+blocks:
+  - type: hero
+    eyebrow: Investment report
+    title: Northwind Robotics Series B
+    description: A $40M round to scale warehouse picking robots across three regions.
+  - type: sidebar-layout
+    sidebar:
+      - type: key-value
+        id: facts
+        title: Key facts
+        items:
+          - key: Company
+            value: Northwind Robotics
+          - key: Stage
+            value: Series B
+          - key: Ticket
+            value: $12M of $40M
+          - key: Memo date
+            value: 2026-10-17
+    blocks:
+      - type: callout
+        id: thesis
+        tone: info
+        title: "Recommendation: Invest"
+        text: Northwind has the lowest cost per pick in the segment and a contracted
+          pipeline that covers 70% of next year's plan. We recommend leading the
+          round.
+      - type: list
+        id: thesis-points
+        title: Why
+        items:
+          - text: Gross margin rose from 31% to 44% in four quarters as fleet utilisation
+              improved.
+          - text: Two of the top five US 3PLs have signed multi-site agreements.
+          - text: The round funds a European launch the team has already staffed.
+  - type: kpi
+    id: metrics
+    items:
+      - label: ARR
+        value: $18.4M
+        delta: +142%
+        trend: up
+        good: up
+      - label: Gross margin
+        value: 44%
+        delta: +13 pt
+        trend: up
+        good: up
+      - label: Net retention
+        value: 131%
+        trend: flat
+      - label: Burn multiple
+        value: 1.6x
+        delta: -0.9x
+        trend: down
+        good: down
+  - type: section
+    id: scenarios
+    title: Scenarios
+    blocks:
+      - type: chart
+        id: scenarios-chart
+        kind: line
+        title: Revenue by scenario
+        dataRef: scenarios
+        x:
+          field: period
+        y:
+          field: value
+          label: Revenue
+          format: compact
+        series:
+          field: scenario
+      - type: data-table
+        id: scenarios-table
+        title: Scenario summary
+        dataRef: scenario-summary
+        columns:
+          - key: scenario
+            label: Scenario
+          - key: probability
+            label: Probability
+            type: percent
+            decimals: 0
+          - key: final
+            label: Revenue (2029)
+            type: number
+            format: compact
+          - key: note
+            label: Note
+  - type: risk-matrix
+    id: risks
+    title: Risks
+    items:
+      - area: Hardware supply
+        impact: high
+        likelihood: medium
+        note: Dual-sourced actuators from Q2.
+      - area: Customer concentration
+        impact: medium
+        likelihood: medium
+      - area: European labour rules
+        impact: medium
+        likelihood: low
+  - type: timeline
+    id: milestones
+    title: Milestones
+    items:
+      - when: Q1 2027
+        title: Close the round
+      - when: Q3 2027
+        title: First EU site live
+        text: Rotterdam pilot with an existing US customer.
+      - when: Q2 2028
+        title: Cash-flow positive in the US
+  - type: references
+    id: sources
+    title: Sources
+    items:
+      - id: "1"
+        title: Northwind management accounts FY2026
+        source: Northwind Robotics
+        year: 2026
+      - id: "2"
+        title: Warehouse automation market outlook
+        href: https://example.com/warehouse-outlook
+        authors: Lee and Ortiz
+        source: Logistics Review
+        year: 2026

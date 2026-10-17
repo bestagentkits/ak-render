@@ -14,9 +14,12 @@ import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from
 import { homedir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { stringify } from 'yaml';
 import { auditUi, type UiAuditOptions } from './audit/ui-audit.js';
 import { type UiAuditReport, type UiFinding, uiAuditFails } from './audit/ui-audit-report.js';
 import { UI_AUDIT_PRESETS, UI_SEVERITIES, type UiAuditPreset } from './audit/ui-audit-rules.js';
+import { COMPOSE_INTENTS, compose, composeIntents } from './compose/compose.js';
+import type { Diagnostic } from './diagnostics.js';
 import { isRenderError, type RenderError } from './errors.js';
 import {
   describeIcon,
@@ -46,6 +49,9 @@ import { type CompactBlockDescription, describeMany } from './registry/describe-
 import { type Catalog, catalog, describe, formatCatalogJson } from './registry/registry.js';
 import type { BlockDefinition } from './registry/roster.js';
 import { compile } from './render/render.js';
+import { parseSpec } from './spec/parse.js';
+import { patchSpecFile } from './spec/patch-file.js';
+import { repair } from './spec/repair.js';
 import { validate } from './spec/validate.js';
 import { buildThemeCatalog, type ThemeCatalog } from './theme/theme-catalog.js';
 import { PACKAGE_NAME, VERSION } from './version.js';
@@ -74,6 +80,9 @@ function sourceLabel(path: string): string {
 interface Flags {
   json: boolean;
   compact: boolean;
+  dryRun: boolean;
+  specOut?: string;
+  suggest: boolean;
   category?: string;
   pack?: string;
   limit?: string;
@@ -84,6 +93,7 @@ interface Flags {
   evidenceDir?: string;
   timeout?: string;
   chromium?: string;
+  baseHash?: string;
   out?: string;
   theme?: string;
   themeFile?: string;
@@ -124,6 +134,84 @@ function reportDiagnostics(
     const location = diagnostic.nodeId === undefined ? '' : ` [${diagnostic.nodeId}]`;
     io.stderr(`${diagnostic.severity}: ${diagnostic.path}${location}: ${diagnostic.message}\n`);
   }
+}
+
+/** Longest JSON value a fix line prints before eliding the rest. */
+const FIX_VALUE_PREVIEW = 60;
+
+/** One line per suggested fix, under the diagnostics they belong to. */
+function reportFixes(io: CliIo, diagnostics: readonly Diagnostic[]): void {
+  for (const diagnostic of diagnostics) {
+    for (const fix of diagnostic.fixes ?? []) {
+      const edit = fix.patch.find((operation) => operation.op !== 'test');
+      if (edit === undefined) continue;
+      let action: string;
+      if (edit.op === 'move') {
+        action = `rename ${edit.from} to ${edit.path}`;
+      } else {
+        const value = JSON.stringify(edit.value);
+        const preview =
+          value.length > FIX_VALUE_PREVIEW ? `${value.slice(0, FIX_VALUE_PREVIEW)}...` : value;
+        action = `${edit.op} ${edit.path} with ${preview}`;
+      }
+      io.stderr(`  fix (${fix.classification}, ${fix.rule}) ${fix.path}: ${action}\n`);
+    }
+  }
+}
+
+function repairCommand(args: string[], io: CliIo, flags: Flags): number {
+  const file = args[0];
+  if (file === undefined) {
+    io.stderr('ak-render: repair requires a spec path\n');
+    return 2;
+  }
+  const input = readSpecFile(file, io);
+  if (input === undefined) return 2;
+
+  const result = repair(input, { source: sourceLabel(file), mode: 'safe' });
+  const repaired = result.text ?? input;
+  const parsed = result.spec !== undefined;
+  if (flags.out !== undefined && parsed) {
+    try {
+      mkdirSync(dirname(resolve(flags.out)), { recursive: true });
+      writeFileSync(flags.out, repaired, 'utf8');
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      io.stderr(`ak-render: cannot write ${flags.out}: ${reason}\n`);
+      return 2;
+    }
+  }
+
+  if (flags.json) {
+    const { spec: _spec, text: _text, ...report } = result;
+    io.stdout(
+      `${JSON.stringify(
+        {
+          source: sourceLabel(file),
+          out: flags.out ?? null,
+          ...report,
+          ...(flags.out === undefined && result.changed ? { text: repaired } : {}),
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    return result.ok ? 0 : 1;
+  }
+
+  // The repaired spec is the artifact on stdout; the change log goes to stderr.
+  if (flags.out === undefined && parsed) io.stdout(repaired);
+  for (const change of result.changes) {
+    io.stderr(`repaired: ${change.path}: ${change.rule}\n`);
+  }
+  const errors = result.diagnostics.filter((item) => item.severity === 'error');
+  reportDiagnostics(io, errors);
+  reportFixes(io, errors);
+  const where = flags.out === undefined ? '' : ` to ${flags.out}`;
+  io.stderr(
+    `ak-render: ${result.changes.length} safe change(s)${parsed ? where : ''}, ${errors.length} error(s) left\n`,
+  );
+  return result.ok ? 0 : 1;
 }
 
 function compileCommand(args: string[], io: CliIo, flags: Flags): number {
@@ -632,15 +720,178 @@ function motionStudioCommand(file: string, io: CliIo, flags: Flags): number {
   return 0;
 }
 
+/** Write `text` to `path`, reporting a failure as an environment problem. */
+function writeOutput(path: string, text: string, io: CliIo): boolean {
+  try {
+    mkdirSync(dirname(resolve(path)), { recursive: true });
+    writeFileSync(path, text, 'utf8');
+    return true;
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    io.stderr(`ak-render: cannot write ${path}: ${reason}\n`);
+    return false;
+  }
+}
+
+function composeCommand(args: string[], io: CliIo, flags: Flags): number {
+  const file = args[0];
+  if (file === 'intents') {
+    const listing = composeIntents();
+    if (flags.json) io.stdout(`${JSON.stringify(listing, null, 2)}\n`);
+    else for (const entry of listing) io.stdout(`${entry.intent}  ${entry.summary}\n`);
+    return 0;
+  }
+  if (file === undefined) {
+    io.stderr(
+      `ak-render: compose requires an input path (intents: ${COMPOSE_INTENTS.join(', ')})\n`,
+    );
+    return 2;
+  }
+  const text = readSpecFile(file, io);
+  if (text === undefined) return 2;
+
+  if (flags.dryRun && flags.out !== undefined) {
+    io.stderr('ak-render: --dry-run compiles nothing, so --out is ignored\n');
+  }
+  const composed = compose(text, {
+    dryRun: flags.dryRun,
+    themeCatalog: themeCatalogFor(flags, io),
+    ...(flags.theme === undefined ? {} : { theme: flags.theme }),
+  });
+  if (!composed.ok || composed.spec === undefined) {
+    if (flags.json)
+      io.stdout(`${JSON.stringify({ ok: false, diagnostics: composed.diagnostics }, null, 2)}\n`);
+    else reportDiagnostics(io, composed.diagnostics);
+    return 1;
+  }
+  const specText = stringify(composed.spec);
+  if (flags.specOut !== undefined && !writeOutput(flags.specOut, specText, io)) return 2;
+  const result = composed.result;
+  if (result !== undefined && flags.out !== undefined && !writeOutput(flags.out, result.html, io)) {
+    return 2;
+  }
+
+  if (flags.json) {
+    io.stdout(
+      `${JSON.stringify(
+        {
+          ok: true,
+          diagnostics: composed.diagnostics,
+          specOut: flags.specOut ?? null,
+          out: result === undefined ? null : (flags.out ?? null),
+          ...(result === undefined
+            ? { spec: composed.spec }
+            : {
+                bytes: result.bytes,
+                hash: result.hash,
+                title: result.ir.meta.title,
+                theme: result.theme.name,
+                nodes: result.ir.nodes.length,
+                warnings: result.warnings,
+              }),
+        },
+        null,
+        2,
+      )}\n`,
+    );
+  } else if (result === undefined) {
+    // A dry run's product is the spec itself.
+    if (flags.specOut === undefined) io.stdout(specText);
+  } else if (flags.out === undefined) {
+    io.stdout(result.html);
+  } else {
+    io.stdout(`wrote ${result.bytes} bytes to ${flags.out} (hash ${result.hash})\n`);
+  }
+  if (!flags.json) {
+    for (const warning of composed.diagnostics.filter((item) => item.severity === 'warning')) {
+      io.stderr(`warning: ${warning.path}: ${warning.message}\n`);
+    }
+  }
+  return 0;
+}
+
+/**
+ * `ak-render patch <spec> <ops>`: edit the spec file in place. Ops are inline
+ * JSON (an argument starting with `[`), a JSON or YAML file, or `-` for stdin.
+ * The output is the hash and change list, never the spec.
+ */
+function patchCommand(args: string[], io: CliIo, flags: Flags): number {
+  const [file, opsArg] = args;
+  if (file === undefined || opsArg === undefined) {
+    io.stderr('ak-render: patch requires a spec file and operations\n');
+    return 2;
+  }
+  if (file === STDIN_PATH) {
+    io.stderr('ak-render: patch edits a spec file in place; pass a file path, not -\n');
+    return 2;
+  }
+  const inline = opsArg.trimStart().startsWith('[');
+  const opsText = inline ? opsArg : readSpecFile(opsArg, io);
+  if (opsText === undefined) return 2;
+  let ops: unknown;
+  try {
+    ops = parseSpec(opsText, { source: inline ? '<ops>' : sourceLabel(opsArg) });
+  } catch (error) {
+    if (!isRenderError(error)) throw error;
+    io.stderr(`ak-render: ${error.message}\n`);
+    return 2;
+  }
+
+  let result: ReturnType<typeof patchSpecFile>;
+  try {
+    result = patchSpecFile(file, ops, {
+      dryRun: flags.dryRun,
+      ...(flags.baseHash === undefined ? {} : { baseHash: flags.baseHash }),
+    });
+  } catch (error) {
+    if (isRenderError(error)) throw error;
+    io.stderr(
+      `ak-render: cannot patch ${file}: ${error instanceof Error ? error.message : String(error)}\n`,
+    );
+    return 2;
+  }
+
+  if (flags.json) {
+    io.stdout(`${JSON.stringify({ source: file, ...result }, null, 2)}\n`);
+  } else {
+    if (result.written) {
+      io.stdout(
+        `patched ${file}: ${result.changes.length} operations, hash ${result.hash} (was ${result.baseHash})\n`,
+      );
+    } else if (result.applied) {
+      const why = flags.dryRun
+        ? 'dry run'
+        : result.changes.length === 0
+          ? 'no operations'
+          : 'the patch adds errors';
+      io.stdout(
+        `not written (${why}): ${file}, hash ${result.hash} (current ${result.baseHash})\n`,
+      );
+    }
+    if (!result.preserved && result.written) {
+      io.stderr(`warning: ${file} was re-serialized; YAML comments and layout were not kept\n`);
+    }
+    reportDiagnostics(io, result.diagnostics);
+  }
+  return result.ok ? 0 : 1;
+}
+
 const COMMANDS: Record<string, Command> = {
   compile: {
     summary: 'Compile a Page Spec to a standalone HTML artifact.',
     usage: 'ak-render <spec.yaml|spec.json|-> [--out <file.html>] [--theme <preset>] [--json]',
     run: compileCommand,
   },
+  compose: {
+    summary:
+      'Build a page from a typed intent and content slots; writes the expanded spec on request.',
+    usage:
+      'ak-render compose <input.yaml|input.json|-> [--out <file.html>] [--spec-out <spec.yaml>] [--theme <preset>] [--dry-run] [--json]\n  ak-render compose intents [--json]',
+    run: composeCommand,
+  },
   validate: {
     summary: 'Validate a Page Spec without rendering it.',
-    usage: 'ak-render validate <spec.yaml|spec.json|-> [--json]',
+    usage: 'ak-render validate <spec.yaml|spec.json|-> [--suggest] [--json]',
     run: (args, io, flags) => {
       const file = args[0];
       if (file === undefined) {
@@ -650,7 +901,7 @@ const COMMANDS: Record<string, Command> = {
       const text = readSpecFile(file, io);
       if (text === undefined) return 2;
 
-      const result = validate(text, { source: sourceLabel(file) });
+      const result = validate(text, { source: sourceLabel(file), suggest: flags.suggest });
       if (flags.json) {
         io.stdout(`${JSON.stringify(result, null, 2)}\n`);
       } else if (result.ok) {
@@ -660,14 +911,29 @@ const COMMANDS: Record<string, Command> = {
         );
       } else {
         reportDiagnostics(io, result.diagnostics);
+        reportFixes(io, result.diagnostics);
       }
-      if (!flags.json) {
+      // A failed run already listed every diagnostic, warnings included.
+      if (!flags.json && result.ok) {
         for (const warning of result.diagnostics.filter((item) => item.severity === 'warning')) {
           io.stderr(`warning: ${warning.path}: ${warning.message}\n`);
         }
       }
       return result.ok ? 0 : 1;
     },
+  },
+  repair: {
+    summary:
+      'Apply only semantics-preserving fixes to a Page Spec, revalidate, and log each change.',
+    usage: 'ak-render repair <spec.yaml|spec.json|-> [--out <file>] [--json]',
+    run: repairCommand,
+  },
+  patch: {
+    summary:
+      'Edit a spec file in place with a JSON Patch; /blocks/@<id> addresses a block by its id.',
+    usage:
+      "ak-render patch <spec.yaml|spec.json> <ops.json|-|'[...]'> [--base-hash <hash>] [--dry-run] [--json]",
+    run: patchCommand,
   },
   catalog: {
     summary: 'List available blocks by category, and actions (compact).',
@@ -795,7 +1061,7 @@ const COMMANDS: Record<string, Command> = {
   },
   mcp: {
     summary:
-      'Serve the catalog, describe, icon, motion, recipe, validate, audit-motion, audit-ui, render and themes tools over MCP stdio.',
+      'Serve the catalog, describe, icon, motion, recipe, validate, repair, patch, audit-motion, audit-ui, render and themes tools over MCP stdio.',
     usage: 'ak-render mcp',
     run: () => {
       // The server keeps the process alive until its client closes stdin.
@@ -860,6 +1126,7 @@ command prompts, and every command except mcp accepts --json.
 
 const VALUE_FLAGS = [
   '--out',
+  '--spec-out',
   '--theme',
   '--theme-file',
   '--category',
@@ -872,6 +1139,7 @@ const VALUE_FLAGS = [
   '--evidence-dir',
   '--timeout',
   '--chromium',
+  '--base-hash',
 ] as const;
 
 /** Build the preset catalog for this invocation from flags and discovery. */
@@ -889,7 +1157,13 @@ function themeCatalogFor(flags: Flags, io: CliIo): ThemeCatalog {
 }
 
 function parseArgs(args: string[]): ParsedArgs | { error: string } {
-  const flags: Flags = { json: false, compact: false, themeDiscovery: true };
+  const flags: Flags = {
+    json: false,
+    compact: false,
+    dryRun: false,
+    suggest: false,
+    themeDiscovery: true,
+  };
   const positional: string[] = [];
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
@@ -902,6 +1176,14 @@ function parseArgs(args: string[]): ParsedArgs | { error: string } {
       flags.compact = true;
       continue;
     }
+    if (arg === '--dry-run') {
+      flags.dryRun = true;
+      continue;
+    }
+    if (arg === '--suggest') {
+      flags.suggest = true;
+      continue;
+    }
     if (arg === '--no-theme-discovery') {
       flags.themeDiscovery = false;
       continue;
@@ -911,6 +1193,7 @@ function parseArgs(args: string[]): ParsedArgs | { error: string } {
       const value = args[index + 1];
       if (value === undefined) return { error: `${valueFlag} requires a value` };
       if (valueFlag === '--out') flags.out = value;
+      else if (valueFlag === '--spec-out') flags.specOut = value;
       else if (valueFlag === '--theme') flags.theme = value;
       else if (valueFlag === '--category') flags.category = value;
       else if (valueFlag === '--pack') flags.pack = value;
@@ -922,6 +1205,7 @@ function parseArgs(args: string[]): ParsedArgs | { error: string } {
       else if (valueFlag === '--evidence-dir') flags.evidenceDir = value;
       else if (valueFlag === '--timeout') flags.timeout = value;
       else if (valueFlag === '--chromium') flags.chromium = value;
+      else if (valueFlag === '--base-hash') flags.baseHash = value;
       else flags.themeFile = value;
       index += 1;
       continue;

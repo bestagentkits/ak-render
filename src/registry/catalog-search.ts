@@ -4,12 +4,17 @@
  * An agent that knows what it wants ("sortable table", "pricing") should not
  * have to load the whole catalog to find the block for it. `searchCatalog`
  * ranks block types by plain word overlap with the type name, tags, use cases,
- * category and summary. There is no fuzzy matching, locale or randomness, so
- * the same query against the same roster always returns the same hits.
+ * category and summary. Words are folded to plain ASCII first, and Vietnamese
+ * phrases ("biểu đồ", "bang gia") become the English words they mean through
+ * a fixed alias table. There is no fuzzy matching, runtime locale or
+ * randomness, so the same query against the same roster always returns the
+ * same hits.
  */
 
 import { RenderError } from '../errors.js';
+import { foldText } from '../internal/fold-text.js';
 import type { BlockCategory } from './block-module.js';
+import { expandVietnamese } from './catalog-search-vi.js';
 import { BLOCK_DEFINITIONS } from './registry.js';
 import type { BlockDefinition } from './roster.js';
 
@@ -42,7 +47,7 @@ const WEIGHTS = {
  * Filler words that appear in most summaries ("and", "with") and would only
  * add ties. They are dropped from the query, never from the index.
  */
-const STOP_WORDS: ReadonlySet<string> = new Set([
+export const STOP_WORDS: ReadonlySet<string> = new Set([
   'a',
   'an',
   'and',
@@ -57,10 +62,9 @@ const STOP_WORDS: ReadonlySet<string> = new Set([
   'with',
 ]);
 
-/** Lowercase ASCII words; anything else separates words. */
+/** Lowercase ASCII words after folding accents; anything else separates words. */
 export function words(text: string): string[] {
-  return text
-    .toLowerCase()
+  return foldText(text)
     .split(/[^a-z0-9]+/u)
     .filter((word) => word !== '');
 }
@@ -107,7 +111,10 @@ function tokenScore(token: string, entry: SearchIndexEntry): number {
   return score;
 }
 
-/** The distinct query words that are scored, in query order, stop words removed. */
+/**
+ * The distinct query words that are scored, in query order: Vietnamese phrases
+ * swapped for their English words, then stop words removed.
+ */
 export function catalogSearchTokens(query: string): string[] {
   if (query.length > CATALOG_SEARCH_LIMITS.maxQueryLength) {
     throw new RenderError(
@@ -116,7 +123,7 @@ export function catalogSearchTokens(query: string): string[] {
       { path: 'query', details: { length: query.length } },
     );
   }
-  const tokens = words(query).filter((word) => !STOP_WORDS.has(word));
+  const tokens = expandVietnamese(words(query)).filter((word) => !STOP_WORDS.has(word));
   return [...new Set(tokens)].slice(0, CATALOG_SEARCH_LIMITS.maxTokens);
 }
 

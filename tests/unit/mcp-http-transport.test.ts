@@ -228,6 +228,11 @@ describe('MCP Streamable HTTP: transport errors', () => {
     const ping = { jsonrpc: '2.0', id: 1, method: 'ping' };
     const bad = await call(ping, { 'mcp-protocol-version': '1999-01-01' });
     expect(bad.response.status).toBe(400);
+    expect(bad.body?.error.code).toBe(-32022);
+    expect(bad.body?.error.data).toEqual({
+      supported: ['2026-07-28', '2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'],
+      requested: '1999-01-01',
+    });
     const good = await call(ping, { 'mcp-protocol-version': '2025-11-25' });
     expect(good.response.status).toBe(200);
   });

@@ -5,7 +5,7 @@
  */
 
 import { FORMAT_FIELDS } from '../../data/format-value.js';
-import { pathIndex, pathKey } from '../../diagnostics.js';
+import { pathKey } from '../../diagnostics.js';
 import type { IrNode } from '../../ir.js';
 import { isPlainObject, type JsonValue } from '../../json.js';
 import type { BlockModule, CheckContext } from '../../registry/block-module.js';
@@ -24,6 +24,7 @@ import {
   element,
   nodeAttributes,
   objectListProp,
+  propItemPath,
   str,
   titleHeader,
 } from '../../render/block-helpers.js';
@@ -160,7 +161,7 @@ function check(node: IrNode, context: CheckContext): void {
     if (!isMeasure(part.value) || part.value >= 0) return;
     bag.add({
       code: 'SPEC_VALIDATION_ERROR',
-      path: pathKey(pathIndex(pathKey(node.path, 'parts'), index), 'value'),
+      path: pathKey(propItemPath(node, 'parts', index), 'value'),
       nodeId: node.id,
       message: 'a part value must not be negative',
     });

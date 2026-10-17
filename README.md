@@ -112,6 +112,22 @@ key-value values render the same spans. Nothing else is parsed as markup, an
 unpaired marker stays literal, and the document title, code blocks and
 terminal lines are never changed. `describe` marks each prose prop.
 
+### Compose a page from an intent
+
+For a common page kind, skip the spec: `compose` takes a typed intent and its
+content slots and expands them, deterministically and without a model call,
+into an ordinary Page Spec built from existing blocks, then compiles it. The
+first intent is `investment-report` (thesis, key facts, metrics, scenario
+projections over one shared dataset, risks, milestones and sources). The
+expanded spec is yours to keep editing with the full block vocabulary; see
+[docs/compose.md](./docs/compose.md).
+
+```bash
+ak-render compose intents                                   # intents and their slot schemas (--json)
+ak-render compose report.yaml --out report.html --spec-out report.spec.yaml
+ak-render compose report.yaml --dry-run                     # print the expanded spec only
+```
+
 ### Start from a page recipe
 
 A recipe is a complete, valid starter spec for a common page: a dashboard, a
@@ -235,9 +251,11 @@ The page's Content Security Policy is derived from that policy. See
 
 ## Use it from an agent
 
-Agents follow one loop: find blocks with `catalog` or `search-catalog`, start
+For a page kind `compose` knows, one `compose` call is the whole task. Otherwise
+agents follow one loop: find blocks with `catalog` or `search-catalog`, start
 from a `recipe` when one fits, `describe --compact` the blocks they use,
-`validate` and fix diagnostics by JSON path, then compile. The
+`validate` and fix diagnostics by JSON path, then compile. Later edits are
+small `patch` calls that address blocks by `id`, not a rewritten spec. The
 [agent guide](./docs/agent-guide.md) has the details and [llms.txt](./llms.txt)
 is the LLM-facing index.
 
@@ -283,8 +301,8 @@ that cannot install Node or need a URL to hand someone.
 **Local CLI.** The loop above, with `ak-render` on the path or through `npx`.
 
 **Local MCP over stdio.** `ak-render mcp` serves `catalog`, `search-catalog`,
-`describe`, `search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `audit-motion`, `audit-ui`, `render` and `themes` as MCP
-tools. `render` writes the HTML to disk
+`describe`, `search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `repair`, `patch`, `audit-motion`, `audit-ui`, `compose`, `render` and `themes` as MCP
+tools. `render` and `compose` write the HTML to disk
 and returns only a summary, so the page never enters the agent's context.
 
 ```json
@@ -297,8 +315,8 @@ and returns only a summary, so the page never enters the agent's context.
 
 **Remote MCP over Streamable HTTP.** `https://render.agentkit.best/mcp` serves
 `catalog`, `search-catalog`, `describe`, `search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`,
-`audit-motion`, `audit-ui` (quick preset only), `render` and `themes` with the same contracts. A remote server cannot write into your filesystem, so
-`render` takes no `out`: it stores the page and returns the same summary plus an
+`repair`, `patch`, `audit-motion`, `audit-ui` (quick preset only), `compose`, `render` and `themes` with the same contracts. A remote server cannot write into your filesystem, so
+`render` and `compose` take no `out`: it stores the page and returns the same summary plus an
 `artifactUrl` that lives for one hour, or a share link that lives for 30 days
 with `share: true`. The HTML still never enters the agent's context.
 ```json
@@ -349,8 +367,14 @@ With the compact workflow the agent guide recommends,
   of each page is visible text; the rest is markup, CSS and script. The
   projected median output saving is 54%. A page that is mostly prose saves
   little or nothing: one of the twelve grew by 32%.
-- **Not measured yet:** live model token counts, repair loops, wall time and
-  output quality.
+- **Measured with a live model:** the
+  [agent A/B baseline](./docs/artifacts/agent-ab-baseline.md) runs the same
+  tasks on the existing flow and on the flow with the new tools, and records
+  provider-reported tokens, tool calls, repairs, wall time and a 375 px
+  overflow check per task, with confidence intervals. With `repair` shipped
+  and `compose` not yet, the model never called `repair` and the after arm
+  shows no token or wall-time saving; no saving is claimed.
+- **Not measured yet:** human-rated output quality.
 
 Characters are measured; tokens are estimated at 4 characters per token. Method
 and per-page data: [agent token cost](./docs/artifacts/agent-token-cost.md),
@@ -417,6 +441,11 @@ import {
 | `RenderError`, `isRenderError` | Stable error codes with JSON path and node ID | Available |
 | `render(spec, options)` | Compile a spec to a standalone HTML artifact | Available |
 | `validate(spec)` | Report spec diagnostics without rendering | Available |
+| `compose(input, options)`, `composeSpec(input)` | Expand a typed intent into a Page Spec, then compile it (or not, with `dryRun`) | Available |
+| `composeIntents()`, `composeInputJsonSchema()` | Compose intents with their content schemas | Available |
+| `validate(spec, { suggest: true })` | Diagnostics with suggested JSON Patch `fixes` | Available |
+| `repair(spec, { mode: 'safe' })` | Apply only semantics-preserving fixes, revalidate, log changes | Available |
+| `patch(spec, ops, { baseHash })`, `patchSpecText(text, ops)`, `specHash(spec)` | JSON Patch a spec, blocks addressed as `/blocks/@<id>`, with a content hash for optimistic concurrency | Available |
 | `normalize(spec)` | Produce the flat internal IR | Available |
 | `catalog(options)` | Compact list of blocks and actions, optionally one `category` | Available |
 | `searchCatalog(query)` | Block types ranked by intent words | Available |
@@ -433,7 +462,11 @@ import {
 ```bash
 ak-render page.yaml --out page.html
 ak-render - --out page.html < page.yaml   # read the spec from stdin
-ak-render validate page.json
+ak-render validate page.json [--suggest]
+ak-render compose <input|-> [--out <file.html>] [--spec-out <spec.yaml>] [--dry-run]
+ak-render compose intents
+ak-render repair page.yaml --out page.yaml   # apply safe fixes only
+ak-render patch page.yaml '[{"op":"replace","path":"/blocks/@intro/text","value":"..."}]' [--base-hash <hash>] [--dry-run]
 ak-render catalog [--category <c>]
 ak-render search-catalog <terms...>
 ak-render icons <search <terms...>|describe <icon>|packs>
@@ -490,6 +523,7 @@ pnpm test:browser    # Playwright, after: pnpm exec playwright install chromium
 pnpm test:package    # pack, install into a temp project, exercise API and bin
 pnpm bench:baseline  # re-run the legacy presentation-context measurement
 pnpm bench:spec      # spec compression for the composition fixtures
+pnpm bench:agent --model <id> --visual  # live-model A/B; skips without a model API key
 pnpm build && pnpm bench:render --agentkit ../agentkit --repeat 9  # committed render artifact
 pnpm site:build      # compile the landing page and gallery into site/dist
 pnpm site:deploy     # build, then deploy site/dist with wrangler

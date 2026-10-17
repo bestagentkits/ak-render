@@ -4,7 +4,7 @@
  * pins only point at where each note applies.
  */
 
-import { pathIndex, pathKey } from '../../diagnostics.js';
+import { pathKey } from '../../diagnostics.js';
 import type { IrNode } from '../../ir.js';
 import type { BlockModule, CheckContext } from '../../registry/block-module.js';
 import {
@@ -22,6 +22,7 @@ import {
   figureCaption,
   nodeAttributes,
   objectListProp,
+  propItemPath,
   resolveMedia,
   str,
   stringProp,
@@ -49,7 +50,7 @@ function check(node: IrNode, { bag }: CheckContext): void {
       bag.add({
         code: 'SPEC_VALIDATION_ERROR',
         severity: 'warning',
-        path: pathKey(pathIndex(pathKey(node.path, 'notes'), index), axis),
+        path: pathKey(propItemPath(node, 'notes', index), axis),
         nodeId: node.id,
         message: `${axis} ${value} snaps to ${snapped}: pins sit on a ${PIN_STEP}% grid`,
         details: { value, snapped },

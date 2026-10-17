@@ -6,6 +6,7 @@
  */
 
 import type { DataRow } from '../data/dataset-types.js';
+import { listItemPath, pathKey } from '../diagnostics.js';
 import type { IrNode, NetworkPolicy } from '../ir.js';
 import { isPlainObject, type JsonValue } from '../json.js';
 import { isRemote, type MediaCapability, networkAllows } from '../spec/network-policy.js';
@@ -33,6 +34,11 @@ export function numberProp(node: IrNode, key: string, fallback = 0): number {
 export function listProp(node: IrNode, key: string): JsonValue[] {
   const value = node.props[key];
   return Array.isArray(value) ? value : [];
+}
+
+/** The JSON path of item `index` of list prop `key`, at the index the author wrote. */
+export function propItemPath(node: IrNode, key: string, index: number): string {
+  return listItemPath(pathKey(node.path, key), node.props[key], index);
 }
 
 export function objectListProp(node: IrNode, key: string): Record<string, JsonValue>[] {

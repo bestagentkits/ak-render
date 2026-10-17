@@ -3,7 +3,7 @@
  *
  * The stdio server and the Streamable HTTP server list tools from here. The
  * read-only tools (`catalog`, `search-catalog`, `describe`, `recipes`,
- * `recipe`, `validate`) are complete and pure, so both transports run the very same function. `render`
+ * `recipe`, `validate`, `repair`) are complete and pure, so both transports run the very same function. `render`
  * and `themes` differ only
  * in where their output goes or where presets come from, so this module owns
  * their descriptions, input schemas and result shapes, and each transport
@@ -12,8 +12,10 @@
  * No Node-only import is allowed here; the Worker bundles this module.
  */
 
+import { stringify } from 'yaml';
 import { auditUiQuick } from '../audit/ui-audit-quick.js';
 import { UI_AUDIT_PRESETS, type UiAuditPreset } from '../audit/ui-audit-rules.js';
+import { type ComposeSpecResult, composeInputJsonSchema, composeSpec } from '../compose/compose.js';
 import {
   describeIcon,
   iconPackSummaries,
@@ -37,6 +39,9 @@ import { CATALOG_SEARCH_LIMITS, searchCatalog } from '../registry/catalog-search
 import { DESCRIBE_MANY_LIMIT, describeMany } from '../registry/describe-many.js';
 import { catalog, describe, formatCatalogJson } from '../registry/registry.js';
 import type { CompileResult } from '../render/render.js';
+import { MAX_PATCH_OPERATIONS, type PatchResult, patch } from '../spec/patch.js';
+import { patchSpecText } from '../spec/patch-text.js';
+import { repair } from '../spec/repair.js';
 import { validate } from '../spec/validate.js';
 import { builtinPresetEntries } from '../theme/presets.js';
 import type { ThemeCatalog } from '../theme/theme-catalog.js';
@@ -84,6 +89,13 @@ export function optionalTheme(args: Record<string, unknown>): string | undefined
   return typeof theme === 'string' && theme !== '' ? theme : undefined;
 }
 
+function optionalBoolean(args: Record<string, unknown>, key: string): boolean {
+  const value = args[key];
+  if (value === undefined) return false;
+  if (typeof value !== 'boolean') throw new ToolArgumentError(`"${key}" must be a boolean`);
+  return value;
+}
+
 /** An optional string argument: absent or empty means "not given". */
 function optionalString(args: Record<string, unknown>, key: string): string | undefined {
   const value = args[key];
@@ -116,14 +128,14 @@ export const CATALOG_TOOL: McpTool<unknown> = {
 export const SEARCH_CATALOG_TOOL: McpTool<unknown> = {
   name: 'search-catalog',
   description:
-    'Find block types by intent words, e.g. "sortable table" or "pricing". Returns up to 8 ranked hits with type, category, summary and score.',
+    'Find block types by intent words, in English or Vietnamese, e.g. "sortable table", "pricing" or "bieu do". Returns up to 8 ranked hits with type, category, summary and score.',
   inputSchema: {
     type: 'object',
     properties: {
       query: {
         type: 'string',
         maxLength: CATALOG_SEARCH_LIMITS.maxQueryLength,
-        description: 'A few words describing what the block should do.',
+        description: 'A few words describing what the block should do, in English or Vietnamese.',
       },
     },
     required: ['query'],
@@ -292,15 +304,113 @@ export const RECIPE_TOOL: McpTool<unknown> = {
 export const VALIDATE_TOOL: McpTool<unknown> = {
   name: 'validate',
   description:
-    'Check a Page Spec without rendering. Returns ok plus diagnostics, each with a code and the JSON path to fix.',
+    'Check a Page Spec without rendering. Returns ok plus diagnostics, each with a code and the JSON path to fix. suggest: true adds fixes: JSON Patches marked safe or ambiguous.',
   inputSchema: {
     type: 'object',
-    properties: { spec: SPEC_INPUT },
+    properties: {
+      spec: SPEC_INPUT,
+      suggest: {
+        type: 'boolean',
+        description: 'Attach suggested JSON Patch fixes to diagnostics.',
+      },
+    },
     required: ['spec'],
     additionalProperties: false,
   },
   run: (args) => {
-    const result = validate(args.spec, { source: '<spec>' });
+    const result = validate(args.spec, {
+      source: '<spec>',
+      suggest: optionalBoolean(args, 'suggest'),
+    });
+    return result.ok ? text(result) : failure(result);
+  },
+};
+
+export const REPAIR_TOOL: McpTool<unknown> = {
+  name: 'repair',
+  description:
+    'Apply only the safe fixes, revalidate, and return the change log and what is left (ambiguous fixes included). spec is returned, in the input format, only when it changed.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      spec: SPEC_INPUT,
+      mode: { type: 'string', enum: ['safe'], description: 'Only "safe" (the default).' },
+    },
+    required: ['spec'],
+    additionalProperties: false,
+  },
+  run: (args) => {
+    const mode = optionalString(args, 'mode');
+    if (mode !== undefined && mode !== 'safe') throw new ToolArgumentError('"mode" must be "safe"');
+    const {
+      spec,
+      text: repairedText,
+      ...report
+    } = repair(args.spec, {
+      source: '<spec>',
+      mode: 'safe',
+    });
+    // The agent already holds its spec; send it back only when it changed.
+    const reply = report.changed ? { ...report, spec: repairedText ?? spec } : report;
+    return report.ok ? text(reply) : failure(reply);
+  },
+};
+
+/** The `patch` arguments every transport shares; local adds `file`. */
+export const PATCH_PROPERTIES = {
+  ops: {
+    type: 'array',
+    maxItems: MAX_PATCH_OPERATIONS,
+    description:
+      'RFC 6902 operations (add, remove, replace, move, copy, test), applied in order, all or nothing. A path starting /blocks/@<id> addresses the block with that id at any depth, e.g. /blocks/@revenue-chart/title.',
+    items: {
+      type: 'object',
+      properties: {
+        op: { enum: ['add', 'remove', 'replace', 'move', 'copy', 'test'] },
+        path: { type: 'string' },
+        from: { type: 'string' },
+        value: {},
+      },
+      required: ['op', 'path'],
+    },
+  },
+  baseHash: {
+    type: 'string',
+    description:
+      'The hash a previous patch returned. If the spec changed since, nothing is applied and the reply carries the current hash.',
+  },
+};
+
+function patchOptions(args: Record<string, unknown>): { baseHash?: string; source: string } {
+  const baseHash = optionalString(args, 'baseHash');
+  return { source: '<spec>', ...(baseHash === undefined ? {} : { baseHash }) };
+}
+
+export const PATCH_TOOL: McpTool<unknown> = {
+  name: 'patch',
+  description:
+    'Edit a Page Spec with JSON Patch ops instead of resending it. Returns the patched spec (YAML keeps comments), its hash for the next baseHash, the changes and diagnostics.',
+  inputSchema: {
+    type: 'object',
+    properties: { spec: SPEC_INPUT, ...PATCH_PROPERTIES },
+    required: ['spec', 'ops'],
+    additionalProperties: false,
+  },
+  run: (args) => {
+    const options = patchOptions(args);
+    // YAML or JSON text comes back as text, with its comments and layout.
+    let result: Omit<PatchResult, 'spec'> & { spec: unknown };
+    if (typeof args.spec === 'string') {
+      const {
+        text: patched,
+        format: _format,
+        preserved: _preserved,
+        ...rest
+      } = patchSpecText(args.spec, args.ops, options);
+      result = { ...rest, spec: patched };
+    } else {
+      result = patch(args.spec, args.ops, options);
+    }
     return result.ok ? text(result) : failure(result);
   },
 };
@@ -478,6 +588,108 @@ export const AUDIT_UI_QUICK_TOOL: McpTool<unknown> = {
     return text(
       auditUiQuick(parsed.input, parsed.theme === undefined ? {} : { theme: parsed.theme }),
     );
+  },
+};
+
+const COMPOSE_INPUT = composeInputJsonSchema();
+const COMPOSE_PROPERTIES = {
+  ...(COMPOSE_INPUT.properties as Record<string, unknown>),
+  dryRun: {
+    type: 'boolean',
+    description: 'Expand and validate only; returns the spec instead of rendering.',
+  },
+  returnSpec: {
+    type: 'boolean',
+    description: 'Also return the expanded Page Spec as YAML, for later edits.',
+  },
+};
+
+const COMPOSE_DESCRIPTION =
+  'One call: build a page from a typed intent and content slots, no Page Spec to write. Returns a summary and diagnostics, never HTML; dryRun or returnSpec add the spec as YAML.';
+
+/** The shared half of `compose`: argument checks and expansion. */
+export interface ComposeToolStep {
+  composed: ComposeSpecResult & { spec: NonNullable<ComposeSpecResult['spec']> };
+  dryRun: boolean;
+  returnSpec: boolean;
+}
+
+/** Reject a non-boolean flag before any work or metering happens. */
+export function checkComposeFlags(args: Record<string, unknown>): void {
+  for (const key of ['dryRun', 'returnSpec'] as const) {
+    if (args[key] !== undefined && typeof args[key] !== 'boolean') {
+      throw new ToolArgumentError(`"${key}" must be a boolean`);
+    }
+  }
+}
+
+/**
+ * Check the compose arguments and expand them. A failed expansion is returned
+ * as the tool result, carrying every diagnostic with its path.
+ */
+export function composeToolStep(
+  args: Record<string, unknown>,
+  themeCatalog?: ThemeCatalog,
+): ComposeToolStep | ToolResult {
+  checkComposeFlags(args);
+  const { intent, content, theme } = args;
+  const composed = composeSpec(
+    { intent, content, ...(theme === undefined ? {} : { theme }) },
+    themeCatalog === undefined ? {} : { themeCatalog },
+  );
+  if (!composed.ok || composed.spec === undefined) {
+    return failure({ ok: false, diagnostics: composed.diagnostics });
+  }
+  return {
+    composed: { ...composed, spec: composed.spec },
+    dryRun: args.dryRun === true,
+    returnSpec: args.returnSpec === true,
+  };
+}
+
+export function isComposeToolStep(value: ComposeToolStep | ToolResult): value is ComposeToolStep {
+  return 'composed' in value;
+}
+
+/** The reply fields every transport adds to its own render summary. */
+export function composeReplyExtras(step: ComposeToolStep): Record<string, unknown> {
+  const warnings = step.composed.diagnostics.filter((item) => item.severity === 'warning');
+  return {
+    ...(warnings.length === 0 ? {} : { diagnostics: warnings }),
+    ...(step.returnSpec || step.dryRun ? { spec: stringify(step.composed.spec) } : {}),
+  };
+}
+
+/** `compose` as the local stdio server runs it: the HTML goes to a file. */
+export const LOCAL_COMPOSE_DEFINITION: McpToolDefinition = {
+  name: 'compose',
+  description: `${COMPOSE_DESCRIPTION} HTML goes to out.`,
+  inputSchema: {
+    ...COMPOSE_INPUT,
+    properties: {
+      ...COMPOSE_PROPERTIES,
+      out: {
+        type: 'string',
+        description:
+          'HTML file to write (.html or .htm); required unless dryRun. Relative paths resolve against the server working directory.',
+      },
+    },
+  },
+};
+
+/** `compose` as a remote server runs it: the HTML is stored behind a URL. */
+export const REMOTE_COMPOSE_DEFINITION: McpToolDefinition = {
+  name: 'compose',
+  description: `${COMPOSE_DESCRIPTION} HTML at artifactUrl.`,
+  inputSchema: {
+    ...COMPOSE_INPUT,
+    properties: {
+      ...COMPOSE_PROPERTIES,
+      share: {
+        type: 'boolean',
+        description: 'Publish as an expiring share link. Requires the share grant.',
+      },
+    },
   },
 };
 

@@ -14,6 +14,8 @@
  *   DELETE /v1/share/:id       revoke a share the caller owns.
  *   GET    /v1/artifact/:id    serve one short-lived artifact a remote MCP render stored.
  *   POST   /mcp                MCP over Streamable HTTP (see remote-mcp-endpoint.ts).
+ *   GET    /v1/version         the deployed build: package version, commit, MCP
+ *                               revisions and tool names, so deploy lag is visible.
  *   GET    /.well-known/oauth-protected-resource[/mcp]
  *                               OAuth protected-resource metadata, when OAuth is enabled.
  *
@@ -38,7 +40,7 @@ import {
   protectedResourceMetadataUrl,
 } from './oauth-access-token.js';
 import { withinRateLimit } from './rate-limit.js';
-import { handleMcp } from './remote-mcp-endpoint.js';
+import { handleMcp, remoteVersion } from './remote-mcp-endpoint.js';
 import { renderArtifact, type RenderPayload } from './render.js';
 import { exportArtifact } from './screenshot.js';
 import { createShare, purgeExpiredShares, readStored, revokeShare } from './share.js';
@@ -162,6 +164,17 @@ export async function handleRequest(
     // MCP clients must before they can sign in.
     response.headers.set('cache-control', 'public, max-age=300');
     response.headers.set('access-control-allow-origin', '*');
+    return response;
+  }
+
+  // --- version: what is deployed, so tool-list drift is visible ------------
+  if (path === '/v1/version') {
+    if (method !== 'GET' && method !== 'HEAD') {
+      return json(404, { code: 'NOT_FOUND', message: 'no such route' });
+    }
+    const response = json(200, remoteVersion(env));
+    // Static per deploy and credential-free, so a short public cache is safe.
+    response.headers.set('cache-control', 'public, max-age=60');
     return response;
   }
 

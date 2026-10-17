@@ -88,4 +88,10 @@ export interface Env {
   BROWSER?: BrowserRun;
   /** Share retention in days. Defaults to the conservative value in config.ts. */
   SHARE_RETENTION_DAYS?: string;
+  /**
+   * Commit the deployed Worker was built from. The deploy workflow passes it
+   * with `wrangler deploy --var`; `/v1/version` reports it so a stale deploy
+   * is visible. Absent in a local or manual deploy.
+   */
+  BUILD_SHA?: string;
 }
