@@ -8,7 +8,7 @@ The agent writes meaning (blocks such as hero, prose, table, chart, timeline, co
 
 - CLI: `npx -y @bestagentkits/render validate plan.yaml`, then `npx -y @bestagentkits/render plan.yaml --out plan.html`
 - Agent skill: `npx skills add bestagentkits/ak-render`
-- Local MCP server (stdio, no account, no network): `npx -y @bestagentkits/render mcp`. Tools: `catalog`, `search-catalog`, `describe`, `search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `patch`, `audit-motion`, `render`, `themes`. `patch` applies RFC 6902 ops to a spec file in place; `/blocks/@<id>` paths address a block by its `id`, and `baseHash` refuses a stale edit.
+- Local MCP server (stdio, no account, no network): `npx -y @bestagentkits/render mcp`. Tools: `catalog`, `search-catalog`, `describe`, `search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `repair`, `patch`, `audit-motion`, `render`, `themes`. `patch` applies RFC 6902 ops to a spec file in place; `/blocks/@<id>` paths address a block by its `id`, and `baseHash` refuses a stale edit.
 - Hosted MCP server (Streamable HTTP): `https://render.agentkit.best/mcp`. Sign-in is OAuth at agentkit.best or an API key. Reserved for owners of AgentKit Engineer, AgentKit Marketing or the Bundle. Anyone can run the local server or deploy their own copy on Cloudflare from the GitHub repository.
 
 ## Links

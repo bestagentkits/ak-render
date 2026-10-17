@@ -3,7 +3,7 @@
  *
  * The stdio server and the Streamable HTTP server list tools from here. The
  * read-only tools (`catalog`, `search-catalog`, `describe`, `recipes`,
- * `recipe`, `validate`) are complete and pure, so both transports run the very same function. `render`
+ * `recipe`, `validate`, `repair`) are complete and pure, so both transports run the very same function. `render`
  * and `themes` differ only
  * in where their output goes or where presets come from, so this module owns
  * their descriptions, input schemas and result shapes, and each transport
@@ -37,6 +37,7 @@ import { catalog, describe, formatCatalogJson } from '../registry/registry.js';
 import type { CompileResult } from '../render/render.js';
 import { MAX_PATCH_OPERATIONS, type PatchResult, patch } from '../spec/patch.js';
 import { patchSpecText } from '../spec/patch-text.js';
+import { repair } from '../spec/repair.js';
 import { validate } from '../spec/validate.js';
 import { builtinPresetEntries } from '../theme/presets.js';
 import type { ThemeCatalog } from '../theme/theme-catalog.js';
@@ -82,6 +83,13 @@ export function requireString(args: Record<string, unknown>, key: string): strin
 export function optionalTheme(args: Record<string, unknown>): string | undefined {
   const theme = args.theme;
   return typeof theme === 'string' && theme !== '' ? theme : undefined;
+}
+
+function optionalBoolean(args: Record<string, unknown>, key: string): boolean {
+  const value = args[key];
+  if (value === undefined) return false;
+  if (typeof value !== 'boolean') throw new ToolArgumentError(`"${key}" must be a boolean`);
+  return value;
 }
 
 /** An optional string argument: absent or empty means "not given". */
@@ -292,16 +300,55 @@ export const RECIPE_TOOL: McpTool<unknown> = {
 export const VALIDATE_TOOL: McpTool<unknown> = {
   name: 'validate',
   description:
-    'Check a Page Spec without rendering. Returns ok plus diagnostics, each with a code and the JSON path to fix.',
+    'Check a Page Spec without rendering. Returns ok plus diagnostics, each with a code and the JSON path to fix. suggest: true adds fixes: JSON Patches marked safe or ambiguous.',
   inputSchema: {
     type: 'object',
-    properties: { spec: SPEC_INPUT },
+    properties: {
+      spec: SPEC_INPUT,
+      suggest: {
+        type: 'boolean',
+        description: 'Attach suggested JSON Patch fixes to diagnostics.',
+      },
+    },
     required: ['spec'],
     additionalProperties: false,
   },
   run: (args) => {
-    const result = validate(args.spec, { source: '<spec>' });
+    const result = validate(args.spec, {
+      source: '<spec>',
+      suggest: optionalBoolean(args, 'suggest'),
+    });
     return result.ok ? text(result) : failure(result);
+  },
+};
+
+export const REPAIR_TOOL: McpTool<unknown> = {
+  name: 'repair',
+  description:
+    'Apply only the safe fixes, revalidate, and return the change log and what is left (ambiguous fixes included). spec is returned, in the input format, only when it changed.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      spec: SPEC_INPUT,
+      mode: { type: 'string', enum: ['safe'], description: 'Only "safe" (the default).' },
+    },
+    required: ['spec'],
+    additionalProperties: false,
+  },
+  run: (args) => {
+    const mode = optionalString(args, 'mode');
+    if (mode !== undefined && mode !== 'safe') throw new ToolArgumentError('"mode" must be "safe"');
+    const {
+      spec,
+      text: repairedText,
+      ...report
+    } = repair(args.spec, {
+      source: '<spec>',
+      mode: 'safe',
+    });
+    // The agent already holds its spec; send it back only when it changed.
+    const reply = report.changed ? { ...report, spec: repairedText ?? spec } : report;
+    return report.ok ? text(reply) : failure(reply);
   },
 };
 

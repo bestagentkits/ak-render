@@ -25,6 +25,17 @@ do not try to position or style blocks: there is no field for it.
    `{ ok, diagnostics[] }`. Each diagnostic has a stable `code` and the JSON
    `path` to fix (for example `$.blocks[0].titl`); an unknown prop lists the
    allowed ones in `details.allowed`. Exit code 1 means "fix and retry".
+   Add `--suggest` to get `fixes` on each diagnostic it can fix: RFC 6902
+   patches whose first operation is a `test` of the current value, with a
+   `rule` id and a `classification`. `safe` fixes keep the author's meaning
+   (a single item or block where a list is required, an enum value that
+   differs only in letter case); `ambiguous` ones are guesses (a near block,
+   action or property name, or wrapping text such as `a, b` that may mean
+   several items) for you to choose. Apply one fix per diagnostic, then
+   validate again. `ak-render repair page.yaml --out page.yaml` applies only
+   the safe fixes, revalidates and logs each change; it keeps YAML comments
+   when it can replay the edit in place (otherwise it re-emits the spec), and
+   it never deletes a field, changes data or picks between guesses.
    Icons are named by meaning (`icon: gauge`); find names with
    `ak-render icons search <words>` and see [icons.md](./icons.md).
 5. **Compile.** `ak-render page.yaml --out page.html --json` writes the file and
@@ -84,7 +95,8 @@ either `file` (local server: a spec file under its working directory, edited
 in place, no spec in the reply) or `spec`
 (the reply carries the patched spec, as text when you sent text). The
 library exports `patch(spec, ops, { baseHash })`, `patchSpecText(text, ops)`
-and `specHash(spec)`.
+and `specHash(spec)`. A fix from `validate --suggest` is itself a patch, so an
+ambiguous fix you choose applies with `ak-render patch page.yaml '<its patch>'`.
 
 ## Minimal spec
 
@@ -123,7 +135,7 @@ Check every block's real props with `describe` before relying on this shape.
 (optional `category`), `search-catalog` (`query`), `describe` (`type`, or
 `types` with optional `compact`), `search-icons` (`query`, optional `pack`, `limit`),
 `describe-icon` (`icon`), `icon-packs`, `motions` (optional `query`, or `id`
-with `compact`), `recipes`, `recipe` (`name`), `validate`, `patch` (`ops` with `file`
+with `compact`), `recipes`, `recipe` (`name`), `validate` (optional `suggest`), `repair`, `patch` (`ops` with `file`
 or `spec`, optional `baseHash`), `audit-motion`
 (`spec` or `html`), `render` and `themes`. `render` writes the HTML to the
 `out` path and returns only the summary, so the page never enters your context.
@@ -143,7 +155,7 @@ it points, so review it like any file write. `spec` may be YAML/JSON text or the
 
 Without Node, use the hosted server at `https://render.agentkit.best/mcp` (MCP
 Streamable HTTP). It serves `catalog`, `search-catalog`, `describe`,
-`search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `patch`, `audit-motion`, `render` and `themes` with the same names and
+`search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `repair`, `patch`, `audit-motion`, `render` and `themes` with the same names and
 contracts, and the
 loop is the same. Two things differ:
 

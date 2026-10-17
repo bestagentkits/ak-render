@@ -23,7 +23,11 @@ import { collectSlotLists } from './normalize.js';
 import { type ParseOptions, parseSpec } from './parse.js';
 import { validate } from './validate.js';
 
-export type PatchOperation =
+/**
+ * Any RFC 6902 operation. A suggested fix's `PatchOperation` (`test`,
+ * `replace`, `move`) is one of these, so `patch()` applies fixes too.
+ */
+export type JsonPatchOperation =
   | { op: 'add' | 'replace' | 'test'; path: string; value: JsonValue }
   | { op: 'remove'; path: string }
   | { op: 'move' | 'copy'; from: string; path: string };
@@ -35,7 +39,7 @@ export interface PatchOptions extends ParseOptions {
 
 /** One applied operation, with block-id pointers resolved to plain ones. */
 export interface PatchChange {
-  op: PatchOperation['op'];
+  op: JsonPatchOperation['op'];
   path: string;
   from?: string;
 }
@@ -187,7 +191,7 @@ function errorCount(diagnostics: readonly Diagnostic[]): number {
   return diagnostics.filter((diagnostic) => diagnostic.severity === 'error').length;
 }
 
-function checkOperations(ops: unknown): PatchOperation[] {
+function checkOperations(ops: unknown): JsonPatchOperation[] {
   if (!Array.isArray(ops)) throw new PatchFailure('ops', 'ops must be an array of operations');
   if (ops.length > MAX_PATCH_OPERATIONS) {
     throw new PatchFailure(
@@ -212,13 +216,13 @@ function checkOperations(ops: unknown): PatchOperation[] {
         throw new PatchFailure(`${at}.value`, `${op.op} needs a JSON "value"`);
       }
     }
-    return op as unknown as PatchOperation;
+    return op as unknown as JsonPatchOperation;
   });
 }
 
 function applyOperations(
   initial: JsonValue,
-  ops: readonly PatchOperation[],
+  ops: readonly JsonPatchOperation[],
 ): { spec: JsonValue; changes: PatchChange[] } {
   let doc = initial;
   let size = JSON.stringify(initial).length;

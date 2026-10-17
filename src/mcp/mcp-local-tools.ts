@@ -1,8 +1,8 @@
 /**
  * The tool set the local stdio server runs.
  *
- * `catalog`, `search-catalog`, `describe`, `recipes`, `recipe` and `validate`
- * are the shared pure tools. `render`
+ * `catalog`, `search-catalog`, `describe`, `recipes`, `recipe`, `validate` and
+ * `repair` are the shared pure tools. `render`
  * writes the HTML to a file under the server's working directory and `themes`
  * discovers project and user presets on disk, which is why this module, unlike
  * the shared definitions, may touch the filesystem. Nothing here touches the
@@ -29,6 +29,7 @@ import {
   PATCH_TOOL,
   RECIPE_TOOL,
   RECIPES_TOOL,
+  REPAIR_TOOL,
   renderSummary,
   requireString,
   SEARCH_CATALOG_TOOL,
@@ -45,7 +46,7 @@ export interface McpContext {
 }
 
 export const LOCAL_INSTRUCTIONS = `AK Render compiles a Page Spec (YAML or JSON) into one self-contained, offline HTML file.
-Loop: call catalog once (or search-catalog with a few words), describe only the block types you plan to use (several at once with types, compact: true for the short form), find icons by meaning with search-icons (describe-icon, icon-packs for detail), find motion recipes with motions, optionally start from a recipe (list them with recipes), validate the spec and fix every diagnostic by its JSON path (audit-motion checks the motion it names), then render to a file (themes lists the presets). For a later edit, patch the spec file in place (file plus ops, paths like /blocks/@<id>/title) instead of rewriting it.
+Loop: call catalog once (or search-catalog with a few words), describe only the block types you plan to use (several at once with types, compact: true for the short form), find icons by meaning with search-icons (describe-icon, icon-packs for detail), find motion recipes with motions, optionally start from a recipe (list them with recipes), validate the spec and fix every diagnostic by its JSON path (repair applies the safe fixes; validate with suggest: true lists the rest as JSON Patches; audit-motion checks the motion it names), then render to a file (themes lists the presets). For a later edit, patch the spec file in place (file plus ops, paths like /blocks/@<id>/title) instead of rewriting it.
 Describe meaning, not presentation: the compiler owns layout, colour, typography and motion.`;
 
 const HTML_FILE = /\.html?$/iu;
@@ -150,6 +151,7 @@ export const LOCAL_TOOLS: readonly McpTool<McpContext>[] = [
   RECIPES_TOOL,
   RECIPE_TOOL,
   VALIDATE_TOOL,
+  REPAIR_TOOL,
   LOCAL_PATCH_TOOL,
   AUDIT_MOTION_TOOL,
   LOCAL_RENDER_TOOL,

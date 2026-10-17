@@ -118,7 +118,7 @@ describe('remote MCP: discovery', () => {
       { cwd: '/', home: '/' },
     );
     const local = (stdio?.result as { tools: { name: string }[] } | undefined)?.tools ?? [];
-    expect(local.length).toBe(14);
+    expect(local.length).toBe(15);
     expect(remote.map((entry) => entry.name)).toEqual(local.map((entry) => entry.name));
     // The remote audit schema advertises the Worker's body cap, not the local one.
     const audit = (
@@ -726,6 +726,24 @@ describe('remote MCP: motion tools', () => {
     }
     expect(fetchMock).not.toHaveBeenCalled();
     expect(r2.objects.size).toBe(0);
+  });
+
+  it('repairs only with a bearer, under the render limit', async () => {
+    const { env, fetchMock, limits } = harness();
+    const spec =
+      'version: 1\nmeta:\n  title: R\nblocks:\n  - type: badge\n    text: x\n    tone: Info\n';
+    const anonymous = await tool(env, 'repair', { spec }, null);
+    expect(anonymous.reply.isError).toBe(true);
+    expect(anonymous.payload['code']).toBe('UNAUTHENTICATED');
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    const { reply, payload } = await tool(env, 'repair', { spec });
+    expect(reply.isError).toBeUndefined();
+    expect(payload['changed']).toBe(true);
+    expect(payload['spec']).toContain('tone: info');
+    // Repair revalidates many times per call, so it is charged like a render.
+    expect(limits.render.counts.size).toBe(1);
+    expect(limits.validate.counts.size).toBe(0);
   });
 
   it('audits a spec with a bearer and returns the report', async () => {

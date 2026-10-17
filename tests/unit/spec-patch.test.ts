@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { run } from '../../src/cli.js';
-import { MAX_PATCH_OPERATIONS, patch, patchSpecText, specHash } from '../../src/index.js';
+import { MAX_PATCH_OPERATIONS, patch, patchSpecText, specHash, validate } from '../../src/index.js';
 import { handleMcpMessage } from '../../src/mcp-server.js';
 import { compile } from '../../src/render/render.js';
 import { parseSpec } from '../../src/spec/parse.js';
@@ -240,6 +240,15 @@ describe('patch', () => {
     const result = patch('meta: [unclosed', []);
     expect(result.applied).toBe(false);
     expect(result.diagnostics[0]?.code).toBe('SPEC_PARSE_ERROR');
+  });
+
+  it('applies a suggested validation fix as a patch', () => {
+    const text = `version: 1\nmeta:\n  title: T\nblocks:\n  - type: calout\n    title: Note\n    text: Body\n`;
+    const fix = validate(text, { suggest: true }).diagnostics[0]?.fixes?.[0];
+    expect(fix).toBeDefined();
+    const result = patchSpecText(text, fix?.patch ?? []);
+    expect(result.applied).toBe(true);
+    expect(result.errors).toBeLessThan(result.baseErrors);
   });
 
   it('never mutates the caller object', () => {
