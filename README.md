@@ -343,11 +343,13 @@ With the compact workflow the agent guide recommends,
   of each page is visible text; the rest is markup, CSS and script. The
   projected median output saving is 54%. A page that is mostly prose saves
   little or nothing: one of the twelve grew by 32%.
-- **Measured with a live model, existing flow only:** the
-  [agent A/B baseline](./docs/artifacts/agent-ab-baseline.md) records
+- **Measured with a live model:** the
+  [agent A/B baseline](./docs/artifacts/agent-ab-baseline.md) runs the same
+  tasks on the existing flow and on the flow with the new tools, and records
   provider-reported tokens, tool calls, repairs, wall time and a 375 px
-  overflow check per task, with confidence intervals. The compose/repair arm
-  is skipped until those tools ship, so no saving from them is claimed yet.
+  overflow check per task, with confidence intervals. With `repair` shipped
+  and `compose` not yet, the model never called `repair` and the after arm
+  shows no token or wall-time saving; no saving is claimed.
 - **Not measured yet:** human-rated output quality.
 
 Characters are measured; tokens are estimated at 4 characters per token. Method
