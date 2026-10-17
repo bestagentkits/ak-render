@@ -2,8 +2,7 @@
  * The tool set the local stdio server runs.
  *
  * `catalog`, `search-catalog`, `describe`, `recipes`, `recipe`, `validate` and
- * `repair` are the shared pure tools. `render`
- * writes the HTML to a file under the server's working directory and `themes`
+ * `repair` are the shared pure tools. `render` and `compose` write the HTML to a file under the server's working directory and `themes`
  * discovers project and user presets on disk, which is why this module, unlike
  * the shared definitions, may touch the filesystem. Nothing here touches the
  * network.
@@ -18,9 +17,13 @@ import { failure, ToolArgumentError, text } from './mcp-protocol.js';
 import {
   AUDIT_MOTION_TOOL,
   CATALOG_TOOL,
+  composeReplyExtras,
+  composeToolStep,
   DESCRIBE_ICON_TOOL,
   DESCRIBE_TOOL,
   ICON_PACKS_TOOL,
+  isComposeToolStep,
+  LOCAL_COMPOSE_DEFINITION,
   LOCAL_RENDER_DEFINITION,
   type McpTool,
   MOTIONS_TOOL,
@@ -46,7 +49,8 @@ export interface McpContext {
 }
 
 export const LOCAL_INSTRUCTIONS = `AK Render compiles a Page Spec (YAML or JSON) into one self-contained, offline HTML file.
-Loop: call catalog once (or search-catalog with a few words), describe only the block types you plan to use (several at once with types, compact: true for the short form), find icons by meaning with search-icons (describe-icon, icon-packs for detail), find motion recipes with motions, optionally start from a recipe (list them with recipes), validate the spec and fix every diagnostic by its JSON path (repair applies the safe fixes; validate with suggest: true lists the rest as JSON Patches; audit-motion checks the motion it names), then render to a file (themes lists the presets). For a later edit, patch the spec file in place (file plus ops, paths like /blocks/@<id>/title) instead of rewriting it.
+Fastest path: compose builds a whole page from a typed intent and content (e.g. investment-report) in one call; pass dryRun or returnSpec to get the Page Spec back for edits.
+Full control: call catalog once (or search-catalog with a few words), describe only the block types you plan to use (several at once with types, compact: true for the short form), find icons by meaning with search-icons (describe-icon, icon-packs for detail), find motion recipes with motions, optionally start from a recipe (list them with recipes), validate the spec and fix every diagnostic by its JSON path (repair applies the safe fixes; validate with suggest: true lists the rest as JSON Patches; audit-motion checks the motion it names), then render to a file (themes lists the presets). For a later edit, patch the spec file in place (file plus ops, paths like /blocks/@<id>/title) instead of rewriting it.
 Describe meaning, not presentation: the compiler owns layout, colour, typography and motion.`;
 
 const HTML_FILE = /\.html?$/iu;
@@ -71,6 +75,24 @@ const LOCAL_RENDER_TOOL: McpTool<McpContext> = {
     mkdirSync(dirname(out), { recursive: true });
     writeFileSync(out, result.html, 'utf8');
     return text({ out, ...renderSummary(result) });
+  },
+};
+
+const LOCAL_COMPOSE_TOOL: McpTool<McpContext> = {
+  ...LOCAL_COMPOSE_DEFINITION,
+  run: (args, context) => {
+    const step = composeToolStep(args, themeCatalogFor(context));
+    if (!isComposeToolStep(step)) return step;
+    if (step.dryRun) return text({ ok: true, ...composeReplyExtras(step) });
+    const out = resolve(context.cwd, requireString(args, 'out'));
+    if (!HTML_FILE.test(out)) throw new TypeError('"out" must end in .html or .htm');
+    const result = compile(step.composed.spec, {
+      source: '<composed spec>',
+      themeCatalog: themeCatalogFor(context),
+    });
+    mkdirSync(dirname(out), { recursive: true });
+    writeFileSync(out, result.html, 'utf8');
+    return text({ ok: true, out, ...renderSummary(result), ...composeReplyExtras(step) });
   },
 };
 
@@ -154,6 +176,7 @@ export const LOCAL_TOOLS: readonly McpTool<McpContext>[] = [
   REPAIR_TOOL,
   LOCAL_PATCH_TOOL,
   AUDIT_MOTION_TOOL,
+  LOCAL_COMPOSE_TOOL,
   LOCAL_RENDER_TOOL,
   LOCAL_THEMES_TOOL,
 ];

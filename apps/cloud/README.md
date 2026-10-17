@@ -36,8 +36,10 @@ adds authorization, rate limits and storage in
 | `repair` | yes | `render` | `render` | Parses an arbitrary spec; at most 200 revalidations. |
 | `patch` | yes | `render` | `validate` | Parses and patches an arbitrary spec; stores nothing. |
 | `audit-motion` | yes | `render` | `validate` | Parses an arbitrary spec or page. |
+| `compose` with `dryRun: true` | yes | `render` | `validate` | Expands an intent into a spec; stores nothing. |
+| `compose` | yes | `render` | `render` | Expands an intent, then stores it exactly like `render`. |
 | `render` | yes | `render` | `render` | Stores a one-hour artifact. |
-| `render` with `share: true` | yes | `render` + `share` | `share` | Stores a share for the retention period. |
+| `render` or `compose` with `share: true` | yes | `render` + `share` | `share` | Stores a share for the retention period. |
 
 `catalog`, `describe`, `themes`, `search-catalog`, `recipes`, `recipe` and
 `motions` take no spec and read only static data, so they answer without a bearer: a client

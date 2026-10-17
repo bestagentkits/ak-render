@@ -174,6 +174,7 @@ describe('MCP server', () => {
       'repair',
       'patch',
       'audit-motion',
+      'compose',
       'render',
       'themes',
     ]);

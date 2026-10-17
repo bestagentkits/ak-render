@@ -12,6 +12,8 @@
  * No Node-only import is allowed here; the Worker bundles this module.
  */
 
+import { stringify } from 'yaml';
+import { type ComposeSpecResult, composeInputJsonSchema, composeSpec } from '../compose/compose.js';
 import {
   describeIcon,
   iconPackSummaries,
@@ -477,6 +479,108 @@ export const AUDIT_MOTION_TOOL: McpTool<unknown> = {
       return text(auditMotionHtml(html));
     }
     return text(auditMotionSpec(args.spec, { source: '<spec>' }));
+  },
+};
+
+const COMPOSE_INPUT = composeInputJsonSchema();
+const COMPOSE_PROPERTIES = {
+  ...(COMPOSE_INPUT.properties as Record<string, unknown>),
+  dryRun: {
+    type: 'boolean',
+    description: 'Expand and validate only; returns the spec instead of rendering.',
+  },
+  returnSpec: {
+    type: 'boolean',
+    description: 'Also return the expanded Page Spec as YAML, for later edits.',
+  },
+};
+
+const COMPOSE_DESCRIPTION =
+  'One call: build a page from a typed intent and content slots, no Page Spec to write. Returns a summary and diagnostics, never HTML; dryRun or returnSpec add the spec as YAML.';
+
+/** The shared half of `compose`: argument checks and expansion. */
+export interface ComposeToolStep {
+  composed: ComposeSpecResult & { spec: NonNullable<ComposeSpecResult['spec']> };
+  dryRun: boolean;
+  returnSpec: boolean;
+}
+
+/** Reject a non-boolean flag before any work or metering happens. */
+export function checkComposeFlags(args: Record<string, unknown>): void {
+  for (const key of ['dryRun', 'returnSpec'] as const) {
+    if (args[key] !== undefined && typeof args[key] !== 'boolean') {
+      throw new ToolArgumentError(`"${key}" must be a boolean`);
+    }
+  }
+}
+
+/**
+ * Check the compose arguments and expand them. A failed expansion is returned
+ * as the tool result, carrying every diagnostic with its path.
+ */
+export function composeToolStep(
+  args: Record<string, unknown>,
+  themeCatalog?: ThemeCatalog,
+): ComposeToolStep | ToolResult {
+  checkComposeFlags(args);
+  const { intent, content, theme } = args;
+  const composed = composeSpec(
+    { intent, content, ...(theme === undefined ? {} : { theme }) },
+    themeCatalog === undefined ? {} : { themeCatalog },
+  );
+  if (!composed.ok || composed.spec === undefined) {
+    return failure({ ok: false, diagnostics: composed.diagnostics });
+  }
+  return {
+    composed: { ...composed, spec: composed.spec },
+    dryRun: args.dryRun === true,
+    returnSpec: args.returnSpec === true,
+  };
+}
+
+export function isComposeToolStep(value: ComposeToolStep | ToolResult): value is ComposeToolStep {
+  return 'composed' in value;
+}
+
+/** The reply fields every transport adds to its own render summary. */
+export function composeReplyExtras(step: ComposeToolStep): Record<string, unknown> {
+  const warnings = step.composed.diagnostics.filter((item) => item.severity === 'warning');
+  return {
+    ...(warnings.length === 0 ? {} : { diagnostics: warnings }),
+    ...(step.returnSpec || step.dryRun ? { spec: stringify(step.composed.spec) } : {}),
+  };
+}
+
+/** `compose` as the local stdio server runs it: the HTML goes to a file. */
+export const LOCAL_COMPOSE_DEFINITION: McpToolDefinition = {
+  name: 'compose',
+  description: `${COMPOSE_DESCRIPTION} HTML goes to out.`,
+  inputSchema: {
+    ...COMPOSE_INPUT,
+    properties: {
+      ...COMPOSE_PROPERTIES,
+      out: {
+        type: 'string',
+        description:
+          'HTML file to write (.html or .htm); required unless dryRun. Relative paths resolve against the server working directory.',
+      },
+    },
+  },
+};
+
+/** `compose` as a remote server runs it: the HTML is stored behind a URL. */
+export const REMOTE_COMPOSE_DEFINITION: McpToolDefinition = {
+  name: 'compose',
+  description: `${COMPOSE_DESCRIPTION} HTML at artifactUrl.`,
+  inputSchema: {
+    ...COMPOSE_INPUT,
+    properties: {
+      ...COMPOSE_PROPERTIES,
+      share: {
+        type: 'boolean',
+        description: 'Publish as an expiring share link. Requires the share grant.',
+      },
+    },
   },
 };
 
