@@ -111,7 +111,7 @@ describe('remote MCP: discovery', () => {
       { cwd: '/', home: '/' },
     );
     const local = (stdio?.result as { tools: { name: string }[] } | undefined)?.tools ?? [];
-    expect(local.length).toBe(13);
+    expect(local.length).toBe(14);
     expect(remote.map((entry) => entry.name)).toEqual(local.map((entry) => entry.name));
     // The remote audit schema advertises the Worker's body cap, not the local one.
     const audit = (
@@ -335,6 +335,34 @@ describe('remote MCP: errors never leak internals', () => {
 });
 
 describe('remote MCP: render', () => {
+  it('composes a page from an intent and stores it like render', async () => {
+    const { env, r2 } = harness();
+    const input = {
+      intent: 'investment-report',
+      content: { title: 'Acme seed', thesis: { summary: 'Small bet, large market.' } },
+    };
+    const refused = await tool(env, 'compose', input, null);
+    expect(refused.payload['code']).toBe('UNAUTHENTICATED');
+    expect(r2.objects.size).toBe(0);
+
+    const dry = await tool(env, 'compose', { ...input, dryRun: true });
+    expect(dry.reply.isError).toBeUndefined();
+    expect(String(dry.payload['spec'])).toContain('preset: executive-report');
+    expect(r2.objects.size).toBe(0);
+
+    const { reply, payload } = await tool(env, 'compose', input);
+    expect(reply.isError).toBeUndefined();
+    expect(reply.content[0]?.text).not.toContain('<html');
+    expect(payload).toMatchObject({ ok: true, title: 'Acme seed', shared: false });
+    expect(payload['spec']).toBeUndefined();
+    expect(String(payload['artifactUrl'])).toMatch(/\/v1\/artifact\//u);
+    expect(r2.objects.size).toBe(1);
+
+    const bad = await tool(env, 'compose', { intent: 'investment-report', content: {} });
+    expect(bad.reply.isError).toBe(true);
+    expect(bad.payload['diagnostics']).toBeDefined();
+  });
+
   it('returns compact metadata and an artifact URL, never the HTML', async () => {
     const { env, r2 } = harness();
     const now = new Date('2026-10-06T00:00:00.000Z');

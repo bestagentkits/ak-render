@@ -21,6 +21,17 @@ spec from stdin (`-`) and the `mcp` command need version 0.2.0 or later, and
 
 ## The loop
 
+**Shortcut for known page kinds.** When the page matches an intent (list them
+with `npx -y @bestagentkits/render compose intents --json`, e.g.
+`investment-report`), write only the typed content and compose it in one call;
+keep the emitted spec for later edits. See [compose](https://github.com/bestagentkits/ak-render/blob/main/docs/compose.md).
+
+```bash
+npx -y @bestagentkits/render compose input.yaml --out page.html --spec-out page.yaml
+```
+
+Otherwise, or to change the page further, use the full loop:
+
 1. **Find the blocks.** Search by intent, or list one category. The full
    catalog of 90 block types and every action is about 8 kB:
 
@@ -190,7 +201,7 @@ reader; the compiler handles reduced motion and print.
 `npx -y @bestagentkits/render mcp` serves the same loop over stdio as the tools
 `catalog` (optional `category`), `search-catalog` (`query`), `describe`
 (`type`, or `types` with optional `compact`), `search-icons` (`query`), `describe-icon`, `icon-packs`, `motions` (optional `query`, or `id` with `compact`), `recipes`, `recipe` (`name`),
-`validate` (`spec`), `audit-motion` (`spec` or `html`), `render` (`spec`, `out`, optional `theme`), and `themes`. `spec` may be YAML or JSON text, or the parsed
+`validate` (`spec`), `audit-motion` (`spec` or `html`), `compose` (`intent`, `content`, optional `theme`, `out`, `dryRun`, `returnSpec`), `render` (`spec`, `out`, optional `theme`), and `themes`. `spec` may be YAML or JSON text, or the parsed
 object. `render` writes the file to `out` and returns only the summary. When
 these tools are available, use them instead of the shell commands.
 

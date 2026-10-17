@@ -7,6 +7,13 @@ do not try to position or style blocks: there is no field for it.
 
 ## The loop
 
+**Shortcut for known page kinds.** When the page is one `compose` knows (see
+`ak-render compose intents`), fill its typed content slots and run
+`ak-render compose input.yaml --out page.html --spec-out page.yaml`. One call
+replaces the whole loop; diagnostics point into your input
+(`content.scenarios.items[1].values`), and `page.yaml` is an ordinary spec you
+can keep editing with the loop below. See [compose](./compose.md).
+
 1. **Find the blocks.** `ak-render search-catalog <intent words>` ranks block
    types for what the page needs, for example `search-catalog sortable table`
    or `search-catalog pricing`. `ak-render catalog --category <c>` lists one
@@ -76,7 +83,8 @@ Check every block's real props with `describe` before relying on this shape.
 `types` with optional `compact`), `search-icons` (`query`, optional `pack`, `limit`),
 `describe-icon` (`icon`), `icon-packs`, `motions` (optional `query`, or `id`
 with `compact`), `recipes`, `recipe` (`name`), `validate`, `audit-motion`
-(`spec` or `html`), `render` and `themes`. `render` writes the HTML to the
+(`spec` or `html`), `compose` (`intent`, `content`, optional `theme`, `out`,
+`dryRun`, `returnSpec`), `render` and `themes`. `render` and `compose` write the HTML to the
 `out` path and returns only the summary, so the page never enters your context.
 `out` must end in `.html` or `.htm`. A relative path resolves against the
 directory the server was started in; an absolute or `..` path is written where
@@ -94,7 +102,7 @@ it points, so review it like any file write. `spec` may be YAML/JSON text or the
 
 Without Node, use the hosted server at `https://render.agentkit.best/mcp` (MCP
 Streamable HTTP). It serves `catalog`, `search-catalog`, `describe`,
-`search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `audit-motion`, `render` and `themes` with the same names and
+`search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `audit-motion`, `compose`, `render` and `themes` with the same names and
 contracts, and the
 loop is the same. Two things differ:
 

@@ -7,8 +7,9 @@ The agent writes meaning (blocks such as hero, prose, table, chart, timeline, co
 ## Use it
 
 - CLI: `npx -y @bestagentkits/render validate plan.yaml`, then `npx -y @bestagentkits/render plan.yaml --out plan.html`
+- One-call shortcut for known page kinds: `npx -y @bestagentkits/render compose input.yaml --out page.html` builds a page from a typed intent such as `investment-report`
 - Agent skill: `npx skills add bestagentkits/ak-render`
-- Local MCP server (stdio, no account, no network): `npx -y @bestagentkits/render mcp`. Tools: `catalog`, `search-catalog`, `describe`, `search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `audit-motion`, `render`, `themes`.
+- Local MCP server (stdio, no account, no network): `npx -y @bestagentkits/render mcp`. Tools: `catalog`, `search-catalog`, `describe`, `search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `audit-motion`, `compose`, `render`, `themes`.
 - Hosted MCP server (Streamable HTTP): `https://render.agentkit.best/mcp`. Sign-in is OAuth at agentkit.best or an API key. Reserved for owners of AgentKit Engineer, AgentKit Marketing or the Bundle. Anyone can run the local server or deploy their own copy on Cloudflare from the GitHub repository.
 
 ## Links

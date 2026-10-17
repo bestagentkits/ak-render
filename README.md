@@ -112,6 +112,22 @@ key-value values render the same spans. Nothing else is parsed as markup, an
 unpaired marker stays literal, and the document title, code blocks and
 terminal lines are never changed. `describe` marks each prose prop.
 
+### Compose a page from an intent
+
+For a common page kind, skip the spec: `compose` takes a typed intent and its
+content slots and expands them, deterministically and without a model call,
+into an ordinary Page Spec built from existing blocks, then compiles it. The
+first intent is `investment-report` (thesis, key facts, metrics, scenario
+projections over one shared dataset, risks, milestones and sources). The
+expanded spec is yours to keep editing with the full block vocabulary; see
+[docs/compose.md](./docs/compose.md).
+
+```bash
+ak-render compose intents                                   # intents and their slot schemas (--json)
+ak-render compose report.yaml --out report.html --spec-out report.spec.yaml
+ak-render compose report.yaml --dry-run                     # print the expanded spec only
+```
+
 ### Start from a page recipe
 
 A recipe is a complete, valid starter spec for a common page: a dashboard, a
@@ -228,7 +244,8 @@ The page's Content Security Policy is derived from that policy. See
 
 ## Use it from an agent
 
-Agents follow one loop: find blocks with `catalog` or `search-catalog`, start
+For a page kind `compose` knows, one `compose` call is the whole task. Otherwise
+agents follow one loop: find blocks with `catalog` or `search-catalog`, start
 from a `recipe` when one fits, `describe --compact` the blocks they use,
 `validate` and fix diagnostics by JSON path, then compile. The
 [agent guide](./docs/agent-guide.md) has the details and [llms.txt](./llms.txt)
@@ -276,8 +293,8 @@ that cannot install Node or need a URL to hand someone.
 **Local CLI.** The loop above, with `ak-render` on the path or through `npx`.
 
 **Local MCP over stdio.** `ak-render mcp` serves `catalog`, `search-catalog`,
-`describe`, `search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `audit-motion`, `render` and `themes` as MCP
-tools. `render` writes the HTML to disk
+`describe`, `search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `audit-motion`, `compose`, `render` and `themes` as MCP
+tools. `render` and `compose` write the HTML to disk
 and returns only a summary, so the page never enters the agent's context.
 
 ```json
@@ -290,8 +307,8 @@ and returns only a summary, so the page never enters the agent's context.
 
 **Remote MCP over Streamable HTTP.** `https://render.agentkit.best/mcp` serves
 `catalog`, `search-catalog`, `describe`, `search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`,
-`audit-motion`, `render` and `themes` with the same contracts. A remote server cannot write into your filesystem, so
-`render` takes no `out`: it stores the page and returns the same summary plus an
+`audit-motion`, `compose`, `render` and `themes` with the same contracts. A remote server cannot write into your filesystem, so
+`render` and `compose` take no `out`: it stores the page and returns the same summary plus an
 `artifactUrl` that lives for one hour, or a share link that lives for 30 days
 with `share: true`. The HTML still never enters the agent's context.
 ```json
@@ -410,6 +427,8 @@ import {
 | `RenderError`, `isRenderError` | Stable error codes with JSON path and node ID | Available |
 | `render(spec, options)` | Compile a spec to a standalone HTML artifact | Available |
 | `validate(spec)` | Report spec diagnostics without rendering | Available |
+| `compose(input, options)`, `composeSpec(input)` | Expand a typed intent into a Page Spec, then compile it (or not, with `dryRun`) | Available |
+| `composeIntents()`, `composeInputJsonSchema()` | Compose intents with their content schemas | Available |
 | `normalize(spec)` | Produce the flat internal IR | Available |
 | `catalog(options)` | Compact list of blocks and actions, optionally one `category` | Available |
 | `searchCatalog(query)` | Block types ranked by intent words | Available |
@@ -427,6 +446,8 @@ import {
 ak-render page.yaml --out page.html
 ak-render - --out page.html < page.yaml   # read the spec from stdin
 ak-render validate page.json
+ak-render compose <input|-> [--out <file.html>] [--spec-out <spec.yaml>] [--dry-run]
+ak-render compose intents
 ak-render catalog [--category <c>]
 ak-render search-catalog <terms...>
 ak-render icons <search <terms...>|describe <icon>|packs>

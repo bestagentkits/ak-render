@@ -129,6 +129,7 @@ describe('MCP server', () => {
       'recipe',
       'validate',
       'audit-motion',
+      'compose',
       'render',
       'themes',
     ]);

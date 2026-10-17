@@ -11,6 +11,18 @@ Release mechanics and the compatibility contract live in
 
 ### Added
 
+- Compose. `ak-render compose input.yaml --out page.html` builds a whole page
+  from a typed intent and content slots, with no Page Spec to write. The first
+  intent is `investment-report` (thesis and recommendation, key facts,
+  metrics, scenario chart and table over one shared dataset, risks,
+  milestones, sources). Composition is deterministic, checks every slot with
+  a JSON path diagnostic, expands into ordinary blocks and compiles through the
+  same `compile()`, so the HTML is byte-identical to rendering the emitted
+  spec (`--spec-out`, `--dry-run`). `compose intents --json` lists intents and
+  their content schemas. The library exports `compose()`, `composeSpec()`,
+  `composeIntents()` and `composeInputJsonSchema()`, and both MCP servers gain
+  a `compose` tool (`dryRun`, `returnSpec`; remote stores it like `render`).
+  Additive: `render` and `validate` are unchanged.
 - Motion Studio. `ak-render motion studio <spec>` serves a local,
   development-only dashboard over one Page Spec: a block list and a recipe
   gallery of compiled examples, an inspector with the phase timeline, timing,

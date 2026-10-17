@@ -34,8 +34,10 @@ adds authorization, rate limits and storage in
 | `motions` | no | — | `anon-ip` | Motion recipe list, search or descriptor; static data. |
 | `validate` | yes | `render` | `validate` | Parses an arbitrary spec. |
 | `audit-motion` | yes | `render` | `validate` | Parses an arbitrary spec or page. |
+| `compose` with `dryRun: true` | yes | `render` | `validate` | Expands an intent into a spec; stores nothing. |
+| `compose` | yes | `render` | `render` | Expands an intent, then stores it exactly like `render`. |
 | `render` | yes | `render` | `render` | Stores a one-hour artifact. |
-| `render` with `share: true` | yes | `render` + `share` | `share` | Stores a share for the retention period. |
+| `render` or `compose` with `share: true` | yes | `render` + `share` | `share` | Stores a share for the retention period. |
 
 `catalog`, `describe`, `themes`, `search-catalog`, `recipes`, `recipe` and
 `motions` take no spec and read only static data, so they answer without a bearer: a client
