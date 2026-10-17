@@ -217,9 +217,7 @@ const REMOTE_RENDER_TOOL: RemoteTool = {
     const options = retain
       ? {
           spec: retainedSpec(args.spec),
-          ...(theme === undefined
-            ? {}
-            : { themeOverride: typeof theme === 'string' ? theme : 'custom' }),
+          ...(theme === undefined ? {} : { themeOverride: theme }),
         }
       : {};
     const create = share ? createShare : createArtifact;
@@ -252,9 +250,11 @@ function exportFormats(value: unknown): ArtifactExportFormat[] | undefined {
 
 /**
  * Signed download URLs for a page the caller owns. Reading needs the render
- * grant only, whichever kind the page is. The call counts against `export`
- * when it has to make a PNG or PDF and against `validate` otherwise: one class
- * per call, the one matching what it costs, counted after authorization.
+ * grant only, whichever kind the page is. A call that asks for png or pdf
+ * counts against `export`, like POST /v1/screenshot, even when the file is
+ * reused; any other call counts against `validate`. Either way it is counted
+ * after authorization and before any storage read, so a refused or failing
+ * call still pays for the reads it caused.
  */
 const REMOTE_ARTIFACT_EXPORT_TOOL: RemoteTool = {
   ...REMOTE_ARTIFACT_EXPORT_DEFINITION,
@@ -267,11 +267,15 @@ const REMOTE_ARTIFACT_EXPORT_TOOL: RemoteTool = {
     if (formats === undefined) {
       return failure(`"formats" must be a non-empty list of ${ARTIFACT_EXPORT_FORMATS.join(', ')}`);
     }
-    const authorized = await authorize(context, ['render']);
-    if (!authorized.ok) return authorized.result;
-    const { subject } = authorized.principal;
-    const outcome = await exportLinks(context.env, subject, ref, formats, context.now, (browser) =>
-      withinRateLimit(context.env, browser ? 'export' : 'validate', subject),
+    const browser = formats.includes('png') || formats.includes('pdf');
+    const guarded = await guard(context, ['render'], browser ? 'export' : 'validate');
+    if (!guarded.ok) return guarded.result;
+    const outcome = await exportLinks(
+      context.env,
+      guarded.principal.subject,
+      ref,
+      formats,
+      context.now,
     );
     if (!outcome.ok) return failure({ code: outcome.code, message: outcome.message });
     const downloads = Object.fromEntries(

@@ -36,7 +36,7 @@ adds authorization, rate limits and storage in
 | `audit-motion` | yes | `render` | `validate` | Parses an arbitrary spec or page. |
 | `render` | yes | `render` | `render` | Stores a one-hour artifact. |
 | `render` with `share: true` | yes | `render` + `share` | `share` | Stores a share for the retention period. |
-| `artifact-export` | yes | `render` | `export` or `validate` | Remote only. Signed download URLs for a page you own. |
+| `artifact-export` | yes | `render` | `export` (png, pdf) or `validate` | Remote only. Signed download URLs for a page you own. |
 
 `catalog`, `describe`, `themes`, `search-catalog`, `recipes`, `recipe` and
 `motions` take no spec and read only static data, so they answer without a bearer: a client
@@ -104,13 +104,18 @@ the bare id of an artifact. `formats` defaults to `["html"]`. The reply:
   `SPEC_NOT_RETAINED`. YAML or JSON text comes back byte for byte; a spec sent as
   an object comes back as indented JSON, which compiles the same. A `theme`
   argument is not part of the spec, so the reply names it as `themeOverride`
-  (a preset name, or `custom`) for a local `--theme`. The local file stays
+  (a preset name) for a local `--theme`. The local file stays
   canonical; the retained copy is a convenience that expires with the page.
-- **Cost.** A call that has to make a PNG or PDF counts against `export`;
-  any other call counts against `validate`. Without a Browser Run binding a
-  PNG or PDF answers `EXPORT_UNAVAILABLE`; without a signing key (or one
-  shorter than 32 characters) every call answers `DOWNLOAD_UNAVAILABLE` and
-  the download route `501`.
+- **Cost.** A call that asks for `png` or `pdf` counts against `export`, like
+  `POST /v1/screenshot`, even when the file is reused; any other call counts
+  against `validate`. The call is counted after authorization and before any
+  storage read, so a refused call still pays. Ownership, expiry and existence
+  come from object metadata; the page body is read only to make a PNG or PDF,
+  or for an `html` download. Two concurrent first exports of one page may both
+  run Browser Run; the stored file is the same either way. Without a Browser
+  Run binding a PNG or PDF answers `EXPORT_UNAVAILABLE`; without a signing key
+  (or one shorter than 32 characters) every call answers `DOWNLOAD_UNAVAILABLE`
+  and the download route `501`.
 
 Transport behaviour:
 
@@ -265,8 +270,8 @@ account with no active kit and no app grant gets no scope (`403 FORBIDDEN`).
 | Nodes | 2,000 | Under the compiler's own bound. |
 | `render` | 60/min per subject | REST render and MCP render share the counter. |
 | `share` | 20/min per subject | REST share and MCP `share: true` share the counter. |
-| `export` | 10/min per subject | Screenshot and PDF are the expensive path. |
-| `validate` | 120/min per subject | MCP only. |
+| `export` | 10/min per subject | Screenshot and PDF are the expensive path, REST or `artifact-export`. |
+| `validate` | 120/min per subject | MCP only; also `artifact-export` without png or pdf. |
 | `anon-ip` | 120/min per client IP | MCP `catalog`, `search-catalog`, `describe`, `recipes`, `recipe`, `themes`. |
 | `auth-ip` | 30/min per client IP | Bearer checks the principal cache cannot answer. |
 | MCP batch | 16 members | Only under revisions with batching. |

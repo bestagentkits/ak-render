@@ -18,11 +18,13 @@ import type { Env } from './bindings.js';
 import { DOWNLOAD_URL_TTL_SECONDS, MIN_SIGNING_KEY_LENGTH } from './config.js';
 import { exportArtifact } from './screenshot.js';
 import {
+  isExpired,
   keyOf,
   readStored,
   type SiblingSuffix,
   type StoredKind,
   shareIdPattern,
+  statStored,
 } from './share.js';
 import type { ArtifactExportFormat } from '../../../src/mcp/mcp-tool-definitions.js';
 
@@ -132,8 +134,9 @@ export type ExportLinksOutcome =
 
 /**
  * Mint download URLs for a stored page the caller owns, making any missing PNG
- * or PDF first. `admit` is asked once, with whether a browser export is about
- * to run, so the caller counts exactly one rate-limit class per call.
+ * or PDF first. The caller has already counted the call against one rate-limit
+ * class, so every storage read here is paid for. Ownership and expiry come from
+ * metadata; the page body is read only when a browser export has to run.
  */
 export async function exportLinks(
   env: Env,
@@ -141,7 +144,6 @@ export async function exportLinks(
   ref: { kind: StoredKind; id: string },
   formats: readonly ArtifactExportFormat[],
   now: Date,
-  admit: (browser: boolean) => Promise<boolean>,
 ): Promise<ExportLinksOutcome> {
   const key = signingKey(env);
   if (key === undefined) {
@@ -151,12 +153,13 @@ export async function exportLinks(
       message: 'this deployment has no download signing key, so artifact-export is disabled',
     };
   }
-  const found = await readStored(env, ref.kind, ref.id, now);
-  // Someone else's page answers exactly like a missing one.
-  if (!found.ok || found.owner !== owner) {
-    return found.ok || found.status === 404
-      ? { ok: false, code: 'NOT_FOUND', message: `no such ${ref.kind}` }
-      : { ok: false, code: found.code, message: found.message };
+  const found = await statStored(env, ref.kind, ref.id);
+  // Someone else's page answers exactly like a missing one, expired or not.
+  if (found === null || found.owner !== owner) {
+    return { ok: false, code: 'NOT_FOUND', message: `no such ${ref.kind}` };
+  }
+  if (isExpired(found.expiresAt, now)) {
+    return { ok: false, code: 'EXPIRED', message: `this ${ref.kind} has expired` };
   }
   if (formats.includes('spec') && found.metadata['spec'] === undefined) {
     return {
@@ -169,7 +172,7 @@ export async function exportLinks(
   const missing: ('png' | 'pdf')[] = [];
   for (const format of ['png', 'pdf'] as const) {
     if (!formats.includes(format)) continue;
-    if ((await env.RENDER_SHARES.get(keyOf(ref.kind, ref.id, format))) === null) {
+    if ((await env.RENDER_SHARES.head(keyOf(ref.kind, ref.id, format))) === null) {
       missing.push(format);
     }
   }
@@ -180,30 +183,25 @@ export async function exportLinks(
       message: 'this deployment has no Browser Run binding, so png and pdf export are disabled',
     };
   }
-  if (!(await admit(missing.length > 0))) {
-    return {
-      ok: false,
-      code: 'RATE_LIMITED',
-      message: `too many ${missing.length > 0 ? 'export' : 'validate'} requests`,
-    };
-  }
-  for (const format of missing) {
-    const exported = await exportArtifact(env, found.html, format === 'pdf' ? 'pdf' : 'screenshot');
-    if (exported.status !== 200 || typeof exported.body === 'string') {
-      return {
-        ok: false,
-        code: exported.code ?? 'EXPORT_FAILED',
-        message: `the ${format} export failed`,
-      };
+  if (missing.length > 0) {
+    const page = await readStored(env, ref.kind, ref.id, now);
+    if (!page.ok) return { ok: false, code: page.code, message: page.message };
+    // Two concurrent exports of one page may both render it; the last write
+    // wins with identical bytes, so that costs a browser call, not correctness.
+    for (const format of missing) {
+      const exported = await exportArtifact(env, page.html, format === 'pdf' ? 'pdf' : 'screenshot');
+      if (exported.status !== 200 || typeof exported.body === 'string') {
+        return {
+          ok: false,
+          code: exported.code ?? 'EXPORT_FAILED',
+          message: `the ${format} export failed`,
+        };
+      }
+      await env.RENDER_SHARES.put(keyOf(ref.kind, ref.id, format), exported.body, {
+        customMetadata: { owner, createdAt: now.toISOString(), expiresAt: found.expiresAt },
+        httpMetadata: { contentType: FORMATS[format].contentType },
+      });
     }
-    await env.RENDER_SHARES.put(keyOf(ref.kind, ref.id, format), exported.body, {
-      customMetadata: {
-        owner: found.owner,
-        createdAt: now.toISOString(),
-        expiresAt: found.expiresAt,
-      },
-      httpMetadata: { contentType: FORMATS[format].contentType },
-    });
   }
 
   const ceiling = Math.floor(now.getTime() / 1000) + DOWNLOAD_URL_TTL_SECONDS;
@@ -266,20 +264,17 @@ export async function handleDownload(url: URL, env: Env, now: Date, csp: string)
   }
 
   const spec = FORMATS[format];
-  // The page itself carries the expiry the link must not outlive; reading it
-  // first also stops a revoked share's exports from downloading.
-  const page = await readStored(env, kind, id, now);
-  if (!page.ok) return refusal(page.status, page.code, page.message);
-  let body: string | ArrayBuffer = page.html;
-  let contentType = spec.contentType;
-  let ext = spec.ext;
-  if (spec.suffix !== undefined) {
-    const object = await env.RENDER_SHARES.get(keyOf(kind, id, spec.suffix));
-    if (object === null) return refusal(404, 'NOT_FOUND', 'no such download');
-    body = await object.arrayBuffer();
-    contentType = object.httpMetadata?.contentType ?? contentType;
-    if (format === 'spec' && page.metadata['spec'] === 'json') ext = 'json';
-  }
+  // The page carries the expiry the link must not outlive; checking it first
+  // also stops a revoked share's exports from downloading. Only an html
+  // download reads the page body.
+  const page = await statStored(env, kind, id);
+  if (page === null) return refusal(404, 'NOT_FOUND', 'no such download');
+  if (isExpired(page.expiresAt, now)) return refusal(410, 'EXPIRED', `this ${kind} has expired`);
+  const object = await env.RENDER_SHARES.get(keyOf(kind, id, spec.suffix));
+  if (object === null) return refusal(404, 'NOT_FOUND', 'no such download');
+  const body = spec.suffix === undefined ? await object.text() : await object.arrayBuffer();
+  const contentType = object.httpMetadata?.contentType ?? spec.contentType;
+  const ext = format === 'spec' && page.metadata['spec'] === 'json' ? 'json' : spec.ext;
   return new Response(body, {
     status: 200,
     headers: {

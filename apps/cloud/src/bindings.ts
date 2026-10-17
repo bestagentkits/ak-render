@@ -23,8 +23,18 @@ export interface R2Listing {
   cursor?: string;
 }
 
+/** An object's metadata without its body, as `head` returns it. */
+export interface R2ObjectHead {
+  readonly key: string;
+  readonly size: number;
+  readonly httpMetadata?: { contentType?: string };
+  readonly customMetadata?: Record<string, string>;
+}
+
 export interface R2Bucket {
   get(key: string): Promise<R2ObjectBody | null>;
+  /** Metadata only: an existence or expiry check that does not read the body. */
+  head(key: string): Promise<R2ObjectHead | null>;
   put(
     key: string,
     value: string | ArrayBuffer,

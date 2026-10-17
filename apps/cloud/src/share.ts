@@ -66,10 +66,7 @@ export interface RetainedSpec {
 export interface StoreOptions {
   /** Keep the spec source beside the page (`retainSpec`). */
   spec?: RetainedSpec;
-  /**
-   * The `theme` argument, when one overrode the spec: a preset name, or
-   * `custom` for an inline theme. The retained spec does not carry it.
-   */
+  /** The `theme` preset argument, when one overrode the spec; the retained spec does not carry it. */
   themeOverride?: string;
 }
 
@@ -169,6 +166,26 @@ export async function readStored(
     owner,
     metadata: object.customMetadata ?? {},
   };
+}
+
+/**
+ * A stored page's metadata, read without its body. Absent and expired both
+ * come back as values, so a caller can decide what a non-owner may learn.
+ */
+export async function statStored(
+  env: Env,
+  kind: StoredKind,
+  id: string,
+): Promise<{ owner: string; expiresAt: string; metadata: Readonly<Record<string, string>> } | null> {
+  if (!shareIdPattern().test(id)) return null;
+  const head = await env.RENDER_SHARES.head(keyOf(kind, id));
+  if (head === null) return null;
+  const metadata = head.customMetadata ?? {};
+  return { owner: metadata['owner'] ?? '', expiresAt: metadata['expiresAt'] ?? '', metadata };
+}
+
+export function isExpired(expiresAt: string, now: Date): boolean {
+  return expiresAt !== '' && Date.parse(expiresAt) <= now.getTime();
 }
 
 export function readShare(env: Env, id: string, now: Date = new Date()): Promise<ShareReadOutcome> {

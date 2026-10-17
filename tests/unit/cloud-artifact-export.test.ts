@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DOWNLOAD_URL_TTL_SECONDS } from '../../apps/cloud/src/config.js';
 import { handleRequest } from '../../apps/cloud/src/index.js';
+import { purgeExpiredShares } from '../../apps/cloud/src/share.js';
 import {
   activeEntitlements,
   harness,
@@ -132,6 +133,8 @@ describe('remote MCP artifact-export', () => {
     expect(html.headers.get('content-disposition')).toMatch(/^attachment; filename=".+\.html"$/u);
     expect(html.headers.get('content-security-policy')).toContain('sandbox');
     expect(html.headers.get('cache-control')).toBe('private, no-store');
+    expect(html.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(html.headers.get('referrer-policy')).toBe('no-referrer');
 
     const spec = await get(env, downloads['spec'] as string);
     expect(spec.status).toBe(200);
@@ -177,10 +180,10 @@ describe('remote MCP artifact-export', () => {
     expect(limits.export.counts.get('user-1')).toBe(1);
 
     await exportUrls(env, artifactUrl, ['png', 'pdf']);
+    // Reuse costs no browser call, but png or pdf always counts as an export.
     expect(browserCalls).toHaveLength(2);
-    // Reuse costs no browser call, so it counts as a cheap call, not an export.
-    expect(limits.export.counts.get('user-1')).toBe(1);
-    expect(limits.validate.counts.get('user-1')).toBe(1);
+    expect(limits.export.counts.get('user-1')).toBe(2);
+    expect(limits.validate.counts.get('user-1')).toBeUndefined();
 
     const png = await get(env, first['png'] as string);
     expect(png.status).toBe(200);
@@ -234,6 +237,75 @@ describe('remote MCP artifact-export', () => {
     expect(missing.payload).toEqual(exported.payload);
   });
 
+  it("answers another user's expired page like a missing one too", async () => {
+    const owner = harness();
+    const start = new Date('2026-10-17T00:00:00Z');
+    const rendered = await tool(owner.env, 'render', { spec: SPEC }, TOKEN, start);
+    const artifactUrl = rendered.payload['artifactUrl'] as string;
+    const later = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+    expect(
+      (await tool(owner.env, 'artifact-export', { artifact: artifactUrl }, TOKEN, later)).payload[
+        'code'
+      ],
+    ).toBe('EXPIRED');
+    const other = harness({ entitlements: activeEntitlements('user-2') });
+    other.env.RENDER_SHARES = owner.env.RENDER_SHARES;
+    const foreign = await tool(
+      other.env,
+      'artifact-export',
+      { artifact: artifactUrl },
+      TOKEN,
+      later,
+    );
+    expect(foreign.payload['code']).toBe('NOT_FOUND');
+  });
+
+  it('counts a refused export before any storage read, so failures are not free', async () => {
+    const { env, r2, limits } = harness({ limits: { validate: 2 } });
+    const artifactUrl = await render(env);
+    const before = r2.calls.length;
+    for (let call = 0; call < 2; call += 1) {
+      const refused = await tool(env, 'artifact-export', {
+        artifact: artifactUrl,
+        formats: ['spec'],
+      });
+      expect(refused.payload['code']).toBe('SPEC_NOT_RETAINED');
+    }
+    expect(limits.validate.counts.get('user-1')).toBe(2);
+    const limited = await tool(env, 'artifact-export', {
+      artifact: artifactUrl,
+      formats: ['spec'],
+    });
+    expect(limited.payload['code']).toBe('RATE_LIMITED');
+    // The limited call read nothing; the two refused ones read metadata only.
+    const after = r2.calls.slice(before);
+    expect(after.filter((call) => call.method === 'get')).toEqual([]);
+    expect(after.filter((call) => call.method === 'head')).toHaveLength(2);
+  });
+
+  it('passes a failed browser export through and stores nothing', async () => {
+    const { env, r2 } = harness({ browser: true });
+    env.BROWSER = { quickAction: async () => new Response('busy', { status: 503 }) };
+    const artifactUrl = await render(env);
+    const exported = await tool(env, 'artifact-export', {
+      artifact: artifactUrl,
+      formats: ['pdf'],
+    });
+    expect(exported.payload['code']).toBe('EXPORT_FAILED');
+    expect([...r2.objects.keys()].some((key) => key.endsWith('.pdf'))).toBe(false);
+  });
+
+  it('sweeps an expired page together with its spec and exports', async () => {
+    const { env, r2 } = harness({ browser: true });
+    const start = new Date('2026-10-17T00:00:00Z');
+    const rendered = await tool(env, 'render', { spec: SPEC, retainSpec: true }, TOKEN, start);
+    await exportUrls(env, rendered.payload['artifactUrl'] as string, ['png', 'pdf'], start);
+    expect(r2.objects.size).toBe(4);
+    const removed = await purgeExpiredShares(env, new Date(start.getTime() + 2 * 60 * 60 * 1000));
+    expect(removed).toBe(4);
+    expect(r2.objects.size).toBe(0);
+  });
+
   it('requires a bearer and validates its arguments', async () => {
     const { env } = harness();
     const unauthenticated = await tool(env, 'artifact-export', { artifact: SPEC_ID }, null);
@@ -270,7 +342,8 @@ describe('signed download route', () => {
     const { html } = await exportUrls(env, artifactUrl);
     const url = new URL(html as string);
     const otherId = url.pathname.replace(/[0-9a-f-]{36}/u, SPEC_ID);
-    const reads = () => r2.calls.filter((call) => call.method === 'get').length;
+    const reads = () =>
+      r2.calls.filter((call) => call.method === 'get' || call.method === 'head').length;
     const before = reads();
 
     const tampered = [

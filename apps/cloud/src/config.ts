@@ -50,7 +50,10 @@ export const RATE_LIMITS = {
   render: 60,
   share: 20,
   export: 10,
-  /** MCP `validate` and `audit-motion`: cheaper than a render, so a looser limit. */
+  /**
+   * MCP `validate`, `audit-motion`, and `artifact-export` without png or pdf:
+   * cheaper than a render, so a looser limit.
+   */
   validate: 120,
   /** MCP `catalog`, `describe` and `themes`, which answer without a bearer. */
   'anon-ip': 120,

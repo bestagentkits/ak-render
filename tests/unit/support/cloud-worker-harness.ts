@@ -13,6 +13,7 @@ import type {
   R2Bucket,
   R2Listing,
   R2ObjectBody,
+  R2ObjectHead,
   RateLimitBinding,
 } from '../../../apps/cloud/src/bindings.js';
 import { RATE_LIMITS, type RateLimitKey } from '../../../apps/cloud/src/config.js';
@@ -33,7 +34,7 @@ export class FakeR2 implements R2Bucket {
       httpMetadata?: { contentType?: string };
     }
   >();
-  readonly calls: { method: 'get' | 'put' | 'delete' | 'list'; detail: unknown }[] = [];
+  readonly calls: { method: 'get' | 'head' | 'put' | 'delete' | 'list'; detail: unknown }[] = [];
 
   async get(key: string): Promise<R2ObjectBody | null> {
     this.calls.push({ method: 'get', detail: key });
@@ -47,6 +48,18 @@ export class FakeR2 implements R2Bucket {
       size: bytes.byteLength,
       text: async () => new TextDecoder().decode(bytes),
       arrayBuffer: async () => bytes.slice().buffer,
+      ...(entry.customMetadata === undefined ? {} : { customMetadata: entry.customMetadata }),
+      ...(entry.httpMetadata === undefined ? {} : { httpMetadata: entry.httpMetadata }),
+    };
+  }
+
+  async head(key: string): Promise<R2ObjectHead | null> {
+    this.calls.push({ method: 'head', detail: key });
+    const entry = this.objects.get(key);
+    if (entry === undefined) return null;
+    return {
+      key,
+      size: typeof entry.value === 'string' ? entry.value.length : entry.value.byteLength,
       ...(entry.customMetadata === undefined ? {} : { customMetadata: entry.customMetadata }),
       ...(entry.httpMetadata === undefined ? {} : { httpMetadata: entry.httpMetadata }),
     };
