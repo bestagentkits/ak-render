@@ -122,14 +122,14 @@ export const CATALOG_TOOL: McpTool<unknown> = {
 export const SEARCH_CATALOG_TOOL: McpTool<unknown> = {
   name: 'search-catalog',
   description:
-    'Find block types by intent words, e.g. "sortable table" or "pricing". Returns up to 8 ranked hits with type, category, summary and score.',
+    'Find block types by intent words, in English or Vietnamese, e.g. "sortable table", "pricing" or "bieu do". Returns up to 8 ranked hits with type, category, summary and score.',
   inputSchema: {
     type: 'object',
     properties: {
       query: {
         type: 'string',
         maxLength: CATALOG_SEARCH_LIMITS.maxQueryLength,
-        description: 'A few words describing what the block should do.',
+        description: 'A few words describing what the block should do, in English or Vietnamese.',
       },
     },
     required: ['query'],
