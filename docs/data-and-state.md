@@ -35,6 +35,9 @@ blocks:
 
 - Cells are scalars only: a string, a finite number, a boolean or `null`.
   Nested objects and lists are rejected, so a dataset is always a table.
+- A number, in a cell or in any numeric prop, lies within ±1e300. Charts
+  subtract and sum values, and nearer the float maximum that overflows into
+  NaN coordinates, so a larger magnitude is a `SPEC_BOUNDS_ERROR` at its path.
 - Field names are identifiers that may contain dashes (`FIELD_KEY_PATTERN` in
   [`src/data/dataset-types.ts`](../src/data/dataset-types.ts)). `__proto__`, `constructor` and `prototype` are refused,
   because a row is a plain object and those names would reach its prototype

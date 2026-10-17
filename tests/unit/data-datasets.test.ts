@@ -92,6 +92,16 @@ describe('validateRows', () => {
     expect(valid).toEqual([{ ok: 1 }, {}]);
   });
 
+  it('rejects a number beyond the drawable magnitude but keeps its field', () => {
+    const bag = new DiagnosticBag();
+    const limit = DATA_LIMITS.maxNumberMagnitude;
+    const valid = validateRows([{ v: limit }, { v: -limit * 10 }], '$.data', bag);
+    expect(bag.errors()).toEqual([
+      expect.objectContaining({ code: 'SPEC_BOUNDS_ERROR', path: '$.data[1].v' }),
+    ]);
+    expect(valid).toEqual([{ v: limit }, { v: null }]);
+  });
+
   it('rejects an empty or non-list value', () => {
     for (const value of [[], { a: 1 }, 'rows']) {
       const bag = new DiagnosticBag();

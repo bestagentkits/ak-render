@@ -212,6 +212,12 @@ Release mechanics and the compatibility contract live in
 
 ### Fixed
 
+- A chart no longer draws `NaN` coordinates for values near the float maximum.
+  Any number in a spec, in a dataset cell or a numeric prop, must lie within
+  ±1e300; a larger one is a `SPEC_BOUNDS_ERROR` at its path, so `validate`
+  reports it instead of passing a page whose chart overflows.
+  Migration: a spec with such a value, which drew a broken chart, now fails
+  validation.
 - A table row-width warning now names the authored row. An invalid row is
   dropped during normalization, so later warnings used to shift onto an
   earlier index (`rows[0]` instead of `rows[1]`), which misled agents fixing
