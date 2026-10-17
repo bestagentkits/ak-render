@@ -858,7 +858,7 @@
       ]
     },
     "dataScalar": {
-      "description": "A dataset value: a string, a finite number, a boolean, or null.",
+      "description": "A string, a finite number, a boolean, or null.",
       "oneOf": [
         {
           "type": "string",
@@ -866,6 +866,26 @@
         },
         {
           "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "dataCell": {
+      "description": "A dataset value: a string, a finite number, a boolean, or null. A number is 0 or has a magnitude from 1e-100 to 1e+100.",
+      "oneOf": [
+        {
+          "type": "string",
+          "maxLength": 400
+        },
+        {
+          "type": "number",
+          "minimum": -1e+100,
+          "maximum": 1e+100
         },
         {
           "type": "boolean"
@@ -886,7 +906,7 @@
           "pattern": "^(?!(?:__proto__|constructor|prototype)$)[A-Za-z_][A-Za-z0-9_-]{0,63}$"
         },
         "additionalProperties": {
-          "$ref": "#/$defs/dataScalar"
+          "$ref": "#/$defs/dataCell"
         }
       }
     },
@@ -5063,7 +5083,9 @@
                   "values": {
                     "type": "array",
                     "items": {
-                      "type": "number"
+                      "type": "number",
+                      "minimum": -1e+100,
+                      "maximum": 1e+100
                     },
                     "minItems": 1,
                     "maxItems": 200
@@ -5150,10 +5172,14 @@
               "type": "boolean"
             },
             "min": {
-              "type": "number"
+              "type": "number",
+              "minimum": -1e+100,
+              "maximum": 1e+100
             },
             "max": {
-              "type": "number"
+              "type": "number",
+              "minimum": -1e+100,
+              "maximum": 1e+100
             }
           },
           "additionalProperties": false
@@ -5215,10 +5241,14 @@
               "type": "boolean"
             },
             "min": {
-              "type": "number"
+              "type": "number",
+              "minimum": -1e+100,
+              "maximum": 1e+100
             },
             "max": {
-              "type": "number"
+              "type": "number",
+              "minimum": -1e+100,
+              "maximum": 1e+100
             }
           },
           "additionalProperties": false
@@ -5280,10 +5310,14 @@
               "type": "boolean"
             },
             "min": {
-              "type": "number"
+              "type": "number",
+              "minimum": -1e+100,
+              "maximum": 1e+100
             },
             "max": {
-              "type": "number"
+              "type": "number",
+              "minimum": -1e+100,
+              "maximum": 1e+100
             }
           },
           "additionalProperties": false
@@ -5305,7 +5339,9 @@
                     "maxLength": 80
                   },
                   {
-                    "type": "number"
+                    "type": "number",
+                    "minimum": -1e+100,
+                    "maximum": 1e+100
                   }
                 ]
               },
@@ -5334,12 +5370,16 @@
                     "maxLength": 80
                   },
                   {
-                    "type": "number"
+                    "type": "number",
+                    "minimum": -1e+100,
+                    "maximum": 1e+100
                   }
                 ]
               },
               "y": {
-                "type": "number"
+                "type": "number",
+                "minimum": -1e+100,
+                "maximum": 1e+100
               },
               "text": {
                 "type": "string",
@@ -5365,7 +5405,9 @@
           ]
         },
         "target": {
-          "type": "number"
+          "type": "number",
+          "minimum": -1e+100,
+          "maximum": 1e+100
         },
         "id": {
           "type": "string",

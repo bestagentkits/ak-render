@@ -147,6 +147,48 @@ describe('applyTransform: non-finite results', () => {
     });
     expect(derived[0]?.r).toBeNull();
   });
+
+  it('maps a derived value outside the dataset number bounds to null', () => {
+    const rows = applyTransform([{ v: 1e100, b: 1e-100, d: 1e-8 }], {
+      derive: [
+        { as: 'r', op: 'ratio', field: 'v', base: 'b' },
+        { as: 'tiny', op: 'ratio', field: 'b', base: 'v' },
+        { as: 'edge', op: 'ratio', field: 'v', base: 'v' },
+      ],
+    });
+    expect(rows[0]).toMatchObject({ r: null, tiny: null, edge: 1 });
+  });
+
+  it('never plots NaN for chained ratios of in-range cells', () => {
+    const html = compile({
+      version: 1,
+      meta: { title: 'Chained ratios' },
+      datasets: {
+        d: [
+          { x: 'a', v: 1e100, b: 1e-100, d: 1e-8 },
+          { x: 'b', v: -1e100, b: 1e-100, d: 1e-8 },
+        ],
+      },
+      blocks: [
+        {
+          type: 'chart',
+          id: 'c',
+          kind: 'line',
+          dataRef: 'd',
+          transform: {
+            derive: [
+              { as: 'r', op: 'ratio', field: 'v', base: 'b' },
+              { as: 'r2', op: 'ratio', field: 'r', base: 'b' },
+              { as: 'r3', op: 'ratio', field: 'r2', base: 'd' },
+            ],
+          },
+          x: { field: 'x' },
+          y: { field: 'r3' },
+        },
+      ],
+    }).html;
+    expect(html).not.toContain('NaN');
+  });
 });
 
 describe('resolveBlockData: derive and rollup checks', () => {

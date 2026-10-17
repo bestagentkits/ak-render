@@ -10,7 +10,12 @@
  */
 
 import type { PropSchema } from '../registry/prop-schema.js';
-import { type DataRow, type DataScalar, fieldValue } from './dataset-types.js';
+import {
+  type DataRow,
+  type DataScalar,
+  fieldValue,
+  numberMagnitudeProblem,
+} from './dataset-types.js';
 
 export type FilterOperator = 'equals' | 'notEquals' | 'in' | 'gt' | 'gte' | 'lt' | 'lte';
 export const FILTER_OPERATORS: readonly FilterOperator[] = [
@@ -177,7 +182,7 @@ export const TRANSFORM_PROP_SCHEMA: PropSchema = {
       minItems: 1,
       maxItems: TRANSFORM_LIMITS.maxDerive,
       description:
-        'New numeric fields, in order. ratio = field/base; percentOf = field/base*100; delta = field-base; percentChange = (field-base)/|base|*100; share = field/column total*100; cumulative = running sum. delta and percentChange without base use the previous row in source order, before sort. A zero or missing operand gives null.',
+        'New numeric fields, in order. ratio = field/base; percentOf = field/base*100; delta = field-base; percentChange = (field-base)/|base|*100; share = field/column total*100; cumulative = running sum. delta and percentChange without base use the previous row in source order, before sort. A zero or missing operand, or a result outside the dataset number bounds, gives null.',
       of: {
         kind: 'object',
         fields: {
@@ -357,6 +362,15 @@ function finiteOrNull(value: DataScalar): DataScalar {
   return typeof value === 'number' && !Number.isFinite(value) ? null : value;
 }
 
+/**
+ * A derived number outside the dataset magnitude bounds is a gap, like a
+ * non-finite one: chained ratios of in-range cells can reach 1e308, where a
+ * chart's range overflows to Infinity.
+ */
+function boundedOrNull(value: DataScalar): DataScalar {
+  return typeof value === 'number' && numberMagnitudeProblem(value) !== undefined ? null : value;
+}
+
 function numberOrNull(value: DataScalar): number | null {
   return typeof value === 'number' ? value : null;
 }
@@ -411,7 +425,7 @@ function deriveFields(rows: readonly DataRow[], specs: readonly DeriveSpec[]): D
       running: 0,
     };
     result = result.map((row, index) => {
-      const value = finiteOrNull(deriveValue(spec, row, result[index - 1], context));
+      const value = boundedOrNull(deriveValue(spec, row, result[index - 1], context));
       // A computed key always defines an own property, and `as` is a validated field key.
       return { ...row, [spec.as]: value };
     });

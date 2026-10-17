@@ -131,6 +131,124 @@ describe('chart v2 kinds', () => {
   }
 });
 
+/** Every numeric field of the shared rows multiplied by `factor`. */
+function scaledRows(factor: number) {
+  return ROWS.map((row) => ({
+    ...row,
+    tokens: row.tokens * factor,
+    latency: row.latency * factor,
+    cost: row.cost * factor,
+  }));
+}
+
+describe('chart value magnitudes', () => {
+  it('reports a value whose range overflows at the dataset cell', () => {
+    const result = validate(
+      JSON.stringify({
+        version: 1,
+        meta: { title: 'NaN chart' },
+        datasets: {
+          d: [
+            { x: 'a', v: 1e308 },
+            { x: 'b', v: -1e308 },
+          ],
+        },
+        blocks: [
+          {
+            type: 'chart',
+            kind: 'line',
+            title: 'T',
+            dataRef: 'd',
+            x: { field: 'x' },
+            y: { field: 'v' },
+          },
+        ],
+      }),
+    );
+    expect(result.ok).toBe(false);
+    expect(result.diagnostics.map((item) => [item.code, item.path])).toEqual([
+      ['SPEC_BOUNDS_ERROR', '$.datasets.d[0].v'],
+      ['SPEC_BOUNDS_ERROR', '$.datasets.d[1].v'],
+    ]);
+    expect(result.diagnostics[0]?.message).toMatch(/out of range: use 0 or a magnitude/u);
+  });
+
+  it('reports out-of-range inline numbers at their own path', () => {
+    const paths = diagnostics({
+      kind: 'gauge',
+      labels: ['Load'],
+      series: [{ label: 'Load', values: [5e-324] }],
+      target: 1e101,
+      value: { min: -1e200 },
+    }).map((item) => item.path);
+    // Huge values fail the prop bounds first; tiny ones the magnitude check.
+    expect(paths.sort()).toEqual([
+      '$.blocks[0].series[0].values[0]',
+      '$.blocks[0].target',
+      '$.blocks[0].value.min',
+    ]);
+    const overlays = diagnostics({
+      kind: 'line',
+      labels: ['a', 'b'],
+      series: [{ label: 's', values: [1, 2] }],
+      annotations: [{ x: 'a', y: -1e300, text: 'far' }],
+    }).map((item) => item.path);
+    expect(overlays).toEqual(['$.blocks[0].annotations[0].y']);
+  });
+
+  for (const factor of [1e97, 1e-99]) {
+    it(`draws every kind without NaN at the edge of the range (×${factor})`, () => {
+      for (const kind of CHART_KINDS) {
+        const spec = { kind, ...SPECS[kind] };
+        if (kind === 'gauge') {
+          const value = 87 * factor;
+          Object.assign(spec, {
+            series: [{ label: 'Coverage', values: [value] }],
+            target: value,
+            value: { max: 100 * factor },
+          });
+        }
+        const html = compile(page(spec, { usage: scaledRows(factor) })).html;
+        expect(html, kind).not.toMatch(/NaN|Infinity/u);
+      }
+    });
+  }
+
+  it('keeps an axis width for values a few ulps apart and never hangs', () => {
+    const pairs = [
+      [0.3, 0.30000000000000004],
+      [1.1, 1.1000000000000003],
+      [42.314, 42.31400000000001],
+      [1e16, 10000000000000002],
+    ];
+    for (const [low, high] of pairs) {
+      const usage = [
+        { month: 'Jan', model: 'A', tokens: low, latency: low, cost: 1 },
+        { month: 'Feb', model: 'A', tokens: high, latency: high, cost: 1 },
+      ];
+      for (const spec of [
+        { kind: 'histogram', dataRef: 'usage', x: { field: 'tokens' } },
+        { kind: 'scatter', dataRef: 'usage', x: { field: 'tokens' }, y: { field: 'latency' } },
+      ]) {
+        const html = compile(page(spec, { usage })).html;
+        expect(html, `${spec.kind} ${low}`).not.toMatch(/NaN|Infinity/u);
+      }
+    }
+  });
+
+  it('pads a flat range of huge values instead of collapsing it', () => {
+    const flat = [{ month: 'Jan', model: 'A', tokens: 1e99, latency: 1e99, cost: 1 }];
+    for (const kind of ['scatter', 'sparkline']) {
+      const spec =
+        kind === 'scatter'
+          ? { kind, dataRef: 'usage', x: { field: 'tokens' }, y: { field: 'latency' } }
+          : { kind, dataRef: 'usage', x: { field: 'month' }, y: { field: 'tokens' } };
+      const html = compile(page(spec, { usage: flat })).html;
+      expect(html, kind).not.toMatch(/NaN|Infinity/u);
+    }
+  });
+});
+
 describe('chart v2 bindings', () => {
   it('derives labels in first-seen order and one series per series.field value', () => {
     const html = figure({ kind: 'line', ...SPECS.line });

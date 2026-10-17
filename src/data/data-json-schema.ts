@@ -10,10 +10,19 @@ import { TRANSFORM_PROP_SCHEMA } from './transform-pipeline.js';
 
 export const DATA_JSON_SCHEMA_DEFS: Record<string, unknown> = {
   dataScalar: {
-    description: 'A dataset value: a string, a finite number, a boolean, or null.',
+    description: 'A string, a finite number, a boolean, or null.',
     oneOf: [
       { type: 'string', maxLength: DATA_LIMITS.maxStringLength },
       { type: 'number' },
+      { type: 'boolean' },
+      { type: 'null' },
+    ],
+  },
+  dataCell: {
+    description: `A dataset value: a string, a finite number, a boolean, or null. A number is 0 or has a magnitude from ${DATA_LIMITS.minMagnitude} to ${DATA_LIMITS.maxMagnitude}.`,
+    oneOf: [
+      { type: 'string', maxLength: DATA_LIMITS.maxStringLength },
+      { type: 'number', minimum: -DATA_LIMITS.maxMagnitude, maximum: DATA_LIMITS.maxMagnitude },
       { type: 'boolean' },
       { type: 'null' },
     ],
@@ -26,7 +35,7 @@ export const DATA_JSON_SCHEMA_DEFS: Record<string, unknown> = {
     items: {
       type: 'object',
       propertyNames: { pattern: FIELD_KEY_PATTERN.source },
-      additionalProperties: { $ref: '#/$defs/dataScalar' },
+      additionalProperties: { $ref: '#/$defs/dataCell' },
     },
   },
   transform: propSchemaToJsonSchema(TRANSFORM_PROP_SCHEMA),
