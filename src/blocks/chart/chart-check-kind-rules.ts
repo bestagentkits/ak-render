@@ -5,9 +5,9 @@
  */
 
 import { fieldValue } from '../../data/dataset-types.js';
-import { pathIndex, pathKey } from '../../diagnostics.js';
+import { pathKey } from '../../diagnostics.js';
 import type { IrNode } from '../../ir.js';
-import { objectListProp, stringProp } from '../../render/block-helpers.js';
+import { objectListProp, propItemPath, stringProp } from '../../render/block-helpers.js';
 import type { ChartInput } from '../../render/chart-types.js';
 import type { Report } from './chart-check.js';
 import { encodingProp, magnitudeEncoding, seriesField } from './chart-encodings.js';
@@ -32,7 +32,7 @@ function checkOverlays(node: IrNode, kind: string, input: ChartInput, report: Re
       const fits = numericAxis ? typeof x === 'number' : known.includes(String(x));
       if (fits) return;
       report({
-        path: pathKey(pathIndex(pathKey(node.path, key), index), 'x'),
+        path: pathKey(propItemPath(node, key, index), 'x'),
         severity: 'warning',
         message: numericAxis
           ? `a ${kind} chart places overlays by number; "${String(x)}" is not drawn`
@@ -50,7 +50,7 @@ export function checkKindRules(node: IrNode, kind: string, report: Report): void
   const values = input.series[0]?.values ?? [];
   const valuesPath =
     node.data === undefined
-      ? pathKey(pathIndex(pathKey(node.path, 'series'), 0), 'values')
+      ? pathKey(propItemPath(node, 'series', 0), 'values')
       : pathKey(pathKey(node.path, magnitudeEncoding(node).key), 'field');
 
   if (SINGLE_SERIES_KINDS.includes(kind) && node.data === undefined && input.series.length > 1) {

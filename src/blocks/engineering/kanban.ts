@@ -8,7 +8,7 @@
  */
 
 import type { DataRow } from '../../data/dataset-types.js';
-import { pathIndex, pathKey } from '../../diagnostics.js';
+import { pathKey } from '../../diagnostics.js';
 import type { IrNode } from '../../ir.js';
 import { isPlainObject } from '../../json.js';
 import type { BlockModule } from '../../registry/block-module.js';
@@ -28,6 +28,7 @@ import {
   filterRowAttributes,
   nodeAttributes,
   objectListProp,
+  propItemPath,
   str,
   stringProp,
   titleHeader,
@@ -180,7 +181,7 @@ export const kanbanBlock: BlockModule = {
       if (seen.has(id)) {
         bag.add({
           code: 'SPEC_VALIDATION_ERROR',
-          path: pathKey(pathIndex(pathKey(node.path, 'columns'), index), 'id'),
+          path: pathKey(propItemPath(node, 'columns', index), 'id'),
           message: `column id "${id}" is used twice`,
           nodeId: node.id,
         });
@@ -211,7 +212,7 @@ export const kanbanBlock: BlockModule = {
       if (columnIds.has(card.column)) return;
       bag.add({
         code: 'SPEC_VALIDATION_ERROR',
-        path: pathKey(pathIndex(pathKey(node.path, 'cards'), index), 'column'),
+        path: pathKey(propItemPath(node, 'cards', index), 'column'),
         message: `"${card.column}" is not a column id`,
         details: { allowed },
         nodeId: node.id,

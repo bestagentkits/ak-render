@@ -4,11 +4,17 @@
  * copies every answer, so a page with a decision must have one.
  */
 
-import { pathIndex, pathKey } from '../../diagnostics.js';
+import { pathKey } from '../../diagnostics.js';
 import type { IrNode } from '../../ir.js';
 import type { BlockModule, CheckContext } from '../../registry/block-module.js';
 import { anchorProps, bool, itemsOf, LABEL, semantic, txt } from '../../registry/define-helpers.js';
-import { element, nodeAttributes, objectListProp, str } from '../../render/block-helpers.js';
+import {
+  element,
+  nodeAttributes,
+  objectListProp,
+  propItemPath,
+  str,
+} from '../../render/block-helpers.js';
 import { escapeInlineText, escapeText, renderAttributes } from '../../render/escape.js';
 import { FEEDBACK_TYPE, REVIEW_REQUIRES_JS_NOTE } from './review-shared.js';
 
@@ -30,7 +36,7 @@ function check(node: IrNode, { bag, byId }: CheckContext): void {
     if (options.findIndex((other) => str(other.label) === label) !== index) {
       bag.add({
         code: 'SPEC_VALIDATION_ERROR',
-        path: pathKey(pathIndex(pathKey(node.path, 'options'), index), 'label'),
+        path: pathKey(propItemPath(node, 'options', index), 'label'),
         nodeId: node.id,
         message: `option "${label}" is listed twice`,
       });

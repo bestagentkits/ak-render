@@ -9,12 +9,13 @@
  * keep in sync, and `describe` stays small (no long `accepts` enumeration).
  */
 
-import { pathIndex, pathKey } from '../../diagnostics.js';
+import { authoredIndex, pathKey } from '../../diagnostics.js';
 import type { IrNode } from '../../ir.js';
 import { isPlainObject } from '../../json.js';
 import type { CheckContext } from '../../registry/block-module.js';
 import { blocks } from '../../registry/define-helpers.js';
 import type { PropSchema } from '../../registry/prop-schema.js';
+import { propItemPath } from '../../render/block-helpers.js';
 import { escapeInlineText } from '../../render/escape.js';
 import { type RenderContext, slotKey } from '../../render/render-context.js';
 
@@ -29,15 +30,20 @@ export function nestedBlocks(contentField: string, maxItems: number): PropSchema
   });
 }
 
+/** Slots are keyed by the authored item index, which an invalid item before it shifts. */
+function itemSlotKey(node: IrNode, index: number): string {
+  return slotKey('items', authoredIndex(node.props.items, index), 'blocks');
+}
+
 /** The IR node ids nested in item `index`; empty when the item has no blocks. */
 export function itemSlot(node: IrNode, index: number): readonly string[] {
-  return node.slots?.[slotKey('items', index, 'blocks')] ?? [];
+  return node.slots?.[itemSlotKey(node, index)] ?? [];
 }
 
 /** Item `index`'s nested blocks in a wrapper that keeps wide children inside its column; '' without blocks. */
 export function renderItemBlocks(node: IrNode, index: number, context: RenderContext): string {
   if (itemSlot(node, index).length === 0) return '';
-  return `<div class="ak-nested">${context.renderSlot(node, slotKey('items', index, 'blocks'))}</div>`;
+  return `<div class="ak-nested">${context.renderSlot(node, itemSlotKey(node, index))}</div>`;
 }
 
 /**
@@ -98,7 +104,7 @@ export function checkItemContent(
     if (typeof item[contentField] === 'string' || itemSlot(node, index).length > 0) return;
     context.bag.add({
       code: 'SPEC_VALIDATION_ERROR',
-      path: pathIndex(pathKey(node.path, 'items'), index),
+      path: propItemPath(node, 'items', index),
       nodeId: node.id,
       message,
       details: { required: [contentField, 'blocks'] },

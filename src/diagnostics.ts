@@ -132,3 +132,23 @@ export function pathKey(base: string, key: string): string {
 export function pathIndex(base: string, index: number): string {
   return `${base}[${index}]`;
 }
+
+// Validation drops an invalid list item and compacts the list. Each compacted
+// list remembers where its items sat in the authored one, so a later check
+// reports the index the author wrote, not the compacted one.
+const authoredIndexes = new WeakMap<readonly unknown[], readonly number[]>();
+
+/** Record, for a compacted list, the authored index of each item it kept. */
+export function keepAuthoredIndexes(list: readonly unknown[], indexes: readonly number[]): void {
+  if (indexes.some((authored, index) => authored !== index)) authoredIndexes.set(list, indexes);
+}
+
+/** The authored index of item `index` of a validated list. */
+export function authoredIndex(list: unknown, index: number): number {
+  return (Array.isArray(list) ? authoredIndexes.get(list)?.[index] : undefined) ?? index;
+}
+
+/** Append the authored index of item `index` of a validated list to a JSON path. */
+export function listItemPath(base: string, list: unknown, index: number): string {
+  return pathIndex(base, authoredIndex(list, index));
+}

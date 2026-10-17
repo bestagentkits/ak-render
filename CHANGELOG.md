@@ -204,6 +204,13 @@ Release mechanics and the compatibility contract live in
   dropped during normalization, so later warnings used to shift onto an
   earlier index (`rows[0]` instead of `rows[1]`), which misled agents fixing
   by path.
+- Every cross-field diagnostic about a list item now names the authored item.
+  An invalid item is dropped during normalization, and checks on chart
+  series, decision options, kanban cards and columns, roadmap entries,
+  references, data-table columns, calendar events, pricing plans,
+  feature-matrix rows, asset policy checks and other item lists reported
+  later items one index too early. Nested item blocks are matched to their authored item
+  the same way.
 - `ak-render validate` lists each warning once. A spec with an error used to
   print every warning twice in text mode; `--json` was not affected.
 - Malformed YAML no longer compiles silently. A duplicate key, an
