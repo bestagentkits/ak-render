@@ -2,18 +2,18 @@
  * The tool set the local stdio server runs.
  *
  * `catalog`, `search-catalog`, `describe`, `recipes`, `recipe`, `validate` and
- * `repair` are the shared pure tools. `render` and
- * `compose` write the HTML to a file under the server's working directory and `themes`
+ * `repair` are the shared pure tools. `render` and `compose` write the HTML to a file under the server's working directory and `themes`
  * discovers project and user presets on disk, which is why this module, unlike
  * the shared definitions, may touch the filesystem. Nothing here touches the
  * network.
  */
 
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { mkdirSync, realpathSync, writeFileSync } from 'node:fs';
+import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { compile } from '../render/render.js';
+import { patchSpecFile } from '../spec/patch-file.js';
 import { buildThemeCatalog, type ThemeCatalog } from '../theme/theme-catalog.js';
-import { text } from './mcp-protocol.js';
+import { failure, ToolArgumentError, text } from './mcp-protocol.js';
 import {
   AUDIT_MOTION_TOOL,
   CATALOG_TOOL,
@@ -28,6 +28,8 @@ import {
   type McpTool,
   MOTIONS_TOOL,
   optionalTheme,
+  PATCH_PROPERTIES,
+  PATCH_TOOL,
   RECIPE_TOOL,
   RECIPES_TOOL,
   REPAIR_TOOL,
@@ -48,7 +50,7 @@ export interface McpContext {
 
 export const LOCAL_INSTRUCTIONS = `AK Render compiles a Page Spec (YAML or JSON) into one self-contained, offline HTML file.
 Fastest path: compose builds a whole page from a typed intent and content (e.g. investment-report) in one call; pass dryRun or returnSpec to get the Page Spec back for edits.
-Full control: call catalog once (or search-catalog with a few words), describe only the block types you plan to use (several at once with types, compact: true for the short form), find icons by meaning with search-icons (describe-icon, icon-packs for detail), find motion recipes with motions, optionally start from a recipe (list them with recipes), validate the spec and fix every diagnostic by its JSON path (repair applies the safe fixes; validate with suggest: true lists the rest as JSON Patches; audit-motion checks the motion it names), then render to a file (themes lists the presets).
+Full control: call catalog once (or search-catalog with a few words), describe only the block types you plan to use (several at once with types, compact: true for the short form), find icons by meaning with search-icons (describe-icon, icon-packs for detail), find motion recipes with motions, optionally start from a recipe (list them with recipes), validate the spec and fix every diagnostic by its JSON path (repair applies the safe fixes; validate with suggest: true lists the rest as JSON Patches; audit-motion checks the motion it names), then render to a file (themes lists the presets). For a later edit, patch the spec file in place (file plus ops, paths like /blocks/@<id>/title) instead of rewriting it.
 Describe meaning, not presentation: the compiler owns layout, colour, typography and motion.`;
 
 const HTML_FILE = /\.html?$/iu;
@@ -94,6 +96,66 @@ const LOCAL_COMPOSE_TOOL: McpTool<McpContext> = {
   },
 };
 
+/**
+ * Local `patch` also edits a spec file in place (`file`), so a small change
+ * never resends the spec either way. The reply then carries no spec.
+ */
+const LOCAL_PATCH_TOOL: McpTool<McpContext> = {
+  ...PATCH_TOOL,
+  description:
+    'Edit a spec file in place (file) or a Page Spec (spec) with JSON Patch ops. Returns the new hash for baseHash, the changes and diagnostics; a file reply carries no spec.',
+  inputSchema: {
+    ...PATCH_TOOL.inputSchema,
+    properties: {
+      ...(PATCH_TOOL.inputSchema.properties as Record<string, unknown>),
+      file: {
+        type: 'string',
+        description:
+          'Spec file (.yaml, .yml or .json) to edit in place, relative to the working directory.',
+      },
+      ...PATCH_PROPERTIES,
+    },
+    required: ['ops'],
+  },
+  run: (args, context) => {
+    if (args.file === undefined) {
+      if (args.spec === undefined) throw new ToolArgumentError('pass "spec" or "file"');
+      return PATCH_TOOL.run(args, context);
+    }
+    if (args.spec !== undefined) throw new ToolArgumentError('pass "spec" or "file", not both');
+    const file = specFileInside(context.cwd, requireString(args, 'file'));
+    const baseHash =
+      typeof args.baseHash === 'string' && args.baseHash !== '' ? args.baseHash : undefined;
+    let patched: ReturnType<typeof patchSpecFile>;
+    try {
+      patched = patchSpecFile(file, args.ops, baseHash === undefined ? {} : { baseHash });
+    } catch (error) {
+      if (error instanceof TypeError) throw new ToolArgumentError(error.message);
+      throw error;
+    }
+    const result = { file, ...patched };
+    return result.ok ? text(result) : failure(result);
+  },
+};
+
+/**
+ * The real path of `file` when it lies under the working directory. An agent
+ * edits the project's specs, never a file elsewhere on the machine.
+ */
+function specFileInside(cwd: string, file: string): string {
+  let real: string;
+  try {
+    real = realpathSync(resolve(cwd, file));
+  } catch {
+    throw new ToolArgumentError(`${file} does not exist`);
+  }
+  const inside = relative(realpathSync(cwd), real);
+  if (inside === '' || inside.split(sep)[0] === '..' || isAbsolute(inside)) {
+    throw new ToolArgumentError(`${file} is outside the working directory`);
+  }
+  return real;
+}
+
 const LOCAL_THEMES_TOOL: McpTool<McpContext> = {
   ...THEMES_DEFINITION,
   run: (_args, context) => themesResult(themeCatalogFor(context)),
@@ -112,6 +174,7 @@ export const LOCAL_TOOLS: readonly McpTool<McpContext>[] = [
   RECIPE_TOOL,
   VALIDATE_TOOL,
   REPAIR_TOOL,
+  LOCAL_PATCH_TOOL,
   AUDIT_MOTION_TOOL,
   LOCAL_COMPOSE_TOOL,
   LOCAL_RENDER_TOOL,

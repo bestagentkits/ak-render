@@ -23,6 +23,21 @@ Release mechanics and the compatibility contract live in
   `composeIntents()` and `composeInputJsonSchema()`, and both MCP servers gain
   a `compose` tool (`dryRun`, `returnSpec`; remote stores it like `render`).
   Additive: `render` and `validate` are unchanged.
+- Revisioned spec editing. `ak-render patch <spec> <ops>` applies an RFC 6902
+  JSON Patch to a spec file in place: a path starting `/blocks/@<id>` addresses
+  the block with that author `id` at any depth, operations are all or nothing,
+  YAML comments and layout are kept, and the reply is a content hash plus the
+  applied changes, never the spec. `--base-hash` refuses an edit made against
+  a stale spec (`SPEC_PATCH_CONFLICT`); a patch that raises the error count is
+  not written, and only a file that reads as a Page Spec is edited. The `patch`
+  MCP tool (local: `file` under the working directory, or `spec`; remote: `spec`,
+  authenticated like `validate`) and the library `patch`, `patchSpecText` and
+  `specHash` expose the same contract. Motion Studio's atomic save now creates
+  its temporary file exclusively under a random name. See
+  [docs/agent-guide.md](./docs/agent-guide.md#edit-an-existing-page).
+  Migration: additive. `RenderErrorCode` gains `SPEC_PATCH_ERROR` and
+  `SPEC_PATCH_CONFLICT`, so an exhaustive `switch` over it needs two cases;
+  `tools/list` gains `patch` after `repair`.
 - Suggested fixes and a safe repair mode. `validate(spec, { suggest: true })`
   (CLI `validate --suggest`, MCP `validate` with `suggest: true`) attaches
   `fixes` to diagnostics: RFC 6902 patches that start with a `test` of the
@@ -33,7 +48,6 @@ Release mechanics and the compatibility contract live in
   change log; near-name guesses for block
   types, actions, events, properties and enum values stay with the author.
   Without `suggest`, diagnostics are unchanged.
-
 - Vietnamese intent search. `search-catalog` (CLI, MCP and `searchCatalog`)
   folds diacritics and `đ` before tokenizing and maps common Vietnamese words
   and phrases ("biểu đồ", "bảng giá", "dòng thời gian") to the English words

@@ -46,6 +46,8 @@ import { type CompactBlockDescription, describeMany } from './registry/describe-
 import { type Catalog, catalog, describe, formatCatalogJson } from './registry/registry.js';
 import type { BlockDefinition } from './registry/roster.js';
 import { compile } from './render/render.js';
+import { parseSpec } from './spec/parse.js';
+import { patchSpecFile } from './spec/patch-file.js';
 import { repair } from './spec/repair.js';
 import { validate } from './spec/validate.js';
 import { buildThemeCatalog, type ThemeCatalog } from './theme/theme-catalog.js';
@@ -84,6 +86,7 @@ interface Flags {
   failOn?: string;
   baseline?: string;
   port?: string;
+  baseHash?: string;
   out?: string;
   theme?: string;
   themeFile?: string;
@@ -704,6 +707,72 @@ function composeCommand(args: string[], io: CliIo, flags: Flags): number {
   return 0;
 }
 
+/**
+ * `ak-render patch <spec> <ops>`: edit the spec file in place. Ops are inline
+ * JSON (an argument starting with `[`), a JSON or YAML file, or `-` for stdin.
+ * The output is the hash and change list, never the spec.
+ */
+function patchCommand(args: string[], io: CliIo, flags: Flags): number {
+  const [file, opsArg] = args;
+  if (file === undefined || opsArg === undefined) {
+    io.stderr('ak-render: patch requires a spec file and operations\n');
+    return 2;
+  }
+  if (file === STDIN_PATH) {
+    io.stderr('ak-render: patch edits a spec file in place; pass a file path, not -\n');
+    return 2;
+  }
+  const inline = opsArg.trimStart().startsWith('[');
+  const opsText = inline ? opsArg : readSpecFile(opsArg, io);
+  if (opsText === undefined) return 2;
+  let ops: unknown;
+  try {
+    ops = parseSpec(opsText, { source: inline ? '<ops>' : sourceLabel(opsArg) });
+  } catch (error) {
+    if (!isRenderError(error)) throw error;
+    io.stderr(`ak-render: ${error.message}\n`);
+    return 2;
+  }
+
+  let result: ReturnType<typeof patchSpecFile>;
+  try {
+    result = patchSpecFile(file, ops, {
+      dryRun: flags.dryRun,
+      ...(flags.baseHash === undefined ? {} : { baseHash: flags.baseHash }),
+    });
+  } catch (error) {
+    if (isRenderError(error)) throw error;
+    io.stderr(
+      `ak-render: cannot patch ${file}: ${error instanceof Error ? error.message : String(error)}\n`,
+    );
+    return 2;
+  }
+
+  if (flags.json) {
+    io.stdout(`${JSON.stringify({ source: file, ...result }, null, 2)}\n`);
+  } else {
+    if (result.written) {
+      io.stdout(
+        `patched ${file}: ${result.changes.length} operations, hash ${result.hash} (was ${result.baseHash})\n`,
+      );
+    } else if (result.applied) {
+      const why = flags.dryRun
+        ? 'dry run'
+        : result.changes.length === 0
+          ? 'no operations'
+          : 'the patch adds errors';
+      io.stdout(
+        `not written (${why}): ${file}, hash ${result.hash} (current ${result.baseHash})\n`,
+      );
+    }
+    if (!result.preserved && result.written) {
+      io.stderr(`warning: ${file} was re-serialized; YAML comments and layout were not kept\n`);
+    }
+    reportDiagnostics(io, result.diagnostics);
+  }
+  return result.ok ? 0 : 1;
+}
+
 const COMMANDS: Record<string, Command> = {
   compile: {
     summary: 'Compile a Page Spec to a standalone HTML artifact.',
@@ -755,6 +824,13 @@ const COMMANDS: Record<string, Command> = {
       'Apply only semantics-preserving fixes to a Page Spec, revalidate, and log each change.',
     usage: 'ak-render repair <spec.yaml|spec.json|-> [--out <file>] [--json]',
     run: repairCommand,
+  },
+  patch: {
+    summary:
+      'Edit a spec file in place with a JSON Patch; /blocks/@<id> addresses a block by its id.',
+    usage:
+      "ak-render patch <spec.yaml|spec.json> <ops.json|-|'[...]'> [--base-hash <hash>] [--dry-run] [--json]",
+    run: patchCommand,
   },
   catalog: {
     summary: 'List available blocks by category, and actions (compact).',
@@ -875,7 +951,7 @@ const COMMANDS: Record<string, Command> = {
   },
   mcp: {
     summary:
-      'Serve the catalog, describe, icon, motion, recipe, validate, repair, audit-motion, render and themes tools over MCP stdio.',
+      'Serve the catalog, describe, icon, motion, recipe, validate, repair, patch, audit-motion, render and themes tools over MCP stdio.',
     usage: 'ak-render mcp',
     run: () => {
       // The server keeps the process alive until its client closes stdin.
@@ -949,6 +1025,7 @@ const VALUE_FLAGS = [
   '--fail-on',
   '--baseline',
   '--port',
+  '--base-hash',
 ] as const;
 
 /** Build the preset catalog for this invocation from flags and discovery. */
@@ -1010,6 +1087,7 @@ function parseArgs(args: string[]): ParsedArgs | { error: string } {
       else if (valueFlag === '--fail-on') flags.failOn = value;
       else if (valueFlag === '--baseline') flags.baseline = value;
       else if (valueFlag === '--port') flags.port = value;
+      else if (valueFlag === '--base-hash') flags.baseHash = value;
       else flags.themeFile = value;
       index += 1;
       continue;

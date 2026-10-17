@@ -118,7 +118,7 @@ describe('remote MCP: discovery', () => {
       { cwd: '/', home: '/' },
     );
     const local = (stdio?.result as { tools: { name: string }[] } | undefined)?.tools ?? [];
-    expect(local.length).toBe(15);
+    expect(local.length).toBe(16);
     expect(remote.map((entry) => entry.name)).toEqual(local.map((entry) => entry.name));
     // The remote audit schema advertises the Worker's body cap, not the local one.
     const audit = (
@@ -337,10 +337,10 @@ describe('remote MCP: authorization', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('rejects validate and render without a bearer as tool errors', async () => {
+  it('rejects validate, patch and render without a bearer as tool errors', async () => {
     const { env, r2 } = harness();
-    for (const name of ['validate', 'render']) {
-      const { status, reply, payload } = await tool(env, name, { spec: SPEC }, null);
+    for (const name of ['validate', 'patch', 'render']) {
+      const { status, reply, payload } = await tool(env, name, { spec: SPEC, ops: [] }, null);
       expect(status).toBe(200);
       expect(reply.isError).toBe(true);
       expect(payload['code']).toBe('UNAUTHENTICATED');
@@ -370,6 +370,18 @@ describe('remote MCP: authorization', () => {
     );
     expect(response.status).toBe(200);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('patches a spec for an authenticated caller and stores nothing', async () => {
+    const { env, r2 } = harness();
+    const { reply, payload } = await tool(env, 'patch', {
+      spec: SPEC,
+      ops: [{ op: 'replace', path: '/meta/title', value: 'Patched remotely' }],
+    });
+    expect(reply.isError).toBeUndefined();
+    expect(JSON.stringify(payload['spec'])).toContain('Patched remotely');
+    expect(payload['hash']).toMatch(/^s-/u);
+    expect(r2.objects.size).toBe(0);
   });
 
   it('reuses an accepted bearer across requests instead of asking upstream again', async () => {
