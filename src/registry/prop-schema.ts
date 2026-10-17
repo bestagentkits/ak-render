@@ -7,7 +7,13 @@
  * stops the documentation from drifting away from the validator.
  */
 
-import { DiagnosticBag, type FixHint, pathIndex, pathKey } from '../diagnostics.js';
+import {
+  DiagnosticBag,
+  type FixHint,
+  keepAuthoredIndexes,
+  pathIndex,
+  pathKey,
+} from '../diagnostics.js';
 import { checkIconRequest, parseIconValue } from '../icons/icon-catalog.js';
 import { ICON_PACK_IDS, ICON_SIZES } from '../icons/icon-packs.js';
 import { isPlainObject, type JsonValue } from '../json.js';
@@ -492,10 +498,14 @@ export function validateProp(
         return undefined;
       }
       const result: JsonValue[] = [];
+      const kept: number[] = [];
       for (let index = 0; index < value.length; index += 1) {
         const item = validateProp(schema.of, value[index], pathIndex(path, index), bag);
-        if (item !== undefined) result.push(item);
+        if (item === undefined) continue;
+        result.push(item);
+        kept.push(index);
       }
+      keepAuthoredIndexes(result, kept, value);
       return result;
     }
     case 'object': {

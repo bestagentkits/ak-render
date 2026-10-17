@@ -11,6 +11,61 @@ Release mechanics and the compatibility contract live in
 
 ### Added
 
+- Visual audit. `ak-render audit-ui <spec|page.html>` checks the compiled
+  artifact. The `quick` preset (default) reads the resolved theme and the
+  markup without a browser: theme text contrast, wide tables and long chart
+  labels. `--preset publication` adds a headless Chromium pass at 375, 768
+  and 1440 px in light and dark, then no-JS, reduced motion and print:
+  horizontal overflow (also with disclosures open), clipped chart labels,
+  rendered text contrast, small text, touch targets, broken images, runtime
+  errors, a tab/disclosure/theme-toggle smoke test, content hidden without
+  JavaScript and motion under reduced motion. It runs under a time budget
+  (`--timeout`), blocks every network request, runs only the runtime it
+  compiled (HTML from elsewhere runs with JavaScript off) and writes one
+  screenshot per check with `--evidence-dir`. Findings carry a rule,
+  severity, spec path, viewport, evidence and fix; `--fail-on` gates CI and
+  an incomplete run fails the gate. The MCP servers add `audit-ui` (quick only
+  remotely); the library exports `auditUi`, `auditUiQuick` and `UI_RULES`.
+  See [docs/audit-ui.md](./docs/audit-ui.md).
+- Derived metrics and KPI citations. `transform.derive` adds fields from a
+  closed list of operations (`ratio`, `percentOf`, `delta`, `percentChange`,
+  `share`, `cumulative`), and on a `data-table` `transform.rollup` adds a sum
+  or mean total row as the table footer; neither accepts an expression. Value
+  formats take `signed: true` for a leading `+` (not the benchmark and
+  breakdown widgets, which sign their own differences). A `kpi` item may
+  `cite` a dataset field with an aggregate: the compiler fills an omitted
+  `value` from it, or warns (`rule: kpi-cite`) when the written value
+  disagrees with the data. `value` is now optional on a `kpi` item that has a
+  `cite`. See
+  [docs/data-and-state.md](./docs/data-and-state.md#derived-fields).
+
+- Compose. `ak-render compose input.yaml --out page.html` builds a whole page
+  from a typed intent and content slots, with no Page Spec to write. The first
+  intent is `investment-report` (thesis and recommendation, key facts,
+  metrics, scenario chart and table over one shared dataset, risks,
+  milestones, sources). Composition is deterministic, checks every slot with
+  a JSON path diagnostic, expands into ordinary blocks and compiles through the
+  same `compile()`, so the HTML is byte-identical to rendering the emitted
+  spec (`--spec-out`, `--dry-run`). `compose intents --json` lists intents and
+  their content schemas. The library exports `compose()`, `composeSpec()`,
+  `composeIntents()` and `composeInputJsonSchema()`, and both MCP servers gain
+  a `compose` tool (`dryRun`, `returnSpec`; remote stores it like `render`).
+  Additive: `render` and `validate` are unchanged.
+- Revisioned spec editing. `ak-render patch <spec> <ops>` applies an RFC 6902
+  JSON Patch to a spec file in place: a path starting `/blocks/@<id>` addresses
+  the block with that author `id` at any depth, operations are all or nothing,
+  YAML comments and layout are kept, and the reply is a content hash plus the
+  applied changes, never the spec. `--base-hash` refuses an edit made against
+  a stale spec (`SPEC_PATCH_CONFLICT`); a patch that raises the error count is
+  not written, and only a file that reads as a Page Spec is edited. The `patch`
+  MCP tool (local: `file` under the working directory, or `spec`; remote: `spec`,
+  authenticated like `validate`) and the library `patch`, `patchSpecText` and
+  `specHash` expose the same contract. Motion Studio's atomic save now creates
+  its temporary file exclusively under a random name. See
+  [docs/agent-guide.md](./docs/agent-guide.md#edit-an-existing-page).
+  Migration: additive. `RenderErrorCode` gains `SPEC_PATCH_ERROR` and
+  `SPEC_PATCH_CONFLICT`, so an exhaustive `switch` over it needs two cases;
+  `tools/list` gains `patch` after `repair`.
 - Suggested fixes and a safe repair mode. `validate(spec, { suggest: true })`
   (CLI `validate --suggest`, MCP `validate` with `suggest: true`) attaches
   `fixes` to diagnostics: RFC 6902 patches that start with a `test` of the
@@ -21,7 +76,6 @@ Release mechanics and the compatibility contract live in
   change log; near-name guesses for block
   types, actions, events, properties and enum values stay with the author.
   Without `suggest`, diagnostics are unchanged.
-
 - Vietnamese intent search. `search-catalog` (CLI, MCP and `searchCatalog`)
   folds diacritics and `đ` before tokenizing and maps common Vietnamese words
   and phrases ("biểu đồ", "bảng giá", "dòng thời gian") to the English words
@@ -201,11 +255,28 @@ Release mechanics and the compatibility contract live in
   `SPEC_BOUNDS_ERROR` at the cell or prop path. This also applies to datasets
   only a table reads, so a spec that held such a value and validated before
   now fails. The published schema bounds `dataCell` and the chart number
-  props the same way; filter and `visibleWhen` operands are unchanged.
+  props the same way; filter and `visibleWhen` operands are unchanged. A
+  derived field (`transform.derive`) whose result falls outside those bounds,
+  such as chained ratios of in-range cells, is `null` instead of a number a
+  chart cannot scale.
+- Chart data tables scroll inside their own box instead of widening the page
+  on a phone when the chart's table is opened, the y-axis title no longer
+  starts outside the chart, and the kanban board no longer overflows the
+  printed page.
 - A table row-width warning now names the authored row. An invalid row is
   dropped during normalization, so later warnings used to shift onto an
   earlier index (`rows[0]` instead of `rows[1]`), which misled agents fixing
   by path.
+- Every cross-field diagnostic about a list item now names the authored item.
+  An invalid item is dropped during normalization, and checks on chart
+  series, decision options, kanban cards and columns, roadmap entries,
+  references, data-table columns, calendar events, pricing plans,
+  feature-matrix rows, asset policy checks and other item lists reported
+  later items one index too early. Nested item blocks are matched to their authored item
+  the same way.
+- `feature-matrix` compares the authored number of plans and values, so a
+  plan or value dropped as invalid no longer adds a width error to every row,
+  and a real width mismatch is still reported alongside it.
 - `ak-render validate` lists each warning once. A spec with an error used to
   print every warning twice in text mode; `--json` was not affected.
 - Malformed YAML no longer compiles silently. A duplicate key, an

@@ -10,11 +10,21 @@
 import { type DiagnosticBag, pathIndex, pathKey } from '../diagnostics.js';
 import { isPlainObject } from '../json.js';
 import { validateProp } from '../registry/prop-schema.js';
-import { type DataRow, fieldsOf, isDataScalar, type MaterializedData } from './dataset-types.js';
+import {
+  type DataRow,
+  FIELD_KEY_PATTERN,
+  fieldsOf,
+  isDataScalar,
+  type MaterializedData,
+} from './dataset-types.js';
 import {
   aggregateField,
   applyTransform,
+  DERIVE_NEEDS_BASE,
+  DERIVE_REFUSES_BASE,
   FILTER_OPERATORS,
+  rollupLabelField,
+  rollupRow,
   sortKeys,
   TRANSFORM_PROP_SCHEMA,
   type TransformSpec,
@@ -70,6 +80,7 @@ function checkTransform(
   source: string | null,
   path: string,
   bag: DiagnosticBag,
+  allowTotal: boolean,
 ): { ok: boolean; fields: string[] } {
   let ok = true;
   let fields = [...sourceFields];
@@ -127,6 +138,51 @@ function checkTransform(
     fields = [groupBy.field, output];
   }
 
+  spec.derive?.forEach((derive, index) => {
+    const derivePath = pathIndex(pathKey(path, 'derive'), index);
+    if (!requireField(derive.field, fields, source, pathKey(derivePath, 'field'), bag)) ok = false;
+    if (derive.base !== undefined) {
+      if (DERIVE_REFUSES_BASE.includes(derive.op)) {
+        ok = false;
+        bag.add({
+          code: 'SPEC_VALIDATION_ERROR',
+          path: pathKey(derivePath, 'base'),
+          message: `"${derive.op}" reads one field and takes no "base"`,
+        });
+      } else if (!requireField(derive.base, fields, source, pathKey(derivePath, 'base'), bag)) {
+        ok = false;
+      }
+    } else if (DERIVE_NEEDS_BASE.includes(derive.op)) {
+      ok = false;
+      bag.add({
+        code: 'SPEC_VALIDATION_ERROR',
+        path: pathKey(derivePath, 'base'),
+        message: `"${derive.op}" needs a "base" field to divide by`,
+        details: { allowed: [...fields] },
+      });
+    }
+    const asPath = pathKey(derivePath, 'as');
+    if (!FIELD_KEY_PATTERN.test(derive.as)) {
+      ok = false;
+      bag.add({
+        code: 'SPEC_VALIDATION_ERROR',
+        path: asPath,
+        message: `"${derive.as}" is not a valid field name`,
+        details: { pattern: FIELD_KEY_PATTERN.source },
+      });
+    } else if (fields.includes(derive.as)) {
+      ok = false;
+      bag.add({
+        code: 'SPEC_VALIDATION_ERROR',
+        path: asPath,
+        message: `the derived field "${derive.as}" would overwrite an existing field; pick a new name`,
+        details: { field: derive.as },
+      });
+    } else {
+      fields = [...fields, derive.as];
+    }
+  });
+
   const keys = sortKeys(spec.sort);
   const sortIsList = Array.isArray(spec.sort);
   keys.forEach((key, index) => {
@@ -154,18 +210,66 @@ function checkTransform(
     fields = [...spec.select];
   }
 
+  const rollup = spec.rollup;
+  if (rollup !== undefined && !allowTotal) {
+    ok = false;
+    bag.add({
+      code: 'SPEC_VALIDATION_ERROR',
+      path: pathKey(path, 'rollup'),
+      message:
+        'rollup adds a total row that only data-table shows; use a groupBy aggregate here instead',
+    });
+  } else if (rollup !== undefined) {
+    const rollupPath = pathKey(path, 'rollup');
+    const seen = new Set<string>();
+    rollup.fields.forEach((field, index) => {
+      const fieldPath = pathIndex(pathKey(rollupPath, 'fields'), index);
+      if (seen.has(field)) {
+        ok = false;
+        bag.add({
+          code: 'SPEC_VALIDATION_ERROR',
+          path: fieldPath,
+          message: `field "${field}" is totalled twice`,
+        });
+      }
+      seen.add(field);
+      if (!requireField(field, fields, source, fieldPath, bag)) ok = false;
+    });
+    if (rollup.labelField !== undefined) {
+      const labelPath = pathKey(rollupPath, 'labelField');
+      if (!requireField(rollup.labelField, fields, source, labelPath, bag)) ok = false;
+      else if (rollup.fields.includes(rollup.labelField)) {
+        ok = false;
+        bag.add({
+          code: 'SPEC_VALIDATION_ERROR',
+          path: labelPath,
+          message: `"${rollup.labelField}" is totalled, so it cannot also hold the label`,
+        });
+      }
+    } else if (rollupLabelField(rollup, fields) === undefined) {
+      ok = false;
+      bag.add({
+        code: 'SPEC_VALIDATION_ERROR',
+        path: pathKey(rollupPath, 'fields'),
+        message: 'every field is totalled, so the total row has nowhere to put its label',
+      });
+    }
+  }
+
   return { ok, fields };
 }
 
 /**
  * Resolve a block's data. Returns undefined when the block binds no data or the
- * binding is invalid (the problem is reported).
+ * binding is invalid (the problem is reported). `total` says whether the block
+ * shows a `rollup` total; elsewhere a rollup is an error rather than ignored.
  */
 export function resolveBlockData(
   input: BlockDataInput,
   datasets: Record<string, DataRow[]>,
   path: string,
   bag: DiagnosticBag,
+  options: { total?: boolean } = {},
 ): MaterializedData | undefined {
   const { dataRef, data, transform } = input;
   if (dataRef !== undefined && data !== undefined) {
@@ -223,7 +327,22 @@ export function resolveBlockData(
   // optional lists with `[]`, which would read as "select nothing" or "in
   // nothing". The schema already rejected every unknown key and wrong type.
   const spec = transform as unknown as TransformSpec;
-  const checked = checkTransform(spec, sourceFields, source, transformPath, bag);
+  const checked = checkTransform(
+    spec,
+    sourceFields,
+    source,
+    transformPath,
+    bag,
+    options.total === true,
+  );
   if (!checked.ok) return undefined;
-  return { source, fields: checked.fields, rows: applyTransform(rows, spec) };
+  const transformed = applyTransform(rows, spec);
+  return {
+    source,
+    fields: checked.fields,
+    rows: transformed,
+    ...(spec.rollup === undefined
+      ? {}
+      : { total: rollupRow(transformed, spec.rollup, checked.fields) }),
+  };
 }

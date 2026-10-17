@@ -1,0 +1,5712 @@
+{
+  "harnessVersion": 2,
+  "taskSetVersion": 1,
+  "compilerVersion": "0.3.0",
+  "gitSha": "e26fbe3bc4ba9b65123787a9918d251986e52d61",
+  "gitDirty": false,
+  "startedAt": "2026-10-17T11:58:30.047Z",
+  "finishedAt": "2026-10-17T12:01:45.074Z",
+  "provider": "openrouter",
+  "model": "anthropic/claude-haiku-5.5",
+  "settings": {
+    "reps": 5,
+    "maxTurns": 16,
+    "maxTokens": 16000,
+    "temperature": "provider default",
+    "concurrency": 4,
+    "visual": true
+  },
+  "arms": {
+    "existing": {
+      "tools": [
+        "catalog",
+        "search-catalog",
+        "describe",
+        "search-icons",
+        "describe-icon",
+        "icon-packs",
+        "motions",
+        "recipes",
+        "recipe",
+        "validate",
+        "audit-motion",
+        "render",
+        "themes"
+      ]
+    },
+    "compose-repair": {
+      "tools": [
+        "catalog",
+        "search-catalog",
+        "describe",
+        "search-icons",
+        "describe-icon",
+        "icon-packs",
+        "motions",
+        "recipes",
+        "recipe",
+        "validate",
+        "repair",
+        "audit-motion",
+        "render",
+        "themes"
+      ],
+      "afterTools": [
+        "repair"
+      ]
+    }
+  },
+  "skippedArms": {},
+  "tasks": [
+    "investment-report",
+    "research-report",
+    "dashboard",
+    "implementation-roadmap"
+  ],
+  "byArm": {
+    "existing": {
+      "runs": 20,
+      "errors": 0,
+      "inputTokens": {
+        "n": 20,
+        "median": 81143.5,
+        "mean": 83406.9,
+        "stddev": 35952.846141490445,
+        "p95": 144613.30000000002,
+        "min": 34620,
+        "max": 151953,
+        "medianCi95": [
+          55371,
+          100808
+        ]
+      },
+      "outputTokens": {
+        "n": 20,
+        "median": 3332.5,
+        "mean": 3980.7,
+        "stddev": 1514.25691694848,
+        "p95": 6626.35,
+        "min": 2364,
+        "max": 6747,
+        "medianCi95": [
+          2751.5,
+          4970.5
+        ]
+      },
+      "totalTokens": {
+        "n": 20,
+        "median": 84041.5,
+        "mean": 87387.6,
+        "stddev": 37209.054413649035,
+        "p95": 151340.75,
+        "min": 37152,
+        "max": 158309,
+        "medianCi95": [
+          59064,
+          105454
+        ]
+      },
+      "costUsd": {
+        "n": 20,
+        "median": 0.0094677165,
+        "mean": 0.010227729599999999,
+        "stddev": 0.004197879653198848,
+        "p95": 0.01764680445,
+        "min": 0.00468072,
+        "max": 0.018189567,
+        "medianCi95": [
+          0.007106319,
+          0.0126009675
+        ]
+      },
+      "modelTurns": {
+        "n": 20,
+        "median": 6.5,
+        "mean": 7,
+        "stddev": 1.5217718205053643,
+        "p95": 9.05,
+        "min": 5,
+        "max": 10,
+        "medianCi95": [
+          6,
+          8
+        ]
+      },
+      "toolCalls": {
+        "n": 20,
+        "median": 7,
+        "mean": 7.3,
+        "stddev": 1.3416407864998738,
+        "p95": 9.100000000000001,
+        "min": 5,
+        "max": 11,
+        "medianCi95": [
+          7,
+          8
+        ]
+      },
+      "orchestrationCalls": {
+        "n": 20,
+        "median": 2,
+        "mean": 2.7,
+        "stddev": 0.9233805168766387,
+        "p95": 4.050000000000001,
+        "min": 2,
+        "max": 5,
+        "medianCi95": [
+          2,
+          3
+        ]
+      },
+      "discoveryCalls": {
+        "n": 20,
+        "median": 5,
+        "mean": 4.6,
+        "stddev": 1.1424811411549587,
+        "p95": 6.050000000000001,
+        "min": 3,
+        "max": 7,
+        "medianCi95": [
+          4,
+          5
+        ]
+      },
+      "repairs": {
+        "n": 20,
+        "median": 0,
+        "mean": 0.45,
+        "stddev": 0.8255779474818966,
+        "p95": 2.0500000000000007,
+        "min": 0,
+        "max": 3,
+        "medianCi95": [
+          0,
+          0.5
+        ]
+      },
+      "repairToolCalls": {
+        "n": 20,
+        "median": 0,
+        "mean": 0,
+        "stddev": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0,
+        "medianCi95": [
+          0,
+          0
+        ]
+      },
+      "refusedCalls": {
+        "n": 20,
+        "median": 0,
+        "mean": 0,
+        "stddev": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0,
+        "medianCi95": [
+          0,
+          0
+        ]
+      },
+      "wallMs": {
+        "n": 20,
+        "median": 16698,
+        "mean": 18217.3,
+        "stddev": 6130.509647398176,
+        "p95": 28958.05,
+        "min": 10846,
+        "max": 29738,
+        "medianCi95": [
+          13486,
+          21520
+        ]
+      },
+      "firstPassValid": {
+        "n": 20,
+        "rate": 0.7,
+        "ci95": [
+          0.4810271816464765,
+          0.8545227551323956
+        ]
+      },
+      "completed": {
+        "n": 20,
+        "rate": 1,
+        "ci95": [
+          0.8388748419471806,
+          1
+        ]
+      },
+      "correct": {
+        "n": 20,
+        "rate": 1,
+        "ci95": [
+          0.8388748419471806,
+          1
+        ]
+      },
+      "usageMissingRuns": 0,
+      "visualAudited": 20,
+      "criticalMobileOverflowRuns": 0,
+      "visualErrors": 0
+    },
+    "compose-repair": {
+      "runs": 20,
+      "errors": 0,
+      "inputTokens": {
+        "n": 20,
+        "median": 82831.5,
+        "mean": 78985.5,
+        "stddev": 23679.756329871834,
+        "p95": 108149.40000000001,
+        "min": 34589,
+        "max": 111216,
+        "medianCi95": [
+          66544,
+          92108.5
+        ]
+      },
+      "outputTokens": {
+        "n": 20,
+        "median": 3728,
+        "mean": 3866.2,
+        "stddev": 935.9428457583913,
+        "p95": 5139.800000000001,
+        "min": 2417,
+        "max": 6105,
+        "medianCi95": [
+          3274,
+          4299
+        ]
+      },
+      "totalTokens": {
+        "n": 20,
+        "median": 86510,
+        "mean": 82851.7,
+        "stddev": 24316.51915251722,
+        "p95": 111987.75,
+        "min": 37006,
+        "max": 116125,
+        "medianCi95": [
+          69742,
+          97705.5
+        ]
+      },
+      "costUsd": {
+        "n": 20,
+        "median": 0.010021176,
+        "mean": 0.009733333500000002,
+        "stddev": 0.002676777406351535,
+        "p95": 0.012773994750000002,
+        "min": 0.004620726,
+        "max": 0.013440339,
+        "medianCi95": [
+          0.008170865999999999,
+          0.011779614
+        ]
+      },
+      "modelTurns": {
+        "n": 20,
+        "median": 7,
+        "mean": 6.7,
+        "stddev": 1.0809352675491624,
+        "p95": 8,
+        "min": 5,
+        "max": 8,
+        "medianCi95": [
+          6,
+          7.5
+        ]
+      },
+      "toolCalls": {
+        "n": 20,
+        "median": 7,
+        "mean": 6.75,
+        "stddev": 0.910465468000326,
+        "p95": 8,
+        "min": 5,
+        "max": 8,
+        "medianCi95": [
+          6,
+          7
+        ]
+      },
+      "orchestrationCalls": {
+        "n": 20,
+        "median": 3,
+        "mean": 2.75,
+        "stddev": 0.7863975156570492,
+        "p95": 4,
+        "min": 2,
+        "max": 4,
+        "medianCi95": [
+          2,
+          3
+        ]
+      },
+      "discoveryCalls": {
+        "n": 20,
+        "median": 4,
+        "mean": 4,
+        "stddev": 1.1697953037312037,
+        "p95": 6,
+        "min": 2,
+        "max": 6,
+        "medianCi95": [
+          3,
+          4.5
+        ]
+      },
+      "repairs": {
+        "n": 20,
+        "median": 1,
+        "mean": 0.65,
+        "stddev": 0.6708203932499369,
+        "p95": 2,
+        "min": 0,
+        "max": 2,
+        "medianCi95": [
+          0,
+          1
+        ]
+      },
+      "repairToolCalls": {
+        "n": 20,
+        "median": 0,
+        "mean": 0,
+        "stddev": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0,
+        "medianCi95": [
+          0,
+          0
+        ]
+      },
+      "refusedCalls": {
+        "n": 20,
+        "median": 0,
+        "mean": 0,
+        "stddev": 0,
+        "p95": 0,
+        "min": 0,
+        "max": 0,
+        "medianCi95": [
+          0,
+          0
+        ]
+      },
+      "wallMs": {
+        "n": 20,
+        "median": 18012,
+        "mean": 17706.45,
+        "stddev": 4031.135839346419,
+        "p95": 23647.9,
+        "min": 11181,
+        "max": 27807,
+        "medianCi95": [
+          14874.5,
+          19010
+        ]
+      },
+      "firstPassValid": {
+        "n": 20,
+        "rate": 0.45,
+        "ci95": [
+          0.2581978582556243,
+          0.6579146575496577
+        ]
+      },
+      "completed": {
+        "n": 20,
+        "rate": 1,
+        "ci95": [
+          0.8388748419471806,
+          1
+        ]
+      },
+      "correct": {
+        "n": 20,
+        "rate": 0.8,
+        "ci95": [
+          0.5839825677481064,
+          0.919342337420202
+        ]
+      },
+      "usageMissingRuns": 0,
+      "visualAudited": 20,
+      "criticalMobileOverflowRuns": 0,
+      "visualErrors": 0
+    }
+  },
+  "byTask": {
+    "investment-report": {
+      "existing": {
+        "runs": 5,
+        "errors": 0,
+        "inputTokens": {
+          "n": 5,
+          "median": 90487,
+          "mean": 106684.2,
+          "stddev": 28601.23846444416,
+          "p95": 145214.8,
+          "min": 85987,
+          "max": 151953,
+          "medianCi95": [
+            85987,
+            151953
+          ]
+        },
+        "outputTokens": {
+          "n": 5,
+          "median": 2735,
+          "mean": 3915,
+          "stddev": 1723.9163262757274,
+          "p95": 6110.599999999999,
+          "min": 2672,
+          "max": 6356,
+          "medianCi95": [
+            2672,
+            6356
+          ]
+        },
+        "totalTokens": {
+          "n": 5,
+          "median": 93159,
+          "mean": 110599.2,
+          "stddev": 30296.350559102,
+          "p95": 151325.4,
+          "min": 88670,
+          "max": 158309,
+          "medianCi95": [
+            88670,
+            158309
+          ]
+        },
+        "costUsd": {
+          "n": 5,
+          "median": 0.010280853,
+          "mean": 0.012499660800000001,
+          "stddev": 0.003673231767371779,
+          "p95": 0.0174010122,
+          "min": 0.009840798000000001,
+          "max": 0.018189567,
+          "medianCi95": [
+            0.009840798000000001,
+            0.018189567
+          ]
+        },
+        "modelTurns": {
+          "n": 5,
+          "median": 6,
+          "mean": 7,
+          "stddev": 1.4142135623730951,
+          "p95": 8.8,
+          "min": 6,
+          "max": 9,
+          "medianCi95": [
+            6,
+            9
+          ]
+        },
+        "toolCalls": {
+          "n": 5,
+          "median": 7,
+          "mean": 7.8,
+          "stddev": 1.7888543819998317,
+          "p95": 10.2,
+          "min": 7,
+          "max": 11,
+          "medianCi95": [
+            7,
+            11
+          ]
+        },
+        "orchestrationCalls": {
+          "n": 5,
+          "median": 2,
+          "mean": 2.6,
+          "stddev": 0.8944271909999159,
+          "p95": 3.8,
+          "min": 2,
+          "max": 4,
+          "medianCi95": [
+            2,
+            4
+          ]
+        },
+        "discoveryCalls": {
+          "n": 5,
+          "median": 5,
+          "mean": 5.2,
+          "stddev": 1.0954451150103321,
+          "p95": 6.6,
+          "min": 4,
+          "max": 7,
+          "medianCi95": [
+            4,
+            7
+          ]
+        },
+        "repairs": {
+          "n": 5,
+          "median": 0,
+          "mean": 0,
+          "stddev": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "medianCi95": [
+            0,
+            0
+          ]
+        },
+        "repairToolCalls": {
+          "n": 5,
+          "median": 0,
+          "mean": 0,
+          "stddev": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "medianCi95": [
+            0,
+            0
+          ]
+        },
+        "refusedCalls": {
+          "n": 5,
+          "median": 0,
+          "mean": 0,
+          "stddev": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "medianCi95": [
+            0,
+            0
+          ]
+        },
+        "wallMs": {
+          "n": 5,
+          "median": 13706,
+          "mean": 18753,
+          "stddev": 7462.376397636345,
+          "p95": 28460.199999999997,
+          "min": 13483,
+          "max": 29738,
+          "medianCi95": [
+            13483,
+            29738
+          ]
+        },
+        "firstPassValid": {
+          "n": 5,
+          "rate": 1,
+          "ci95": [
+            0.5655175352168251,
+            1
+          ]
+        },
+        "completed": {
+          "n": 5,
+          "rate": 1,
+          "ci95": [
+            0.5655175352168251,
+            1
+          ]
+        },
+        "correct": {
+          "n": 5,
+          "rate": 1,
+          "ci95": [
+            0.5655175352168251,
+            1
+          ]
+        },
+        "usageMissingRuns": 0,
+        "visualAudited": 5,
+        "criticalMobileOverflowRuns": 0,
+        "visualErrors": 0
+      },
+      "compose-repair": {
+        "runs": 5,
+        "errors": 0,
+        "inputTokens": {
+          "n": 5,
+          "median": 90655,
+          "mean": 92954.6,
+          "stddev": 13511.922783231112,
+          "p95": 107023.4,
+          "min": 78488,
+          "max": 107086,
+          "medianCi95": [
+            78488,
+            107086
+          ]
+        },
+        "outputTokens": {
+          "n": 5,
+          "median": 3674,
+          "mean": 3689.4,
+          "stddev": 623.5052525841302,
+          "p95": 4313.6,
+          "min": 2925,
+          "max": 4318,
+          "medianCi95": [
+            2925,
+            4318
+          ]
+        },
+        "totalTokens": {
+          "n": 5,
+          "median": 94329,
+          "mean": 96644,
+          "stddev": 14131.057391433947,
+          "p95": 111337,
+          "min": 81413,
+          "max": 111404,
+          "medianCi95": [
+            81413,
+            111404
+          ]
+        },
+        "costUsd": {
+          "n": 5,
+          "median": 0.010793475,
+          "mean": 0.011028758400000001,
+          "stddev": 0.001644475711739701,
+          "p95": 0.0127305486,
+          "min": 0.009218187000000001,
+          "max": 0.012738924,
+          "medianCi95": [
+            0.009218187000000001,
+            0.012738924
+          ]
+        },
+        "modelTurns": {
+          "n": 5,
+          "median": 7,
+          "mean": 7,
+          "stddev": 1,
+          "p95": 8,
+          "min": 6,
+          "max": 8,
+          "medianCi95": [
+            6,
+            8
+          ]
+        },
+        "toolCalls": {
+          "n": 5,
+          "median": 7,
+          "mean": 6.6,
+          "stddev": 1.1401754250991378,
+          "p95": 7.8,
+          "min": 5,
+          "max": 8,
+          "medianCi95": [
+            5,
+            8
+          ]
+        },
+        "orchestrationCalls": {
+          "n": 5,
+          "median": 3,
+          "mean": 3.2,
+          "stddev": 0.8366600265340756,
+          "p95": 4,
+          "min": 2,
+          "max": 4,
+          "medianCi95": [
+            2,
+            4
+          ]
+        },
+        "discoveryCalls": {
+          "n": 5,
+          "median": 3,
+          "mean": 3.4,
+          "stddev": 0.5477225575051661,
+          "p95": 4,
+          "min": 3,
+          "max": 4,
+          "medianCi95": [
+            3,
+            4
+          ]
+        },
+        "repairs": {
+          "n": 5,
+          "median": 1,
+          "mean": 1,
+          "stddev": 0.7071067811865476,
+          "p95": 1.7999999999999998,
+          "min": 0,
+          "max": 2,
+          "medianCi95": [
+            0,
+            2
+          ]
+        },
+        "repairToolCalls": {
+          "n": 5,
+          "median": 0,
+          "mean": 0,
+          "stddev": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "medianCi95": [
+            0,
+            0
+          ]
+        },
+        "refusedCalls": {
+          "n": 5,
+          "median": 0,
+          "mean": 0,
+          "stddev": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "medianCi95": [
+            0,
+            0
+          ]
+        },
+        "wallMs": {
+          "n": 5,
+          "median": 16603,
+          "mean": 16510.8,
+          "stddev": 2285.534882691577,
+          "p95": 18869.8,
+          "min": 13762,
+          "max": 18954,
+          "medianCi95": [
+            13762,
+            18954
+          ]
+        },
+        "firstPassValid": {
+          "n": 5,
+          "rate": 0.2,
+          "ci95": [
+            0.03622410863243014,
+            0.6244653702374747
+          ]
+        },
+        "completed": {
+          "n": 5,
+          "rate": 1,
+          "ci95": [
+            0.5655175352168251,
+            1
+          ]
+        },
+        "correct": {
+          "n": 5,
+          "rate": 0.2,
+          "ci95": [
+            0.03622410863243014,
+            0.6244653702374747
+          ]
+        },
+        "usageMissingRuns": 0,
+        "visualAudited": 5,
+        "criticalMobileOverflowRuns": 0,
+        "visualErrors": 0
+      }
+    },
+    "research-report": {
+      "existing": {
+        "runs": 5,
+        "errors": 0,
+        "inputTokens": {
+          "n": 5,
+          "median": 111129,
+          "mean": 108944.2,
+          "stddev": 32494.302819109693,
+          "p95": 142528.8,
+          "min": 67031,
+          "max": 144227,
+          "medianCi95": [
+            67031,
+            144227
+          ]
+        },
+        "outputTokens": {
+          "n": 5,
+          "median": 5448,
+          "mean": 5447.8,
+          "stddev": 1307.3232958989142,
+          "p95": 6721.6,
+          "min": 3612,
+          "max": 6747,
+          "medianCi95": [
+            3612,
+            6747
+          ]
+        },
+        "totalTokens": {
+          "n": 5,
+          "median": 117749,
+          "mean": 114392,
+          "stddev": 33576.29655724407,
+          "p95": 149016,
+          "min": 70643,
+          "max": 150974,
+          "medianCi95": [
+            70643,
+            150974
+          ]
+        },
+        "costUsd": {
+          "n": 5,
+          "median": 0.014278671,
+          "mean": 0.013482136799999999,
+          "stddev": 0.003766558368555266,
+          "p95": 0.017321515200000002,
+          "min": 0.008424009,
+          "max": 0.017618238,
+          "medianCi95": [
+            0.008424009,
+            0.017618238
+          ]
+        },
+        "modelTurns": {
+          "n": 5,
+          "median": 8,
+          "mean": 7.8,
+          "stddev": 1.7888543819998317,
+          "p95": 9.8,
+          "min": 6,
+          "max": 10,
+          "medianCi95": [
+            6,
+            10
+          ]
+        },
+        "toolCalls": {
+          "n": 5,
+          "median": 8,
+          "mean": 7.4,
+          "stddev": 1.51657508881031,
+          "p95": 8.8,
+          "min": 5,
+          "max": 9,
+          "medianCi95": [
+            5,
+            9
+          ]
+        },
+        "orchestrationCalls": {
+          "n": 5,
+          "median": 3,
+          "mean": 3.4,
+          "stddev": 1.140175425099138,
+          "p95": 4.8,
+          "min": 2,
+          "max": 5,
+          "medianCi95": [
+            2,
+            5
+          ]
+        },
+        "discoveryCalls": {
+          "n": 5,
+          "median": 4,
+          "mean": 4,
+          "stddev": 0.7071067811865476,
+          "p95": 4.8,
+          "min": 3,
+          "max": 5,
+          "medianCi95": [
+            3,
+            5
+          ]
+        },
+        "repairs": {
+          "n": 5,
+          "median": 1,
+          "mean": 1,
+          "stddev": 1.224744871391589,
+          "p95": 2.5999999999999996,
+          "min": 0,
+          "max": 3,
+          "medianCi95": [
+            0,
+            3
+          ]
+        },
+        "repairToolCalls": {
+          "n": 5,
+          "median": 0,
+          "mean": 0,
+          "stddev": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "medianCi95": [
+            0,
+            0
+          ]
+        },
+        "refusedCalls": {
+          "n": 5,
+          "median": 0,
+          "mean": 0,
+          "stddev": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "medianCi95": [
+            0,
+            0
+          ]
+        },
+        "wallMs": {
+          "n": 5,
+          "median": 25201,
+          "mean": 23708.4,
+          "stddev": 4994.763337736834,
+          "p95": 28613.8,
+          "min": 17332,
+          "max": 28917,
+          "medianCi95": [
+            17332,
+            28917
+          ]
+        },
+        "firstPassValid": {
+          "n": 5,
+          "rate": 0.4,
+          "ci95": [
+            0.11762077423264783,
+            0.769275718723987
+          ]
+        },
+        "completed": {
+          "n": 5,
+          "rate": 1,
+          "ci95": [
+            0.5655175352168251,
+            1
+          ]
+        },
+        "correct": {
+          "n": 5,
+          "rate": 1,
+          "ci95": [
+            0.5655175352168251,
+            1
+          ]
+        },
+        "usageMissingRuns": 0,
+        "visualAudited": 5,
+        "criticalMobileOverflowRuns": 0,
+        "visualErrors": 0
+      },
+      "compose-repair": {
+        "runs": 5,
+        "errors": 0,
+        "inputTokens": {
+          "n": 5,
+          "median": 91806,
+          "mean": 93548,
+          "stddev": 17644.813798960873,
+          "p95": 110570.4,
+          "min": 66950,
+          "max": 111216,
+          "medianCi95": [
+            66950,
+            111216
+          ]
+        },
+        "outputTokens": {
+          "n": 5,
+          "median": 4909,
+          "mean": 4635.2,
+          "stddev": 1106.1630530803313,
+          "p95": 5897.2,
+          "min": 3314,
+          "max": 6105,
+          "medianCi95": [
+            3314,
+            6105
+          ]
+        },
+        "totalTokens": {
+          "n": 5,
+          "median": 97911,
+          "mean": 98183.2,
+          "stddev": 18008.34561252088,
+          "p95": 115254,
+          "min": 70264,
+          "max": 116125,
+          "medianCi95": [
+            70264,
+            116125
+          ]
+        },
+        "costUsd": {
+          "n": 5,
+          "median": 0.012110768999999999,
+          "mean": 0.011555676,
+          "stddev": 0.0019815256865295745,
+          "p95": 0.0132648516,
+          "min": 0.00826848,
+          "max": 0.013440339,
+          "medianCi95": [
+            0.00826848,
+            0.013440339
+          ]
+        },
+        "modelTurns": {
+          "n": 5,
+          "median": 7,
+          "mean": 6.6,
+          "stddev": 1.140175425099138,
+          "p95": 7.8,
+          "min": 5,
+          "max": 8,
+          "medianCi95": [
+            5,
+            8
+          ]
+        },
+        "toolCalls": {
+          "n": 5,
+          "median": 6,
+          "mean": 6.4,
+          "stddev": 0.5477225575051661,
+          "p95": 7,
+          "min": 6,
+          "max": 7,
+          "medianCi95": [
+            6,
+            7
+          ]
+        },
+        "orchestrationCalls": {
+          "n": 5,
+          "median": 2,
+          "mean": 2.4,
+          "stddev": 0.5477225575051661,
+          "p95": 3,
+          "min": 2,
+          "max": 3,
+          "medianCi95": [
+            2,
+            3
+          ]
+        },
+        "discoveryCalls": {
+          "n": 5,
+          "median": 4,
+          "mean": 4,
+          "stddev": 0.7071067811865476,
+          "p95": 4.8,
+          "min": 3,
+          "max": 5,
+          "medianCi95": [
+            3,
+            5
+          ]
+        },
+        "repairs": {
+          "n": 5,
+          "median": 0,
+          "mean": 0.4,
+          "stddev": 0.5477225575051662,
+          "p95": 1,
+          "min": 0,
+          "max": 1,
+          "medianCi95": [
+            0,
+            1
+          ]
+        },
+        "repairToolCalls": {
+          "n": 5,
+          "median": 0,
+          "mean": 0,
+          "stddev": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "medianCi95": [
+            0,
+            0
+          ]
+        },
+        "refusedCalls": {
+          "n": 5,
+          "median": 0,
+          "mean": 0,
+          "stddev": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "medianCi95": [
+            0,
+            0
+          ]
+        },
+        "wallMs": {
+          "n": 5,
+          "median": 21663,
+          "mean": 21184.6,
+          "stddev": 5001.170143076519,
+          "p95": 26931.399999999998,
+          "min": 14607,
+          "max": 27807,
+          "medianCi95": [
+            14607,
+            27807
+          ]
+        },
+        "firstPassValid": {
+          "n": 5,
+          "rate": 0.6,
+          "ci95": [
+            0.2307242812760128,
+            0.882379225767352
+          ]
+        },
+        "completed": {
+          "n": 5,
+          "rate": 1,
+          "ci95": [
+            0.5655175352168251,
+            1
+          ]
+        },
+        "correct": {
+          "n": 5,
+          "rate": 1,
+          "ci95": [
+            0.5655175352168251,
+            1
+          ]
+        },
+        "usageMissingRuns": 0,
+        "visualAudited": 5,
+        "criticalMobileOverflowRuns": 0,
+        "visualErrors": 0
+      }
+    },
+    "dashboard": {
+      "existing": {
+        "runs": 5,
+        "errors": 0,
+        "inputTokens": {
+          "n": 5,
+          "median": 57096,
+          "mean": 56384.8,
+          "stddev": 18656.208650205434,
+          "p95": 75658,
+          "min": 34620,
+          "max": 76300,
+          "medianCi95": [
+            34620,
+            76300
+          ]
+        },
+        "outputTokens": {
+          "n": 5,
+          "median": 2532,
+          "mean": 2660.6,
+          "stddev": 291.0443265208927,
+          "p95": 3044,
+          "min": 2364,
+          "max": 3113,
+          "medianCi95": [
+            2364,
+            3113
+          ]
+        },
+        "totalTokens": {
+          "n": 5,
+          "median": 59622,
+          "mean": 59045.4,
+          "stddev": 18899.75885560448,
+          "p95": 78702,
+          "min": 37152,
+          "max": 79413,
+          "medianCi95": [
+            37152,
+            79413
+          ]
+        },
+        "costUsd": {
+          "n": 5,
+          "median": 0.006902874,
+          "mean": 0.006899092200000001,
+          "stddev": 0.001968786382275944,
+          "p95": 0.008996922000000001,
+          "min": 0.00468072,
+          "max": 0.009094635,
+          "medianCi95": [
+            0.00468072,
+            0.009094635
+          ]
+        },
+        "modelTurns": {
+          "n": 5,
+          "median": 5,
+          "mean": 5.4,
+          "stddev": 0.5477225575051662,
+          "p95": 6,
+          "min": 5,
+          "max": 6,
+          "medianCi95": [
+            5,
+            6
+          ]
+        },
+        "toolCalls": {
+          "n": 5,
+          "median": 6,
+          "mean": 6.4,
+          "stddev": 1.1401754250991378,
+          "p95": 7.8,
+          "min": 5,
+          "max": 8,
+          "medianCi95": [
+            5,
+            8
+          ]
+        },
+        "orchestrationCalls": {
+          "n": 5,
+          "median": 2,
+          "mean": 2.4,
+          "stddev": 0.5477225575051661,
+          "p95": 3,
+          "min": 2,
+          "max": 3,
+          "medianCi95": [
+            2,
+            3
+          ]
+        },
+        "discoveryCalls": {
+          "n": 5,
+          "median": 3,
+          "mean": 4,
+          "stddev": 1.4142135623730951,
+          "p95": 5.8,
+          "min": 3,
+          "max": 6,
+          "medianCi95": [
+            3,
+            6
+          ]
+        },
+        "repairs": {
+          "n": 5,
+          "median": 0,
+          "mean": 0.4,
+          "stddev": 0.5477225575051662,
+          "p95": 1,
+          "min": 0,
+          "max": 1,
+          "medianCi95": [
+            0,
+            1
+          ]
+        },
+        "repairToolCalls": {
+          "n": 5,
+          "median": 0,
+          "mean": 0,
+          "stddev": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "medianCi95": [
+            0,
+            0
+          ]
+        },
+        "refusedCalls": {
+          "n": 5,
+          "median": 0,
+          "mean": 0,
+          "stddev": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "medianCi95": [
+            0,
+            0
+          ]
+        },
+        "wallMs": {
+          "n": 5,
+          "median": 12349,
+          "mean": 12113.2,
+          "stddev": 922.2769106943966,
+          "p95": 13132,
+          "min": 10846,
+          "max": 13313,
+          "medianCi95": [
+            10846,
+            13313
+          ]
+        },
+        "firstPassValid": {
+          "n": 5,
+          "rate": 0.6,
+          "ci95": [
+            0.2307242812760128,
+            0.882379225767352
+          ]
+        },
+        "completed": {
+          "n": 5,
+          "rate": 1,
+          "ci95": [
+            0.5655175352168251,
+            1
+          ]
+        },
+        "correct": {
+          "n": 5,
+          "rate": 1,
+          "ci95": [
+            0.5655175352168251,
+            1
+          ]
+        },
+        "usageMissingRuns": 0,
+        "visualAudited": 5,
+        "criticalMobileOverflowRuns": 0,
+        "visualErrors": 0
+      },
+      "compose-repair": {
+        "runs": 5,
+        "errors": 0,
+        "inputTokens": {
+          "n": 5,
+          "median": 76694,
+          "mean": 64778.6,
+          "stddev": 27353.666578723958,
+          "p95": 90707.2,
+          "min": 34589,
+          "max": 92411,
+          "medianCi95": [
+            34589,
+            92411
+          ]
+        },
+        "outputTokens": {
+          "n": 5,
+          "median": 3332,
+          "mean": 3527.6,
+          "stddev": 1094.0387561690857,
+          "p95": 4895.8,
+          "min": 2417,
+          "max": 5089,
+          "medianCi95": [
+            2417,
+            5089
+          ]
+        },
+        "totalTokens": {
+          "n": 5,
+          "median": 80026,
+          "mean": 68306.2,
+          "stddev": 28361.780624636387,
+          "p95": 95603,
+          "min": 37006,
+          "max": 97500,
+          "medianCi95": [
+            37006,
+            97500
+          ]
+        },
+        "costUsd": {
+          "n": 5,
+          "median": 0.009242046,
+          "mean": 0.0081592434,
+          "stddev": 0.003212544837656869,
+          "p95": 0.011403433800000001,
+          "min": 0.004620726,
+          "max": 0.011667744,
+          "medianCi95": [
+            0.004620726,
+            0.011667744
+          ]
+        },
+        "modelTurns": {
+          "n": 5,
+          "median": 6,
+          "mean": 5.8,
+          "stddev": 0.8366600265340756,
+          "p95": 6.8,
+          "min": 5,
+          "max": 7,
+          "medianCi95": [
+            5,
+            7
+          ]
+        },
+        "toolCalls": {
+          "n": 5,
+          "median": 7,
+          "mean": 6.8,
+          "stddev": 0.44721359549995787,
+          "p95": 7,
+          "min": 6,
+          "max": 7,
+          "medianCi95": [
+            6,
+            7
+          ]
+        },
+        "orchestrationCalls": {
+          "n": 5,
+          "median": 3,
+          "mean": 2.8,
+          "stddev": 0.8366600265340756,
+          "p95": 3.8,
+          "min": 2,
+          "max": 4,
+          "medianCi95": [
+            2,
+            4
+          ]
+        },
+        "discoveryCalls": {
+          "n": 5,
+          "median": 4,
+          "mean": 4,
+          "stddev": 1,
+          "p95": 5,
+          "min": 3,
+          "max": 5,
+          "medianCi95": [
+            3,
+            5
+          ]
+        },
+        "repairs": {
+          "n": 5,
+          "median": 1,
+          "mean": 0.6,
+          "stddev": 0.5477225575051662,
+          "p95": 1,
+          "min": 0,
+          "max": 1,
+          "medianCi95": [
+            0,
+            1
+          ]
+        },
+        "repairToolCalls": {
+          "n": 5,
+          "median": 0,
+          "mean": 0,
+          "stddev": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "medianCi95": [
+            0,
+            0
+          ]
+        },
+        "refusedCalls": {
+          "n": 5,
+          "median": 0,
+          "mean": 0,
+          "stddev": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "medianCi95": [
+            0,
+            0
+          ]
+        },
+        "wallMs": {
+          "n": 5,
+          "median": 15130,
+          "mean": 15658,
+          "stddev": 4347.498418631109,
+          "p95": 21140.6,
+          "min": 11181,
+          "max": 22024,
+          "medianCi95": [
+            11181,
+            22024
+          ]
+        },
+        "firstPassValid": {
+          "n": 5,
+          "rate": 0.4,
+          "ci95": [
+            0.11762077423264783,
+            0.769275718723987
+          ]
+        },
+        "completed": {
+          "n": 5,
+          "rate": 1,
+          "ci95": [
+            0.5655175352168251,
+            1
+          ]
+        },
+        "correct": {
+          "n": 5,
+          "rate": 1,
+          "ci95": [
+            0.5655175352168251,
+            1
+          ]
+        },
+        "usageMissingRuns": 0,
+        "visualAudited": 5,
+        "criticalMobileOverflowRuns": 0,
+        "visualErrors": 0
+      }
+    },
+    "implementation-roadmap": {
+      "existing": {
+        "runs": 5,
+        "errors": 0,
+        "inputTokens": {
+          "n": 5,
+          "median": 52910,
+          "mean": 61614.4,
+          "stddev": 30315.88031543864,
+          "p95": 102822.19999999998,
+          "min": 39528,
+          "max": 114685,
+          "medianCi95": [
+            39528,
+            114685
+          ]
+        },
+        "outputTokens": {
+          "n": 5,
+          "median": 3369,
+          "mean": 3899.4,
+          "stddev": 1115.1108913466858,
+          "p95": 5435.4,
+          "min": 3268,
+          "max": 5871,
+          "medianCi95": [
+            3268,
+            5871
+          ]
+        },
+        "totalTokens": {
+          "n": 5,
+          "median": 56206,
+          "mean": 65513.8,
+          "stddev": 31413.428819535126,
+          "p95": 108257.59999999999,
+          "min": 42897,
+          "max": 120556,
+          "medianCi95": [
+            42897,
+            120556
+          ]
+        },
+        "costUsd": {
+          "n": 5,
+          "median": 0.00686961,
+          "mean": 0.0080300286,
+          "stddev": 0.0035456329977367656,
+          "p95": 0.012869920799999999,
+          "min": 0.005580926999999999,
+          "max": 0.01425996,
+          "medianCi95": [
+            0.005580926999999999,
+            0.01425996
+          ]
+        },
+        "modelTurns": {
+          "n": 5,
+          "median": 8,
+          "mean": 7.8,
+          "stddev": 0.8366600265340756,
+          "p95": 8.8,
+          "min": 7,
+          "max": 9,
+          "medianCi95": [
+            7,
+            9
+          ]
+        },
+        "toolCalls": {
+          "n": 5,
+          "median": 8,
+          "mean": 7.6,
+          "stddev": 0.5477225575051662,
+          "p95": 8,
+          "min": 7,
+          "max": 8,
+          "medianCi95": [
+            7,
+            8
+          ]
+        },
+        "orchestrationCalls": {
+          "n": 5,
+          "median": 2,
+          "mean": 2.4,
+          "stddev": 0.8944271909999159,
+          "p95": 3.5999999999999996,
+          "min": 2,
+          "max": 4,
+          "medianCi95": [
+            2,
+            4
+          ]
+        },
+        "discoveryCalls": {
+          "n": 5,
+          "median": 5,
+          "mean": 5.2,
+          "stddev": 0.8366600265340756,
+          "p95": 6,
+          "min": 4,
+          "max": 6,
+          "medianCi95": [
+            4,
+            6
+          ]
+        },
+        "repairs": {
+          "n": 5,
+          "median": 0,
+          "mean": 0.4,
+          "stddev": 0.894427190999916,
+          "p95": 1.5999999999999996,
+          "min": 0,
+          "max": 2,
+          "medianCi95": [
+            0,
+            2
+          ]
+        },
+        "repairToolCalls": {
+          "n": 5,
+          "median": 0,
+          "mean": 0,
+          "stddev": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "medianCi95": [
+            0,
+            0
+          ]
+        },
+        "refusedCalls": {
+          "n": 5,
+          "median": 0,
+          "mean": 0,
+          "stddev": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "medianCi95": [
+            0,
+            0
+          ]
+        },
+        "wallMs": {
+          "n": 5,
+          "median": 17377,
+          "mean": 18294.6,
+          "stddev": 3521.8150576087896,
+          "p95": 23090.6,
+          "min": 15737,
+          "max": 24386,
+          "medianCi95": [
+            15737,
+            24386
+          ]
+        },
+        "firstPassValid": {
+          "n": 5,
+          "rate": 0.8,
+          "ci95": [
+            0.37553462976252533,
+            0.9637758913675698
+          ]
+        },
+        "completed": {
+          "n": 5,
+          "rate": 1,
+          "ci95": [
+            0.5655175352168251,
+            1
+          ]
+        },
+        "correct": {
+          "n": 5,
+          "rate": 1,
+          "ci95": [
+            0.5655175352168251,
+            1
+          ]
+        },
+        "usageMissingRuns": 0,
+        "visualAudited": 5,
+        "criticalMobileOverflowRuns": 0,
+        "visualErrors": 0
+      },
+      "compose-repair": {
+        "runs": 5,
+        "errors": 0,
+        "inputTokens": {
+          "n": 5,
+          "median": 56050,
+          "mean": 64660.8,
+          "stddev": 20088.37970569055,
+          "p95": 92112.4,
+          "min": 47640,
+          "max": 98606,
+          "medianCi95": [
+            47640,
+            98606
+          ]
+        },
+        "outputTokens": {
+          "n": 5,
+          "median": 3582,
+          "mean": 3612.6,
+          "stddev": 591.3491354521456,
+          "p95": 4263.8,
+          "min": 2986,
+          "max": 4302,
+          "medianCi95": [
+            2986,
+            4302
+          ]
+        },
+        "totalTokens": {
+          "n": 5,
+          "median": 60161,
+          "mean": 68273.4,
+          "stddev": 20458.20878767249,
+          "p95": 96170.4,
+          "min": 50626,
+          "max": 102908,
+          "medianCi95": [
+            50626,
+            102908
+          ]
+        },
+        "costUsd": {
+          "n": 5,
+          "median": 0.007583895,
+          "mean": 0.008189656200000001,
+          "stddev": 0.0021814025219507745,
+          "p95": 0.0111278376,
+          "min": 0.006194430000000001,
+          "max": 0.011891484,
+          "medianCi95": [
+            0.006194430000000001,
+            0.011891484
+          ]
+        },
+        "modelTurns": {
+          "n": 5,
+          "median": 8,
+          "mean": 7.4,
+          "stddev": 0.8944271909999159,
+          "p95": 8,
+          "min": 6,
+          "max": 8,
+          "medianCi95": [
+            6,
+            8
+          ]
+        },
+        "toolCalls": {
+          "n": 5,
+          "median": 8,
+          "mean": 7.2,
+          "stddev": 1.3038404810405297,
+          "p95": 8,
+          "min": 5,
+          "max": 8,
+          "medianCi95": [
+            5,
+            8
+          ]
+        },
+        "orchestrationCalls": {
+          "n": 5,
+          "median": 2,
+          "mean": 2.6,
+          "stddev": 0.8944271909999159,
+          "p95": 3.8,
+          "min": 2,
+          "max": 4,
+          "medianCi95": [
+            2,
+            4
+          ]
+        },
+        "discoveryCalls": {
+          "n": 5,
+          "median": 6,
+          "mean": 4.6,
+          "stddev": 1.9493588689617927,
+          "p95": 6,
+          "min": 2,
+          "max": 6,
+          "medianCi95": [
+            2,
+            6
+          ]
+        },
+        "repairs": {
+          "n": 5,
+          "median": 0,
+          "mean": 0.6,
+          "stddev": 0.8944271909999157,
+          "p95": 1.7999999999999998,
+          "min": 0,
+          "max": 2,
+          "medianCi95": [
+            0,
+            2
+          ]
+        },
+        "repairToolCalls": {
+          "n": 5,
+          "median": 0,
+          "mean": 0,
+          "stddev": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "medianCi95": [
+            0,
+            0
+          ]
+        },
+        "refusedCalls": {
+          "n": 5,
+          "median": 0,
+          "mean": 0,
+          "stddev": 0,
+          "p95": 0,
+          "min": 0,
+          "max": 0,
+          "medianCi95": [
+            0,
+            0
+          ]
+        },
+        "wallMs": {
+          "n": 5,
+          "median": 18662,
+          "mean": 17472.4,
+          "stddev": 2414.35504845497,
+          "p95": 19721.2,
+          "min": 14728,
+          "max": 19885,
+          "medianCi95": [
+            14728,
+            19885
+          ]
+        },
+        "firstPassValid": {
+          "n": 5,
+          "rate": 0.6,
+          "ci95": [
+            0.2307242812760128,
+            0.882379225767352
+          ]
+        },
+        "completed": {
+          "n": 5,
+          "rate": 1,
+          "ci95": [
+            0.5655175352168251,
+            1
+          ]
+        },
+        "correct": {
+          "n": 5,
+          "rate": 1,
+          "ci95": [
+            0.5655175352168251,
+            1
+          ]
+        },
+        "usageMissingRuns": 0,
+        "visualAudited": 5,
+        "criticalMobileOverflowRuns": 0,
+        "visualErrors": 0
+      }
+    }
+  },
+  "targets": [
+    {
+      "id": "first-pass-valid",
+      "target": ">= 95% first-pass valid (compose-repair arm)",
+      "status": "not met",
+      "point": 0.45,
+      "ci95": [
+        0.2581978582556243,
+        0.6579146575496577
+      ]
+    },
+    {
+      "id": "median-orchestration-calls",
+      "target": "<= 2 median orchestration calls (compose-repair arm)",
+      "status": "inconclusive",
+      "point": 3,
+      "ci95": [
+        2,
+        3
+      ]
+    },
+    {
+      "id": "total-token-reduction",
+      "target": ">= 30% lower median total tokens",
+      "status": "not met",
+      "point": -0.029372393400879382,
+      "ci95": [
+        -0.3119446072568835,
+        0.1678825201326386
+      ],
+      "strata": 4
+    },
+    {
+      "id": "wall-time-reduction",
+      "target": ">= 40% lower median wall time",
+      "status": "not met",
+      "point": -0.07869205892921305,
+      "ci95": [
+        -0.24183834798347742,
+        0.15893617021276596
+      ],
+      "strata": 4
+    },
+    {
+      "id": "critical-mobile-overflow",
+      "target": "0 critical mobile overflow (compose-repair arm)",
+      "status": "met",
+      "point": 0
+    }
+  ],
+  "caveats": [
+    "the existing arm receives the server instructions without the clauses that name compose/repair, since it cannot call them"
+  ],
+  "notMeasured": [
+    "human-rated page quality"
+  ],
+  "runs": [
+    {
+      "task": "investment-report",
+      "arm": "existing",
+      "rep": 1,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 118262,
+        "outputTokens": 5129,
+        "totalTokens": 123391,
+        "usageMissing": false,
+        "costUsd": 0.014246793,
+        "modelTurns": 8,
+        "toolCalls": 7,
+        "orchestrationCalls": 3,
+        "discoveryCalls": 4,
+        "submissions": 3,
+        "firstPassValid": true,
+        "repairs": 0,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 23349,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 2
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 113,
+          "resultChars": 5628,
+          "ms": 3
+        },
+        {
+          "turn": 3,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 16,
+          "resultChars": 9102,
+          "ms": 1
+        },
+        {
+          "turn": 4,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 2553,
+          "resultChars": 188,
+          "ms": 8
+        },
+        {
+          "turn": 5,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 20,
+          "resultChars": 2687,
+          "ms": 1
+        },
+        {
+          "turn": 6,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 2579,
+          "resultChars": 188,
+          "ms": 2
+        },
+        {
+          "turn": 7,
+          "name": "render",
+          "isError": false,
+          "argsChars": 2587,
+          "resultChars": 302,
+          "ms": 47
+        }
+      ]
+    },
+    {
+      "task": "investment-report",
+      "arm": "compose-repair",
+      "rep": 1,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 106773,
+        "outputTokens": 4296,
+        "totalTokens": 111069,
+        "usageMissing": false,
+        "costUsd": 0.012697046999999998,
+        "modelTurns": 8,
+        "toolCalls": 8,
+        "orchestrationCalls": 4,
+        "discoveryCalls": 4,
+        "submissions": 4,
+        "firstPassValid": false,
+        "repairs": 1,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 18533,
+        "retryMs": 0,
+        "completed": true,
+        "correct": false,
+        "missingFacts": [
+          "$68M"
+        ],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 2
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": true,
+          "argsChars": 112,
+          "resultChars": 107,
+          "ms": 3
+        },
+        {
+          "turn": 2,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 20,
+          "resultChars": 2687,
+          "ms": 1
+        },
+        {
+          "turn": 3,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 95,
+          "resultChars": 4850,
+          "ms": 2
+        },
+        {
+          "turn": 4,
+          "name": "validate",
+          "isError": true,
+          "argsChars": 1592,
+          "resultChars": 899,
+          "ms": 9
+        },
+        {
+          "turn": 5,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 1719,
+          "resultChars": 217,
+          "ms": 3
+        },
+        {
+          "turn": 6,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 1698,
+          "resultChars": 217,
+          "ms": 3
+        },
+        {
+          "turn": 7,
+          "name": "render",
+          "isError": false,
+          "argsChars": 1716,
+          "resultChars": 341,
+          "ms": 61
+        }
+      ]
+    },
+    {
+      "task": "research-report",
+      "arm": "existing",
+      "rep": 1,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 67031,
+        "outputTokens": 3612,
+        "totalTokens": 70643,
+        "usageMissing": false,
+        "costUsd": 0.008424009,
+        "modelTurns": 6,
+        "toolCalls": 5,
+        "orchestrationCalls": 2,
+        "discoveryCalls": 3,
+        "submissions": 2,
+        "firstPassValid": true,
+        "repairs": 0,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 17332,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 2
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 93,
+          "resultChars": 3510,
+          "ms": 2
+        },
+        {
+          "turn": 3,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 50,
+          "resultChars": 1328,
+          "ms": 1
+        },
+        {
+          "turn": 4,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 2453,
+          "resultChars": 188,
+          "ms": 10
+        },
+        {
+          "turn": 5,
+          "name": "render",
+          "isError": false,
+          "argsChars": 2472,
+          "resultChars": 278,
+          "ms": 50
+        }
+      ]
+    },
+    {
+      "task": "research-report",
+      "arm": "compose-repair",
+      "rep": 1,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 91806,
+        "outputTokens": 6105,
+        "totalTokens": 97911,
+        "usageMissing": false,
+        "costUsd": 0.012110768999999999,
+        "modelTurns": 7,
+        "toolCalls": 6,
+        "orchestrationCalls": 3,
+        "discoveryCalls": 3,
+        "submissions": 3,
+        "firstPassValid": false,
+        "repairs": 1,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 27807,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 2
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 95,
+          "resultChars": 4692,
+          "ms": 2
+        },
+        {
+          "turn": 3,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 20,
+          "resultChars": 2687,
+          "ms": 1
+        },
+        {
+          "turn": 4,
+          "name": "validate",
+          "isError": true,
+          "argsChars": 2998,
+          "resultChars": 1401,
+          "ms": 13
+        },
+        {
+          "turn": 5,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 2704,
+          "resultChars": 226,
+          "ms": 2
+        },
+        {
+          "turn": 6,
+          "name": "render",
+          "isError": false,
+          "argsChars": 2707,
+          "resultChars": 336,
+          "ms": 44
+        }
+      ]
+    },
+    {
+      "task": "dashboard",
+      "arm": "existing",
+      "rep": 1,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 73090,
+        "outputTokens": 2768,
+        "totalTokens": 75858,
+        "usageMissing": false,
+        "costUsd": 0.00860607,
+        "modelTurns": 6,
+        "toolCalls": 6,
+        "orchestrationCalls": 3,
+        "discoveryCalls": 3,
+        "submissions": 3,
+        "firstPassValid": false,
+        "repairs": 1,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 12349,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 2
+        },
+        {
+          "turn": 1,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 20,
+          "resultChars": 2687,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 66,
+          "resultChars": 3784,
+          "ms": 2
+        },
+        {
+          "turn": 3,
+          "name": "validate",
+          "isError": true,
+          "argsChars": 1628,
+          "resultChars": 912,
+          "ms": 24
+        },
+        {
+          "turn": 4,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 1615,
+          "resultChars": 205,
+          "ms": 7
+        },
+        {
+          "turn": 5,
+          "name": "render",
+          "isError": false,
+          "argsChars": 1618,
+          "resultChars": 319,
+          "ms": 54
+        }
+      ]
+    },
+    {
+      "task": "dashboard",
+      "arm": "compose-repair",
+      "rep": 1,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 76694,
+        "outputTokens": 3332,
+        "totalTokens": 80026,
+        "usageMissing": false,
+        "costUsd": 0.009242046,
+        "modelTurns": 6,
+        "toolCalls": 6,
+        "orchestrationCalls": 3,
+        "discoveryCalls": 3,
+        "submissions": 3,
+        "firstPassValid": false,
+        "repairs": 1,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 15130,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 20,
+          "resultChars": 2687,
+          "ms": 1
+        },
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 2
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 85,
+          "resultChars": 4730,
+          "ms": 3
+        },
+        {
+          "turn": 3,
+          "name": "validate",
+          "isError": true,
+          "argsChars": 1591,
+          "resultChars": 682,
+          "ms": 9
+        },
+        {
+          "turn": 4,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 1592,
+          "resultChars": 205,
+          "ms": 3
+        },
+        {
+          "turn": 5,
+          "name": "render",
+          "isError": false,
+          "argsChars": 1595,
+          "resultChars": 347,
+          "ms": 52
+        }
+      ]
+    },
+    {
+      "task": "implementation-roadmap",
+      "arm": "existing",
+      "rep": 1,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 39528,
+        "outputTokens": 3369,
+        "totalTokens": 42897,
+        "usageMissing": false,
+        "costUsd": 0.005580926999999999,
+        "modelTurns": 7,
+        "toolCalls": 7,
+        "orchestrationCalls": 2,
+        "discoveryCalls": 5,
+        "submissions": 2,
+        "firstPassValid": true,
+        "repairs": 0,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 15737,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "search-catalog",
+          "isError": false,
+          "argsChars": 39,
+          "resultChars": 352,
+          "ms": 3
+        },
+        {
+          "turn": 1,
+          "name": "search-catalog",
+          "isError": false,
+          "argsChars": 38,
+          "resultChars": 1305,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 54,
+          "resultChars": 1557,
+          "ms": 2
+        },
+        {
+          "turn": 3,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 20,
+          "resultChars": 2687,
+          "ms": 1
+        },
+        {
+          "turn": 4,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 33,
+          "resultChars": 608,
+          "ms": 1
+        },
+        {
+          "turn": 5,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 1912,
+          "resultChars": 211,
+          "ms": 10
+        },
+        {
+          "turn": 6,
+          "name": "render",
+          "isError": false,
+          "argsChars": 1873,
+          "resultChars": 307,
+          "ms": 44
+        }
+      ]
+    },
+    {
+      "task": "implementation-roadmap",
+      "arm": "compose-repair",
+      "rep": 1,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 66138,
+        "outputTokens": 3082,
+        "totalTokens": 69220,
+        "usageMissing": false,
+        "costUsd": 0.008073252,
+        "modelTurns": 6,
+        "toolCalls": 5,
+        "orchestrationCalls": 3,
+        "discoveryCalls": 2,
+        "submissions": 3,
+        "firstPassValid": false,
+        "repairs": 1,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 14728,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 68,
+          "resultChars": 2001,
+          "ms": 2
+        },
+        {
+          "turn": 3,
+          "name": "validate",
+          "isError": true,
+          "argsChars": 1383,
+          "resultChars": 1068,
+          "ms": 10
+        },
+        {
+          "turn": 4,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 1377,
+          "resultChars": 186,
+          "ms": 3
+        },
+        {
+          "turn": 5,
+          "name": "render",
+          "isError": false,
+          "argsChars": 1321,
+          "resultChars": 274,
+          "ms": 40
+        }
+      ]
+    },
+    {
+      "task": "investment-report",
+      "arm": "existing",
+      "rep": 2,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 90487,
+        "outputTokens": 2672,
+        "totalTokens": 93159,
+        "usageMissing": false,
+        "costUsd": 0.010280853,
+        "modelTurns": 6,
+        "toolCalls": 7,
+        "orchestrationCalls": 2,
+        "discoveryCalls": 5,
+        "submissions": 2,
+        "firstPassValid": true,
+        "repairs": 0,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 13483,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 2
+        },
+        {
+          "turn": 1,
+          "name": "recipes",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 4794,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 24,
+          "resultChars": 2198,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 61,
+          "resultChars": 3282,
+          "ms": 2
+        },
+        {
+          "turn": 3,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 36,
+          "resultChars": 13455,
+          "ms": 6
+        },
+        {
+          "turn": 4,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 1869,
+          "resultChars": 224,
+          "ms": 17
+        },
+        {
+          "turn": 5,
+          "name": "render",
+          "isError": false,
+          "argsChars": 1872,
+          "resultChars": 324,
+          "ms": 69
+        }
+      ]
+    },
+    {
+      "task": "investment-report",
+      "arm": "compose-repair",
+      "rep": 2,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 90655,
+        "outputTokens": 3674,
+        "totalTokens": 94329,
+        "usageMissing": false,
+        "costUsd": 0.010793475,
+        "modelTurns": 7,
+        "toolCalls": 6,
+        "orchestrationCalls": 3,
+        "discoveryCalls": 3,
+        "submissions": 3,
+        "firstPassValid": false,
+        "repairs": 1,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 16603,
+        "retryMs": 0,
+        "completed": true,
+        "correct": false,
+        "missingFacts": [
+          "$68M"
+        ],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 2
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 110,
+          "resultChars": 5741,
+          "ms": 2
+        },
+        {
+          "turn": 3,
+          "name": "validate",
+          "isError": true,
+          "argsChars": 1841,
+          "resultChars": 851,
+          "ms": 10
+        },
+        {
+          "turn": 4,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 20,
+          "resultChars": 2687,
+          "ms": 2
+        },
+        {
+          "turn": 5,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 1856,
+          "resultChars": 187,
+          "ms": 2
+        },
+        {
+          "turn": 6,
+          "name": "render",
+          "isError": false,
+          "argsChars": 1859,
+          "resultChars": 294,
+          "ms": 42
+        }
+      ]
+    },
+    {
+      "task": "research-report",
+      "arm": "existing",
+      "rep": 2,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 144227,
+        "outputTokens": 6747,
+        "totalTokens": 150974,
+        "usageMissing": false,
+        "costUsd": 0.017618238,
+        "modelTurns": 10,
+        "toolCalls": 9,
+        "orchestrationCalls": 5,
+        "discoveryCalls": 4,
+        "submissions": 5,
+        "firstPassValid": false,
+        "repairs": 3,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 28917,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 2
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 98,
+          "resultChars": 4780,
+          "ms": 6
+        },
+        {
+          "turn": 3,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 20,
+          "resultChars": 2687,
+          "ms": 1
+        },
+        {
+          "turn": 4,
+          "name": "validate",
+          "isError": true,
+          "argsChars": 2678,
+          "resultChars": 372,
+          "ms": 26
+        },
+        {
+          "turn": 5,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 55,
+          "resultChars": 1676,
+          "ms": 1
+        },
+        {
+          "turn": 6,
+          "name": "validate",
+          "isError": true,
+          "argsChars": 2451,
+          "resultChars": 372,
+          "ms": 5
+        },
+        {
+          "turn": 7,
+          "name": "validate",
+          "isError": true,
+          "argsChars": 2499,
+          "resultChars": 1099,
+          "ms": 24
+        },
+        {
+          "turn": 8,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 2501,
+          "resultChars": 188,
+          "ms": 8
+        },
+        {
+          "turn": 9,
+          "name": "render",
+          "isError": false,
+          "argsChars": 2504,
+          "resultChars": 305,
+          "ms": 40
+        }
+      ]
+    },
+    {
+      "task": "research-report",
+      "arm": "compose-repair",
+      "rep": 2,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 89780,
+        "outputTokens": 5066,
+        "totalTokens": 94846,
+        "usageMissing": false,
+        "costUsd": 0.011395889999999999,
+        "modelTurns": 6,
+        "toolCalls": 7,
+        "orchestrationCalls": 3,
+        "discoveryCalls": 4,
+        "submissions": 3,
+        "firstPassValid": false,
+        "repairs": 1,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 21663,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 2
+        },
+        {
+          "turn": 1,
+          "name": "recipes",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 4794,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 26,
+          "resultChars": 2231,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 138,
+          "resultChars": 5976,
+          "ms": 3
+        },
+        {
+          "turn": 3,
+          "name": "validate",
+          "isError": true,
+          "argsChars": 3223,
+          "resultChars": 1928,
+          "ms": 30
+        },
+        {
+          "turn": 4,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 3232,
+          "resultChars": 232,
+          "ms": 7
+        },
+        {
+          "turn": 5,
+          "name": "render",
+          "isError": false,
+          "argsChars": 3220,
+          "resultChars": 354,
+          "ms": 52
+        }
+      ]
+    },
+    {
+      "task": "dashboard",
+      "arm": "existing",
+      "rep": 2,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 40818,
+        "outputTokens": 2364,
+        "totalTokens": 43182,
+        "usageMissing": false,
+        "costUsd": 0.005211162000000001,
+        "modelTurns": 5,
+        "toolCalls": 8,
+        "orchestrationCalls": 2,
+        "discoveryCalls": 6,
+        "submissions": 2,
+        "firstPassValid": true,
+        "repairs": 0,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 10846,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "recipes",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 4794,
+          "ms": 1
+        },
+        {
+          "turn": 1,
+          "name": "search-catalog",
+          "isError": false,
+          "argsChars": 36,
+          "resultChars": 1246,
+          "ms": 3
+        },
+        {
+          "turn": 1,
+          "name": "search-catalog",
+          "isError": false,
+          "argsChars": 34,
+          "resultChars": 1431,
+          "ms": 2
+        },
+        {
+          "turn": 1,
+          "name": "search-catalog",
+          "isError": false,
+          "argsChars": 42,
+          "resultChars": 751,
+          "ms": 2
+        },
+        {
+          "turn": 2,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 20,
+          "resultChars": 2687,
+          "ms": 3
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 66,
+          "resultChars": 3784,
+          "ms": 2
+        },
+        {
+          "turn": 3,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 1485,
+          "resultChars": 205,
+          "ms": 10
+        },
+        {
+          "turn": 4,
+          "name": "render",
+          "isError": false,
+          "argsChars": 1488,
+          "resultChars": 319,
+          "ms": 54
+        }
+      ]
+    },
+    {
+      "task": "dashboard",
+      "arm": "compose-repair",
+      "rep": 2,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 34589,
+        "outputTokens": 2417,
+        "totalTokens": 37006,
+        "usageMissing": false,
+        "costUsd": 0.004620726,
+        "modelTurns": 5,
+        "toolCalls": 7,
+        "orchestrationCalls": 2,
+        "discoveryCalls": 5,
+        "submissions": 2,
+        "firstPassValid": true,
+        "repairs": 0,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 11181,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "search-catalog",
+          "isError": false,
+          "argsChars": 23,
+          "resultChars": 759,
+          "ms": 3
+        },
+        {
+          "turn": 1,
+          "name": "search-catalog",
+          "isError": false,
+          "argsChars": 34,
+          "resultChars": 1431,
+          "ms": 2
+        },
+        {
+          "turn": 1,
+          "name": "search-catalog",
+          "isError": false,
+          "argsChars": 36,
+          "resultChars": 751,
+          "ms": 1
+        },
+        {
+          "turn": 1,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 20,
+          "resultChars": 2687,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 66,
+          "resultChars": 3784,
+          "ms": 2
+        },
+        {
+          "turn": 3,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 1836,
+          "resultChars": 227,
+          "ms": 27
+        },
+        {
+          "turn": 4,
+          "name": "render",
+          "isError": false,
+          "argsChars": 1839,
+          "resultChars": 347,
+          "ms": 61
+        }
+      ]
+    },
+    {
+      "task": "implementation-roadmap",
+      "arm": "existing",
+      "rep": 2,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 55371,
+        "outputTokens": 3693,
+        "totalTokens": 59064,
+        "usageMissing": false,
+        "costUsd": 0.007309763999999999,
+        "modelTurns": 8,
+        "toolCalls": 8,
+        "orchestrationCalls": 2,
+        "discoveryCalls": 6,
+        "submissions": 2,
+        "firstPassValid": true,
+        "repairs": 0,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 17909,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "search-catalog",
+          "isError": false,
+          "argsChars": 39,
+          "resultChars": 352,
+          "ms": 4
+        },
+        {
+          "turn": 1,
+          "name": "search-catalog",
+          "isError": false,
+          "argsChars": 38,
+          "resultChars": 1305,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 68,
+          "resultChars": 2083,
+          "ms": 2
+        },
+        {
+          "turn": 3,
+          "name": "recipes",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 4794,
+          "ms": 1
+        },
+        {
+          "turn": 4,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 30,
+          "resultChars": 2599,
+          "ms": 1
+        },
+        {
+          "turn": 5,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 43,
+          "resultChars": 1004,
+          "ms": 1
+        },
+        {
+          "turn": 6,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 2267,
+          "resultChars": 210,
+          "ms": 9
+        },
+        {
+          "turn": 7,
+          "name": "render",
+          "isError": false,
+          "argsChars": 2270,
+          "resultChars": 292,
+          "ms": 41
+        }
+      ]
+    },
+    {
+      "task": "implementation-roadmap",
+      "arm": "compose-repair",
+      "rep": 2,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 56050,
+        "outputTokens": 4111,
+        "totalTokens": 60161,
+        "usageMissing": false,
+        "costUsd": 0.007583895,
+        "modelTurns": 8,
+        "toolCalls": 8,
+        "orchestrationCalls": 2,
+        "discoveryCalls": 6,
+        "submissions": 2,
+        "firstPassValid": true,
+        "repairs": 0,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 19066,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "search-catalog",
+          "isError": false,
+          "argsChars": 39,
+          "resultChars": 352,
+          "ms": 8
+        },
+        {
+          "turn": 1,
+          "name": "search-catalog",
+          "isError": false,
+          "argsChars": 38,
+          "resultChars": 1305,
+          "ms": 2
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 57,
+          "resultChars": 1629,
+          "ms": 2
+        },
+        {
+          "turn": 3,
+          "name": "recipes",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 4794,
+          "ms": 1
+        },
+        {
+          "turn": 4,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 30,
+          "resultChars": 2599,
+          "ms": 1
+        },
+        {
+          "turn": 5,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 44,
+          "resultChars": 1062,
+          "ms": 1
+        },
+        {
+          "turn": 6,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 2138,
+          "resultChars": 234,
+          "ms": 7
+        },
+        {
+          "turn": 7,
+          "name": "render",
+          "isError": false,
+          "argsChars": 2107,
+          "resultChars": 322,
+          "ms": 56
+        }
+      ]
+    },
+    {
+      "task": "investment-report",
+      "arm": "existing",
+      "rep": 3,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 86732,
+        "outputTokens": 2735,
+        "totalTokens": 89467,
+        "usageMissing": false,
+        "costUsd": 0.009940293,
+        "modelTurns": 6,
+        "toolCalls": 7,
+        "orchestrationCalls": 2,
+        "discoveryCalls": 5,
+        "submissions": 2,
+        "firstPassValid": true,
+        "repairs": 0,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 13489,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 2
+        },
+        {
+          "turn": 1,
+          "name": "recipes",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 4794,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 24,
+          "resultChars": 2198,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 54,
+          "resultChars": 3172,
+          "ms": 2
+        },
+        {
+          "turn": 3,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 16,
+          "resultChars": 9102,
+          "ms": 1
+        },
+        {
+          "turn": 4,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 2240,
+          "resultChars": 224,
+          "ms": 8
+        },
+        {
+          "turn": 5,
+          "name": "render",
+          "isError": false,
+          "argsChars": 2243,
+          "resultChars": 341,
+          "ms": 50
+        }
+      ]
+    },
+    {
+      "task": "investment-report",
+      "arm": "compose-repair",
+      "rep": 3,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 78488,
+        "outputTokens": 2925,
+        "totalTokens": 81413,
+        "usageMissing": false,
+        "costUsd": 0.009218187000000001,
+        "modelTurns": 6,
+        "toolCalls": 5,
+        "orchestrationCalls": 2,
+        "discoveryCalls": 3,
+        "submissions": 2,
+        "firstPassValid": true,
+        "repairs": 0,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 13762,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 2
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 106,
+          "resultChars": 5330,
+          "ms": 2
+        },
+        {
+          "turn": 3,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 16,
+          "resultChars": 9102,
+          "ms": 1
+        },
+        {
+          "turn": 4,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 2258,
+          "resultChars": 188,
+          "ms": 9
+        },
+        {
+          "turn": 5,
+          "name": "render",
+          "isError": false,
+          "argsChars": 2261,
+          "resultChars": 308,
+          "ms": 48
+        }
+      ]
+    },
+    {
+      "task": "research-report",
+      "arm": "existing",
+      "rep": 3,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 111129,
+        "outputTokens": 6620,
+        "totalTokens": 117749,
+        "usageMissing": false,
+        "costUsd": 0.014278671,
+        "modelTurns": 8,
+        "toolCalls": 8,
+        "orchestrationCalls": 4,
+        "discoveryCalls": 4,
+        "submissions": 4,
+        "firstPassValid": false,
+        "repairs": 1,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 27401,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 2
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 112,
+          "resultChars": 5250,
+          "ms": 3
+        },
+        {
+          "turn": 3,
+          "name": "validate",
+          "isError": true,
+          "argsChars": 2722,
+          "resultChars": 458,
+          "ms": 4
+        },
+        {
+          "turn": 4,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 20,
+          "resultChars": 2687,
+          "ms": 1
+        },
+        {
+          "turn": 4,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 48,
+          "resultChars": 664,
+          "ms": 1
+        },
+        {
+          "turn": 5,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 3070,
+          "resultChars": 228,
+          "ms": 11
+        },
+        {
+          "turn": 6,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 2684,
+          "resultChars": 228,
+          "ms": 2
+        },
+        {
+          "turn": 7,
+          "name": "render",
+          "isError": false,
+          "argsChars": 2687,
+          "resultChars": 303,
+          "ms": 39
+        }
+      ]
+    },
+    {
+      "task": "research-report",
+      "arm": "compose-repair",
+      "rep": 3,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 107988,
+        "outputTokens": 3782,
+        "totalTokens": 111770,
+        "usageMissing": false,
+        "costUsd": 0.012562902,
+        "modelTurns": 7,
+        "toolCalls": 6,
+        "orchestrationCalls": 2,
+        "discoveryCalls": 4,
+        "submissions": 2,
+        "firstPassValid": true,
+        "repairs": 0,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 18417,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 2
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 110,
+          "resultChars": 5652,
+          "ms": 3
+        },
+        {
+          "turn": 3,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 58,
+          "resultChars": 15640,
+          "ms": 1
+        },
+        {
+          "turn": 4,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 3757,
+          "resultChars": 188,
+          "ms": 24
+        },
+        {
+          "turn": 5,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 20,
+          "resultChars": 2687,
+          "ms": 1
+        },
+        {
+          "turn": 6,
+          "name": "render",
+          "isError": false,
+          "argsChars": 3760,
+          "resultChars": 297,
+          "ms": 77
+        }
+      ]
+    },
+    {
+      "task": "dashboard",
+      "arm": "existing",
+      "rep": 3,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 57096,
+        "outputTokens": 2526,
+        "totalTokens": 59622,
+        "usageMissing": false,
+        "costUsd": 0.006902874,
+        "modelTurns": 5,
+        "toolCalls": 5,
+        "orchestrationCalls": 2,
+        "discoveryCalls": 3,
+        "submissions": 2,
+        "firstPassValid": true,
+        "repairs": 0,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 12408,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 2
+        },
+        {
+          "turn": 1,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 20,
+          "resultChars": 2687,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 66,
+          "resultChars": 3784,
+          "ms": 2
+        },
+        {
+          "turn": 3,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 2011,
+          "resultChars": 205,
+          "ms": 50
+        },
+        {
+          "turn": 4,
+          "name": "render",
+          "isError": false,
+          "argsChars": 1863,
+          "resultChars": 319,
+          "ms": 66
+        }
+      ]
+    },
+    {
+      "task": "dashboard",
+      "arm": "compose-repair",
+      "rep": 3,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 36307,
+        "outputTokens": 2677,
+        "totalTokens": 38984,
+        "usageMissing": false,
+        "costUsd": 0.004919508,
+        "modelTurns": 5,
+        "toolCalls": 7,
+        "orchestrationCalls": 2,
+        "discoveryCalls": 5,
+        "submissions": 2,
+        "firstPassValid": true,
+        "repairs": 0,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 12348,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 20,
+          "resultChars": 2687,
+          "ms": 1
+        },
+        {
+          "turn": 1,
+          "name": "search-catalog",
+          "isError": false,
+          "argsChars": 34,
+          "resultChars": 1301,
+          "ms": 4
+        },
+        {
+          "turn": 1,
+          "name": "search-catalog",
+          "isError": false,
+          "argsChars": 33,
+          "resultChars": 1446,
+          "ms": 2
+        },
+        {
+          "turn": 1,
+          "name": "search-catalog",
+          "isError": false,
+          "argsChars": 36,
+          "resultChars": 751,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 78,
+          "resultChars": 4265,
+          "ms": 3
+        },
+        {
+          "turn": 3,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 1614,
+          "resultChars": 205,
+          "ms": 10
+        },
+        {
+          "turn": 4,
+          "name": "render",
+          "isError": false,
+          "argsChars": 1469,
+          "resultChars": 325,
+          "ms": 49
+        }
+      ]
+    },
+    {
+      "task": "implementation-roadmap",
+      "arm": "existing",
+      "rep": 3,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 45578,
+        "outputTokens": 3268,
+        "totalTokens": 48846,
+        "usageMissing": false,
+        "costUsd": 0.006129882,
+        "modelTurns": 7,
+        "toolCalls": 7,
+        "orchestrationCalls": 2,
+        "discoveryCalls": 5,
+        "submissions": 2,
+        "firstPassValid": true,
+        "repairs": 0,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 16064,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "search-catalog",
+          "isError": false,
+          "argsChars": 39,
+          "resultChars": 352,
+          "ms": 3
+        },
+        {
+          "turn": 1,
+          "name": "search-catalog",
+          "isError": false,
+          "argsChars": 38,
+          "resultChars": 1305,
+          "ms": 2
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 68,
+          "resultChars": 2083,
+          "ms": 2
+        },
+        {
+          "turn": 3,
+          "name": "recipes",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 4794,
+          "ms": 1
+        },
+        {
+          "turn": 4,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 30,
+          "resultChars": 2599,
+          "ms": 1
+        },
+        {
+          "turn": 5,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 2147,
+          "resultChars": 210,
+          "ms": 24
+        },
+        {
+          "turn": 6,
+          "name": "render",
+          "isError": false,
+          "argsChars": 2099,
+          "resultChars": 306,
+          "ms": 42
+        }
+      ]
+    },
+    {
+      "task": "implementation-roadmap",
+      "arm": "compose-repair",
+      "rep": 3,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 98606,
+        "outputTokens": 4302,
+        "totalTokens": 102908,
+        "usageMissing": false,
+        "costUsd": 0.011891484,
+        "modelTurns": 8,
+        "toolCalls": 7,
+        "orchestrationCalls": 4,
+        "discoveryCalls": 3,
+        "submissions": 4,
+        "firstPassValid": false,
+        "repairs": 2,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 19885,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 2
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 75,
+          "resultChars": 2607,
+          "ms": 2
+        },
+        {
+          "turn": 3,
+          "name": "validate",
+          "isError": true,
+          "argsChars": 1454,
+          "resultChars": 458,
+          "ms": 3
+        },
+        {
+          "turn": 4,
+          "name": "validate",
+          "isError": true,
+          "argsChars": 1394,
+          "resultChars": 334,
+          "ms": 3
+        },
+        {
+          "turn": 5,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 20,
+          "resultChars": 2687,
+          "ms": 1
+        },
+        {
+          "turn": 6,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 1472,
+          "resultChars": 232,
+          "ms": 3
+        },
+        {
+          "turn": 7,
+          "name": "render",
+          "isError": false,
+          "argsChars": 1475,
+          "resultChars": 305,
+          "ms": 49
+        }
+      ]
+    },
+    {
+      "task": "investment-report",
+      "arm": "existing",
+      "rep": 4,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 85987,
+        "outputTokens": 2683,
+        "totalTokens": 88670,
+        "usageMissing": false,
+        "costUsd": 0.009840798000000001,
+        "modelTurns": 6,
+        "toolCalls": 7,
+        "orchestrationCalls": 2,
+        "discoveryCalls": 5,
+        "submissions": 2,
+        "firstPassValid": true,
+        "repairs": 0,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 13706,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 2
+        },
+        {
+          "turn": 1,
+          "name": "recipes",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 4794,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 24,
+          "resultChars": 2198,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 54,
+          "resultChars": 3172,
+          "ms": 2
+        },
+        {
+          "turn": 3,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 16,
+          "resultChars": 9102,
+          "ms": 1
+        },
+        {
+          "turn": 4,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 1837,
+          "resultChars": 224,
+          "ms": 24
+        },
+        {
+          "turn": 5,
+          "name": "render",
+          "isError": false,
+          "argsChars": 1855,
+          "resultChars": 324,
+          "ms": 55
+        }
+      ]
+    },
+    {
+      "task": "investment-report",
+      "arm": "compose-repair",
+      "rep": 4,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 107086,
+        "outputTokens": 4318,
+        "totalTokens": 111404,
+        "usageMissing": false,
+        "costUsd": 0.012738924,
+        "modelTurns": 8,
+        "toolCalls": 7,
+        "orchestrationCalls": 4,
+        "discoveryCalls": 3,
+        "submissions": 4,
+        "firstPassValid": false,
+        "repairs": 2,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 18954,
+        "retryMs": 0,
+        "completed": true,
+        "correct": false,
+        "missingFacts": [
+          "$68M"
+        ],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 2
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 114,
+          "resultChars": 5756,
+          "ms": 6
+        },
+        {
+          "turn": 3,
+          "name": "validate",
+          "isError": true,
+          "argsChars": 1566,
+          "resultChars": 458,
+          "ms": 4
+        },
+        {
+          "turn": 4,
+          "name": "validate",
+          "isError": true,
+          "argsChars": 1567,
+          "resultChars": 334,
+          "ms": 3
+        },
+        {
+          "turn": 5,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 20,
+          "resultChars": 2687,
+          "ms": 1
+        },
+        {
+          "turn": 6,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 1789,
+          "resultChars": 216,
+          "ms": 7
+        },
+        {
+          "turn": 7,
+          "name": "render",
+          "isError": false,
+          "argsChars": 1792,
+          "resultChars": 322,
+          "ms": 42
+        }
+      ]
+    },
+    {
+      "task": "research-report",
+      "arm": "existing",
+      "rep": 4,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 86598,
+        "outputTokens": 4812,
+        "totalTokens": 91410,
+        "usageMissing": false,
+        "costUsd": 0.010955142,
+        "modelTurns": 6,
+        "toolCalls": 7,
+        "orchestrationCalls": 3,
+        "discoveryCalls": 4,
+        "submissions": 3,
+        "firstPassValid": false,
+        "repairs": 1,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 19691,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 2
+        },
+        {
+          "turn": 1,
+          "name": "recipes",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 4794,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 26,
+          "resultChars": 2231,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 92,
+          "resultChars": 4339,
+          "ms": 2
+        },
+        {
+          "turn": 3,
+          "name": "validate",
+          "isError": true,
+          "argsChars": 3383,
+          "resultChars": 2158,
+          "ms": 25
+        },
+        {
+          "turn": 4,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 3480,
+          "resultChars": 234,
+          "ms": 9
+        },
+        {
+          "turn": 5,
+          "name": "render",
+          "isError": false,
+          "argsChars": 3483,
+          "resultChars": 362,
+          "ms": 61
+        }
+      ]
+    },
+    {
+      "task": "research-report",
+      "arm": "compose-repair",
+      "rep": 4,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 66950,
+        "outputTokens": 3314,
+        "totalTokens": 70264,
+        "usageMissing": false,
+        "costUsd": 0.00826848,
+        "modelTurns": 5,
+        "toolCalls": 6,
+        "orchestrationCalls": 2,
+        "discoveryCalls": 4,
+        "submissions": 2,
+        "firstPassValid": true,
+        "repairs": 0,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 14607,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 3
+        },
+        {
+          "turn": 1,
+          "name": "recipes",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 4794,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 26,
+          "resultChars": 2231,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 116,
+          "resultChars": 5314,
+          "ms": 2
+        },
+        {
+          "turn": 3,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 3094,
+          "resultChars": 241,
+          "ms": 25
+        },
+        {
+          "turn": 4,
+          "name": "render",
+          "isError": false,
+          "argsChars": 3073,
+          "resultChars": 363,
+          "ms": 55
+        }
+      ]
+    },
+    {
+      "task": "dashboard",
+      "arm": "existing",
+      "rep": 4,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 76300,
+        "outputTokens": 3113,
+        "totalTokens": 79413,
+        "usageMissing": false,
+        "costUsd": 0.009094635,
+        "modelTurns": 6,
+        "toolCalls": 6,
+        "orchestrationCalls": 3,
+        "discoveryCalls": 3,
+        "submissions": 3,
+        "firstPassValid": false,
+        "repairs": 1,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 13313,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 20,
+          "resultChars": 2687,
+          "ms": 1
+        },
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 92,
+          "resultChars": 5064,
+          "ms": 3
+        },
+        {
+          "turn": 3,
+          "name": "validate",
+          "isError": true,
+          "argsChars": 2024,
+          "resultChars": 956,
+          "ms": 24
+        },
+        {
+          "turn": 4,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 2027,
+          "resultChars": 205,
+          "ms": 10
+        },
+        {
+          "turn": 5,
+          "name": "render",
+          "isError": false,
+          "argsChars": 2030,
+          "resultChars": 341,
+          "ms": 59
+        }
+      ]
+    },
+    {
+      "task": "dashboard",
+      "arm": "compose-repair",
+      "rep": 4,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 83892,
+        "outputTokens": 4123,
+        "totalTokens": 88015,
+        "usageMissing": false,
+        "costUsd": 0.010346193,
+        "modelTurns": 6,
+        "toolCalls": 7,
+        "orchestrationCalls": 3,
+        "discoveryCalls": 4,
+        "submissions": 3,
+        "firstPassValid": false,
+        "repairs": 1,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 17607,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 2
+        },
+        {
+          "turn": 1,
+          "name": "recipes",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 4794,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 20,
+          "resultChars": 2687,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 66,
+          "resultChars": 3784,
+          "ms": 2
+        },
+        {
+          "turn": 3,
+          "name": "validate",
+          "isError": true,
+          "argsChars": 2247,
+          "resultChars": 385,
+          "ms": 4
+        },
+        {
+          "turn": 4,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 1939,
+          "resultChars": 224,
+          "ms": 17
+        },
+        {
+          "turn": 5,
+          "name": "render",
+          "isError": false,
+          "argsChars": 1942,
+          "resultChars": 344,
+          "ms": 62
+        }
+      ]
+    },
+    {
+      "task": "implementation-roadmap",
+      "arm": "existing",
+      "rep": 4,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 52910,
+        "outputTokens": 3296,
+        "totalTokens": 56206,
+        "usageMissing": false,
+        "costUsd": 0.00686961,
+        "modelTurns": 8,
+        "toolCalls": 8,
+        "orchestrationCalls": 2,
+        "discoveryCalls": 6,
+        "submissions": 2,
+        "firstPassValid": true,
+        "repairs": 0,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 17377,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "search-catalog",
+          "isError": false,
+          "argsChars": 39,
+          "resultChars": 352,
+          "ms": 5
+        },
+        {
+          "turn": 1,
+          "name": "search-catalog",
+          "isError": false,
+          "argsChars": 38,
+          "resultChars": 1305,
+          "ms": 2
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 54,
+          "resultChars": 1557,
+          "ms": 3
+        },
+        {
+          "turn": 3,
+          "name": "recipes",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 4794,
+          "ms": 1
+        },
+        {
+          "turn": 4,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 30,
+          "resultChars": 2599,
+          "ms": 1
+        },
+        {
+          "turn": 5,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 47,
+          "resultChars": 1134,
+          "ms": 1
+        },
+        {
+          "turn": 6,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 1367,
+          "resultChars": 210,
+          "ms": 8
+        },
+        {
+          "turn": 7,
+          "name": "render",
+          "isError": false,
+          "argsChars": 1334,
+          "resultChars": 277,
+          "ms": 44
+        }
+      ]
+    },
+    {
+      "task": "implementation-roadmap",
+      "arm": "compose-repair",
+      "rep": 4,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 54870,
+        "outputTokens": 3582,
+        "totalTokens": 58452,
+        "usageMissing": false,
+        "costUsd": 0.00720522,
+        "modelTurns": 8,
+        "toolCalls": 8,
+        "orchestrationCalls": 2,
+        "discoveryCalls": 6,
+        "submissions": 2,
+        "firstPassValid": true,
+        "repairs": 0,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 18662,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "search-catalog",
+          "isError": false,
+          "argsChars": 39,
+          "resultChars": 352,
+          "ms": 3
+        },
+        {
+          "turn": 1,
+          "name": "search-catalog",
+          "isError": false,
+          "argsChars": 38,
+          "resultChars": 1305,
+          "ms": 2
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 57,
+          "resultChars": 1629,
+          "ms": 2
+        },
+        {
+          "turn": 3,
+          "name": "recipes",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 4794,
+          "ms": 1
+        },
+        {
+          "turn": 4,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 30,
+          "resultChars": 2599,
+          "ms": 1
+        },
+        {
+          "turn": 5,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 44,
+          "resultChars": 1062,
+          "ms": 1
+        },
+        {
+          "turn": 6,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 1452,
+          "resultChars": 234,
+          "ms": 9
+        },
+        {
+          "turn": 7,
+          "name": "render",
+          "isError": false,
+          "argsChars": 1402,
+          "resultChars": 307,
+          "ms": 39
+        }
+      ]
+    },
+    {
+      "task": "investment-report",
+      "arm": "existing",
+      "rep": 5,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 151953,
+        "outputTokens": 6356,
+        "totalTokens": 158309,
+        "usageMissing": false,
+        "costUsd": 0.018189567,
+        "modelTurns": 9,
+        "toolCalls": 11,
+        "orchestrationCalls": 4,
+        "discoveryCalls": 7,
+        "submissions": 4,
+        "firstPassValid": true,
+        "repairs": 0,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 29738,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 2
+        },
+        {
+          "turn": 1,
+          "name": "recipes",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 4794,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 24,
+          "resultChars": 2198,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 61,
+          "resultChars": 3282,
+          "ms": 2
+        },
+        {
+          "turn": 3,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 16,
+          "resultChars": 9102,
+          "ms": 1
+        },
+        {
+          "turn": 4,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 1983,
+          "resultChars": 186,
+          "ms": 14
+        },
+        {
+          "turn": 5,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 58,
+          "resultChars": 1060,
+          "ms": 1
+        },
+        {
+          "turn": 5,
+          "name": "themes",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 878,
+          "ms": 1
+        },
+        {
+          "turn": 6,
+          "name": "validate",
+          "isError": true,
+          "argsChars": 2099,
+          "resultChars": 373,
+          "ms": 15
+        },
+        {
+          "turn": 7,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 2153,
+          "resultChars": 186,
+          "ms": 9
+        },
+        {
+          "turn": 8,
+          "name": "render",
+          "isError": false,
+          "argsChars": 2168,
+          "resultChars": 309,
+          "ms": 54
+        }
+      ]
+    },
+    {
+      "task": "investment-report",
+      "arm": "compose-repair",
+      "rep": 5,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 81771,
+        "outputTokens": 3234,
+        "totalTokens": 85005,
+        "usageMissing": false,
+        "costUsd": 0.009696159000000001,
+        "modelTurns": 6,
+        "toolCalls": 7,
+        "orchestrationCalls": 3,
+        "discoveryCalls": 4,
+        "submissions": 3,
+        "firstPassValid": false,
+        "repairs": 1,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 14702,
+        "retryMs": 0,
+        "completed": true,
+        "correct": false,
+        "missingFacts": [
+          "$68M"
+        ],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 2
+        },
+        {
+          "turn": 1,
+          "name": "recipes",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 4794,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 24,
+          "resultChars": 2198,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 64,
+          "resultChars": 3568,
+          "ms": 2
+        },
+        {
+          "turn": 3,
+          "name": "validate",
+          "isError": true,
+          "argsChars": 1964,
+          "resultChars": 623,
+          "ms": 25
+        },
+        {
+          "turn": 4,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 1965,
+          "resultChars": 186,
+          "ms": 4
+        },
+        {
+          "turn": 5,
+          "name": "render",
+          "isError": false,
+          "argsChars": 1968,
+          "resultChars": 292,
+          "ms": 50
+        }
+      ]
+    },
+    {
+      "task": "research-report",
+      "arm": "existing",
+      "rep": 5,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 135736,
+        "outputTokens": 5448,
+        "totalTokens": 141184,
+        "usageMissing": false,
+        "costUsd": 0.016134624,
+        "modelTurns": 9,
+        "toolCalls": 8,
+        "orchestrationCalls": 3,
+        "discoveryCalls": 5,
+        "submissions": 3,
+        "firstPassValid": true,
+        "repairs": 0,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 25201,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 2
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 103,
+          "resultChars": 5321,
+          "ms": 3
+        },
+        {
+          "turn": 3,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 2135,
+          "resultChars": 188,
+          "ms": 8
+        },
+        {
+          "turn": 4,
+          "name": "recipes",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 4794,
+          "ms": 1
+        },
+        {
+          "turn": 5,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 26,
+          "resultChars": 2231,
+          "ms": 1
+        },
+        {
+          "turn": 6,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 16,
+          "resultChars": 9102,
+          "ms": 1
+        },
+        {
+          "turn": 7,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 2824,
+          "resultChars": 241,
+          "ms": 8
+        },
+        {
+          "turn": 8,
+          "name": "render",
+          "isError": false,
+          "argsChars": 2855,
+          "resultChars": 358,
+          "ms": 55
+        }
+      ]
+    },
+    {
+      "task": "research-report",
+      "arm": "compose-repair",
+      "rep": 5,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 111216,
+        "outputTokens": 4909,
+        "totalTokens": 116125,
+        "usageMissing": false,
+        "costUsd": 0.013440339,
+        "modelTurns": 8,
+        "toolCalls": 7,
+        "orchestrationCalls": 2,
+        "discoveryCalls": 5,
+        "submissions": 2,
+        "firstPassValid": true,
+        "repairs": 0,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 23429,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 2
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 110,
+          "resultChars": 5652,
+          "ms": 4
+        },
+        {
+          "turn": 3,
+          "name": "recipes",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 4794,
+          "ms": 1
+        },
+        {
+          "turn": 4,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 26,
+          "resultChars": 2231,
+          "ms": 1
+        },
+        {
+          "turn": 5,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 79,
+          "resultChars": 1543,
+          "ms": 2
+        },
+        {
+          "turn": 6,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 2871,
+          "resultChars": 247,
+          "ms": 11
+        },
+        {
+          "turn": 7,
+          "name": "render",
+          "isError": false,
+          "argsChars": 2870,
+          "resultChars": 369,
+          "ms": 74
+        }
+      ]
+    },
+    {
+      "task": "dashboard",
+      "arm": "existing",
+      "rep": 5,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 34620,
+        "outputTokens": 2532,
+        "totalTokens": 37152,
+        "usageMissing": false,
+        "costUsd": 0.00468072,
+        "modelTurns": 5,
+        "toolCalls": 7,
+        "orchestrationCalls": 2,
+        "discoveryCalls": 5,
+        "submissions": 2,
+        "firstPassValid": true,
+        "repairs": 0,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 11650,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "search-catalog",
+          "isError": false,
+          "argsChars": 40,
+          "resultChars": 1441,
+          "ms": 4
+        },
+        {
+          "turn": 1,
+          "name": "search-catalog",
+          "isError": false,
+          "argsChars": 34,
+          "resultChars": 1431,
+          "ms": 2
+        },
+        {
+          "turn": 1,
+          "name": "search-catalog",
+          "isError": false,
+          "argsChars": 42,
+          "resultChars": 751,
+          "ms": 2
+        },
+        {
+          "turn": 1,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 20,
+          "resultChars": 2687,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 66,
+          "resultChars": 3784,
+          "ms": 2
+        },
+        {
+          "turn": 3,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 1940,
+          "resultChars": 205,
+          "ms": 35
+        },
+        {
+          "turn": 4,
+          "name": "render",
+          "isError": false,
+          "argsChars": 1943,
+          "resultChars": 319,
+          "ms": 66
+        }
+      ]
+    },
+    {
+      "task": "dashboard",
+      "arm": "compose-repair",
+      "rep": 5,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 92411,
+        "outputTokens": 5089,
+        "totalTokens": 97500,
+        "usageMissing": false,
+        "costUsd": 0.011667744,
+        "modelTurns": 7,
+        "toolCalls": 7,
+        "orchestrationCalls": 4,
+        "discoveryCalls": 3,
+        "submissions": 4,
+        "firstPassValid": false,
+        "repairs": 1,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 22024,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 20,
+          "resultChars": 2687,
+          "ms": 1
+        },
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 66,
+          "resultChars": 3784,
+          "ms": 2
+        },
+        {
+          "turn": 3,
+          "name": "validate",
+          "isError": true,
+          "argsChars": 1712,
+          "resultChars": 449,
+          "ms": 10
+        },
+        {
+          "turn": 4,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 1529,
+          "resultChars": 205,
+          "ms": 3
+        },
+        {
+          "turn": 5,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 1561,
+          "resultChars": 205,
+          "ms": 2
+        },
+        {
+          "turn": 6,
+          "name": "render",
+          "isError": false,
+          "argsChars": 1564,
+          "resultChars": 347,
+          "ms": 53
+        }
+      ]
+    },
+    {
+      "task": "implementation-roadmap",
+      "arm": "existing",
+      "rep": 5,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 114685,
+        "outputTokens": 5871,
+        "totalTokens": 120556,
+        "usageMissing": false,
+        "costUsd": 0.01425996,
+        "modelTurns": 9,
+        "toolCalls": 8,
+        "orchestrationCalls": 4,
+        "discoveryCalls": 4,
+        "submissions": 4,
+        "firstPassValid": false,
+        "repairs": 2,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 24386,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "catalog",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 19152,
+          "ms": 2
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 68,
+          "resultChars": 2001,
+          "ms": 2
+        },
+        {
+          "turn": 3,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 51,
+          "resultChars": 1384,
+          "ms": 1
+        },
+        {
+          "turn": 4,
+          "name": "validate",
+          "isError": true,
+          "argsChars": 2103,
+          "resultChars": 458,
+          "ms": 8
+        },
+        {
+          "turn": 5,
+          "name": "validate",
+          "isError": true,
+          "argsChars": 1996,
+          "resultChars": 334,
+          "ms": 2
+        },
+        {
+          "turn": 6,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 20,
+          "resultChars": 2687,
+          "ms": 1
+        },
+        {
+          "turn": 7,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 1972,
+          "resultChars": 232,
+          "ms": 6
+        },
+        {
+          "turn": 8,
+          "name": "render",
+          "isError": false,
+          "argsChars": 1975,
+          "resultChars": 329,
+          "ms": 38
+        }
+      ]
+    },
+    {
+      "task": "implementation-roadmap",
+      "arm": "compose-repair",
+      "rep": 5,
+      "retries": 0,
+      "truncatedTurns": 0,
+      "metrics": {
+        "inputTokens": 47640,
+        "outputTokens": 2986,
+        "totalTokens": 50626,
+        "usageMissing": false,
+        "costUsd": 0.006194430000000001,
+        "modelTurns": 7,
+        "toolCalls": 8,
+        "orchestrationCalls": 2,
+        "discoveryCalls": 6,
+        "submissions": 2,
+        "firstPassValid": true,
+        "repairs": 0,
+        "repairToolCalls": 0,
+        "refusedCalls": 0,
+        "wallMs": 15021,
+        "retryMs": 0,
+        "completed": true,
+        "correct": true,
+        "missingFacts": [],
+        "criticalMobileOverflow": false,
+        "visual": {
+          "findings": [],
+          "networkRequests": 0,
+          "criticalMobileOverflow": false
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "name": "search-catalog",
+          "isError": false,
+          "argsChars": 39,
+          "resultChars": 352,
+          "ms": 3
+        },
+        {
+          "turn": 1,
+          "name": "search-catalog",
+          "isError": false,
+          "argsChars": 38,
+          "resultChars": 1305,
+          "ms": 1
+        },
+        {
+          "turn": 2,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 54,
+          "resultChars": 1557,
+          "ms": 2
+        },
+        {
+          "turn": 3,
+          "name": "recipes",
+          "isError": false,
+          "argsChars": 2,
+          "resultChars": 4794,
+          "ms": 1
+        },
+        {
+          "turn": 4,
+          "name": "recipe",
+          "isError": false,
+          "argsChars": 30,
+          "resultChars": 2599,
+          "ms": 2
+        },
+        {
+          "turn": 4,
+          "name": "describe",
+          "isError": false,
+          "argsChars": 57,
+          "resultChars": 1530,
+          "ms": 1
+        },
+        {
+          "turn": 5,
+          "name": "validate",
+          "isError": false,
+          "argsChars": 1507,
+          "resultChars": 210,
+          "ms": 9
+        },
+        {
+          "turn": 6,
+          "name": "render",
+          "isError": false,
+          "argsChars": 1434,
+          "resultChars": 283,
+          "ms": 46
+        }
+      ]
+    }
+  ]
+}

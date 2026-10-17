@@ -17,6 +17,7 @@ export interface EncodingProp {
   unit?: string;
   currency?: string;
   decimals?: number;
+  signed?: boolean;
   min?: number;
   max?: number;
 }
@@ -60,6 +61,7 @@ export function formatSpec(prop: EncodingProp | undefined): FormatSpec {
   if (prop.unit !== undefined) spec.unit = prop.unit;
   if (prop.currency !== undefined) spec.currency = prop.currency;
   if (prop.decimals !== undefined) spec.decimals = prop.decimals;
+  if (prop.signed === true) spec.signed = true;
   return spec;
 }
 

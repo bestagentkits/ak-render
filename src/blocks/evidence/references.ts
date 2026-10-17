@@ -4,7 +4,7 @@
  * anchors; the compiler never fetches them.
  */
 
-import { pathIndex, pathKey } from '../../diagnostics.js';
+import { pathKey } from '../../diagnostics.js';
 import type { IrNode } from '../../ir.js';
 import type { JsonValue } from '../../json.js';
 import type { BlockModule, CheckContext } from '../../registry/block-module.js';
@@ -24,6 +24,7 @@ import {
   element,
   nodeAttributes,
   objectListProp,
+  propItemPath,
   str,
   titleHeader,
 } from '../../render/block-helpers.js';
@@ -58,7 +59,7 @@ function check(node: IrNode, { bag, byId }: CheckContext): void {
     if (owner !== undefined) {
       bag.add({
         code: 'SPEC_VALIDATION_ERROR',
-        path: pathKey(pathIndex(pathKey(node.path, 'items'), index), 'id'),
+        path: pathKey(propItemPath(node, 'items', index), 'id'),
         nodeId: node.id,
         message: `reference id "${id}" is already used${owner === node.id ? ' in this list' : ` by block "${owner}"`}; anchors must be unique`,
         details: { id, anchor: referenceAnchor(id) },

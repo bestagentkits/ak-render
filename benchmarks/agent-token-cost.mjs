@@ -22,8 +22,10 @@
  *   - the spec an agent would write for a legacy page: its visible text times
  *     the median spec-to-text ratio of the fixtures.
  *
- * Not measured: live model runs, repairs, wall time. Those need the A/B
- * harness and are listed in `notMeasured`.
+ * Not measured: live model runs, repairs, wall time. Those are listed in
+ * `notMeasured`; `agent-ab-harness.mjs` measures them for the existing flow,
+ * and for the compose/repair flow once the build exposes those tools (the
+ * hand-written HTML side stays an estimate).
  *
  * Usage:
  *   pnpm build
@@ -45,6 +47,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { blockTypes } from './fixture-block-types.mjs';
+import { visibleText } from './visible-text.mjs';
 
 const REPO_ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const CLI = join(REPO_ROOT, 'dist/cli.js');
@@ -96,23 +99,6 @@ function median(values) {
   const sorted = [...values].sort((a, b) => a - b);
   const middle = Math.floor(sorted.length / 2);
   return sorted.length % 2 === 1 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
-}
-
-const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
-
-/** Visible text: everything outside tags, styles and scripts, whitespace-collapsed. */
-function visibleText(html) {
-  return html
-    .replace(/<(style|script)\b[^>]*>[\s\S]*?<\/\1>/giu, ' ')
-    .replace(/<[^>]+>/gu, ' ')
-    .replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/giu, (match, entity) => {
-      if (entity.startsWith('#x'))
-        return String.fromCodePoint(Number.parseInt(entity.slice(2), 16));
-      if (entity.startsWith('#')) return String.fromCodePoint(Number(entity.slice(1)));
-      return ENTITIES[entity.toLowerCase()] ?? match;
-    })
-    .replace(/\s+/gu, ' ')
-    .trim();
 }
 
 function blockSize(html, tag) {

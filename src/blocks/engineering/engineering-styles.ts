@@ -48,7 +48,7 @@ export const KANBAN_CSS = `.ak-kanban{position:relative;overflow-x:auto;overscro
 .ak-kanban-tag{padding:.1em .5em;border-radius:var(--ak-radius-small);background:color-mix(in srgb,var(--ak-color-accent) 10%,transparent);color:color-mix(in srgb,var(--ak-color-accent) 72%,var(--ak-color-text));font-family:var(--ak-font-mono);font-size:.68rem}
 .ak-kanban-empty{margin:0;padding:${UNIT(1.5)};border:var(--ak-border-width) dashed var(--ak-color-border);border-radius:var(--ak-radius-medium);text-align:center;font-size:.85rem;color:var(--ak-color-text-muted)}
 @media (max-width:768px){.ak-kanban{scroll-snap-type:x mandatory}.ak-kanban-cols{grid-auto-columns:85%}.ak-kanban-col{scroll-snap-align:start}}
-@media print{.ak-kanban{overflow:visible}.ak-kanban-cols{grid-auto-flow:row;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}.ak-kanban-card{box-shadow:none;break-inside:avoid}}`;
+@media print{.ak-kanban{overflow:visible;margin:0}.ak-kanban-cols{grid-auto-flow:row;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}.ak-kanban-card{box-shadow:none;break-inside:avoid}}`;
 
 /** Column count and item placement for 1..24 periods, as attribute rules instead of inline styles. */
 function roadmapPlacement(): string {

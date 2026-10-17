@@ -38,6 +38,7 @@ export const DATA_JSON_SCHEMA_DEFS: Record<string, unknown> = {
       additionalProperties: { $ref: '#/$defs/dataCell' },
     },
   },
+  transform: propSchemaToJsonSchema(TRANSFORM_PROP_SCHEMA),
   datasets: {
     type: 'object',
     description: 'Named datasets that blocks reference with `dataRef`.',
@@ -55,5 +56,5 @@ export const BLOCK_DATA_JSON_SCHEMA_PROPERTIES: Record<string, unknown> = {
     description: 'Name of a dataset declared in `datasets`. Do not combine with `data`.',
   },
   data: { $ref: '#/$defs/dataRows' },
-  transform: propSchemaToJsonSchema(TRANSFORM_PROP_SCHEMA),
+  transform: { $ref: '#/$defs/transform' },
 };

@@ -113,12 +113,12 @@ describe('remote MCP: discovery', () => {
     const listed = await handleRequest(mcpRequest('tools/list', {}, null), env);
     const remote = ((await listed.json()) as { result: { tools: { name: string }[] } }).result
       .tools;
-    const stdio = handleMcpMessage(
+    const stdio = await handleMcpMessage(
       { jsonrpc: '2.0', id: 1, method: 'tools/list' },
       { cwd: '/', home: '/' },
     );
     const local = (stdio?.result as { tools: { name: string }[] } | undefined)?.tools ?? [];
-    expect(local.length).toBe(14);
+    expect(local.length).toBe(17);
     expect(remote.map((entry) => entry.name)).toEqual(local.map((entry) => entry.name));
     // The remote audit schema advertises the Worker's body cap, not the local one.
     const audit = (
@@ -337,10 +337,10 @@ describe('remote MCP: authorization', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('rejects validate and render without a bearer as tool errors', async () => {
+  it('rejects validate, patch and render without a bearer as tool errors', async () => {
     const { env, r2 } = harness();
-    for (const name of ['validate', 'render']) {
-      const { status, reply, payload } = await tool(env, name, { spec: SPEC }, null);
+    for (const name of ['validate', 'patch', 'render']) {
+      const { status, reply, payload } = await tool(env, name, { spec: SPEC, ops: [] }, null);
       expect(status).toBe(200);
       expect(reply.isError).toBe(true);
       expect(payload['code']).toBe('UNAUTHENTICATED');
@@ -370,6 +370,18 @@ describe('remote MCP: authorization', () => {
     );
     expect(response.status).toBe(200);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('patches a spec for an authenticated caller and stores nothing', async () => {
+    const { env, r2 } = harness();
+    const { reply, payload } = await tool(env, 'patch', {
+      spec: SPEC,
+      ops: [{ op: 'replace', path: '/meta/title', value: 'Patched remotely' }],
+    });
+    expect(reply.isError).toBeUndefined();
+    expect(JSON.stringify(payload['spec'])).toContain('Patched remotely');
+    expect(payload['hash']).toMatch(/^s-/u);
+    expect(r2.objects.size).toBe(0);
   });
 
   it('reuses an accepted bearer across requests instead of asking upstream again', async () => {
@@ -417,6 +429,45 @@ describe('remote MCP: errors never leak internals', () => {
 });
 
 describe('remote MCP: render', () => {
+  it('composes a page from an intent and stores it like render', async () => {
+    const { env, r2 } = harness();
+    const input = {
+      intent: 'investment-report',
+      content: { title: 'Acme seed', thesis: { summary: 'Small bet, large market.' } },
+    };
+    const refused = await tool(env, 'compose', input, null);
+    expect(refused.payload['code']).toBe('UNAUTHENTICATED');
+    expect(r2.objects.size).toBe(0);
+
+    const dry = await tool(env, 'compose', { ...input, dryRun: true });
+    expect(dry.reply.isError).toBeUndefined();
+    expect(String(dry.payload['spec'])).toContain('preset: executive-report');
+    expect(r2.objects.size).toBe(0);
+
+    const { reply, payload } = await tool(env, 'compose', input);
+    expect(reply.isError).toBeUndefined();
+    expect(reply.content[0]?.text).not.toContain('<html');
+    expect(payload).toMatchObject({ ok: true, title: 'Acme seed', shared: false });
+    expect(payload['spec']).toBeUndefined();
+    expect(String(payload['artifactUrl'])).toMatch(/\/v1\/artifact\//u);
+    expect(r2.objects.size).toBe(1);
+
+    const bad = await tool(env, 'compose', { intent: 'investment-report', content: {} });
+    expect(bad.reply.isError).toBe(true);
+    expect(bad.payload['diagnostics']).toBeDefined();
+  });
+
+  it('rejects a malformed compose flag before metering it', async () => {
+    const { env, limits } = harness();
+    const input = {
+      intent: 'investment-report',
+      content: { title: 'Acme seed', thesis: { summary: 'Small bet, large market.' } },
+    };
+    const { reply } = await tool(env, 'compose', { ...input, dryRun: 'true' });
+    expect(reply.isError).toBe(true);
+    expect(limits.render.counts.size + limits.validate.counts.size).toBe(0);
+  });
+
   it('returns compact metadata and an artifact URL, never the HTML', async () => {
     const { env, r2 } = harness();
     const now = new Date('2026-10-06T00:00:00.000Z');
@@ -751,5 +802,53 @@ describe('remote MCP: motion tools', () => {
     });
     const { payload } = await tool(env, 'audit-motion', { spec: MOTION_SPEC });
     expect(payload['code']).toBe('FORBIDDEN');
+  });
+});
+
+describe('remote MCP: audit-ui', () => {
+  it('advertises the quick preset only, with the Worker body cap', async () => {
+    const { env } = harness();
+    const listed = await handleRequest(mcpRequest('tools/list', {}, null), env);
+    const tools = (
+      (await listed.json()) as {
+        result: {
+          tools: {
+            name: string;
+            inputSchema: { properties: Record<string, { enum?: string[]; maxLength?: number }> };
+          }[];
+        };
+      }
+    ).result.tools;
+    const audit = tools.find((entry) => entry.name === 'audit-ui');
+    expect(audit?.inputSchema.properties.preset?.enum).toEqual(['quick']);
+    expect(audit?.inputSchema.properties.html?.maxLength).toBe(1024 * 1024);
+    expect(audit?.inputSchema.properties).not.toHaveProperty('timeoutMs');
+  });
+
+  it('refuses audit-ui without a bearer, before any work', async () => {
+    const { env, fetchMock } = harness();
+    const { reply, payload } = await tool(env, 'audit-ui', { spec: SPEC }, null);
+    expect(reply.isError).toBe(true);
+    expect(payload['code']).toBe('UNAUTHENTICATED');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('runs the quick preset with a bearer', async () => {
+    const { env } = harness();
+    const { reply, payload } = await tool(env, 'audit-ui', { spec: SPEC });
+    expect(reply.isError).toBeUndefined();
+    expect(payload['preset']).toBe('quick');
+    expect(payload['input']).toBe('spec');
+    expect(payload['complete']).toBe(true);
+  });
+
+  it('refuses the publication preset with a pointer to the local CLI', async () => {
+    const { env } = harness();
+    const { reply, payload } = await tool(env, 'audit-ui', {
+      spec: SPEC,
+      preset: 'publication',
+    });
+    expect(reply.isError).toBe(true);
+    expect(String(payload['text'] ?? payload['message'])).toContain('ak-render audit-ui');
   });
 });

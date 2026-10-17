@@ -84,6 +84,7 @@ export const COLUMN_SCHEMA: PropSchema = obj({
   unit: FORMAT_FIELDS.unit as PropSchema,
   currency: FORMAT_FIELDS.currency as PropSchema,
   decimals: FORMAT_FIELDS.decimals as PropSchema,
+  signed: FORMAT_FIELDS.signed as PropSchema,
   align: enumStr(COLUMN_ALIGNS, { description: 'Default: end for numeric types.' }),
   hrefField: str({ maxLength: 64, description: 'link: field holding the URL; default key.' }),
   max: num({ min: 0, description: 'progress: scale maximum (default 100).' }),
@@ -156,6 +157,7 @@ function formatSpec(column: Record<string, JsonValue>, type: ColumnType): Format
   if (typeof column.unit === 'string') spec.unit = column.unit;
   if (typeof column.currency === 'string') spec.currency = column.currency;
   if (typeof column.decimals === 'number') spec.decimals = column.decimals;
+  if (column.signed === true) spec.signed = true;
   return spec;
 }
 
