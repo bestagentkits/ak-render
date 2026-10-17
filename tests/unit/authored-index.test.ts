@@ -189,4 +189,44 @@ describe('authored list lengths in count checks', () => {
       }),
     );
   });
+
+  it('does not count a feature-matrix row whose values list is rejected or missing', () => {
+    const found = diagnosticsFor({
+      type: 'feature-matrix',
+      plans: ['Free', 'Pro'],
+      rows: [
+        { feature: 'A', values: [] },
+        { feature: 'B', values: 'yes' },
+      ],
+    });
+    expect(found.filter((item) => item.message.includes('one per plan'))).toEqual([]);
+    expect(found).toContainEqual(expect.objectContaining({ path: '$.blocks[0].rows[0].values' }));
+    expect(found).toContainEqual(expect.objectContaining({ path: '$.blocks[0].rows[1].values' }));
+  });
+
+  it('does not count an absent item that drops without an error', () => {
+    const found = diagnosticsFor({
+      type: 'feature-matrix',
+      plans: ['Free', undefined, 'Pro'],
+      rows: [{ feature: 'A', values: [true, true] }],
+    });
+    expect(found).toEqual([]);
+  });
+
+  it('counts the authored table columns in the row-width check', () => {
+    const spurious = diagnosticsFor({
+      type: 'table',
+      columns: ['A', 5, 'C'],
+      rows: [['x', 'y', 'z']],
+    });
+    expect(spurious.filter((item) => item.severity === 'warning')).toEqual([]);
+    const missed = diagnosticsFor({ type: 'table', columns: ['A', 5, 'C'], rows: [['x', 'y']] });
+    expect(missed).toContainEqual(
+      expect.objectContaining({
+        severity: 'warning',
+        path: '$.blocks[0].rows[0]',
+        message: 'row has 2 cells but the table declares 3 columns',
+      }),
+    );
+  });
 });

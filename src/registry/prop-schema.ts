@@ -499,13 +499,17 @@ export function validateProp(
       }
       const result: JsonValue[] = [];
       const kept: number[] = [];
+      // An absent item (a programmatic `undefined` or a hole) drops without an
+      // error, so it does not count as an authored item either.
+      let authored = 0;
       for (let index = 0; index < value.length; index += 1) {
+        if (value[index] !== undefined) authored += 1;
         const item = validateProp(schema.of, value[index], pathIndex(path, index), bag);
         if (item === undefined) continue;
         result.push(item);
         kept.push(index);
       }
-      keepAuthoredIndexes(result, kept, value.length);
+      keepAuthoredIndexes(result, kept, authored);
       return result;
     }
     case 'object': {
