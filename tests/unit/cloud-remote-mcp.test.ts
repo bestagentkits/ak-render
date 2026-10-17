@@ -1,8 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ARTIFACT_TTL_SECONDS } from '../../apps/cloud/src/config.js';
 import { handleRequest } from '../../apps/cloud/src/index.js';
+import {
+  REMOTE_INSTRUCTIONS,
+  REMOTE_TOOLS,
+  remoteVersion,
+} from '../../apps/cloud/src/remote-mcp-endpoint.js';
 import { compile } from '../../src/index.js';
+import { LOCAL_INSTRUCTIONS, LOCAL_TOOLS } from '../../src/mcp/mcp-local-tools.js';
 import { handleMcpMessage } from '../../src/mcp-server.js';
+import { PACKAGE_NAME, VERSION } from '../../src/version.js';
 import {
   activeEntitlements,
   harness,
@@ -111,7 +118,7 @@ describe('remote MCP: discovery', () => {
       { cwd: '/', home: '/' },
     );
     const local = (stdio?.result as { tools: { name: string }[] } | undefined)?.tools ?? [];
-    expect(local.length).toBe(13);
+    expect(local.length).toBe(14);
     expect(remote.map((entry) => entry.name)).toEqual(local.map((entry) => entry.name));
     // The remote audit schema advertises the Worker's body cap, not the local one.
     const audit = (
@@ -119,6 +126,81 @@ describe('remote MCP: discovery', () => {
     ).find((entry) => entry.name === 'audit-motion');
     expect(audit?.inputSchema.properties.html.maxLength).toBe(1024 * 1024);
     // Discovery never reaches the entitlements endpoint.
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('names every tool it lists in its instructions, like the stdio server', () => {
+    // Instructions are what an agent reads first; a tool missing from them is
+    // a tool the agent does not reach for. Both transports keep every name.
+    for (const [instructions, tools] of [
+      [REMOTE_INSTRUCTIONS, REMOTE_TOOLS],
+      [LOCAL_INSTRUCTIONS, LOCAL_TOOLS],
+    ] as const) {
+      for (const { name } of tools) {
+        expect(instructions, name).toMatch(new RegExp(`(^|[^\\w-])${name}([^\\w-]|$)`, 'u'));
+      }
+    }
+  });
+
+  it('reports the deployed build, revisions and tool names at /v1/version', async () => {
+    const { env, fetchMock } = harness();
+    const response = await handleRequest(new Request(`${ORIGIN}/v1/version`), {
+      ...env,
+      BUILD_SHA: 'abc123',
+    });
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('public, max-age=60');
+    const body = (await response.json()) as Record<string, unknown>;
+    expect(body).toEqual({
+      name: PACKAGE_NAME,
+      version: VERSION,
+      build: 'abc123',
+      protocolVersions: ['2026-07-28', '2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'],
+      tools: LOCAL_TOOLS.map((tool) => tool.name),
+    });
+    const unbuilt = await handleRequest(new Request(`${ORIGIN}/v1/version`), env);
+    expect(((await unbuilt.json()) as { build: unknown }).build).toBeNull();
+    const posted = await handleRequest(
+      new Request(`${ORIGIN}/v1/version`, { method: 'POST' }),
+      env,
+    );
+    expect(posted.status).toBe(404);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('serves a stateless 2026-07-28 client the same tools without a bearer', async () => {
+    const { env, fetchMock } = harness();
+    const meta = {
+      'io.modelcontextprotocol/protocolVersion': '2026-07-28',
+      'io.modelcontextprotocol/clientCapabilities': {},
+    };
+    const request = (method: string, params: Record<string, unknown>, name?: string) =>
+      new Request(`${ORIGIN}/mcp`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'mcp-protocol-version': '2026-07-28',
+          'mcp-method': method,
+          ...(name === undefined ? {} : { 'mcp-name': name }),
+        },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params: { ...params, _meta: meta } }),
+      });
+    const discover = await handleRequest(request('server/discover', {}), env);
+    expect(discover.status).toBe(200);
+    const discovered = ((await discover.json()) as { result: Record<string, unknown> }).result;
+    expect(discovered.instructions).toBe(REMOTE_INSTRUCTIONS);
+    expect(discovered.supportedVersions).toEqual(remoteVersion(env).protocolVersions);
+    const listed = await handleRequest(request('tools/list', {}), env);
+    const tools = ((await listed.json()) as { result: { tools: { name: string }[] } }).result.tools;
+    expect(tools.map((tool) => tool.name)).toEqual(remoteVersion(env).tools);
+    const called = await handleRequest(
+      request('tools/call', { name: 'recipes', arguments: {} }, 'recipes'),
+      env,
+    );
+    const result = ((await called.json()) as { result: { resultType: string; isError?: boolean } })
+      .result;
+    expect(result.resultType).toBe('complete');
+    expect(result.isError).toBeUndefined();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -505,6 +587,103 @@ describe('remote MCP: rate limits are shared with REST', () => {
   });
 });
 
+/** A 2026-07-28 request: the revision and client capabilities ride in `_meta`. */
+function modernRequest(
+  method: string,
+  params: Record<string, unknown>,
+  token: string | null,
+  headers: Record<string, string> = {},
+): Request {
+  const name = typeof params['name'] === 'string' ? params['name'] : undefined;
+  return new Request(`${ORIGIN}/mcp`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'mcp-protocol-version': '2026-07-28',
+      'mcp-method': method,
+      ...(name === undefined ? {} : { 'mcp-name': name }),
+      ...(token === null ? {} : { authorization: `Bearer ${token}` }),
+      ...headers,
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: nextId++,
+      method,
+      params: {
+        ...params,
+        _meta: {
+          'io.modelcontextprotocol/protocolVersion': '2026-07-28',
+          'io.modelcontextprotocol/clientCapabilities': {},
+        },
+      },
+    }),
+  });
+}
+
+describe('remote MCP: 2026-07-28 requests keep the authorization path', () => {
+  it('refuses validate and render without a bearer as tool errors', async () => {
+    const { env, fetchMock } = harness();
+    for (const name of ['validate', 'render']) {
+      const response = await handleRequest(
+        modernRequest('tools/call', { name, arguments: { spec: SPEC } }, null),
+        env,
+      );
+      expect(response.status).toBe(200);
+      const result = ((await response.json()) as { result: ToolReply & { resultType: string } })
+        .result;
+      expect(result.resultType).toBe('complete');
+      expect(result.isError).toBe(true);
+      expect(JSON.parse(result.content[0]?.text ?? '{}')).toMatchObject({
+        code: 'UNAUTHENTICATED',
+      });
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('answers server/discover without a bearer with the OAuth challenge when OAuth is on', async () => {
+    const { env } = harness();
+    const oauthEnv = {
+      ...env,
+      OAUTH_RESOURCE: `${ORIGIN}/mcp`,
+      OAUTH_ISSUER: 'https://auth.example.test',
+    };
+    const response = await handleRequest(modernRequest('server/discover', {}, null), oauthEnv);
+    expect(response.status).toBe(401);
+    expect(response.headers.get('www-authenticate')).toContain('resource_metadata=');
+  });
+
+  it('counts anonymous calls against the per-IP limit', async () => {
+    const { env, limits } = harness({ limits: { 'anon-ip': 1 } });
+    const call = async () => {
+      const response = await handleRequest(
+        modernRequest('tools/call', { name: 'themes', arguments: {} }, null, {
+          'cf-connecting-ip': '203.0.113.9',
+        }),
+        env,
+      );
+      return ((await response.json()) as { result: ToolReply }).result;
+    };
+    expect((await call()).isError).toBeUndefined();
+    const limited = await call();
+    expect(limited.isError).toBe(true);
+    expect(JSON.parse(limited.content[0]?.text ?? '{}')).toMatchObject({ code: 'RATE_LIMITED' });
+    expect([...limits['anon-ip'].counts.keys()]).toEqual(['203.0.113.9']);
+  });
+
+  it('refuses a header mismatch before the bearer is checked', async () => {
+    const { env, fetchMock } = harness();
+    const response = await handleRequest(
+      modernRequest('tools/call', { name: 'render', arguments: { spec: SPEC } }, TOKEN, {
+        'mcp-name': 'validate',
+      }),
+      env,
+    );
+    expect(response.status).toBe(400);
+    expect(((await response.json()) as { error: { code: number } }).error.code).toBe(-32020);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
 describe('remote MCP: motion tools', () => {
   const MOTION_SPEC = {
     version: 1,
@@ -535,6 +714,24 @@ describe('remote MCP: motion tools', () => {
     }
     expect(fetchMock).not.toHaveBeenCalled();
     expect(r2.objects.size).toBe(0);
+  });
+
+  it('repairs only with a bearer, under the render limit', async () => {
+    const { env, fetchMock, limits } = harness();
+    const spec =
+      'version: 1\nmeta:\n  title: R\nblocks:\n  - type: badge\n    text: x\n    tone: Info\n';
+    const anonymous = await tool(env, 'repair', { spec }, null);
+    expect(anonymous.reply.isError).toBe(true);
+    expect(anonymous.payload['code']).toBe('UNAUTHENTICATED');
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    const { reply, payload } = await tool(env, 'repair', { spec });
+    expect(reply.isError).toBeUndefined();
+    expect(payload['changed']).toBe(true);
+    expect(payload['spec']).toContain('tone: info');
+    // Repair revalidates many times per call, so it is charged like a render.
+    expect(limits.render.counts.size).toBe(1);
+    expect(limits.validate.counts.size).toBe(0);
   });
 
   it('audits a spec with a bearer and returns the report', async () => {

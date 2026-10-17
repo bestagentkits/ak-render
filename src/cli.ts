@@ -14,6 +14,7 @@ import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from
 import { homedir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { Diagnostic } from './diagnostics.js';
 import { isRenderError, type RenderError } from './errors.js';
 import {
   describeIcon,
@@ -43,6 +44,7 @@ import { type CompactBlockDescription, describeMany } from './registry/describe-
 import { type Catalog, catalog, describe, formatCatalogJson } from './registry/registry.js';
 import type { BlockDefinition } from './registry/roster.js';
 import { compile } from './render/render.js';
+import { repair } from './spec/repair.js';
 import { validate } from './spec/validate.js';
 import { buildThemeCatalog, type ThemeCatalog } from './theme/theme-catalog.js';
 import { PACKAGE_NAME, VERSION } from './version.js';
@@ -71,6 +73,7 @@ function sourceLabel(path: string): string {
 interface Flags {
   json: boolean;
   compact: boolean;
+  suggest: boolean;
   category?: string;
   pack?: string;
   limit?: string;
@@ -117,6 +120,84 @@ function reportDiagnostics(
     const location = diagnostic.nodeId === undefined ? '' : ` [${diagnostic.nodeId}]`;
     io.stderr(`${diagnostic.severity}: ${diagnostic.path}${location}: ${diagnostic.message}\n`);
   }
+}
+
+/** Longest JSON value a fix line prints before eliding the rest. */
+const FIX_VALUE_PREVIEW = 60;
+
+/** One line per suggested fix, under the diagnostics they belong to. */
+function reportFixes(io: CliIo, diagnostics: readonly Diagnostic[]): void {
+  for (const diagnostic of diagnostics) {
+    for (const fix of diagnostic.fixes ?? []) {
+      const edit = fix.patch.find((operation) => operation.op !== 'test');
+      if (edit === undefined) continue;
+      let action: string;
+      if (edit.op === 'move') {
+        action = `rename ${edit.from} to ${edit.path}`;
+      } else {
+        const value = JSON.stringify(edit.value);
+        const preview =
+          value.length > FIX_VALUE_PREVIEW ? `${value.slice(0, FIX_VALUE_PREVIEW)}...` : value;
+        action = `${edit.op} ${edit.path} with ${preview}`;
+      }
+      io.stderr(`  fix (${fix.classification}, ${fix.rule}) ${fix.path}: ${action}\n`);
+    }
+  }
+}
+
+function repairCommand(args: string[], io: CliIo, flags: Flags): number {
+  const file = args[0];
+  if (file === undefined) {
+    io.stderr('ak-render: repair requires a spec path\n');
+    return 2;
+  }
+  const input = readSpecFile(file, io);
+  if (input === undefined) return 2;
+
+  const result = repair(input, { source: sourceLabel(file), mode: 'safe' });
+  const repaired = result.text ?? input;
+  const parsed = result.spec !== undefined;
+  if (flags.out !== undefined && parsed) {
+    try {
+      mkdirSync(dirname(resolve(flags.out)), { recursive: true });
+      writeFileSync(flags.out, repaired, 'utf8');
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      io.stderr(`ak-render: cannot write ${flags.out}: ${reason}\n`);
+      return 2;
+    }
+  }
+
+  if (flags.json) {
+    const { spec: _spec, text: _text, ...report } = result;
+    io.stdout(
+      `${JSON.stringify(
+        {
+          source: sourceLabel(file),
+          out: flags.out ?? null,
+          ...report,
+          ...(flags.out === undefined && result.changed ? { text: repaired } : {}),
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    return result.ok ? 0 : 1;
+  }
+
+  // The repaired spec is the artifact on stdout; the change log goes to stderr.
+  if (flags.out === undefined && parsed) io.stdout(repaired);
+  for (const change of result.changes) {
+    io.stderr(`repaired: ${change.path}: ${change.rule}\n`);
+  }
+  const errors = result.diagnostics.filter((item) => item.severity === 'error');
+  reportDiagnostics(io, errors);
+  reportFixes(io, errors);
+  const where = flags.out === undefined ? '' : ` to ${flags.out}`;
+  io.stderr(
+    `ak-render: ${result.changes.length} safe change(s)${parsed ? where : ''}, ${errors.length} error(s) left\n`,
+  );
+  return result.ok ? 0 : 1;
 }
 
 function compileCommand(args: string[], io: CliIo, flags: Flags): number {
@@ -537,7 +618,7 @@ const COMMANDS: Record<string, Command> = {
   },
   validate: {
     summary: 'Validate a Page Spec without rendering it.',
-    usage: 'ak-render validate <spec.yaml|spec.json|-> [--json]',
+    usage: 'ak-render validate <spec.yaml|spec.json|-> [--suggest] [--json]',
     run: (args, io, flags) => {
       const file = args[0];
       if (file === undefined) {
@@ -547,7 +628,7 @@ const COMMANDS: Record<string, Command> = {
       const text = readSpecFile(file, io);
       if (text === undefined) return 2;
 
-      const result = validate(text, { source: sourceLabel(file) });
+      const result = validate(text, { source: sourceLabel(file), suggest: flags.suggest });
       if (flags.json) {
         io.stdout(`${JSON.stringify(result, null, 2)}\n`);
       } else if (result.ok) {
@@ -557,14 +638,22 @@ const COMMANDS: Record<string, Command> = {
         );
       } else {
         reportDiagnostics(io, result.diagnostics);
+        reportFixes(io, result.diagnostics);
       }
-      if (!flags.json) {
+      // A failed run already listed every diagnostic, warnings included.
+      if (!flags.json && result.ok) {
         for (const warning of result.diagnostics.filter((item) => item.severity === 'warning')) {
           io.stderr(`warning: ${warning.path}: ${warning.message}\n`);
         }
       }
       return result.ok ? 0 : 1;
     },
+  },
+  repair: {
+    summary:
+      'Apply only semantics-preserving fixes to a Page Spec, revalidate, and log each change.',
+    usage: 'ak-render repair <spec.yaml|spec.json|-> [--out <file>] [--json]',
+    run: repairCommand,
   },
   catalog: {
     summary: 'List available blocks by category, and actions (compact).',
@@ -685,7 +774,7 @@ const COMMANDS: Record<string, Command> = {
   },
   mcp: {
     summary:
-      'Serve the catalog, describe, icon, motion, recipe, validate, audit-motion, render and themes tools over MCP stdio.',
+      'Serve the catalog, describe, icon, motion, recipe, validate, repair, audit-motion, render and themes tools over MCP stdio.',
     usage: 'ak-render mcp',
     run: () => {
       // The server keeps the process alive until its client closes stdin.
@@ -775,7 +864,7 @@ function themeCatalogFor(flags: Flags, io: CliIo): ThemeCatalog {
 }
 
 function parseArgs(args: string[]): ParsedArgs | { error: string } {
-  const flags: Flags = { json: false, compact: false, themeDiscovery: true };
+  const flags: Flags = { json: false, compact: false, suggest: false, themeDiscovery: true };
   const positional: string[] = [];
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
@@ -786,6 +875,10 @@ function parseArgs(args: string[]): ParsedArgs | { error: string } {
     }
     if (arg === '--compact') {
       flags.compact = true;
+      continue;
+    }
+    if (arg === '--suggest') {
+      flags.suggest = true;
       continue;
     }
     if (arg === '--no-theme-discovery') {

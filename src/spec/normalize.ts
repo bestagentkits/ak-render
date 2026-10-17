@@ -21,6 +21,12 @@ import type { IrDocument, IrNode, IrTheme, NetworkPolicy } from '../ir.js';
 import { isPlainObject, type JsonValue } from '../json.js';
 import { getMotionRecipe, motionPresetsFor, motionRecipeTargets } from '../motion/recipes.js';
 import type { BlockRegistry, CheckContext } from '../registry/block-module.js';
+import {
+  enumFixHints,
+  nameFixHints,
+  renameFixHints,
+  wrapBlockFixHints,
+} from '../registry/fix-hints.js';
 import { NODE_ID_PATTERN, validateProps } from '../registry/prop-schema.js';
 import { blockTypes, DEFAULT_REGISTRY, getBlockDefinition } from '../registry/registry.js';
 import type { BlockDefinition, RuntimeFeature } from '../registry/roster.js';
@@ -47,6 +53,7 @@ const THEME_PRESET_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const LOCALE_PATTERN = /^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/;
 const DEFAULT_THEME_PRESET = 'editorial';
 const THEME_FIELDS: readonly string[] = ['preset', 'extends', 'tokens', 'dark', 'recipes', 'icons'];
+const META_FIELDS: readonly string[] = ['title', 'description', 'locale', 'slug'];
 export const NETWORK_CAPABILITIES = ['media', 'fonts', 'images'] as const;
 
 interface BuildContext {
@@ -133,12 +140,13 @@ function normalizeEnvelope(
   const slug = requireString(metaValue.slug, '$.meta.slug', bag, { maxLength: 120 });
 
   for (const key of Object.keys(metaValue)) {
-    if (!['title', 'description', 'locale', 'slug'].includes(key)) {
+    if (!META_FIELDS.includes(key)) {
       bag.add({
         code: 'SPEC_VALIDATION_ERROR',
         path: pathKey('$.meta', key),
         message: `unknown meta field "${key}"`,
         details: { allowed: ['title', 'description', 'locale', 'slug'] },
+        fixes: renameFixHints(key, META_FIELDS, Object.keys(metaValue)),
       });
     }
   }
@@ -191,6 +199,7 @@ function normalizeEnvelope(
             path: '$.theme.icons',
             message: `"${String(themeValue.icons)}" is not an icon profile`,
             details: { allowed: [...ICON_PROFILE_NAMES] },
+            fixes: enumFixHints(themeValue.icons, ICON_PROFILE_NAMES, 'enum'),
           });
         }
       }
@@ -201,6 +210,7 @@ function normalizeEnvelope(
             path: pathKey('$.theme', key),
             message: `unknown theme field "${key}"`,
             details: { allowed: [...THEME_FIELDS] },
+            fixes: renameFixHints(key, THEME_FIELDS, Object.keys(themeValue)),
           });
         }
       }
@@ -247,6 +257,7 @@ function normalizeEnvelope(
                   path: pathIndex('$.policy.network.allow', index),
                   message: `unknown network capability "${String(capability)}"`,
                   details: { allowed: [...NETWORK_CAPABILITIES] },
+                  fixes: nameFixHints(capability, NETWORK_CAPABILITIES, 'policy/capability'),
                 });
                 continue;
               }
@@ -273,6 +284,7 @@ function normalizeEnvelope(
                       path: pathIndex('$.policy.network.providers', index),
                       message: `unknown media provider "${String(provider)}"`,
                       details: { allowed: [...EMBED_PROVIDER_NAMES] },
+                      fixes: nameFixHints(provider, EMBED_PROVIDER_NAMES, 'policy/provider'),
                     });
                     continue;
                   }
@@ -287,6 +299,7 @@ function normalizeEnvelope(
                   path: pathKey('$.policy.network', key),
                   message: `unknown network policy field "${key}"`,
                   details: { allowed: ['allow', 'providers'] },
+                  fixes: renameFixHints(key, ['allow', 'providers'], Object.keys(network)),
                 });
               }
             }
@@ -304,6 +317,7 @@ function normalizeEnvelope(
             path: pathKey('$.policy', key),
             message: `unknown policy field "${key}"`,
             details: { allowed: ['network'] },
+            fixes: renameFixHints(key, ['network'], Object.keys(policyValue)),
           });
         }
       }
@@ -342,6 +356,7 @@ function normalizeEnvelope(
       code: 'SPEC_VALIDATION_ERROR',
       path: '$.blocks',
       message: 'expected a non-empty array of blocks',
+      fixes: wrapBlockFixHints(blocks, 1, LIMITS.maxBlocks),
     });
     return undefined;
   }
@@ -602,6 +617,7 @@ function buildNode(
       path: pathKey(path, 'type'),
       message: `unknown block type "${typeValue}"`,
       details: { type: typeValue, known: blockTypes(context.registry) },
+      fixes: nameFixHints(typeValue, blockTypes(context.registry), 'block/unknown-type'),
     });
     return undefined;
   }
@@ -645,6 +661,10 @@ function buildNode(
   const validated = validateProps(definition.props, rawProps, path, context.bag);
   const withBindings = validateBindingsDeep(validated, path, context.bag);
   const props = (isPlainObject(withBindings) ? withBindings : {}) as Record<string, JsonValue>;
+  // An over-long or otherwise rejected rows list is already an error.
+  if (definition.type === 'table' && Array.isArray(props.rows)) {
+    checkTableRowWidths(props.columns, rawProps.rows, path, resolved.id, context.bag);
+  }
   const rawBindings = props.on;
   const bindings: BindingMap = isPlainObject(rawBindings)
     ? (rawBindings as unknown as BindingMap)
@@ -740,6 +760,11 @@ function buildNode(
         code: 'SPEC_VALIDATION_ERROR',
         path: pathKey(path, 'blocks'),
         message: 'expected an array of child blocks',
+        fixes: wrapBlockFixHints(
+          childBlocks,
+          childSlot.min ?? 0,
+          childSlot.max ?? Number.MAX_SAFE_INTEGER,
+        ),
       });
     } else {
       const min = childSlot.min ?? 0;
@@ -766,6 +791,30 @@ function buildNode(
   }
 
   return resolved.id;
+}
+
+/**
+ * Reads the authored rows, not the normalized ones: normalization drops an
+ * invalid row, which would shift every later warning onto the wrong index.
+ */
+function checkTableRowWidths(
+  columns: JsonValue | undefined,
+  rows: unknown,
+  path: string,
+  nodeId: string,
+  bag: DiagnosticBag,
+): void {
+  if (!Array.isArray(columns) || !Array.isArray(rows)) return;
+  rows.forEach((row, index) => {
+    if (!Array.isArray(row) || row.length === columns.length) return;
+    bag.add({
+      code: 'SPEC_VALIDATION_ERROR',
+      severity: 'warning',
+      message: `row has ${row.length} cells but the table declares ${columns.length} columns`,
+      path: pathIndex(pathKey(path, 'rows'), index),
+      nodeId,
+    });
+  });
 }
 
 function numberProp(node: IrNode, key: string): number | undefined {
@@ -862,25 +911,6 @@ function postChecks(
           path: pathKey(node.path, 'step'),
           nodeId: node.id,
         });
-      }
-    }
-
-    if (node.type === 'table') {
-      const columns = node.props.columns;
-      const rows = node.props.rows;
-      if (Array.isArray(columns) && Array.isArray(rows)) {
-        for (let index = 0; index < rows.length; index += 1) {
-          const row = rows[index];
-          if (Array.isArray(row) && row.length !== columns.length) {
-            bag.add({
-              code: 'SPEC_VALIDATION_ERROR',
-              severity: 'warning',
-              message: `row has ${row.length} cells but the table declares ${columns.length} columns`,
-              path: pathIndex(pathKey(node.path, 'rows'), index),
-              nodeId: node.id,
-            });
-          }
-        }
       }
     }
 

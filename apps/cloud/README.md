@@ -15,8 +15,8 @@ callers.
 
 ## Remote MCP
 
-`POST /mcp` speaks MCP over Streamable HTTP (protocol revisions 2024-11-05
-through 2025-11-25). It is the package's own MCP server: the tool names,
+`POST /mcp` speaks MCP over Streamable HTTP: the legacy revisions 2024-11-05
+through 2025-11-25, and the stateless 2026-07-28 revision. It is the package's own MCP server: the tool names,
 descriptions and input schemas come from `src/mcp/mcp-tool-definitions.ts`, the
 protocol routing from `src/mcp/mcp-json-rpc-dispatch.ts`, and the HTTP framing
 from `src/mcp/mcp-http-transport.ts`, which uses only the Fetch API. This Worker
@@ -33,6 +33,7 @@ adds authorization, rate limits and storage in
 | `recipe` | no | — | `anon-ip` | One starter spec as YAML; static data. |
 | `motions` | no | — | `anon-ip` | Motion recipe list, search or descriptor; static data. |
 | `validate` | yes | `render` | `validate` | Parses an arbitrary spec. |
+| `repair` | yes | `render` | `render` | Parses an arbitrary spec; at most 200 revalidations. |
 | `audit-motion` | yes | `render` | `validate` | Parses an arbitrary spec or page. |
 | `render` | yes | `render` | `render` | Stores a one-hour artifact. |
 | `render` with `share: true` | yes | `render` + `share` | `share` | Stores a share for the retention period. |
@@ -41,8 +42,9 @@ adds authorization, rate limits and storage in
 `motions` take no spec and read only static data, so they answer without a bearer: a client
 can discover the server before it is configured with a token. Each call still builds a response of several
 kilobytes, so they count per client IP (`anon-ip`), and a batch counts every
-member. `validate` and `audit-motion` parse untrusted input, so they are authenticated
-and share the `validate` limit.
+member. `validate`, `repair` and `audit-motion` parse untrusted input, so they are authenticated.
+`validate` and `audit-motion` share the `validate` limit; `repair` may revalidate many times
+per call, so it counts against the stricter `render` limit.
 
 `render` compiles through `renderArtifact`, the exact path `POST /v1/render`
 uses, so the stored bytes are identical to what the REST route returns for the
@@ -69,7 +71,23 @@ Transport behaviour:
   removed batching, a batch answers `400`. A batch carries at most 16 members
   and never `initialize`; otherwise it answers `400` before any member runs.
 - Stateless: no `Mcp-Session-Id` is issued. `GET` and `DELETE` answer `405`.
-- An unsupported `MCP-Protocol-Version` header answers `400`.
+- An unsupported `MCP-Protocol-Version` header answers `400` with JSON-RPC
+  `-32022` and `data: { supported, requested }`, so a client can pick a mutual
+  revision. An unknown revision in a request's `_meta` answers the same once
+  the request is authorized; with a modern header it is a header mismatch.
+- Both protocol eras are served from one endpoint. `initialize` selects the
+  legacy era and negotiates a revision up to 2025-11-25. A request whose
+  `_meta` carries `io.modelcontextprotocol/protocolVersion: 2026-07-28` is
+  handled statelessly: `server/discover` answers the supported versions,
+  capabilities and instructions; every result carries `resultType: "complete"`
+  and the server info in `_meta`; `tools/list` adds `ttlMs` and `cacheScope`.
+  Such a request must carry `io.modelcontextprotocol/clientCapabilities`
+  (otherwise `-32602`), and its `_meta` revision plus its `MCP-Protocol-Version`, `Mcp-Method` and
+  `Mcp-Name` headers (Base64 `=?base64?…?=` values accepted) must match the
+  body, or it answers `400` with `-32020`. `initialize`, `ping` and
+  `logging/setLevel` were removed in that revision and answer `404` with
+  `-32601` there; `server/discover` under a legacy revision is likewise
+  `-32601`.
 - A browser `Origin` other than the endpoint's own answers `403`; requests
   without `Origin` (non-browser clients) are unaffected.
 - The body ceiling is the REST request budget (1 MiB), answered with `413`.
@@ -133,6 +151,7 @@ Client configuration. Pick one:
 | `GET /v1/share/:id` | none | Serves one valid, unexpired share. |
 | `DELETE /v1/share/:id` | `share` | Deletes a share the caller owns. |
 | `GET /v1/artifact/:id` | none | Serves one unexpired artifact a remote MCP `render` stored. |
+| `GET /v1/version` | none | No. The deployed build, package version, MCP revisions and remote tool names. |
 
 ```bash
 curl -sS https://render.agentkit.best/v1/render \
@@ -345,6 +364,27 @@ concurrency group, so two deploys never race. Set the repository secret
 `AK_RENDER_SMOKE_TOKEN` to an AgentKit token with an active entitlement for the
 authenticated checks; without it they are skipped with a notice.
 
+The workflow is manual (`workflow_dispatch`), so a merge to `main` does not
+reach production by itself. Redeploy after any change under `src/` or
+`apps/cloud/` that callers should see, such as a new MCP tool. The deploy step
+stamps the commit as `BUILD_SHA`, and `GET /v1/version` reports it with the
+remote tool names:
+
+```bash
+curl -sS https://render.agentkit.best/v1/version
+# {"name":"@bestagentkits/render","version":"…","build":"<sha>",
+#  "protocolVersions":["2026-07-28",…],"tools":["catalog",…]}
+```
+
+A `build` other than the commit you expect (or `null`, a deploy from outside
+the workflow) means production lags the source. After a deploy the smoke
+script waits up to half a minute for `build` to equal the deployed commit and
+fails otherwise. It also checks that MCP `tools/list`, in both protocol eras,
+matches the tool names `/v1/version` reports; with OAuth on that check needs
+`TOKEN`. A smoke-only run against an older build that already has
+`/v1/version` prints a notice naming both commits instead of failing; one from
+before the endpoint existed fails.
+
 Migrating from the KV limiter: the first deploy with this configuration drops
 the `RATE_LIMIT` KV binding. The old namespace (`ak-render-rate-limit`) is then
 unused; delete it once the deploy is verified
@@ -359,7 +399,9 @@ Account prerequisites:
 - No DNS record is added by hand: the site's Custom Domain already owns
   `render.agentkit.best`, and routes ride on it.
 
-`scripts/cloud-smoke.mjs` checks MCP initialize, `tools/list` and `catalog`;
+`scripts/cloud-smoke.mjs` checks `/v1/version`; MCP initialize, `tools/list`
+and `catalog`; a 2026-07-28 `server/discover` and `tools/list`; that the tool
+lists agree with `/v1/version`;
 that render is refused without a bearer; that a rejected bearer answers `401`
 with a Bearer challenge; and, with `TOKEN`, MCP `validate` and
 `render`, that the artifact is an HTML document identical to `POST /v1/render`,

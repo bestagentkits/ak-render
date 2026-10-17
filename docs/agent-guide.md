@@ -9,7 +9,9 @@ do not try to position or style blocks: there is no field for it.
 
 1. **Find the blocks.** `ak-render search-catalog <intent words>` ranks block
    types for what the page needs, for example `search-catalog sortable table`
-   or `search-catalog pricing`. `ak-render catalog --category <c>` lists one
+   or `search-catalog pricing`. Vietnamese works too, with or without
+   diacritics (`search-catalog biểu đồ`, `search-catalog bang gia`).
+   `ak-render catalog --category <c>` lists one
    category; `ak-render catalog` lists every block and action (about 8 kB).
 2. **Describe only what you use.** `ak-render describe <type...> --compact`
    returns one line per prop for up to 12 types at once. Use
@@ -23,6 +25,17 @@ do not try to position or style blocks: there is no field for it.
    `{ ok, diagnostics[] }`. Each diagnostic has a stable `code` and the JSON
    `path` to fix (for example `$.blocks[0].titl`); an unknown prop lists the
    allowed ones in `details.allowed`. Exit code 1 means "fix and retry".
+   Add `--suggest` to get `fixes` on each diagnostic it can fix: RFC 6902
+   patches whose first operation is a `test` of the current value, with a
+   `rule` id and a `classification`. `safe` fixes keep the author's meaning
+   (a single item or block where a list is required, an enum value that
+   differs only in letter case); `ambiguous` ones are guesses (a near block,
+   action or property name, or wrapping text such as `a, b` that may mean
+   several items) for you to choose. Apply one fix per diagnostic, then
+   validate again. `ak-render repair page.yaml --out page.yaml` applies only
+   the safe fixes, revalidates and logs each change; it keeps YAML comments
+   when it can replay the edit in place (otherwise it re-emits the spec), and
+   it never deletes a field, changes data or picks between guesses.
    Icons are named by meaning (`icon: gauge`); find names with
    `ak-render icons search <words>` and see [icons.md](./icons.md).
 5. **Compile.** `ak-render page.yaml --out page.html --json` writes the file and
@@ -75,7 +88,7 @@ Check every block's real props with `describe` before relying on this shape.
 (optional `category`), `search-catalog` (`query`), `describe` (`type`, or
 `types` with optional `compact`), `search-icons` (`query`, optional `pack`, `limit`),
 `describe-icon` (`icon`), `icon-packs`, `motions` (optional `query`, or `id`
-with `compact`), `recipes`, `recipe` (`name`), `validate`, `audit-motion`
+with `compact`), `recipes`, `recipe` (`name`), `validate` (optional `suggest`), `repair`, `audit-motion`
 (`spec` or `html`), `render` and `themes`. `render` writes the HTML to the
 `out` path and returns only the summary, so the page never enters your context.
 `out` must end in `.html` or `.htm`. A relative path resolves against the
@@ -94,7 +107,7 @@ it points, so review it like any file write. `spec` may be YAML/JSON text or the
 
 Without Node, use the hosted server at `https://render.agentkit.best/mcp` (MCP
 Streamable HTTP). It serves `catalog`, `search-catalog`, `describe`,
-`search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `audit-motion`, `render` and `themes` with the same names and
+`search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `repair`, `audit-motion`, `render` and `themes` with the same names and
 contracts, and the
 loop is the same. Two things differ:
 
@@ -129,7 +142,9 @@ compiler code such as `SPEC_UNKNOWN_BLOCK` with the JSON path to fix. A token
 that is missing or rejected fails the whole request with HTTP 401 instead: an
 OAuth client signs in again, and an API key must be replaced in the client
 configuration. Under protocol revision 2025-06-18 or later
-send one message per request: batches are refused. Local
+send one message per request: batches are refused. The remote server also
+speaks the stateless 2026-07-28 revision, and `GET /v1/version` lists the tools
+it currently serves. Local
 rendering never needs the token or the network.
 
 ## Rules that save retries

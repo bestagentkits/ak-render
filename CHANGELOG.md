@@ -14,13 +14,33 @@ Release mechanics and the compatibility contract live in
 - Derived metrics and KPI citations. `transform.derive` adds fields from a
   closed list of operations (`ratio`, `percentOf`, `delta`, `percentChange`,
   `share`, `cumulative`), and on a `data-table` `transform.rollup` adds a sum
-  or mean total row as the table footer; neither accepts an expression. Value formats take `signed: true` for a
-  leading `+` (not the benchmark and breakdown widgets, which sign their own
-  differences). A `kpi` item may `cite` a dataset field with an aggregate: the
-  compiler fills an omitted `value` from it, or warns (`rule: kpi-cite`) when
-  the written value disagrees with the data. `value` is now optional on a
-  `kpi` item that has a `cite`. See
+  or mean total row as the table footer; neither accepts an expression. Value
+  formats take `signed: true` for a leading `+` (not the benchmark and
+  breakdown widgets, which sign their own differences). A `kpi` item may
+  `cite` a dataset field with an aggregate: the compiler fills an omitted
+  `value` from it, or warns (`rule: kpi-cite`) when the written value
+  disagrees with the data. `value` is now optional on a `kpi` item that has a
+  `cite`. See
   [docs/data-and-state.md](./docs/data-and-state.md#derived-fields).
+
+- Suggested fixes and a safe repair mode. `validate(spec, { suggest: true })`
+  (CLI `validate --suggest`, MCP `validate` with `suggest: true`) attaches
+  `fixes` to diagnostics: RFC 6902 patches that start with a `test` of the
+  current value, with a rule id, the diagnostic path and a `safe` or
+  `ambiguous` classification. `repair(spec, { mode: 'safe' })` (CLI
+  `ak-render repair`, MCP `repair`) applies only the safe fixes, revalidates,
+  keeps YAML comments where the edit can be replayed in place and returns a
+  change log; near-name guesses for block
+  types, actions, events, properties and enum values stay with the author.
+  Without `suggest`, diagnostics are unchanged.
+
+- Vietnamese intent search. `search-catalog` (CLI, MCP and `searchCatalog`)
+  folds diacritics and `đ` before tokenizing and maps common Vietnamese words
+  and phrases ("biểu đồ", "bảng giá", "dòng thời gian") to the English words
+  the block index uses, longest phrase first. English queries over index
+  words rank as before; a few short Vietnamese words that are not English
+  index words ("bang", "nut", "loc") now find their blocks. Motion recipe
+  search shares the same tokenizer.
 
 - Motion Studio. `ak-render motion studio <spec>` serves a local,
   development-only dashboard over one Page Spec: a block list and a recipe
@@ -150,8 +170,23 @@ Release mechanics and the compatibility contract live in
   A personal AgentKit API key (`ck_live_…`) also works as a static bearer and
   lasts until revoked.
 
+- MCP protocol revision 2026-07-28, next to the legacy revisions, over stdio
+  (`ak-render mcp`) and remote HTTP. `server/discover`, per-request `_meta`
+  revision and client capabilities, `resultType: "complete"`, list cache hints,
+  the `MCP-Protocol-Version`/`Mcp-Method`/`Mcp-Name` header checks (`-32020`)
+  and `-32022` with the supported revisions for an unknown one. `initialize`
+  still negotiates the legacy era.
+- `GET /v1/version` on the cloud renderer reports the deployed commit, package
+  version, MCP revisions and remote tool names. The deploy workflow stamps the
+  commit, and the smoke script fails when the deployed build or its MCP tool
+  list drifts from it.
+
 ### Changed
 
+- An unsupported `MCP-Protocol-Version` header now answers JSON-RPC `-32022`
+  with `data: { supported, requested }` instead of `-32600` (still HTTP 400).
+- The remote MCP instructions name `motions` and `audit-motion`, so every
+  remote tool appears in them.
 - The `ak-render` skill opens a page only when it writes the file for the
   first time. On a recompile it tells the user to refresh instead, so an
   updated page no longer opens one more browser tab.
@@ -163,6 +198,12 @@ Release mechanics and the compatibility contract live in
 
 ### Fixed
 
+- A table row-width warning now names the authored row. An invalid row is
+  dropped during normalization, so later warnings used to shift onto an
+  earlier index (`rows[0]` instead of `rows[1]`), which misled agents fixing
+  by path.
+- `ak-render validate` lists each warning once. A spec with an error used to
+  print every warning twice in text mode; `--json` was not affected.
 - Malformed YAML no longer compiles silently. A duplicate key, an
   unterminated scalar, a second document or a recovered indentation error now
   fails with `SPEC_PARSE_ERROR` and its line and column, instead of producing a

@@ -9,6 +9,7 @@
 
 import { type DiagnosticBag, pathKey } from '../diagnostics.js';
 import { isPlainObject, type JsonValue } from '../json.js';
+import { nameFixHints, renameFixHints } from './fix-hints.js';
 import { NODE_ID_PATTERN, type PropSchema, type PropValues, validateProps } from './prop-schema.js';
 
 export type ActionType =
@@ -206,6 +207,7 @@ export function validateActionMap(
         path: eventPath,
         message: `unknown event "${event}"`,
         details: { allowed: [...ALLOWED_EVENTS] },
+        fixes: renameFixHints(event, ALLOWED_EVENTS, Object.keys(value)),
       });
       continue;
     }
@@ -267,6 +269,7 @@ export function validateAction(
       path: pathKey(path, 'action'),
       message: `unknown action "${actionType}"`,
       details: { allowed: listActionTypes() },
+      fixes: nameFixHints(actionType, listActionTypes(), 'action/unknown-type'),
     });
     return undefined;
   }
