@@ -1,5 +1,6 @@
 /** Feature matrix block: which plan includes which feature, as a real table. */
 
+import { authoredIndex } from '../../diagnostics.js';
 import type { JsonValue } from '../../json.js';
 import type { BlockModule } from '../../registry/block-module.js';
 import {
@@ -98,7 +99,7 @@ export const featureMatrixBlock: BlockModule = {
         reportAt(
           context,
           node,
-          `.rows[${index}].values`,
+          `.rows[${authoredIndex(node.props.rows, index)}].values`,
           `expected ${expected} values, one per plan, found ${actual}`,
           { expected, actual },
         );

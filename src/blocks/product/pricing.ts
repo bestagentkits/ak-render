@@ -1,6 +1,7 @@
 /** Pricing block: plan cards with a price, a feature list and an optional call to action. */
 
 import { CURRENCIES, formatValue } from '../../data/format-value.js';
+import { authoredIndex } from '../../diagnostics.js';
 import type { BlockModule } from '../../registry/block-module.js';
 import {
   anchorProps,
@@ -126,7 +127,7 @@ export const pricingBlock: BlockModule = {
   },
   check: (node, context) => {
     const highlighted = objectListProp(node, 'plans')
-      .map((plan, index) => (plan.highlight === true ? index : -1))
+      .map((plan, index) => (plan.highlight === true ? authoredIndex(node.props.plans, index) : -1))
       .filter((index) => index >= 0);
     if (highlighted.length > 1) {
       reportAt(

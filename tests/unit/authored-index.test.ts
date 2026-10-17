@@ -58,6 +58,28 @@ describe('authored list indexes in diagnostics', () => {
     ]);
   });
 
+  it('reports a calendar event date at the authored event', () => {
+    const found = diagnosticsFor({
+      type: 'calendar',
+      month: '2026-10',
+      events: ['oops', { date: '2026-10-02', title: 'A' }, { date: '2026-11-02', title: 'B' }],
+    });
+    expect(found).toContainEqual(
+      expect.objectContaining({ path: '$.blocks[0].events[2].date', severity: 'error' }),
+    );
+  });
+
+  it('reports a feature-matrix row width at the authored row', () => {
+    const found = diagnosticsFor({
+      type: 'feature-matrix',
+      plans: ['Free', 'Pro'],
+      rows: ['oops', { feature: 'A', values: [true, true] }, { feature: 'B', values: [true] }],
+    });
+    expect(found).toContainEqual(
+      expect.objectContaining({ path: '$.blocks[0].rows[2].values', severity: 'error' }),
+    );
+  });
+
   it('keeps authored indexes for nested lists inside a kept item', () => {
     const found = diagnosticsFor({
       type: 'table',

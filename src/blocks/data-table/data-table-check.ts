@@ -7,7 +7,7 @@
 
 import { fieldValue } from '../../data/dataset-types.js';
 import { reportUnknownField } from '../../data/resolve-block-data.js';
-import { pathKey } from '../../diagnostics.js';
+import { authoredIndex, pathKey } from '../../diagnostics.js';
 import type { IrNode } from '../../ir.js';
 import type { CheckContext } from '../../registry/block-module.js';
 import { objectListProp, propItemPath } from '../../render/block-helpers.js';
@@ -54,7 +54,7 @@ export function checkDataTable(node: IrNode, { bag }: CheckContext): void {
         });
       }
       fields.forEach((name, position) => {
-        field(name, `fields[${position}]`);
+        field(name, `fields[${authoredIndex(column.fields, position)}]`);
       });
     }
     for (const { prop, type: owner } of TYPE_ONLY_PROPS) {
