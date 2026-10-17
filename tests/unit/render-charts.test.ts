@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { DATA_LIMITS } from '../../src/data/dataset-types.js';
 import { compile } from '../../src/render/render.js';
+import { validate } from '../../src/spec/validate.js';
 
 function chartSpec(kind: string): string {
   return `version: 1
@@ -142,5 +144,68 @@ describe('SVG chart polish', () => {
     expect(bar).toMatch(/<rect class="ak-chart-bar[^>]*>.*?<\/rect><text class="ak-chart-value"/su);
     const line = compile(chartSpec('line')).html;
     expect(line).toContain('class="ak-chart-value"');
+  });
+});
+
+describe('extreme chart values', () => {
+  const limit = DATA_LIMITS.maxNumberMagnitude;
+  const encoded = (value: number) => ({
+    version: 1,
+    meta: { title: 'Extreme' },
+    datasets: {
+      d: [
+        { x: 'a', v: value },
+        { x: 'b', v: -value },
+      ],
+    },
+    blocks: [
+      {
+        type: 'chart',
+        kind: 'line',
+        title: 'T',
+        dataRef: 'd',
+        x: { field: 'x' },
+        y: { field: 'v' },
+      },
+    ],
+  });
+
+  it('draws values at the magnitude limit without NaN coordinates', () => {
+    const inline = KINDS.map((kind) => ({
+      type: 'chart',
+      kind,
+      title: kind,
+      labels: ['a', 'b'],
+      series: [
+        {
+          label: 'S',
+          values: [
+            limit,
+            kind === 'pie' || kind === 'donut' || kind === 'progress' ? limit : -limit,
+          ],
+        },
+      ],
+    }));
+    const spec = encoded(limit);
+    spec.blocks.push(...(inline as never[]));
+    const { html } = compile(spec);
+    expect(html).not.toMatch(/[",( =ML]-?(?:NaN|Infinity)/u);
+  });
+
+  it('rejects a value beyond the limit at its dataset cell', () => {
+    const result = validate(encoded(1e308));
+    expect(result.ok).toBe(false);
+    expect(result.diagnostics.map((item) => [item.code, item.path])).toEqual([
+      ['SPEC_BOUNDS_ERROR', '$.datasets.d[0].v'],
+      ['SPEC_BOUNDS_ERROR', '$.datasets.d[1].v'],
+    ]);
+  });
+
+  it('rejects a number prop beyond the limit at its path', () => {
+    const spec = encoded(1);
+    Object.assign(spec.blocks[0] ?? {}, { y: { field: 'v', min: -1e305 } });
+    expect(validate(spec).diagnostics.map((item) => [item.code, item.path])).toEqual([
+      ['SPEC_BOUNDS_ERROR', '$.blocks[0].y.min'],
+    ]);
   });
 });

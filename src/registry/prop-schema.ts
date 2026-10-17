@@ -7,6 +7,7 @@
  * stops the documentation from drifting away from the validator.
  */
 
+import { numberMagnitudeProblem } from '../data/dataset-types.js';
 import {
   DiagnosticBag,
   type FixHint,
@@ -406,6 +407,11 @@ export function validateProp(
     case 'number': {
       if (typeof value !== 'number' || !Number.isFinite(value)) {
         bag.add({ code: 'SPEC_VALIDATION_ERROR', path, message: 'expected a finite number' });
+        return undefined;
+      }
+      const magnitude = numberMagnitudeProblem(value);
+      if (magnitude !== undefined) {
+        bag.add({ code: 'SPEC_BOUNDS_ERROR', path, message: magnitude });
         return undefined;
       }
       if (schema.integer === true && !Number.isInteger(value)) {

@@ -24,7 +24,20 @@ export const DATA_LIMITS = {
   maxFields: 32,
   /** Length of one string cell. */
   maxStringLength: 400,
+  /**
+   * Magnitude of any number in a spec. Chart geometry subtracts and sums
+   * values, and near the float maximum that overflows to Infinity and draws
+   * NaN coordinates; this ceiling leaves headroom for every such sum.
+   */
+  maxNumberMagnitude: 1e300,
 } as const;
+
+/** The bounds diagnostic for a number beyond `maxNumberMagnitude`, if any. */
+export function numberMagnitudeProblem(value: number): string | undefined {
+  return Math.abs(value) > DATA_LIMITS.maxNumberMagnitude
+    ? `${value} is beyond the ±1e300 a page can draw`
+    : undefined;
+}
 
 /**
  * Field keys: an identifier that may also contain dashes. Dataset names follow

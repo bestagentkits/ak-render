@@ -10,7 +10,13 @@
 import { type DiagnosticBag, pathIndex, pathKey } from '../diagnostics.js';
 import { isPlainObject } from '../json.js';
 import { NODE_ID_PATTERN } from '../registry/prop-schema.js';
-import { DATA_LIMITS, type DataRow, FIELD_KEY_PATTERN, isDataScalar } from './dataset-types.js';
+import {
+  DATA_LIMITS,
+  type DataRow,
+  FIELD_KEY_PATTERN,
+  isDataScalar,
+  numberMagnitudeProblem,
+} from './dataset-types.js';
 
 /**
  * Validate a list of rows. Returns the valid rows; an invalid cell drops only
@@ -64,6 +70,10 @@ export function validateRows(value: unknown, path: string, bag: DiagnosticBag): 
         });
         continue;
       }
+      const magnitude = typeof cell === 'number' ? numberMagnitudeProblem(cell) : undefined;
+      if (magnitude !== undefined) {
+        bag.add({ code: 'SPEC_BOUNDS_ERROR', path: cellPath, message: magnitude });
+      }
       if (typeof cell === 'string' && cell.length > DATA_LIMITS.maxStringLength) {
         bag.add({
           code: 'SPEC_BOUNDS_ERROR',
@@ -92,7 +102,8 @@ export function validateRows(value: unknown, path: string, bag: DiagnosticBag): 
         continue;
       }
       fields.add(key);
-      row[key] = cell;
+      // An out-of-range number keeps its field, so blocks naming it get no second error.
+      row[key] = magnitude === undefined ? cell : null;
     }
     rows.push(row);
   }
