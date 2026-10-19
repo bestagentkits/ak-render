@@ -240,6 +240,10 @@ Release mechanics and the compatibility contract live in
 
 ### Fixed
 
+- A second click on the theme toggle while its view transition still runs no
+  longer raises an uncaught `Transition was skipped` error. The skipped
+  transition's rejected `ready` promise is now handled; the theme applies as
+  before.
 - Chart data tables scroll inside their own box instead of widening the page
   on a phone when the chart's table is opened, the y-axis title no longer
   starts outside the chart, and the kanban board no longer overflows the
