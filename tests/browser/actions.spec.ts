@@ -283,3 +283,54 @@ blocks:
     expect(() => compile(source)).toThrowError();
   });
 });
+
+test.describe('runtime boot and dialog toggle', () => {
+  const page_ = (name: string, blocks: string, options: { themeToggle?: boolean } = {}) =>
+    workspace.write(
+      name,
+      compile(`version: 1\nmeta:\n  title: ${name}\nblocks:\n${blocks}`, {
+        source: `${name}.yaml`,
+        ...options,
+      }).html,
+    );
+
+  const dialogBlocks = (motion: string) => `  - type: button
+    id: opener
+    label: Open details
+    on:
+      click: { action: toggle, target: details }
+  - type: dialog
+    id: details
+    title: Details
+    text: Body.${motion}
+`;
+
+  test('a scripted page without the theme toggle boots without errors', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    const file = page_('no-theme-toggle', dialogBlocks(''), { themeToggle: false });
+    await page.goto(`file://${file}`, { waitUntil: 'load' });
+    await page.getByRole('button', { name: 'Open details' }).click();
+    await expect(page.locator('dialog[data-ak-id="details"]')).toHaveAttribute('open', '');
+    expect(errors).toEqual([]);
+  });
+
+  for (const [label, motion] of [
+    ['a plain dialog', ''],
+    ['a dialog-pop dialog', '\n    motion: dialog-pop'],
+  ] as const) {
+    test(`a toggle action on an open dialog closes ${label}`, async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      const name = `toggle-${motion === '' ? 'plain' : 'pop'}`;
+      await page.goto(`file://${page_(name, dialogBlocks(motion))}`, { waitUntil: 'load' });
+      const dialog = page.locator('dialog[data-ak-id="details"]');
+      await page.getByRole('button', { name: 'Open details' }).click();
+      await expect(dialog).toHaveAttribute('open', '');
+      // The modal covers the opener, so the second toggle is dispatched directly.
+      await page.evaluate(() =>
+        (document.querySelector('[data-ak-id="opener"]') as HTMLElement).click(),
+      );
+      await expect(dialog).not.toHaveAttribute('open', '');
+    });
+  }
+});
