@@ -48,12 +48,12 @@ function capture() {
 }
 
 describe('recipe listing', () => {
-  it('lists every recipe once, sorted by name', () => {
+  it('lists every recipe once, sorted by name', async () => {
     expect(names).toEqual(EXPECTED_NAMES);
     expect([...names].sort()).toEqual(names);
   });
 
-  it('has one embedded recipe per YAML source, with the metadata lines stripped', () => {
+  it('has one embedded recipe per YAML source, with the metadata lines stripped', async () => {
     const files = readdirSync(RECIPES_DIR)
       .filter((file) => file.endsWith('.yaml'))
       .sort();
@@ -66,7 +66,7 @@ describe('recipe listing', () => {
     }
   });
 
-  it('describes each recipe without its spec', () => {
+  it('describes each recipe without its spec', async () => {
     for (const entry of recipes()) {
       expect(Object.keys(entry).sort()).toEqual(['blocks', 'name', 'summary', 'useCases']);
       expect(entry.summary.length, entry.name).toBeGreaterThan(0);
@@ -74,7 +74,7 @@ describe('recipe listing', () => {
     }
   });
 
-  it('hands out copies, so a caller cannot change the embedded data', () => {
+  it('hands out copies, so a caller cannot change the embedded data', async () => {
     const first = recipe('dashboard');
     first.blocks.push('changed');
     first.useCases.length = 0;
@@ -88,29 +88,29 @@ describe('recipe listing', () => {
 describe.each(EXPECTED_NAMES)('recipe %s', (name) => {
   const entry = recipe(name);
 
-  it('validates with no errors and no warnings', () => {
+  it('validates with no errors and no warnings', async () => {
     const result = validate(entry.spec, { source: `${name}.yaml` });
     expect(result.diagnostics).toEqual([]);
     expect(result.ok).toBe(true);
   });
 
-  it('compiles to the same bytes every time', () => {
+  it('compiles to the same bytes every time', async () => {
     const hashes = [1, 2, 3].map(() => compile(entry.spec).hash);
     expect(new Set(hashes).size).toBe(1);
   });
 
-  it('stays a compact starter spec', () => {
+  it('stays a compact starter spec', async () => {
     expect(Buffer.byteLength(entry.spec, 'utf8')).toBeLessThanOrEqual(MAX_SPEC_BYTES);
   });
 
-  it('lists exactly the block types the compiler sees, at least three of them', () => {
+  it('lists exactly the block types the compiler sees, at least three of them', async () => {
     const types = new Set(normalizeSpec(entry.spec).ir.nodes.map((node) => node.type));
     types.delete('page');
     expect(entry.blocks).toEqual([...types].sort());
     expect(entry.blocks.length).toBeGreaterThanOrEqual(3);
   });
 
-  it('names a built-in preset, marks its placeholders and loads nothing remote', () => {
+  it('names a built-in preset, marks its placeholders and loads nothing remote', async () => {
     const document = parse(entry.spec) as { theme?: { preset?: string } };
     expect(Object.keys(builtinPresetEntries())).toContain(document.theme?.preset);
     expect(entry.spec).toContain('Replace with');
@@ -120,7 +120,7 @@ describe.each(EXPECTED_NAMES)('recipe %s', (name) => {
 });
 
 describe('unknown recipe', () => {
-  it('throws a RenderError that lists the allowed names', () => {
+  it('throws a RenderError that lists the allowed names', async () => {
     let thrown: unknown;
     try {
       recipe('newsletter');
@@ -139,7 +139,7 @@ describe('unknown recipe', () => {
 });
 
 describe('CLI', () => {
-  it('lists recipes as text and as JSON', () => {
+  it('lists recipes as text and as JSON', async () => {
     const text = capture();
     expect(run(['recipes'], text.io)).toBe(0);
     const lines = text.out().trimEnd().split('\n');
@@ -150,7 +150,7 @@ describe('CLI', () => {
     expect(JSON.parse(json.out())).toEqual(recipes());
   });
 
-  it('prints a recipe as YAML by default and in full with --json', () => {
+  it('prints a recipe as YAML by default and in full with --json', async () => {
     const yaml = capture();
     expect(run(['recipe', 'incident-report'], yaml.io)).toBe(0);
     expect(yaml.out()).toBe(recipe('incident-report').spec);
@@ -161,7 +161,7 @@ describe('CLI', () => {
     expect(JSON.parse(json.out())).toEqual(recipe('incident-report'));
   });
 
-  it('exits 1 for an unknown recipe and 2 without a name', () => {
+  it('exits 1 for an unknown recipe and 2 without a name', async () => {
     const unknown = capture();
     expect(run(['recipe', 'newsletter'], unknown.io)).toBe(1);
     expect(unknown.err()).toContain('unknown recipe "newsletter"; expected one of: architecture');
@@ -172,7 +172,7 @@ describe('CLI', () => {
     expect(missing.err()).toContain('recipe requires a recipe name');
   });
 
-  it('advertises both commands in help', () => {
+  it('advertises both commands in help', async () => {
     const help = capture();
     run(['--help'], help.io);
     expect(help.out()).toContain('ak-render recipes [--json]');
@@ -181,32 +181,34 @@ describe('CLI', () => {
 });
 
 describe('MCP', () => {
-  const call = (name: string, args: Record<string, unknown> = {}) =>
-    handleMcpMessage(
-      { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: args } },
-      { cwd: '/', home: '/' },
+  const call = async (name: string, args: Record<string, unknown> = {}) =>
+    (
+      await handleMcpMessage(
+        { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: args } },
+        { cwd: '/', home: '/' },
+      )
     )?.result as { content: { text: string }[]; isError?: boolean };
 
-  it('lists recipes', () => {
-    const reply = call('recipes');
+  it('lists recipes', async () => {
+    const reply = await call('recipes');
     expect(reply.isError).toBeUndefined();
     expect(JSON.parse(reply.content[0]?.text ?? '')).toEqual(recipes());
   });
 
-  it('returns one recipe as its YAML spec', () => {
-    const reply = call('recipe', { name: 'dashboard' });
+  it('returns one recipe as its YAML spec', async () => {
+    const reply = await call('recipe', { name: 'dashboard' });
     expect(reply.isError).toBeUndefined();
     expect(reply.content[0]?.text).toBe(recipe('dashboard').spec);
   });
 
-  it('reports an unknown or missing name as a tool error', () => {
-    const unknown = call('recipe', { name: 'newsletter' });
+  it('reports an unknown or missing name as a tool error', async () => {
+    const unknown = await call('recipe', { name: 'newsletter' });
     expect(unknown.isError).toBe(true);
     expect(JSON.parse(unknown.content[0]?.text ?? '')).toMatchObject({
       code: 'SPEC_VALIDATION_ERROR',
       path: 'name',
     });
-    const missing = call('recipe', {});
+    const missing = await call('recipe', {});
     expect(missing.isError).toBe(true);
     expect(missing.content[0]?.text).toContain('"name" must be a non-empty string');
   });

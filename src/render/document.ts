@@ -18,6 +18,7 @@ import { stableHash } from '../hash.js';
 import type { IrDocument, NetworkPolicy } from '../ir.js';
 import { nonDefaultRecipes } from '../theme/recipes.js';
 import { escapeAttribute, escapeText } from './escape.js';
+import { type MotionPolicy, rootMotionAttribute } from './motion.js';
 import { needsLiveRegion } from './runtime.js';
 
 export interface DocumentInput {
@@ -31,8 +32,8 @@ export interface DocumentInput {
   themeToggle: boolean;
   /** Resolved theme density, emitted as a document-level attribute. */
   density: string;
-  /** The theme turned motion off; the runtime reads this from the root element. */
-  motionDisabled?: boolean;
+  /** The theme's motion policy; the runtime reads it from the root element. */
+  motion?: MotionPolicy;
   /**
    * Resolved component recipes. Each non-default choice becomes a
    * `data-r-<surface>` attribute that scopes its recipe sheet; defaults emit
@@ -116,6 +117,11 @@ function nonceAdapterStyles(body: string, styleNonce: string): string {
   );
 }
 
+function motionAttribute(policy: MotionPolicy | undefined): string {
+  const value = rootMotionAttribute(policy ?? 'full');
+  return value === undefined ? '' : ` data-motion="${value}"`;
+}
+
 export function assembleDocument(input: DocumentInput): AssembledDocument {
   const { csp, styleNonce, scriptNonce } = buildContentSecurityPolicy(input);
   const { meta } = input.ir;
@@ -158,7 +164,7 @@ export function assembleDocument(input: DocumentInput): AssembledDocument {
     .join('');
   const html = [
     '<!DOCTYPE html>',
-    `<html lang="${escapeAttribute(meta.locale)}" data-density="${escapeAttribute(input.density)}"${input.motionDisabled === true ? ' data-motion="none"' : ''}${recipeAttributes}>`,
+    `<html lang="${escapeAttribute(meta.locale)}" data-density="${escapeAttribute(input.density)}"${motionAttribute(input.motion)}${recipeAttributes}>`,
     '<head>',
     '<meta charset="utf-8" />',
     '<meta name="viewport" content="width=device-width, initial-scale=1" />',

@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "description": "Page tasks for the live-model A/B harness. Every arm receives the same prompt; only the tool set differs. `facts` are strings the rendered page's visible text must contain, ignoring case and whitespace, for the run to count as correct.",
+  "tasks": [
+    {
+      "id": "investment-report",
+      "intent": "investment-report",
+      "prompt": "Build an investment report page for Northwind Solar's Series B round.\n\nContent:\n- Ask: $40M at a $210M pre-money valuation.\n- 2025 revenue $18.4M, 2026 forecast $31.0M, gross margin 46%.\n- Three scenarios for 2028 revenue: bear $42M, base $68M, bull $95M.\n- Key risks: panel supply concentration (one supplier is 61% of volume), interest-rate sensitivity of residential demand.\n- Recommendation: invest, with a board seat and a supply-diversification milestone.\n\nShow the scenarios as a chart with its data, the headline numbers as KPIs, and the risks and recommendation as text.",
+      "facts": ["Northwind Solar", "$40M", "$210M", "46%", "$68M", "61%"]
+    },
+    {
+      "id": "research-report",
+      "intent": "research-report",
+      "prompt": "Build a research report page summarising a study of edge caching for a news site.\n\nContent:\n- Question: does moving article HTML to an edge cache cut time to first byte for readers outside North America?\n- Method: 14-day A/B test, 2.1 million page views, 50/50 split.\n- Result: median TTFB fell from 410 ms to 95 ms in Asia-Pacific and from 380 ms to 120 ms in Europe; North America changed from 85 ms to 80 ms.\n- Limitation: logged-in pages bypass the cache, so 18% of traffic was excluded.\n- Sources: the internal experiment log EXP-2291 and the CDN vendor's latency report for Q3.\n\nInclude the regional before/after numbers as a table or chart, the findings, the limitation and the sources.",
+      "facts": ["EXP-2291", "410 ms", "380 ms", "18%"]
+    },
+    {
+      "id": "dashboard",
+      "intent": "dashboard",
+      "prompt": "Build a support operations dashboard page for the week of 6 to 12 October 2026.\n\nContent:\n- Tickets opened 1,284; tickets solved 1,311; backlog at week end 212.\n- First response time median 38 minutes (target 60).\n- CSAT 92.4%.\n- Daily tickets opened: Mon 241, Tue 226, Wed 198, Thu 205, Fri 187, Sat 119, Sun 108.\n- Top categories: billing 31%, login 22%, shipping 19%, other 28%.\n\nShow the headline numbers as KPIs, the daily series as a chart, and the categories as a breakdown.",
+      "facts": ["1,284", "212", "38 min", "92.4%", "billing"]
+    },
+    {
+      "id": "implementation-roadmap",
+      "intent": "implementation-roadmap",
+      "prompt": "Build an implementation roadmap page for migrating a payments service from a monolith to three services.\n\nContent:\n- Goal: separate ledger, payouts and invoicing by the end of Q2 2027 with zero downtime.\n- Milestones: M1 ledger read path (January 2027), M2 dual writes behind a flag (February 2027), M3 payouts service live (April 2027), M4 invoicing service live and monolith code removed (June 2027).\n- Owners: ledger by Priya Raman, payouts by Tomás Ortega, invoicing by Mei Chen.\n- Risks: dual-write drift (mitigation: nightly reconciliation job), on-call load during cutover.\n\nShow the milestones in order with their dates and owners, and list the risks with mitigations.",
+      "facts": ["M1", "M4", "Priya Raman", "Tomás Ortega", "reconciliation"]
+    }
+  ]
+}

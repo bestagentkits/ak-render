@@ -8,6 +8,7 @@
  * events.
  */
 
+import { authoredIndex } from '../../diagnostics.js';
 import type { JsonValue } from '../../json.js';
 import type { BlockModule } from '../../registry/block-module.js';
 import {
@@ -181,15 +182,16 @@ export const calendarBlock: BlockModule = {
     const prefix = monthIso(month);
     const lastDay = daysInMonth(month);
     objectListProp(node, 'events').forEach((event, index) => {
+      const at = authoredIndex(node.props.events, index);
       const date = str(event.date);
       const parts = parseDateParts(date);
       if (parts === undefined || parts.day < 1 || parts.day > 31) {
-        reportAt(context, node, `.events[${index}].date`, 'expected a date as YYYY-MM-DD');
+        reportAt(context, node, `.events[${at}].date`, 'expected a date as YYYY-MM-DD');
       } else if (!date.startsWith(`${prefix}-`) || parts.day > lastDay) {
         reportAt(
           context,
           node,
-          `.events[${index}].date`,
+          `.events[${at}].date`,
           `date ${date} is not in ${monthLabel(month)} (${prefix}-01 to ${prefix}-${String(
             lastDay,
           ).padStart(2, '0')})`,
@@ -198,7 +200,7 @@ export const calendarBlock: BlockModule = {
       }
       const time = str(event.time);
       if (time !== '' && !isTime(time)) {
-        reportAt(context, node, `.events[${index}].time`, 'expected a 24-hour time as HH:MM');
+        reportAt(context, node, `.events[${at}].time`, 'expected a 24-hour time as HH:MM');
       }
     });
   },

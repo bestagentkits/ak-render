@@ -10,15 +10,15 @@ companion: [`spec-compression.json`](./spec-compression.json). Sizes are UTF-8 b
 
 | Fixture | Block types | Spec | Inline data | Saved | HTML | HTML / spec | Read |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| benchmark-report.yaml | 8 | 5.5 kB | 7.7 kB | 2.2 kB (28%) | 183.8 kB | 33.3× | 12.2 kB |
-| complex-dashboard.yaml | 11 | 5.8 kB | 7.8 kB | 2.1 kB (27%) | 214.0 kB | 37.1× | 12.1 kB |
-| incident-report.yaml | 10 | 5.8 kB | 6.5 kB | 0.7 kB (10%) | 168.1 kB | 28.8× | 11.9 kB |
-| interactive-data-explorer.yaml | 9 | 4.3 kB | 5.4 kB | 1.2 kB (21%) | 176.9 kB | 41.6× | 11.9 kB |
-| product-case-study.yaml | 9 | 5.7 kB | 6.2 kB | 0.5 kB (8%) | 135.9 kB | 23.9× | 10.5 kB |
-| research-report.yaml | 14 | 5.7 kB | 5.9 kB | 0.3 kB (4%) | 139.6 kB | 24.7× | 11.7 kB |
-| **Total** | | **32.7 kB** | **39.6 kB** | **6.8 kB (17%)** | **1018.3 kB** | | |
+| benchmark-report.yaml | 8 | 5.5 kB | 7.7 kB | 2.2 kB (28%) | 183.8 kB | 33.3× | 12.9 kB |
+| complex-dashboard.yaml | 11 | 5.8 kB | 7.8 kB | 2.1 kB (27%) | 214.0 kB | 37.1× | 12.8 kB |
+| incident-report.yaml | 10 | 5.8 kB | 6.5 kB | 0.7 kB (10%) | 168.8 kB | 28.9× | 12.5 kB |
+| interactive-data-explorer.yaml | 9 | 4.3 kB | 5.4 kB | 1.2 kB (21%) | 176.9 kB | 41.6× | 12.6 kB |
+| product-case-study.yaml | 9 | 5.7 kB | 6.2 kB | 0.5 kB (8%) | 135.9 kB | 23.9× | 11.1 kB |
+| research-report.yaml | 14 | 5.7 kB | 5.9 kB | 0.3 kB (4%) | 139.6 kB | 24.7× | 12.3 kB |
+| **Total** | | **32.7 kB** | **39.6 kB** | **6.8 kB (17%)** | **1019.0 kB** | | |
 
-The catalog text is 7.3 kB on every row; the rest of
+The catalog text is 8.0 kB on every row; the rest of
 "Read" is the compact contract of each block type the fixture uses.
 
 ## Block types per fixture

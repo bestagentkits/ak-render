@@ -7,10 +7,10 @@
 
 import { fieldValue } from '../../data/dataset-types.js';
 import { reportUnknownField } from '../../data/resolve-block-data.js';
-import { pathIndex, pathKey } from '../../diagnostics.js';
+import { authoredIndex, pathKey } from '../../diagnostics.js';
 import type { IrNode } from '../../ir.js';
 import type { CheckContext } from '../../registry/block-module.js';
-import { objectListProp } from '../../render/block-helpers.js';
+import { objectListProp, propItemPath } from '../../render/block-helpers.js';
 import { safeHref } from './data-table-cells.js';
 import { type ColumnType, columnType, resolveColumns } from './data-table-columns.js';
 
@@ -32,9 +32,8 @@ function isSet(value: unknown): boolean {
 export function checkDataTable(node: IrNode, { bag }: CheckContext): void {
   const data = node.data;
   if (data === undefined) return;
-  const columnsPath = pathKey(node.path, 'columns');
   objectListProp(node, 'columns').forEach((column, index) => {
-    const path = pathIndex(columnsPath, index);
+    const path = propItemPath(node, 'columns', index);
     const type = columnType(column.type);
     const field = (value: unknown, at: string): void => {
       if (typeof value === 'string' && !data.fields.includes(value)) {
@@ -55,7 +54,7 @@ export function checkDataTable(node: IrNode, { bag }: CheckContext): void {
         });
       }
       fields.forEach((name, position) => {
-        field(name, `fields[${position}]`);
+        field(name, `fields[${authoredIndex(column.fields, position)}]`);
       });
     }
     for (const { prop, type: owner } of TYPE_ONLY_PROPS) {
@@ -88,7 +87,7 @@ export function checkDataTable(node: IrNode, { bag }: CheckContext): void {
       bag.add({
         code: 'SPEC_VALIDATION_ERROR',
         severity: 'warning',
-        path: pathKey(pathIndex(columnsPath, index), 'hrefField'),
+        path: pathKey(propItemPath(node, 'columns', index), 'hrefField'),
         nodeId: node.id,
         message: `link "${String(value)}" is not a safe URL and renders as text`,
         details: { value },

@@ -229,9 +229,11 @@ for (const name of FIXTURES) {
         const audit = await open(page, name);
         // Disclosures are native <details>: a reader opens them without
         // scripts, outermost first, so nested panels become readable too.
+        // Enter opens a summary natively; a click would wait for a stable box,
+        // which smooth scrolling can keep moving while it retries.
         const closed = page.locator('details:not([open]) > summary').filter({ visible: true });
         for (let guard = 0; guard < 200 && (await closed.count()) > 0; guard += 1) {
-          await closed.first().click();
+          await closed.first().press('Enter');
         }
         const text = flat(await page.locator('body').innerText());
         for (const title of titles) expect(text, `title "${title}"`).toContain(flat(title));
@@ -281,6 +283,9 @@ for (const name of FIXTURES) {
     });
 
     test('Tab reaches every control, each with a visible focus ring', async ({ page }) => {
+      // The walk presses Tab once per stop, so its time grows with the page:
+      // the largest fixtures need more than the default budget under load.
+      test.slow();
       const audit = await open(page, name);
       const stops = await markTabStops(page);
       // Every page has at least the skip link and the theme toggle.

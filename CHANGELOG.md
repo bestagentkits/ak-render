@@ -11,6 +11,114 @@ Release mechanics and the compatibility contract live in
 
 ### Added
 
+- Visual audit. `ak-render audit-ui <spec|page.html>` checks the compiled
+  artifact. The `quick` preset (default) reads the resolved theme and the
+  markup without a browser: theme text contrast, wide tables and long chart
+  labels. `--preset publication` adds a headless Chromium pass at 375, 768
+  and 1440 px in light and dark, then no-JS, reduced motion and print:
+  horizontal overflow (also with disclosures open), clipped chart labels,
+  rendered text contrast, small text, touch targets, broken images, runtime
+  errors, a tab/disclosure/theme-toggle smoke test, content hidden without
+  JavaScript and motion under reduced motion. It runs under a time budget
+  (`--timeout`), blocks every network request, runs only the runtime it
+  compiled (HTML from elsewhere runs with JavaScript off) and writes one
+  screenshot per check with `--evidence-dir`. Findings carry a rule,
+  severity, spec path, viewport, evidence and fix; `--fail-on` gates CI and
+  an incomplete run fails the gate. The MCP servers add `audit-ui` (quick only
+  remotely); the library exports `auditUi`, `auditUiQuick` and `UI_RULES`.
+  See [docs/audit-ui.md](./docs/audit-ui.md).
+- Derived metrics and KPI citations. `transform.derive` adds fields from a
+  closed list of operations (`ratio`, `percentOf`, `delta`, `percentChange`,
+  `share`, `cumulative`), and on a `data-table` `transform.rollup` adds a sum
+  or mean total row as the table footer; neither accepts an expression. Value
+  formats take `signed: true` for a leading `+` (not the benchmark and
+  breakdown widgets, which sign their own differences). A `kpi` item may
+  `cite` a dataset field with an aggregate: the compiler fills an omitted
+  `value` from it, or warns (`rule: kpi-cite`) when the written value
+  disagrees with the data. `value` is now optional on a `kpi` item that has a
+  `cite`. See
+  [docs/data-and-state.md](./docs/data-and-state.md#derived-fields).
+
+- Compose. `ak-render compose input.yaml --out page.html` builds a whole page
+  from a typed intent and content slots, with no Page Spec to write. The first
+  intent is `investment-report` (thesis and recommendation, key facts,
+  metrics, scenario chart and table over one shared dataset, risks,
+  milestones, sources). Composition is deterministic, checks every slot with
+  a JSON path diagnostic, expands into ordinary blocks and compiles through the
+  same `compile()`, so the HTML is byte-identical to rendering the emitted
+  spec (`--spec-out`, `--dry-run`). `compose intents --json` lists intents and
+  their content schemas. The library exports `compose()`, `composeSpec()`,
+  `composeIntents()` and `composeInputJsonSchema()`, and both MCP servers gain
+  a `compose` tool (`dryRun`, `returnSpec`; remote stores it like `render`).
+  Additive: `render` and `validate` are unchanged.
+- Revisioned spec editing. `ak-render patch <spec> <ops>` applies an RFC 6902
+  JSON Patch to a spec file in place: a path starting `/blocks/@<id>` addresses
+  the block with that author `id` at any depth, operations are all or nothing,
+  YAML comments and layout are kept, and the reply is a content hash plus the
+  applied changes, never the spec. `--base-hash` refuses an edit made against
+  a stale spec (`SPEC_PATCH_CONFLICT`); a patch that raises the error count is
+  not written, and only a file that reads as a Page Spec is edited. The `patch`
+  MCP tool (local: `file` under the working directory, or `spec`; remote: `spec`,
+  authenticated like `validate`) and the library `patch`, `patchSpecText` and
+  `specHash` expose the same contract. Motion Studio's atomic save now creates
+  its temporary file exclusively under a random name. See
+  [docs/agent-guide.md](./docs/agent-guide.md#edit-an-existing-page).
+  Migration: additive. `RenderErrorCode` gains `SPEC_PATCH_ERROR` and
+  `SPEC_PATCH_CONFLICT`, so an exhaustive `switch` over it needs two cases;
+  `tools/list` gains `patch` after `repair`.
+- Suggested fixes and a safe repair mode. `validate(spec, { suggest: true })`
+  (CLI `validate --suggest`, MCP `validate` with `suggest: true`) attaches
+  `fixes` to diagnostics: RFC 6902 patches that start with a `test` of the
+  current value, with a rule id, the diagnostic path and a `safe` or
+  `ambiguous` classification. `repair(spec, { mode: 'safe' })` (CLI
+  `ak-render repair`, MCP `repair`) applies only the safe fixes, revalidates,
+  keeps YAML comments where the edit can be replayed in place and returns a
+  change log; near-name guesses for block
+  types, actions, events, properties and enum values stay with the author.
+  Without `suggest`, diagnostics are unchanged.
+- Vietnamese intent search. `search-catalog` (CLI, MCP and `searchCatalog`)
+  folds diacritics and `đ` before tokenizing and maps common Vietnamese words
+  and phrases ("biểu đồ", "bảng giá", "dòng thời gian") to the English words
+  the block index uses, longest phrase first. English queries over index
+  words rank as before; a few short Vietnamese words that are not English
+  index words ("bang", "nut", "loc") now find their blocks. Motion recipe
+  search shares the same tokenizer.
+
+- Motion Studio. `ak-render motion studio <spec>` serves a local,
+  development-only dashboard over one Page Spec: a block list and a recipe
+  gallery of compiled examples, an inspector with the phase timeline, timing,
+  properties, fallback and emitted CSS, bounded token controls, Replay, Pause,
+  Rapid toggle, a preview-only motion policy switch, Compare, Undo and Reset.
+  Accept writes the reviewed diff to the spec in place, keeps YAML comments
+  and refuses a stale, duplicate, invalid or empty proposal. It listens on
+  127.0.0.1 behind a session path with a strict CSP and never touches compiled
+  HTML. See [docs/motion.md](./docs/motion.md#motion-studio).
+
+- Motion discovery and audit. `ak-render motions` lists the motion recipes,
+  `motions search <terms>` ranks them by intent and `motions describe <id>`
+  (`--compact` for the short form) returns one descriptor, all projected from
+  the registry and never carrying CSS. `ak-render motion audit <spec|page.html>`
+  reports deterministic findings with a rule id, severity, path, evidence and
+  fix: the spec audit is authoritative (incompatible, nested, excessive or
+  never-playing recipes, theme policy); the compiled-page audit is best effort
+  (unguarded or looping motion, `transition: all`, layout keyframes, missing
+  recipe CSS, exit or runtime, CSP and remote resources). `--fail-on` gates CI,
+  `--baseline` gates only on new findings and standing errors, and the score
+  is advisory. The MCP servers add `motions` (no bearer remotely) and
+  `audit-motion` (bearer, like `validate`); the library exports the same
+  functions. See [docs/motion.md](./docs/motion.md#discovery-and-audit).
+
+- Blocks can opt into a named motion recipe with `motion: <recipe>` (or
+  `motion: { preset }`): `reveal-soft`, `stagger`, `figure-roll`, `fade-swap`,
+  `tabs-slide`, `accordion-expand` and `dialog-pop`. Recipes are
+  compiler-owned CSS behind the reduced-motion guard, timed from a scale that
+  derives from `motion-duration`, so reduced, still, print and no-JS pages
+  settle as before. A page that names no recipe emits identical bytes.
+  Validation rejects unknown or incompatible recipes and any field other than
+  `preset` with a JSON path. The JSON Schema, `describe --compact` and the
+  library exports (`MOTION_RECIPES`, `getMotionRecipe`, `motionPresetsFor`)
+  carry the registry. See [docs/motion.md](./docs/motion.md).
+
 - Code blocks and `api-endpoint` bodies are syntax highlighted at compile
   time for php, javascript, typescript, python, go, rust, java, kotlin,
   csharp, c, cpp, swift, ruby, bash, sql, json, yaml and diff, plus common
@@ -108,15 +216,23 @@ Release mechanics and the compatibility contract live in
   A personal AgentKit API key (`ck_live_…`) also works as a static bearer and
   lasts until revoked.
 
-### Fixed
-
-- Highlighting stays linear on a line full of unclosed openers such as
-  `${${${` in Bash or `#[#[` in Rust, which took about ten seconds per
-  100k-character block before. A language named after an `Object`
-  property, such as `constructor`, renders plain.
+- MCP protocol revision 2026-07-28, next to the legacy revisions, over stdio
+  (`ak-render mcp`) and remote HTTP. `server/discover`, per-request `_meta`
+  revision and client capabilities, `resultType: "complete"`, list cache hints,
+  the `MCP-Protocol-Version`/`Mcp-Method`/`Mcp-Name` header checks (`-32020`)
+  and `-32022` with the supported revisions for an unknown one. `initialize`
+  still negotiates the legacy era.
+- `GET /v1/version` on the cloud renderer reports the deployed commit, package
+  version, MCP revisions and remote tool names. The deploy workflow stamps the
+  commit, and the smoke script fails when the deployed build or its MCP tool
+  list drifts from it.
 
 ### Changed
 
+- An unsupported `MCP-Protocol-Version` header now answers JSON-RPC `-32022`
+  with `data: { supported, requested }` instead of `-32600` (still HTTP 400).
+- The remote MCP instructions name `motions` and `audit-motion`, so every
+  remote tool appears in them.
 - The `ak-render` skill opens a page only when it writes the file for the
   first time. On a recompile it tells the user to refresh instead, so an
   updated page no longer opens one more browser tab.
@@ -125,6 +241,65 @@ Release mechanics and the compatibility contract live in
   gets HTTP 401 with a `resource_metadata` challenge, which is what starts
   a client's sign-in. Before, it was served, and only `validate` and `render`
   refused it. A deployment without OAuth keeps anonymous discovery.
+
+### Fixed
+
+- Highlighting stays linear on a line full of unclosed openers such as
+  `${${${` in Bash or `#[#[` in Rust, which took about ten seconds per
+  100k-character block before. A language named after an `Object`
+  property, such as `constructor`, renders plain.
+- Chart data tables scroll inside their own box instead of widening the page
+  on a phone when the chart's table is opened, the y-axis title no longer
+  starts outside the chart, and the kanban board no longer overflows the
+  printed page.
+- A table row-width warning now names the authored row. An invalid row is
+  dropped during normalization, so later warnings used to shift onto an
+  earlier index (`rows[0]` instead of `rows[1]`), which misled agents fixing
+  by path.
+- Every cross-field diagnostic about a list item now names the authored item.
+  An invalid item is dropped during normalization, and checks on chart
+  series, decision options, kanban cards and columns, roadmap entries,
+  references, data-table columns, calendar events, pricing plans,
+  feature-matrix rows, asset policy checks and other item lists reported
+  later items one index too early. Nested item blocks are matched to their authored item
+  the same way.
+- `feature-matrix` compares the authored number of plans and values, so a
+  plan or value dropped as invalid no longer adds a width error to every row,
+  and a real width mismatch is still reported alongside it.
+- `ak-render validate` lists each warning once. A spec with an error used to
+  print every warning twice in text mode; `--json` was not affected.
+- Malformed YAML no longer compiles silently. A duplicate key, an
+  unterminated scalar, a second document or a recovered indentation error now
+  fails with `SPEC_PARSE_ERROR` and its line and column, instead of producing a
+  different page.
+- A `toggle` action on an open dialog now closes it. It used to open the
+  dialog again, which moved focus back to its first control.
+
+- A `theme` action now works on a page compiled with `themeToggle: false`.
+  It used to throw `applyTheme is not defined`, because the theme runtime
+  shipped only with the toggle. The page still emits no toggle or toggle CSS.
+
+- A scripted page compiled with `themeToggle: false` no longer throws
+  `restoreTheme is not defined` on load, which left every block after it
+  unwired. The runtime restores a stored theme only when it ships the theme
+  runtime.
+
+- `motion-policy: reduced` now restrains motion as documented: colour, shadow
+  and opacity transitions keep the theme duration, anything that would move
+  (hover lifts, image zoom) jumps to its end state, and entrances, loops,
+  parallax, smooth scrolling, count-up and the theme view transition stay off. The reader's
+  reduced-motion setting still wins over every policy. See
+  [ADR 0002](./docs/adr/0002-motion-policy.md).
+- The dialog entrance now respects reduced motion, and it no longer shares the
+  `ak-rise` keyframes name with the hero word reveal, which made one of the two
+  play the other's animation on pages with a dialog.
+- Print settles every animation and transition.
+- The compiler now fails a page whose stylesheet has an animation outside the
+  reduced-motion guard, a fixed-duration transition outside it, or a keyframes
+  name defined twice.
+- Diagram adapter markup with SMIL animation (`animate`, `animateTransform`,
+  `animateMotion`, `set`, `discard`) or a `marquee` is refused, since no
+  stylesheet can stop it under reduced motion or in print. Adapter motion belongs in its stylesheet.
 
 ## [0.3.0] - 2026-10-06
 

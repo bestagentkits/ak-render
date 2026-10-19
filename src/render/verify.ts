@@ -11,6 +11,7 @@ import { type Diagnostic, DiagnosticBag } from '../diagnostics.js';
 import type { IrDocument } from '../ir.js';
 import type { FeatureModule } from '../registry/block-module.js';
 import type { RuntimeFeature } from '../registry/roster.js';
+import { motionDiagnostics } from './motion.js';
 
 export interface VerifyInput {
   html: string;
@@ -54,6 +55,7 @@ const FEATURE_MARKERS: Readonly<Partial<Record<RuntimeFeature, string>>> = {
   frame: '.ak-frame-view',
   checklist: '.ak-checklist',
   state: '.ak-when',
+  motion: '[data-ak-motion]',
 };
 
 /** Features whose behavior requires emitted JavaScript. */
@@ -182,6 +184,7 @@ export function verifyDocument(input: VerifyInput): Diagnostic[] {
 
   if (!/:focus-visible/u.test(html)) report('missing a :focus-visible rule');
   if (!/prefers-reduced-motion/u.test(html)) report('missing a prefers-reduced-motion rule');
+  for (const message of motionDiagnostics(input.css)) report(message);
 
   const markers: [RuntimeFeature, string, boolean][] = [
     ...(Object.entries(FEATURE_MARKERS) as [RuntimeFeature, string][]).map(

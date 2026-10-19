@@ -47,8 +47,10 @@ compile: a broken or absent adapter degrades the page.
 ## Trust boundary
 
 Adapter output is verified before it is embedded. `checkAdapterMarkup` rejects
-script, iframe, object, embed, `foreignObject`, `base`, and `form` elements, any
-`on*` handler, `javascript:` URLs, `data:text/html` URLs, `srcdoc`, CSS
+script, iframe, object, embed, `foreignObject`, `base`, and `form` elements,
+moving elements that no stylesheet can stop under reduced motion or in print
+(`marquee` and the SMIL `animate`, `animateTransform`, `animateMotion`, `set`
+and `discard`), any `on*` handler, `javascript:` URLs, `data:text/html` URLs, `srcdoc`, CSS
 `@import`, remote CSS `url()` references, empty output, and output over 256 KB.
 It also rejects markup that writes a `nonce` attribute or any `data-ak-*`
 attribute (the page and its runtime use those as hooks), an `href`,
@@ -127,7 +129,7 @@ fitted to that policy before it is embedded:
   A `<style>` element must be plain text that runs straight to its `</style>`
   end tag; a self-closing `<style/>` is rejected.
 - **Motion decorates.** Adapter animation and transitions stop under
-  `prefers-reduced-motion: reduce`, `motion-policy: none` and in print, so the
+  `prefers-reduced-motion: reduce`, `motion-policy: reduced` or `none` and in print, so the
   drawing must read completely in its unanimated state. Keyframes names are
   page-wide, so two panels from the same adapter share them.
 

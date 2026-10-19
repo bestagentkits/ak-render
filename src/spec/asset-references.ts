@@ -9,7 +9,7 @@
  * Child blocks in slots are their own IR nodes and are walked as such.
  */
 
-import { pathIndex, pathKey } from '../diagnostics.js';
+import { listItemPath, pathKey } from '../diagnostics.js';
 import type { NetworkPolicy } from '../ir.js';
 import { isPlainObject, type JsonValue } from '../json.js';
 import type { PropSchema } from '../registry/prop-schema.js';
@@ -54,7 +54,7 @@ function walk(
     case 'list':
       if (Array.isArray(value)) {
         value.forEach((item, index) => {
-          walk(schema.of, item, pathIndex(path, index), field, found);
+          walk(schema.of, item, listItemPath(path, value, index), field, found);
         });
       }
       return;

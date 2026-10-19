@@ -19,8 +19,11 @@ Capture the changed gallery pages (`docs/gallery/*.html`, opened from `file://`)
 - Contrast stays at WCAG 2.2 AA in every preset, in both schemes.
 - The change follows `DESIGN.md`: tokens only, no new colors, and no decorative motion.
 
+`node dist/cli.js audit-ui fixtures/pages/<page>.yaml --preset publication --evidence-dir <dir>` automates the overflow, clipped-label, contrast, small-text, touch-target (the 24px WCAG floor, not the 44px goal above), no-JS and reduced-motion checks across the same viewports and writes one screenshot per check; it supplements the screenshots, it does not replace looking at them. See `docs/audit-ui.md`.
+
 ## Agent readability (AX)
 
 - Each artifact keeps `<title>`, a meta description when the spec has one, and `og:title`, `og:type`, `og:description` and `twitter:card` from spec meta. Never invent URLs.
 - Each chart keeps its text summary and data table.
+- The change lowers or keeps the agent's cost per page task (spec written, discovery read, round-trips, repairs). A larger emitted file is acceptable when it keeps quality, offline output or determinism; never shrink output at their expense.
 - If the gallery gets a public origin, add robots.txt, sitemap.xml, llms.txt, canonical and og:url, and run the discovery scan against it.

@@ -1,5 +1,6 @@
 /** Feature matrix block: which plan includes which feature, as a real table. */
 
+import { authoredIndex, authoredLength } from '../../diagnostics.js';
 import type { JsonValue } from '../../json.js';
 import type { BlockModule } from '../../registry/block-module.js';
 import {
@@ -91,14 +92,16 @@ export const featureMatrixBlock: BlockModule = {
     );
   },
   check: (node, context) => {
-    const expected = listProp(node, 'plans').length;
+    // Compare authored widths: a dropped plan or value already has its own
+    // error and must not make an otherwise matching row look short.
+    const expected = authoredLength(node.props.plans);
     objectListProp(node, 'rows').forEach((row, index) => {
-      const actual = Array.isArray(row.values) ? row.values.length : 0;
+      const actual = authoredLength(row.values);
       if (actual !== expected) {
         reportAt(
           context,
           node,
-          `.rows[${index}].values`,
+          `.rows[${authoredIndex(node.props.rows, index)}].values`,
           `expected ${expected} values, one per plan, found ${actual}`,
           { expected, actual },
         );

@@ -10,6 +10,7 @@
  */
 
 import { RenderError } from '../errors.js';
+import { specificMotionPresetsFor } from '../motion/recipes.js';
 import type { BlockCategory } from './block-module.js';
 import { CATALOG_SEARCH_LIMITS, searchCatalog } from './catalog-search.js';
 import type { PropSchema } from './prop-schema.js';
@@ -35,9 +36,14 @@ export interface CompactBlockDescription {
   /** Allowed direct parents, when the block may only sit inside some types. */
   parents?: string[];
   /** Present when the block reads rows from `dataRef` or inline `data`. */
-  data?: { required: boolean; description: string };
+  data?: { required: boolean; description: string; total?: boolean };
   /** Actions the block can trigger, when it has any. */
   actions?: string[];
+  /**
+   * Motion recipes specific to this type, when it has any. Universal recipes
+   * such as `fade-swap` apply to every block and are left out.
+   */
+  motion?: string[];
 }
 
 export type BlockDescription = BlockDefinition | CompactBlockDescription;
@@ -166,6 +172,7 @@ export function compactDescription(definition: BlockDefinition): CompactBlockDes
     propLines(name, schema, props, seen);
   }
   const slots = Object.entries(definition.slots ?? {}).map(([name, slot]) => slotLine(name, slot));
+  const motion = specificMotionPresetsFor(definition.type);
   return {
     type: definition.type,
     kind: definition.kind,
@@ -177,6 +184,7 @@ export function compactDescription(definition: BlockDefinition): CompactBlockDes
     ...(definition.parents === undefined ? {} : { parents: [...definition.parents] }),
     ...(definition.data === undefined ? {} : { data: { ...definition.data } }),
     ...(definition.actions.length === 0 ? {} : { actions: [...definition.actions] }),
+    ...(motion.length === 0 ? {} : { motion }),
   };
 }
 

@@ -831,6 +831,32 @@
         }
       }
     },
+    "motion": {
+      "description": "A compiler-owned motion recipe, named by id; a spec cannot supply CSS or script.",
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "fade-swap"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "preset"
+          ],
+          "properties": {
+            "preset": {
+              "type": "string",
+              "enum": [
+                "fade-swap"
+              ]
+            }
+          }
+        }
+      ]
+    },
     "dataScalar": {
       "description": "A dataset value: a string, a finite number, a boolean, or null.",
       "oneOf": [
@@ -863,6 +889,231 @@
           "$ref": "#/$defs/dataScalar"
         }
       }
+    },
+    "transform": {
+      "type": "object",
+      "properties": {
+        "filter": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "equals": {
+                "description": "A string, number, boolean, or null.",
+                "$ref": "#/$defs/dataScalar"
+              },
+              "notEquals": {
+                "description": "A string, number, boolean, or null.",
+                "$ref": "#/$defs/dataScalar"
+              },
+              "in": {
+                "type": "array",
+                "items": {
+                  "description": "A string, number, boolean, or null.",
+                  "$ref": "#/$defs/dataScalar"
+                },
+                "minItems": 1,
+                "maxItems": 20
+              },
+              "gt": {
+                "type": "number"
+              },
+              "gte": {
+                "type": "number"
+              },
+              "lt": {
+                "type": "number"
+              },
+              "lte": {
+                "type": "number"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "field"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 8
+        },
+        "groupBy": {
+          "type": "object",
+          "properties": {
+            "field": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "aggregate": {
+              "type": "string",
+              "maxLength": 2000,
+              "enum": [
+                "count",
+                "sum",
+                "mean",
+                "min",
+                "max"
+              ]
+            },
+            "value": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "as": {
+              "type": "string",
+              "maxLength": 64
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "field",
+            "aggregate"
+          ]
+        },
+        "derive": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "as": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "op": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "ratio",
+                  "percentOf",
+                  "delta",
+                  "percentChange",
+                  "share",
+                  "cumulative"
+                ]
+              },
+              "field": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "base": {
+                "type": "string",
+                "maxLength": 64
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "as",
+              "op",
+              "field"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 8
+        },
+        "sort": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "by": {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                "direction": {
+                  "type": "string",
+                  "maxLength": 2000,
+                  "enum": [
+                    "asc",
+                    "desc"
+                  ]
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "by"
+              ]
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "by": {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  "direction": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "enum": [
+                      "asc",
+                      "desc"
+                    ]
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "by"
+                ]
+              },
+              "minItems": 1,
+              "maxItems": 3
+            }
+          ]
+        },
+        "select": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "minItems": 1,
+          "maxItems": 24
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 200
+        },
+        "rollup": {
+          "type": "object",
+          "properties": {
+            "fields": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "minItems": 1,
+              "maxItems": 12
+            },
+            "aggregate": {
+              "type": "string",
+              "maxLength": 2000,
+              "enum": [
+                "sum",
+                "mean"
+              ]
+            },
+            "label": {
+              "type": "string",
+              "maxLength": 40
+            },
+            "labelField": {
+              "type": "string",
+              "maxLength": 64
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "fields"
+          ]
+        }
+      },
+      "additionalProperties": false
     },
     "datasets": {
       "type": "object",
@@ -939,9 +1190,40 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-reveal-soft"
         }
       },
       "description": "Section with an optional heading wrapping child blocks; an inverse surface sets it on a night band."
+    },
+    "motion-reveal-soft": {
+      "description": "A compiler-owned motion recipe, named by id; a spec cannot supply CSS or script.",
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "reveal-soft",
+            "fade-swap"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "preset"
+          ],
+          "properties": {
+            "preset": {
+              "type": "string",
+              "enum": [
+                "reveal-soft",
+                "fade-swap"
+              ]
+            }
+          }
+        }
+      ]
     },
     "block-spacer": {
       "type": "object",
@@ -969,6 +1251,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Spacer: vertical space without content."
@@ -994,6 +1279,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Divider: semantic separator with an optional label."
@@ -1025,6 +1313,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Heading: h1–h6 with the author-chosen level."
@@ -1061,6 +1352,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Text: single paragraph with body, lead, or caption treatment."
@@ -1088,6 +1382,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "RichText: multiple paragraphs from line breaks."
@@ -1119,6 +1416,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-reveal-soft"
         }
       },
       "description": "Quote: blockquote with an optional attribution."
@@ -1154,6 +1454,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-reveal-soft"
         }
       },
       "description": "Code: preformatted block with optional language and copy target."
@@ -1191,6 +1494,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Badge: inline status chip."
@@ -1222,6 +1528,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Kbd: one or more keys rendered as <kbd> elements."
@@ -1271,6 +1580,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-reveal-soft"
         }
       },
       "description": "KeyValue: label/value pairs rendered as a description list."
@@ -1354,6 +1666,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Icon: a glyph by meaning with a visible caption; the theme picks the pack."
@@ -1433,6 +1748,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-reveal-soft"
         }
       },
       "description": "Card: titled container that holds child blocks."
@@ -1521,6 +1839,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-reveal-soft"
         }
       },
       "description": "Alert: notice with tone and title."
@@ -1609,6 +1930,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-reveal-soft"
         }
       },
       "description": "Callout: highlighted aside with tone, title, and body."
@@ -1694,6 +2018,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Hero: eyebrow, title, and one-line description, optionally over a framed product shot."
@@ -1789,9 +2116,42 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-stagger-figure-roll"
         }
       },
       "description": "Stats: labeled values as a figure list."
+    },
+    "motion-stagger-figure-roll": {
+      "description": "A compiler-owned motion recipe, named by id; a spec cannot supply CSS or script.",
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "stagger",
+            "figure-roll",
+            "fade-swap"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "preset"
+          ],
+          "properties": {
+            "preset": {
+              "type": "string",
+              "enum": [
+                "stagger",
+                "figure-roll",
+                "fade-swap"
+              ]
+            }
+          }
+        }
+      ]
     },
     "block-progress": {
       "type": "object",
@@ -1826,6 +2186,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Progress: single bar with an accessible value range."
@@ -1921,9 +2284,40 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-stagger"
         }
       },
       "description": "Steps: numbered sequence of titled steps."
+    },
+    "motion-stagger": {
+      "description": "A compiler-owned motion recipe, named by id; a spec cannot supply CSS or script.",
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "stagger",
+            "fade-swap"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "preset"
+          ],
+          "properties": {
+            "preset": {
+              "type": "string",
+              "enum": [
+                "stagger",
+                "fade-swap"
+              ]
+            }
+          }
+        }
+      ]
     },
     "block-timeline": {
       "type": "object",
@@ -2021,6 +2415,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-stagger"
         }
       },
       "description": "Timeline: ordered entries with a when/title/body shape."
@@ -2070,6 +2467,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-stagger"
         }
       },
       "description": "List: bulleted items with optional status badges."
@@ -2119,6 +2519,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-stagger"
         }
       },
       "description": "CardGrid: titled cards in a responsive grid."
@@ -2166,6 +2569,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-reveal-soft"
         }
       },
       "description": "Table: columns and rows with a real header row."
@@ -2237,6 +2643,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-reveal-soft"
         }
       },
       "description": "Comparison: two labeled columns of points."
@@ -2319,6 +2728,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "RiskMatrix: risks rated by impact and likelihood."
@@ -2455,6 +2867,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Toolbar: buttons, badges, and links in one accessible row."
@@ -2489,6 +2904,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-reveal-soft"
         }
       },
       "description": "DiagramPanel: embeds trusted output from a diagram adapter (ak:diagram when installed)."
@@ -2533,6 +2951,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Marquee: looping ticker of short items that pauses on hover and stops under reduced motion."
@@ -2589,6 +3010,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Terminal: window-framed session that types in on load; commands, output and errors are styled apart."
@@ -2648,6 +3072,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "File tree: nested folders built from slash-separated paths, with per-file status and notes."
@@ -2729,6 +3156,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Compare: before/after image slider driven by a native range input; without script both images stay visible."
@@ -2760,6 +3190,86 @@
               "value": {
                 "type": "string",
                 "maxLength": 40
+              },
+              "cite": {
+                "type": "object",
+                "properties": {
+                  "dataRef": {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  "field": {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  "aggregate": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "enum": [
+                      "last",
+                      "first",
+                      "sum",
+                      "mean",
+                      "min",
+                      "max",
+                      "count"
+                    ]
+                  },
+                  "transform": {
+                    "description": "The bounded transform a data block takes, applied before the aggregate.",
+                    "$ref": "#/$defs/transform"
+                  },
+                  "format": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "enum": [
+                      "text",
+                      "number",
+                      "integer",
+                      "compact",
+                      "percent",
+                      "currency",
+                      "duration",
+                      "bytes",
+                      "date"
+                    ]
+                  },
+                  "unit": {
+                    "type": "string",
+                    "maxLength": 12
+                  },
+                  "currency": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "enum": [
+                      "USD",
+                      "EUR",
+                      "GBP",
+                      "JPY",
+                      "CNY",
+                      "INR",
+                      "VND",
+                      "AUD",
+                      "CAD",
+                      "CHF",
+                      "SGD",
+                      "KRW"
+                    ]
+                  },
+                  "decimals": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 4
+                  },
+                  "signed": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "dataRef",
+                  "field"
+                ]
               },
               "delta": {
                 "type": "string",
@@ -2798,8 +3308,7 @@
             },
             "additionalProperties": false,
             "required": [
-              "label",
-              "value"
+              "label"
             ]
           },
           "minItems": 1,
@@ -2812,9 +3321,40 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-figure-roll"
         }
       },
       "description": "KPI: metric cards with value, signed delta, good/bad direction, and an optional sparkline series."
+    },
+    "motion-figure-roll": {
+      "description": "A compiler-owned motion recipe, named by id; a spec cannot supply CSS or script.",
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "figure-roll",
+            "fade-swap"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "preset"
+          ],
+          "properties": {
+            "preset": {
+              "type": "string",
+              "enum": [
+                "figure-roll",
+                "fade-swap"
+              ]
+            }
+          }
+        }
+      ]
     },
     "block-showcase": {
       "type": "object",
@@ -2885,6 +3425,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Showcase: eyebrow, title, text, and bullets beside an image in a browser frame; the image side can flip."
@@ -2932,6 +3475,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Checklist: items marked done or open, with a visible completion count."
@@ -2997,6 +3543,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "CTA: eyebrow, oversized title, text, and up to three link actions on a night band."
@@ -3033,6 +3582,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-reveal-soft"
         }
       },
       "description": "Image: local asset or allowlisted URL with required alt text."
@@ -3105,6 +3657,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-reveal-soft"
         }
       },
       "description": "Video: plays local sources; a provider or network source degrades to a poster plus link."
@@ -3173,6 +3728,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Audio: plays local sources; a provider or network source degrades to metadata plus link."
@@ -3258,6 +3816,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Button: clickable control with declarative action bindings."
@@ -3289,6 +3850,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Link: allowlisted URL with descriptive text."
@@ -3337,6 +3901,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Slider: range input with pointer drag and full keyboard support."
@@ -3371,6 +3938,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Search: labeled filter input bound to a collection."
@@ -3427,9 +3997,40 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-dialog-pop"
         }
       },
       "description": "Dialog: native <dialog> with labeled title and close controls."
+    },
+    "motion-dialog-pop": {
+      "description": "A compiler-owned motion recipe, named by id; a spec cannot supply CSS or script.",
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "fade-swap",
+            "dialog-pop"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "preset"
+          ],
+          "properties": {
+            "preset": {
+              "type": "string",
+              "enum": [
+                "fade-swap",
+                "dialog-pop"
+              ]
+            }
+          }
+        }
+      ]
     },
     "block-diff-summary": {
       "type": "object",
@@ -3492,6 +4093,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "DiffSummary: file paths with change status and line counts."
@@ -3554,6 +4158,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "CodeReview: good/bad/ugly/concern/question findings."
@@ -3620,9 +4227,40 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-tabs-slide"
         }
       },
       "description": "Tabs: roving-tabindex tablist with tabpanels."
+    },
+    "motion-tabs-slide": {
+      "description": "A compiler-owned motion recipe, named by id; a spec cannot supply CSS or script.",
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "fade-swap",
+            "tabs-slide"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "preset"
+          ],
+          "properties": {
+            "preset": {
+              "type": "string",
+              "enum": [
+                "fade-swap",
+                "tabs-slide"
+              ]
+            }
+          }
+        }
+      ]
     },
     "block-accordion": {
       "type": "object",
@@ -3681,9 +4319,40 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-accordion-expand"
         }
       },
       "description": "Accordion: disclosure sections that expand and collapse."
+    },
+    "motion-accordion-expand": {
+      "description": "A compiler-owned motion recipe, named by id; a spec cannot supply CSS or script.",
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "fade-swap",
+            "accordion-expand"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "preset"
+          ],
+          "properties": {
+            "preset": {
+              "type": "string",
+              "enum": [
+                "fade-swap",
+                "accordion-expand"
+              ]
+            }
+          }
+        }
+      ]
     },
     "block-carousel": {
       "type": "object",
@@ -3743,6 +4412,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Carousel: prev/next, keyboard, and swipe across slides."
@@ -3823,6 +4495,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Bento: asymmetric tile grid; a tile can hold an eyebrow, title, text, a large figure, and a local image."
@@ -3866,6 +4541,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Stack: children flow vertically with a controlled gap."
@@ -3934,6 +4612,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Grid: children in N columns that collapse on narrow viewports."
@@ -3967,6 +4648,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Split: two child groups side by side, stacking when narrow."
@@ -4021,6 +4705,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Grid item: spans 1–12 tracks of its grid, with tablet and mobile spans."
@@ -4062,6 +4749,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Sidebar layout: `sidebar` blocks beside the main `blocks`; stacks when narrow."
@@ -4095,6 +4785,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Main/aside: main `blocks` with an `aside` column; stacks below it when narrow."
@@ -4132,6 +4825,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Rail layout: compact `rail` beside the main `blocks`; a top strip when narrow."
@@ -4225,6 +4921,9 @@
                 "minimum": 0,
                 "maximum": 4
               },
+              "signed": {
+                "type": "boolean"
+              },
               "align": {
                 "type": "string",
                 "maxLength": 2000,
@@ -4288,158 +4987,13 @@
           "$ref": "#/$defs/dataRows"
         },
         "transform": {
-          "type": "object",
-          "properties": {
-            "filter": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "field": {
-                    "type": "string",
-                    "maxLength": 64
-                  },
-                  "equals": {
-                    "description": "A string, number, boolean, or null.",
-                    "$ref": "#/$defs/dataScalar"
-                  },
-                  "notEquals": {
-                    "description": "A string, number, boolean, or null.",
-                    "$ref": "#/$defs/dataScalar"
-                  },
-                  "in": {
-                    "type": "array",
-                    "items": {
-                      "description": "A string, number, boolean, or null.",
-                      "$ref": "#/$defs/dataScalar"
-                    },
-                    "minItems": 1,
-                    "maxItems": 20
-                  },
-                  "gt": {
-                    "type": "number"
-                  },
-                  "gte": {
-                    "type": "number"
-                  },
-                  "lt": {
-                    "type": "number"
-                  },
-                  "lte": {
-                    "type": "number"
-                  }
-                },
-                "additionalProperties": false,
-                "required": [
-                  "field"
-                ]
-              },
-              "minItems": 1,
-              "maxItems": 8
-            },
-            "groupBy": {
-              "type": "object",
-              "properties": {
-                "field": {
-                  "type": "string",
-                  "maxLength": 64
-                },
-                "aggregate": {
-                  "type": "string",
-                  "maxLength": 2000,
-                  "enum": [
-                    "count",
-                    "sum",
-                    "mean",
-                    "min",
-                    "max"
-                  ]
-                },
-                "value": {
-                  "type": "string",
-                  "maxLength": 64
-                },
-                "as": {
-                  "type": "string",
-                  "maxLength": 64
-                }
-              },
-              "additionalProperties": false,
-              "required": [
-                "field",
-                "aggregate"
-              ]
-            },
-            "sort": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "by": {
-                      "type": "string",
-                      "maxLength": 64
-                    },
-                    "direction": {
-                      "type": "string",
-                      "maxLength": 2000,
-                      "enum": [
-                        "asc",
-                        "desc"
-                      ]
-                    }
-                  },
-                  "additionalProperties": false,
-                  "required": [
-                    "by"
-                  ]
-                },
-                {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "by": {
-                        "type": "string",
-                        "maxLength": 64
-                      },
-                      "direction": {
-                        "type": "string",
-                        "maxLength": 2000,
-                        "enum": [
-                          "asc",
-                          "desc"
-                        ]
-                      }
-                    },
-                    "additionalProperties": false,
-                    "required": [
-                      "by"
-                    ]
-                  },
-                  "minItems": 1,
-                  "maxItems": 3
-                }
-              ]
-            },
-            "select": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "maxLength": 64
-              },
-              "minItems": 1,
-              "maxItems": 24
-            },
-            "limit": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 200
-            }
-          },
-          "additionalProperties": false
+          "$ref": "#/$defs/transform"
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-reveal-soft"
         }
       },
       "description": "Data table: typed columns (number, percent, badge, link, progress, sparkline), sort, search."
@@ -4592,6 +5146,9 @@
               "minimum": 0,
               "maximum": 4
             },
+            "signed": {
+              "type": "boolean"
+            },
             "min": {
               "type": "number"
             },
@@ -4654,6 +5211,9 @@
               "minimum": 0,
               "maximum": 4
             },
+            "signed": {
+              "type": "boolean"
+            },
             "min": {
               "type": "number"
             },
@@ -4715,6 +5275,9 @@
               "type": "integer",
               "minimum": 0,
               "maximum": 4
+            },
+            "signed": {
+              "type": "boolean"
             },
             "min": {
               "type": "number"
@@ -4818,158 +5381,13 @@
           "$ref": "#/$defs/dataRows"
         },
         "transform": {
-          "type": "object",
-          "properties": {
-            "filter": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "field": {
-                    "type": "string",
-                    "maxLength": 64
-                  },
-                  "equals": {
-                    "description": "A string, number, boolean, or null.",
-                    "$ref": "#/$defs/dataScalar"
-                  },
-                  "notEquals": {
-                    "description": "A string, number, boolean, or null.",
-                    "$ref": "#/$defs/dataScalar"
-                  },
-                  "in": {
-                    "type": "array",
-                    "items": {
-                      "description": "A string, number, boolean, or null.",
-                      "$ref": "#/$defs/dataScalar"
-                    },
-                    "minItems": 1,
-                    "maxItems": 20
-                  },
-                  "gt": {
-                    "type": "number"
-                  },
-                  "gte": {
-                    "type": "number"
-                  },
-                  "lt": {
-                    "type": "number"
-                  },
-                  "lte": {
-                    "type": "number"
-                  }
-                },
-                "additionalProperties": false,
-                "required": [
-                  "field"
-                ]
-              },
-              "minItems": 1,
-              "maxItems": 8
-            },
-            "groupBy": {
-              "type": "object",
-              "properties": {
-                "field": {
-                  "type": "string",
-                  "maxLength": 64
-                },
-                "aggregate": {
-                  "type": "string",
-                  "maxLength": 2000,
-                  "enum": [
-                    "count",
-                    "sum",
-                    "mean",
-                    "min",
-                    "max"
-                  ]
-                },
-                "value": {
-                  "type": "string",
-                  "maxLength": 64
-                },
-                "as": {
-                  "type": "string",
-                  "maxLength": 64
-                }
-              },
-              "additionalProperties": false,
-              "required": [
-                "field",
-                "aggregate"
-              ]
-            },
-            "sort": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "by": {
-                      "type": "string",
-                      "maxLength": 64
-                    },
-                    "direction": {
-                      "type": "string",
-                      "maxLength": 2000,
-                      "enum": [
-                        "asc",
-                        "desc"
-                      ]
-                    }
-                  },
-                  "additionalProperties": false,
-                  "required": [
-                    "by"
-                  ]
-                },
-                {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "by": {
-                        "type": "string",
-                        "maxLength": 64
-                      },
-                      "direction": {
-                        "type": "string",
-                        "maxLength": 2000,
-                        "enum": [
-                          "asc",
-                          "desc"
-                        ]
-                      }
-                    },
-                    "additionalProperties": false,
-                    "required": [
-                      "by"
-                    ]
-                  },
-                  "minItems": 1,
-                  "maxItems": 3
-                }
-              ]
-            },
-            "select": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "maxLength": 64
-              },
-              "minItems": 1,
-              "maxItems": 24
-            },
-            "limit": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 200
-            }
-          },
-          "additionalProperties": false
+          "$ref": "#/$defs/transform"
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-reveal-soft"
         }
       },
       "description": "Chart: bar, line, area, pie, scatter and 11 more kinds, from labels/series or bound rows (x, y, value)."
@@ -5096,158 +5514,13 @@
           "$ref": "#/$defs/dataRows"
         },
         "transform": {
-          "type": "object",
-          "properties": {
-            "filter": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "field": {
-                    "type": "string",
-                    "maxLength": 64
-                  },
-                  "equals": {
-                    "description": "A string, number, boolean, or null.",
-                    "$ref": "#/$defs/dataScalar"
-                  },
-                  "notEquals": {
-                    "description": "A string, number, boolean, or null.",
-                    "$ref": "#/$defs/dataScalar"
-                  },
-                  "in": {
-                    "type": "array",
-                    "items": {
-                      "description": "A string, number, boolean, or null.",
-                      "$ref": "#/$defs/dataScalar"
-                    },
-                    "minItems": 1,
-                    "maxItems": 20
-                  },
-                  "gt": {
-                    "type": "number"
-                  },
-                  "gte": {
-                    "type": "number"
-                  },
-                  "lt": {
-                    "type": "number"
-                  },
-                  "lte": {
-                    "type": "number"
-                  }
-                },
-                "additionalProperties": false,
-                "required": [
-                  "field"
-                ]
-              },
-              "minItems": 1,
-              "maxItems": 8
-            },
-            "groupBy": {
-              "type": "object",
-              "properties": {
-                "field": {
-                  "type": "string",
-                  "maxLength": 64
-                },
-                "aggregate": {
-                  "type": "string",
-                  "maxLength": 2000,
-                  "enum": [
-                    "count",
-                    "sum",
-                    "mean",
-                    "min",
-                    "max"
-                  ]
-                },
-                "value": {
-                  "type": "string",
-                  "maxLength": 64
-                },
-                "as": {
-                  "type": "string",
-                  "maxLength": 64
-                }
-              },
-              "additionalProperties": false,
-              "required": [
-                "field",
-                "aggregate"
-              ]
-            },
-            "sort": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "by": {
-                      "type": "string",
-                      "maxLength": 64
-                    },
-                    "direction": {
-                      "type": "string",
-                      "maxLength": 2000,
-                      "enum": [
-                        "asc",
-                        "desc"
-                      ]
-                    }
-                  },
-                  "additionalProperties": false,
-                  "required": [
-                    "by"
-                  ]
-                },
-                {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "by": {
-                        "type": "string",
-                        "maxLength": 64
-                      },
-                      "direction": {
-                        "type": "string",
-                        "maxLength": 2000,
-                        "enum": [
-                          "asc",
-                          "desc"
-                        ]
-                      }
-                    },
-                    "additionalProperties": false,
-                    "required": [
-                      "by"
-                    ]
-                  },
-                  "minItems": 1,
-                  "maxItems": 3
-                }
-              ]
-            },
-            "select": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "maxLength": 64
-              },
-              "minItems": 1,
-              "maxItems": 24
-            },
-            "limit": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 200
-            }
-          },
-          "additionalProperties": false
+          "$ref": "#/$defs/transform"
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Kanban: 2-8 columns of cards with owner, tags and status; cards may come from a dataset."
@@ -5348,6 +5621,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Roadmap: items spanning 2-24 ordered periods in up to 8 lanes, with planned/active/done/at-risk status."
@@ -5440,6 +5716,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Test results: suites of pass/fail/skip/flaky cases; the summary is computed and failures come first."
@@ -5531,158 +5810,13 @@
           "$ref": "#/$defs/dataRows"
         },
         "transform": {
-          "type": "object",
-          "properties": {
-            "filter": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "field": {
-                    "type": "string",
-                    "maxLength": 64
-                  },
-                  "equals": {
-                    "description": "A string, number, boolean, or null.",
-                    "$ref": "#/$defs/dataScalar"
-                  },
-                  "notEquals": {
-                    "description": "A string, number, boolean, or null.",
-                    "$ref": "#/$defs/dataScalar"
-                  },
-                  "in": {
-                    "type": "array",
-                    "items": {
-                      "description": "A string, number, boolean, or null.",
-                      "$ref": "#/$defs/dataScalar"
-                    },
-                    "minItems": 1,
-                    "maxItems": 20
-                  },
-                  "gt": {
-                    "type": "number"
-                  },
-                  "gte": {
-                    "type": "number"
-                  },
-                  "lt": {
-                    "type": "number"
-                  },
-                  "lte": {
-                    "type": "number"
-                  }
-                },
-                "additionalProperties": false,
-                "required": [
-                  "field"
-                ]
-              },
-              "minItems": 1,
-              "maxItems": 8
-            },
-            "groupBy": {
-              "type": "object",
-              "properties": {
-                "field": {
-                  "type": "string",
-                  "maxLength": 64
-                },
-                "aggregate": {
-                  "type": "string",
-                  "maxLength": 2000,
-                  "enum": [
-                    "count",
-                    "sum",
-                    "mean",
-                    "min",
-                    "max"
-                  ]
-                },
-                "value": {
-                  "type": "string",
-                  "maxLength": 64
-                },
-                "as": {
-                  "type": "string",
-                  "maxLength": 64
-                }
-              },
-              "additionalProperties": false,
-              "required": [
-                "field",
-                "aggregate"
-              ]
-            },
-            "sort": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "by": {
-                      "type": "string",
-                      "maxLength": 64
-                    },
-                    "direction": {
-                      "type": "string",
-                      "maxLength": 2000,
-                      "enum": [
-                        "asc",
-                        "desc"
-                      ]
-                    }
-                  },
-                  "additionalProperties": false,
-                  "required": [
-                    "by"
-                  ]
-                },
-                {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "by": {
-                        "type": "string",
-                        "maxLength": 64
-                      },
-                      "direction": {
-                        "type": "string",
-                        "maxLength": 2000,
-                        "enum": [
-                          "asc",
-                          "desc"
-                        ]
-                      }
-                    },
-                    "additionalProperties": false,
-                    "required": [
-                      "by"
-                    ]
-                  },
-                  "minItems": 1,
-                  "maxItems": 3
-                }
-              ]
-            },
-            "select": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "maxLength": 64
-              },
-              "minItems": 1,
-              "maxItems": 24
-            },
-            "limit": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 200
-            }
-          },
-          "additionalProperties": false
+          "$ref": "#/$defs/transform"
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Log viewer: up to 200 leveled log lines with time and source; searchable and filterable by level."
@@ -5816,6 +5950,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "API endpoint: method and path with copy, a parameters table, a request body and status responses."
@@ -5873,6 +6010,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Schema viewer: up to 120 typed fields from dotted paths as a tree; missing parents become objects."
@@ -6087,158 +6227,13 @@
           "$ref": "#/$defs/dataRows"
         },
         "transform": {
-          "type": "object",
-          "properties": {
-            "filter": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "field": {
-                    "type": "string",
-                    "maxLength": 64
-                  },
-                  "equals": {
-                    "description": "A string, number, boolean, or null.",
-                    "$ref": "#/$defs/dataScalar"
-                  },
-                  "notEquals": {
-                    "description": "A string, number, boolean, or null.",
-                    "$ref": "#/$defs/dataScalar"
-                  },
-                  "in": {
-                    "type": "array",
-                    "items": {
-                      "description": "A string, number, boolean, or null.",
-                      "$ref": "#/$defs/dataScalar"
-                    },
-                    "minItems": 1,
-                    "maxItems": 20
-                  },
-                  "gt": {
-                    "type": "number"
-                  },
-                  "gte": {
-                    "type": "number"
-                  },
-                  "lt": {
-                    "type": "number"
-                  },
-                  "lte": {
-                    "type": "number"
-                  }
-                },
-                "additionalProperties": false,
-                "required": [
-                  "field"
-                ]
-              },
-              "minItems": 1,
-              "maxItems": 8
-            },
-            "groupBy": {
-              "type": "object",
-              "properties": {
-                "field": {
-                  "type": "string",
-                  "maxLength": 64
-                },
-                "aggregate": {
-                  "type": "string",
-                  "maxLength": 2000,
-                  "enum": [
-                    "count",
-                    "sum",
-                    "mean",
-                    "min",
-                    "max"
-                  ]
-                },
-                "value": {
-                  "type": "string",
-                  "maxLength": 64
-                },
-                "as": {
-                  "type": "string",
-                  "maxLength": 64
-                }
-              },
-              "additionalProperties": false,
-              "required": [
-                "field",
-                "aggregate"
-              ]
-            },
-            "sort": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "by": {
-                      "type": "string",
-                      "maxLength": 64
-                    },
-                    "direction": {
-                      "type": "string",
-                      "maxLength": 2000,
-                      "enum": [
-                        "asc",
-                        "desc"
-                      ]
-                    }
-                  },
-                  "additionalProperties": false,
-                  "required": [
-                    "by"
-                  ]
-                },
-                {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "by": {
-                        "type": "string",
-                        "maxLength": 64
-                      },
-                      "direction": {
-                        "type": "string",
-                        "maxLength": 2000,
-                        "enum": [
-                          "asc",
-                          "desc"
-                        ]
-                      }
-                    },
-                    "additionalProperties": false,
-                    "required": [
-                      "by"
-                    ]
-                  },
-                  "minItems": 1,
-                  "maxItems": 3
-                }
-              ]
-            },
-            "select": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "maxLength": 64
-              },
-              "minItems": 1,
-              "maxItems": 24
-            },
-            "limit": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 200
-            }
-          },
-          "additionalProperties": false
+          "$ref": "#/$defs/transform"
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Benchmark comparison: baseline vs candidate metrics; computes delta, % change, verdict and a summary."
@@ -6379,158 +6374,13 @@
           "$ref": "#/$defs/dataRows"
         },
         "transform": {
-          "type": "object",
-          "properties": {
-            "filter": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "field": {
-                    "type": "string",
-                    "maxLength": 64
-                  },
-                  "equals": {
-                    "description": "A string, number, boolean, or null.",
-                    "$ref": "#/$defs/dataScalar"
-                  },
-                  "notEquals": {
-                    "description": "A string, number, boolean, or null.",
-                    "$ref": "#/$defs/dataScalar"
-                  },
-                  "in": {
-                    "type": "array",
-                    "items": {
-                      "description": "A string, number, boolean, or null.",
-                      "$ref": "#/$defs/dataScalar"
-                    },
-                    "minItems": 1,
-                    "maxItems": 20
-                  },
-                  "gt": {
-                    "type": "number"
-                  },
-                  "gte": {
-                    "type": "number"
-                  },
-                  "lt": {
-                    "type": "number"
-                  },
-                  "lte": {
-                    "type": "number"
-                  }
-                },
-                "additionalProperties": false,
-                "required": [
-                  "field"
-                ]
-              },
-              "minItems": 1,
-              "maxItems": 8
-            },
-            "groupBy": {
-              "type": "object",
-              "properties": {
-                "field": {
-                  "type": "string",
-                  "maxLength": 64
-                },
-                "aggregate": {
-                  "type": "string",
-                  "maxLength": 2000,
-                  "enum": [
-                    "count",
-                    "sum",
-                    "mean",
-                    "min",
-                    "max"
-                  ]
-                },
-                "value": {
-                  "type": "string",
-                  "maxLength": 64
-                },
-                "as": {
-                  "type": "string",
-                  "maxLength": 64
-                }
-              },
-              "additionalProperties": false,
-              "required": [
-                "field",
-                "aggregate"
-              ]
-            },
-            "sort": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "by": {
-                      "type": "string",
-                      "maxLength": 64
-                    },
-                    "direction": {
-                      "type": "string",
-                      "maxLength": 2000,
-                      "enum": [
-                        "asc",
-                        "desc"
-                      ]
-                    }
-                  },
-                  "additionalProperties": false,
-                  "required": [
-                    "by"
-                  ]
-                },
-                {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "by": {
-                        "type": "string",
-                        "maxLength": 64
-                      },
-                      "direction": {
-                        "type": "string",
-                        "maxLength": 2000,
-                        "enum": [
-                          "asc",
-                          "desc"
-                        ]
-                      }
-                    },
-                    "additionalProperties": false,
-                    "required": [
-                      "by"
-                    ]
-                  },
-                  "minItems": 1,
-                  "maxItems": 3
-                }
-              ]
-            },
-            "select": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "maxLength": 64
-              },
-              "minItems": 1,
-              "maxItems": 24
-            },
-            "limit": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 200
-            }
-          },
-          "additionalProperties": false
+          "$ref": "#/$defs/transform"
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-reveal-soft"
         }
       },
       "description": "Metric breakdown: parts of a total as a stacked bar and a list with value and share %."
@@ -6603,6 +6453,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Annotated image: numbered pins at x/y percent over an image, plus the notes as a list."
@@ -6675,6 +6528,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "References: numbered citations with title, authors, source, year, link and note; anchor #ref-<id>."
@@ -6734,6 +6590,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Gallery: responsive image grid with captions; thumbnails open full size."
@@ -6853,6 +6712,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-reveal-soft"
         }
       },
       "description": "Pricing: 1-4 plan cards with price, features and a call to action."
@@ -6924,6 +6786,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Feature matrix: rows of features against 2-5 plans; true/false render as marks."
@@ -6986,6 +6851,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-reveal-soft"
         }
       },
       "description": "Testimonial: 1 featured quote, or 2-9 quotes in a grid."
@@ -7039,6 +6907,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Logo cloud: 2-24 logos; the name is the alt text and the blocked fallback."
@@ -7118,6 +6989,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "People: up to 24 profiles with avatar, role, short bio and links."
@@ -7193,6 +7067,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Calendar: one YYYY-MM month grid with dated events; an agenda on phones."
@@ -7265,6 +7142,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Select: labeled native <select> that writes state or filters in a filter-bar."
@@ -7337,6 +7217,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Radio group: native radios in a fieldset; writes state or filters in a filter-bar."
@@ -7382,6 +7265,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Checkbox: labeled native checkbox; writes a boolean or filters to truthy rows."
@@ -7427,6 +7313,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Switch: native checkbox with role=\"switch\"; writes a boolean or filters to truthy rows."
@@ -7490,6 +7379,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Text input: labeled native text field; writes state or filters rows by substring."
@@ -7561,6 +7453,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Number input: labeled native number field; writes state or filters by min/max."
@@ -7616,6 +7511,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Date input: labeled native date field (YYYY-MM-DD); writes state or filters by range."
@@ -7650,6 +7548,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Filter bar: 1-8 controls (field + match) filtering a target; adds a live count and Reset."
@@ -7708,6 +7609,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Decision: question, context, up to 6 options (one may be recommended) and a note; needs a feedback block."
@@ -7738,6 +7642,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Feedback: one per page, last; turns on comments and copies them with decision answers."
@@ -7814,6 +7721,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Publication header: `name` (the h1), supplied `date`/`issue`/`edition`, `tagline`, `description`, `sections`."
@@ -7896,6 +7806,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-reveal-soft"
         }
       },
       "description": "Story: `title`, `prominence` lead|feature|brief, `category`, `source`, `byline`, `summary`, `body`, `image`."
@@ -7953,6 +7866,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Digest list: optional `title`, `items` of `{date, title, text, href}`."
@@ -8010,6 +7926,9 @@
         },
         "visibleWhen": {
           "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
         }
       },
       "description": "Editorial layout: `lead`, `secondary` and `aside` block lists; three columns wide, one when narrow."

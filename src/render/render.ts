@@ -15,6 +15,7 @@ import { RenderError } from '../errors.js';
 import { stableHash } from '../hash.js';
 import { ICON_CSS, type IconCollector, renderIconSprite } from '../icons/icon-render.js';
 import type { IrDocument, IrNode } from '../ir.js';
+import { getMotionRecipe, motionRecipeCss } from '../motion/recipes.js';
 import type { BlockRegistry, FeatureModule } from '../registry/block-module.js';
 import { DEFAULT_REGISTRY } from '../registry/registry.js';
 import type { RuntimeFeature } from '../registry/roster.js';
@@ -27,6 +28,7 @@ import { type RenderContext, renderNode } from './blocks.js';
 import { assembleDocument } from './document.js';
 import { renderAttributes } from './escape.js';
 import { embeddedFontCss } from './font-faces.js';
+import { applyMotionPolicy, motionPolicyOf, PRINT_STILL_CSS } from './motion.js';
 import { hasOutline, renderOutline } from './outline.js';
 import { recipeCss } from './recipe-styles.js';
 import { buildRuntime, needsLiveRegion } from './runtime.js';
@@ -96,6 +98,7 @@ const FEATURE_ORDER: readonly RuntimeFeature[] = [
   'showcase',
   'cta',
   'state',
+  'motion',
 ];
 
 function collectFeatures(ir: IrDocument, includeTheme: boolean): Set<RuntimeFeature> {
@@ -144,22 +147,41 @@ function buildCss(
   // Recipes restyle feature surfaces, so they follow every feature sheet.
   const recipes = recipeCss(theme.recipes, features);
   if (recipes !== '') sheets.push(recipes);
+  // Motion recipes are keyed on their own attribute and follow the feature
+  // sheets they animate; the theme still overrides their duration.
+  const motion = motionRecipeCss(usedMotionRecipes(ir));
+  if (motion !== '') sheets.push(motion);
   sheets.push(theme.css);
   // The night band redeclares colour tokens, so it must follow the theme sheet.
   if (usesInverseSurface(ir.nodes)) sheets.push(inverseSurfaceCss(theme));
-  const css = sheets.join('\n');
-  return theme.motionPolicy === 'none' ? withoutMotion(css) : css;
+  sheets.push(PRINT_STILL_CSS);
+  // See `motion.ts` for what each effective motion state keeps.
+  return applyMotionPolicy(sheets.join('\n'), motionPolicyOf(theme.motionPolicy));
 }
 
-/**
- * Every animation in the emitted CSS sits behind
- * `(prefers-reduced-motion:no-preference)`. A theme that disables motion turns
- * that condition into one that never matches, so the page renders exactly as it
- * does for a reader who asked the system to reduce motion.
- */
-const MOTION_ALLOWED = '(prefers-reduced-motion:no-preference)';
-function withoutMotion(css: string): string {
-  return css.replaceAll(MOTION_ALLOWED, `${MOTION_ALLOWED} and (prefers-reduced-motion:reduce)`);
+/** Recipe ids the page's blocks opt into. */
+function usedMotionRecipes(ir: IrDocument): Set<string> {
+  const used = new Set<string>();
+  for (const node of ir.nodes) if (node.motion !== undefined) used.add(node.motion.preset);
+  return used;
+}
+
+/** True when a binding anywhere in a node, nested props included, runs `action`. */
+function usesAction(value: unknown, action: string, inBindings = false): boolean {
+  if (Array.isArray(value)) return value.some((item) => usesAction(item, action, inBindings));
+  if (value === null || typeof value !== 'object') return false;
+  const record = value as Record<string, unknown>;
+  if (inBindings && record.action === action) return true;
+  return Object.entries(record).some(([key, child]) =>
+    usesAction(child, action, inBindings || key === 'on'),
+  );
+}
+
+/** The `theme` action needs the theme runtime even when the page has no toggle. */
+function usesThemeAction(ir: IrDocument): boolean {
+  return ir.nodes.some(
+    (node) => usesAction(node.bindings, 'theme', true) || usesAction(node.props, 'theme'),
+  );
 }
 
 function bodyNeedsRuntime(body: string): boolean {
@@ -170,13 +192,33 @@ function nodeIndex(ir: IrDocument): Map<string, IrNode> {
   return new Map(ir.nodes.map((node) => [node.id, node]));
 }
 
+const OPENING_TAG = /^(\s*(?:<!--[\s\S]*?-->\s*)*<[a-zA-Z][\w-]*)([^>]*)>/u;
+
+/**
+ * Mark a block's outer element with the motion recipe it opts into. An
+ * arrival recipe also joins the runtime's arrival observer through
+ * `data-ak-animate`, which some blocks already carry.
+ */
+function withMotion(html: string, node: IrNode): string {
+  if (node.motion === undefined) return html;
+  const recipe = getMotionRecipe(node.motion.preset);
+  if (recipe === undefined) return html;
+  return html.replace(OPENING_TAG, (_match, open: string, rest: string) => {
+    const arrival =
+      recipe.runtime === 'in-view' && !/\sdata-ak-animate[\s=>]|\sdata-ak-animate$/u.test(rest)
+        ? ' data-ak-animate'
+        : '';
+    return `${open}${rest} data-ak-motion="${recipe.id}"${arrival}>`;
+  });
+}
+
 /**
  * Render a node, wrapped when it carries `visibleWhen`. The wrapper starts
  * hidden exactly when the condition is false for the initial state, so the page
  * reads correctly without scripts; the runtime toggles it afterwards.
  */
 function renderVisible(node: IrNode, context: RenderContext): string {
-  const html = renderNode(node, context);
+  const html = withMotion(renderNode(node, context), node);
   if (node.when === undefined) return html;
   const attributes = renderAttributes({
     class: 'ak-when',
@@ -297,6 +339,8 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
         state: ir.state,
         hasBindings: bodyNeedsRuntime(body),
         moduleFeatures,
+        motion: usedMotionRecipes(ir),
+        themeAction: usesThemeAction(ir),
       })
     : '';
 
@@ -309,7 +353,7 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
     allowedOrigins: collectOrigins(ir, registry),
     themeToggle: includeThemeToggle,
     density: resolved.density,
-    motionDisabled: resolved.motionPolicy === 'none',
+    motion: motionPolicyOf(resolved.motionPolicy),
     recipes: resolved.recipes,
     outline: renderOutline(ir),
     // Declared by the blocks themselves: the theme toggle alone announces nothing.

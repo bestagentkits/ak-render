@@ -13,6 +13,7 @@
  */
 
 import { CAROUSEL, TABS } from '../blocks/composition/composition-runtime.js';
+import { MOTION_DIALOG, motionRuntime } from '../motion/motion-runtime.js';
 import type { FeatureModule } from '../registry/block-module.js';
 import type { RuntimeFeature } from '../registry/roster.js';
 import { serializeJsonForScript } from './escape.js';
@@ -27,6 +28,13 @@ export interface RuntimeOptions {
   hasBindings: boolean;
   /** Registry features the page uses, in registry order. */
   moduleFeatures?: readonly FeatureModule[];
+  /** Motion recipe ids the page's blocks opt into. */
+  motion?: ReadonlySet<string>;
+  /**
+   * True when a binding runs the `theme` action. The theme runtime then ships
+   * without the toggle feature, whose stylesheet and marker belong to the toggle.
+   */
+  themeAction?: boolean;
 }
 
 const helpers = (conditions: boolean): string => `
@@ -34,7 +42,8 @@ function q(sel, ctx) { return (ctx || doc).querySelector(sel); }
 function qa(sel, ctx) { return Array.prototype.slice.call((ctx || doc).querySelectorAll(sel)); }
 function byId(id) { return qa('[data-ak-id="' + id + '"]'); }
 function motionAllowed() {
-  if (root.getAttribute('data-motion') === 'none') return false;
+  // A theme policy of reduced or none keeps script-driven motion off.
+  if (root.hasAttribute('data-motion')) return false;
   return !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 }
 function announce(message) {
@@ -145,7 +154,7 @@ function run(action, source, detail) {
   if (type === 'toggle') {
     var nodes = byId(targetId);
     nodes.forEach(function (node) {
-      if (node.tagName === 'DIALOG') openDialog(node);
+      if (node.tagName === 'DIALOG') toggleDialog(node);
       else if (node.tagName === 'DETAILS') node.open = !node.open;
       else if (node.hasAttribute('data-ak-theme-toggle')) toggleTheme(node);
       else {
@@ -467,6 +476,10 @@ function closeDialog(dialog) {
   else dialog.removeAttribute('open');
   if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
   fire(dialog, 'close');
+}
+function toggleDialog(dialog) {
+  if (dialog.hasAttribute('open')) closeDialog(dialog);
+  else openDialog(dialog);
 }`;
 
 const SLIDER = `
@@ -543,8 +556,7 @@ doc.addEventListener('keydown', function (event) {
 }, false);`;
 
 const BOOT = `
-syncBindings();
-restoreTheme();`;
+syncBindings();`;
 
 /** Build the emitted runtime for the features a page actually uses. */
 export function buildRuntime(options: RuntimeOptions): string {
@@ -552,11 +564,14 @@ export function buildRuntime(options: RuntimeOptions): string {
   const modules = options.moduleFeatures ?? [];
   const conditions = features.has('state');
   const parts: string[] = [];
+  const motion = options.motion ?? new Set<string>();
+  const lifecycle = motionRuntime(motion);
+  const theme = features.has('theme') || options.themeAction === true;
 
   if (conditions) parts.push(STATE);
-  if (features.has('theme')) parts.push(THEME);
+  if (theme) parts.push(THEME);
   if (features.has('copy')) parts.push(COPY);
-  if (features.has('dialog')) parts.push(DIALOG);
+  if (features.has('dialog')) parts.push(motion.has('dialog-pop') ? MOTION_DIALOG : DIALOG);
   if (features.has('filter')) parts.push(FILTER);
   if (features.has('carousel')) parts.push(CAROUSEL);
   if (features.has('slider')) parts.push(SLIDER);
@@ -567,6 +582,7 @@ export function buildRuntime(options: RuntimeOptions): string {
   for (const feature of modules) {
     if (feature.script !== undefined) parts.push(feature.script.code);
   }
+  parts.push(...lifecycle.code);
   parts.push(EFFECTS);
 
   const wiring: string[] = [];
@@ -580,6 +596,8 @@ export function buildRuntime(options: RuntimeOptions): string {
   for (const feature of modules) {
     if (feature.script?.boot !== undefined) wiring.push(feature.script.boot);
   }
+  // Motion wires after the blocks it watches, so their own setup never plays.
+  wiring.push(...lifecycle.boot);
   wiring.push('wireEffects();');
 
   return [
@@ -596,6 +614,8 @@ export function buildRuntime(options: RuntimeOptions): string {
     ...parts,
     DELEGATION,
     BOOT,
+    // restoreTheme is defined only where the theme part ships.
+    theme ? 'restoreTheme();' : '',
     ...wiring,
     '})();',
   ]

@@ -47,6 +47,8 @@ export interface FormatSpec {
   currency?: string;
   /** Fixed number of decimals (0–4). Omitted: a sensible maximum, trailing zeros trimmed. */
   decimals?: number;
+  /** Prefix a positive value with `+`, for deltas and changes. */
+  signed?: boolean;
 }
 
 /** Prop-schema fields to spread into a column or axis schema. */
@@ -60,6 +62,11 @@ export const FORMAT_FIELDS: Record<string, PropSchema> = {
   unit: { kind: 'string', maxLength: 12, description: 'Appended to number-like values.' },
   currency: { kind: 'string', enum: CURRENCIES, default: 'USD' },
   decimals: { kind: 'number', integer: true, min: 0, max: 4 },
+  signed: {
+    kind: 'boolean',
+    default: false,
+    description: 'Prefix positive numbers with + (for deltas and changes).',
+  },
 };
 
 /** Shown for a null value or a missing field. */
@@ -183,7 +190,16 @@ function formatDate(value: string): string {
   return `${name} ${day}, ${year}`;
 }
 
+/** A positive value that does not round to zero gets a leading `+`. */
+function withSign(text: string, value: number, spec: FormatSpec): string {
+  return spec.signed === true && value > 0 && /[1-9]/u.test(text) ? `+${text}` : text;
+}
+
 function formatNumber(value: number, spec: FormatSpec, format: ValueFormat): string {
+  return withSign(formatMagnitude(value, spec, format), value, spec);
+}
+
+function formatMagnitude(value: number, spec: FormatSpec, format: ValueFormat): string {
   const { decimals, unit } = spec;
   switch (format) {
     case 'integer':
@@ -227,7 +243,9 @@ export function formatValue(value: DataScalar, spec: FormatSpec = {}): string {
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
   if (format === 'date') return typeof value === 'string' ? formatDate(value) : String(value);
   if (format === 'text') {
-    return typeof value === 'number' ? withUnit(String(value), spec.unit) : value;
+    return typeof value === 'number'
+      ? withSign(withUnit(String(value), spec.unit), value, spec)
+      : value;
   }
   if (typeof value === 'string') {
     if (!PLAIN_NUMBER.test(value.trim())) return value;

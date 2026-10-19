@@ -13,6 +13,10 @@
  *   - compactDescribeBytes: `ak-render describe <types...> --compact` text for
  *     the block types the fixture uses (in batches the CLI accepts).
  *
+ * htmlBytes is reported for transparency, not as a target: the compiled page
+ * never enters the agent's context, and AK Render optimizes agent tokens, not
+ * emitted bytes.
+ *
  * The output is deterministic: no timestamps, fixtures sorted by name, and the
  * same compiler always yields the same bytes.
  *
