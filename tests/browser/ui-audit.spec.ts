@@ -65,7 +65,11 @@ test.describe('audit-ui publication preset', () => {
     });
     expect(report.complete).toBe(true);
     expect(report.scripts).toBe('compiled-runtime');
-    expect(report.counts).toEqual({ error: 0, warning: 0, info: 0 });
+    expect(report.counts, JSON.stringify(report.findings, null, 2)).toEqual({
+      error: 0,
+      warning: 0,
+      info: 0,
+    });
     expect(report.checks).toHaveLength(9);
     for (const check of report.checks) {
       expect(check.evidenceRef).toBeDefined();
