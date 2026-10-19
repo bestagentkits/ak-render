@@ -83,6 +83,22 @@ blocks:
         text: |
           - type: text
             text: Declarative input only
+      - type: code
+        language: html
+        title: Markup with an embedded style
+        text: |
+          <!-- Colors come from theme tokens at compile time -->
+          <section class="card" data-tone="info">
+            <style>.card { padding: 1rem; border: 1px solid #0a7; }</style>
+            <h2>Ships &amp; works offline</h2>
+          </section>
+      - type: code
+        language: markdown
+        title: Release notes
+        text: |
+          ## Highlights
+          - Code blocks are **highlighted** at compile time with `language`.
+          > No script, CDN or network request.
       - type: key-value
         title: Block facts
         items:
