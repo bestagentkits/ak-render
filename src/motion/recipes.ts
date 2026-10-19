@@ -352,7 +352,9 @@ export const MOTION_RECIPES: readonly MotionRecipe[] = deepFreeze<MotionRecipe[]
       motion: 'accordion-expand',
     },
     css: {
-      guarded: `${at('accordion-expand')}>details{interpolate-size:allow-keywords}${ACCORDION_CONTENT}{block-size:0;overflow-y:clip;transition:block-size var(--ak-motion-normal) var(--ak-ease-standard),content-visibility var(--ak-motion-normal) allow-discrete}${at('accordion-expand')}>details[open]::details-content{block-size:auto}`,
+      // Screen only: a section opened just before printing prints at full
+      // height, never caught mid-growth.
+      guarded: `@media screen{${at('accordion-expand')}>details{interpolate-size:allow-keywords}${ACCORDION_CONTENT}{block-size:0;overflow-y:clip;transition:block-size var(--ak-motion-normal) var(--ak-ease-standard),content-visibility var(--ak-motion-normal) allow-discrete}${at('accordion-expand')}>details[open]::details-content{block-size:auto}}`,
       print: `${ACCORDION_CONTENT}{block-size:auto!important}`,
     },
   },
