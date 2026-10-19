@@ -11,6 +11,7 @@ export interface R2ObjectBody {
   readonly key: string;
   readonly size: number;
   text(): Promise<string>;
+  arrayBuffer(): Promise<ArrayBuffer>;
   readonly httpMetadata?: { contentType?: string };
   readonly customMetadata?: Record<string, string>;
 }
@@ -22,11 +23,21 @@ export interface R2Listing {
   cursor?: string;
 }
 
+/** An object's metadata without its body, as `head` returns it. */
+export interface R2ObjectHead {
+  readonly key: string;
+  readonly size: number;
+  readonly httpMetadata?: { contentType?: string };
+  readonly customMetadata?: Record<string, string>;
+}
+
 export interface R2Bucket {
   get(key: string): Promise<R2ObjectBody | null>;
+  /** Metadata only: an existence or expiry check that does not read the body. */
+  head(key: string): Promise<R2ObjectHead | null>;
   put(
     key: string,
-    value: string,
+    value: string | ArrayBuffer,
     options?: { customMetadata?: Record<string, string>; httpMetadata?: { contentType?: string } },
   ): Promise<unknown>;
   /** One key, or up to 1,000 keys in one call. */
@@ -88,6 +99,12 @@ export interface Env {
   BROWSER?: BrowserRun;
   /** Share retention in days. Defaults to the conservative value in config.ts. */
   SHARE_RETENTION_DAYS?: string;
+  /**
+   * Secret (`wrangler secret put`) that signs `artifact-export` download URLs,
+   * at least 32 characters. Without it, artifact-export and the download route
+   * answer `DOWNLOAD_UNAVAILABLE`.
+   */
+  DOWNLOAD_SIGNING_KEY?: string;
   /**
    * Commit the deployed Worker was built from. The deploy workflow passes it
    * with `wrangler deploy --var`; `/v1/version` reports it so a stale deploy

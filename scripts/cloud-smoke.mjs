@@ -15,8 +15,11 @@
  * Bearer challenge. With OAuth on, the MCP discovery calls run with TOKEN. With
  * TOKEN it also renders through MCP and REST, checks the artifact is the same
  * HTML from both, and runs a share through create, read, revoke and gone.
+ * It renders with retainSpec and downloads the page and its spec through the
+ * signed URLs artifact-export returns.
  * Screenshot and PDF are checked when the deployment answers them; a 501
- * (no Browser Run binding) is reported, and fails only with EXPECT_EXPORT=1.
+ * (no Browser Run binding), or artifact-export answering DOWNLOAD_UNAVAILABLE
+ * (no signing key), is reported, and fails only with EXPECT_EXPORT=1.
  *
  * GET /v1/version is always checked, and MCP tools/list must name exactly the
  * tools it reports, over both the 2025-11-25 handshake and a stateless
@@ -437,12 +440,60 @@ async function authenticatedSurface() {
     createdShares.push(id);
   }
 
+  await artifactExport();
+
   await exportSurface('screenshot', 'image/png', (bytes) => bytes[0] === 0x89 && bytes[1] === 0x50);
   await exportSurface(
     'pdf',
     'application/pdf',
     (bytes) => new TextDecoder().decode(bytes.slice(0, 4)) === '%PDF',
   );
+}
+
+async function artifactExport() {
+  const rendered = await callTool('render', { spec: SPEC, retainSpec: true }, true);
+  if (
+    !check(
+      !rendered.isError && rendered.payload.specRetained === true,
+      'mcp render with retainSpec',
+      JSON.stringify(rendered.payload),
+    )
+  ) {
+    return;
+  }
+  const exported = await callTool(
+    'artifact-export',
+    { artifact: rendered.payload.artifactUrl, formats: ['html', 'spec'] },
+    true,
+  );
+  if (exported.isError && exported.payload.code === 'DOWNLOAD_UNAVAILABLE' && !EXPECT_EXPORT) {
+    notice('artifact-export: DOWNLOAD_UNAVAILABLE (no signing key); skipped');
+    return;
+  }
+  const downloads = exported.payload.downloads ?? {};
+  if (
+    !check(
+      !exported.isError && typeof downloads.html === 'string' && typeof downloads.spec === 'string',
+      'mcp artifact-export',
+      JSON.stringify(exported.payload),
+    )
+  ) {
+    return;
+  }
+  const page = await (await fetch(rendered.payload.artifactUrl)).text();
+  const html = await fetch(downloads.html);
+  check(
+    html.status === 200 && (await html.text()) === page,
+    'artifact-export html download matches the artifact',
+    `status ${html.status}`,
+  );
+  const spec = await fetch(downloads.spec);
+  const specText = spec.status === 200 ? await spec.text() : '';
+  let specMatches = false;
+  try {
+    specMatches = JSON.stringify(JSON.parse(specText)) === JSON.stringify(SPEC);
+  } catch {}
+  check(specMatches, 'artifact-export spec download returns the spec', `status ${spec.status}`);
 }
 
 async function exportSurface(route, contentType, looksRight) {

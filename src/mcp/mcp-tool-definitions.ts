@@ -733,8 +733,46 @@ export const REMOTE_RENDER_DEFINITION: McpToolDefinition = {
         description:
           'Publish the artifact as an expiring share link instead of a short-lived one. Requires the share grant.',
       },
+      retainSpec: {
+        type: 'boolean',
+        description:
+          'Also keep the spec source, with the same owner and expiry as the artifact, so artifact-export can hand it back for local editing. Off by default.',
+      },
     },
     required: ['spec'],
+    additionalProperties: false,
+  },
+};
+
+/** Formats `artifact-export` can return a download URL for. */
+export const ARTIFACT_EXPORT_FORMATS = ['html', 'png', 'pdf', 'spec'] as const;
+export type ArtifactExportFormat = (typeof ARTIFACT_EXPORT_FORMATS)[number];
+
+/**
+ * Remote only: a local render already wrote the file, so there is nothing to
+ * fetch back. The result carries URLs, never the bytes.
+ */
+export const REMOTE_ARTIFACT_EXPORT_DEFINITION: McpToolDefinition = {
+  name: 'artifact-export',
+  description:
+    'Signed, expiring download URLs for an artifact or share you rendered: html, png, pdf, or spec (only when rendered with retainSpec). Returns URLs, never the content.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      artifact: {
+        type: 'string',
+        maxLength: 512,
+        description: 'The artifactUrl render returned, or its id.',
+      },
+      formats: {
+        type: 'array',
+        items: { type: 'string', enum: [...ARTIFACT_EXPORT_FORMATS] },
+        minItems: 1,
+        uniqueItems: true,
+        description: 'Defaults to ["html"]. png and pdf are produced once and then reused.',
+      },
+    },
+    required: ['artifact'],
     additionalProperties: false,
   },
 };

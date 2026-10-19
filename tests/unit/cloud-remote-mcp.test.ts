@@ -99,7 +99,7 @@ async function tool(
 }
 
 describe('remote MCP: discovery', () => {
-  it('initializes and lists the same tool names as the stdio server', async () => {
+  it('initializes and lists the stdio tool names, then artifact-export', async () => {
     const { env, fetchMock } = harness();
     const init = await handleRequest(
       mcpRequest('initialize', { protocolVersion: '2025-06-18' }, null),
@@ -119,7 +119,11 @@ describe('remote MCP: discovery', () => {
     );
     const local = (stdio?.result as { tools: { name: string }[] } | undefined)?.tools ?? [];
     expect(local.length).toBe(17);
-    expect(remote.map((entry) => entry.name)).toEqual(local.map((entry) => entry.name));
+    // The stdio tools in order, then the one tool only a hosted server has.
+    expect(remote.map((entry) => entry.name)).toEqual([
+      ...local.map((entry) => entry.name),
+      'artifact-export',
+    ]);
     // The remote audit schema advertises the Worker's body cap, not the local one.
     const audit = (
       remote as { name: string; inputSchema: { properties: { html: { maxLength: number } } } }[]
@@ -156,7 +160,7 @@ describe('remote MCP: discovery', () => {
       version: VERSION,
       build: 'abc123',
       protocolVersions: ['2026-07-28', '2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'],
-      tools: LOCAL_TOOLS.map((tool) => tool.name),
+      tools: [...LOCAL_TOOLS.map((tool) => tool.name), 'artifact-export'],
     });
     const unbuilt = await handleRequest(new Request(`${ORIGIN}/v1/version`), env);
     expect(((await unbuilt.json()) as { build: unknown }).build).toBeNull();

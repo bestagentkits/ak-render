@@ -175,7 +175,13 @@ loop is the same. Two things differ:
   filesystem. It stores the page and returns the same summary plus
   `artifactUrl` and `expiresAt`. The artifact lives for one hour; pass
   `share: true` for a share link that lives for 30 days. The HTML is never in
-  the reply.
+  the reply. Add `retainSpec: true` to keep the spec with the page's owner
+  and expiry.
+- `artifact-export` exists only here. Given the `artifactUrl` (or its id) and
+  `formats` (`html`, `png`, `pdf`, `spec`; default `html`), it returns signed
+  download URLs that last an hour and never outlive the page. Download the
+  spec to keep editing locally, where the file stays canonical; a `theme`
+  argument is not part of the spec, so the reply names it as `themeOverride`.
 - Every request needs an AgentKit bearer: an OAuth access token the client
   obtains by signing in, or a personal API key (`ck_live_…`). `themes` lists
   the built-in presets only, since the server has no project presets to

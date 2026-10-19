@@ -13,6 +13,8 @@
  *   GET    /v1/share/:id       serve one valid, unexpired share.
  *   DELETE /v1/share/:id       revoke a share the caller owns.
  *   GET    /v1/artifact/:id    serve one short-lived artifact a remote MCP render stored.
+ *   GET    /v1/download/:kind/:id/:format
+ *                               a signed download minted by the MCP artifact-export tool.
  *   POST   /mcp                MCP over Streamable HTTP (see remote-mcp-endpoint.ts).
  *   GET    /v1/version         the deployed build: package version, commit, MCP
  *                               revisions and tool names, so deploy lag is visible.
@@ -40,6 +42,7 @@ import {
   protectedResourceMetadataUrl,
 } from './oauth-access-token.js';
 import { withinRateLimit } from './rate-limit.js';
+import { DOWNLOAD_ROUTE, handleDownload } from './download.js';
 import { handleMcp, remoteVersion } from './remote-mcp-endpoint.js';
 import { renderArtifact, type RenderPayload } from './render.js';
 import { exportArtifact } from './screenshot.js';
@@ -192,6 +195,11 @@ export async function handleRequest(
     const found = await readStored(env, 'artifact', id, now);
     if (!found.ok) return json(found.status, { code: found.code, message: found.message });
     return htmlResponse(found.html, 'private, max-age=60', true);
+  }
+
+  // --- download: a signed URL artifact-export minted for the owner --------
+  if (method === 'GET' && path.startsWith(DOWNLOAD_ROUTE)) {
+    return handleDownload(url, env, now, STORED_PAGE_CSP);
   }
 
   // --- revoke: share scope, owner only -------------------------------------
