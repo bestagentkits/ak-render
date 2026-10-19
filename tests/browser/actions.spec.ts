@@ -111,6 +111,23 @@ test.describe('theme toggle', () => {
     expect(await page.locator('html').getAttribute('data-theme')).toBe(chosen);
   });
 
+  test('a second toggle during the transition raises no script error', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    await open(page);
+    // The second click starts a new view transition, which skips the first.
+    await page.evaluate(() => {
+      const toggle = document.querySelector('[data-ak-theme-toggle]') as HTMLElement;
+      toggle.click();
+      toggle.click();
+    });
+    await expect
+      .poll(() => page.locator('html').getAttribute('data-theme'))
+      .toMatch(/^(dark|light)$/u);
+    await page.waitForTimeout(500);
+    expect(errors).toEqual([]);
+  });
+
   test('a theme action works on a page without the toggle', async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));

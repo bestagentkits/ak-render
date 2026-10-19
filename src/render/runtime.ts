@@ -252,7 +252,10 @@ function toggleTheme(source) {
     root.style.setProperty('--ak-vt-x', Math.round(box.left + box.width / 2) + 'px');
     root.style.setProperty('--ak-vt-y', Math.round(box.top + box.height / 2) + 'px');
   }
-  doc.startViewTransition(function () { applyTheme('toggle'); });
+  var transition = doc.startViewTransition(function () { applyTheme('toggle'); });
+  // A second toggle mid-transition skips this one and rejects its ready
+  // promise; the theme still applies, so the rejection is not an error.
+  if (transition && transition.ready) transition.ready.catch(function () {});
 }
 function restoreTheme() {
   // While the system owns the scheme, a change in system settings must relabel
