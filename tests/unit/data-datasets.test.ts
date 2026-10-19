@@ -108,4 +108,30 @@ describe('validateRows', () => {
       expect.objectContaining({ code: 'POLICY_VIOLATION', path: '$.datasets.sales[0].style' }),
     ]);
   });
+
+  it('rejects a number outside the chartable magnitude and keeps the field as a gap', () => {
+    const bag = new DiagnosticBag();
+    const result = validateRows(
+      [
+        { n: 1e308 },
+        { n: -5e-324 },
+        { n: 0 },
+        { n: DATA_LIMITS.maxMagnitude },
+        { n: -DATA_LIMITS.minMagnitude },
+      ],
+      '$.data',
+      bag,
+    );
+    expect(bag.errors().map((item) => [item.code, item.path])).toEqual([
+      ['SPEC_BOUNDS_ERROR', '$.data[0].n'],
+      ['SPEC_BOUNDS_ERROR', '$.data[1].n'],
+    ]);
+    expect(result).toEqual([
+      { n: null },
+      { n: null },
+      { n: 0 },
+      { n: DATA_LIMITS.maxMagnitude },
+      { n: -DATA_LIMITS.minMagnitude },
+    ]);
+  });
 });

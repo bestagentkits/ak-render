@@ -95,13 +95,13 @@ export function histogramChart(input: ChartInput, encoded: EncodedChart): KindRe
   const xBounds: TickBounds = { min: first, max: last, step };
   // Ticks on clean multiples inside the binned range, not on every edge.
   const tickStep = niceStep(Math.max(last - first, step), 5);
+  // Counted by index, not by adding the step: when the step is below the
+  // precision of the ticks (two samples a few ulps apart) the sum never moves.
+  const firstTick = Math.ceil(first / tickStep) * tickStep;
+  const tickCount = Math.floor((last - firstTick) / tickStep + 1 / 1000);
   const xTicks: number[] = [];
-  for (
-    let tick = Math.ceil(first / tickStep) * tickStep;
-    tick <= last + tickStep / 1000;
-    tick += tickStep
-  ) {
-    xTicks.push(Number(tick.toPrecision(12)));
+  for (let index = 0; index <= tickCount; index += 1) {
+    xTicks.push(Number((firstTick + tickStep * index).toPrecision(12)));
   }
   const yBounds = axisBounds(counts, encoded.y, true);
   const zeroY = scaleY(clampTo(0, yBounds), yBounds, frame);
