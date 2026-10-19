@@ -265,6 +265,23 @@ test.describe('motion recipes under full motion', () => {
     );
     expect(transition).toContain('block-size');
   });
+
+  test('a section opened just before printing prints at full height', async ({ page }) => {
+    await open(page);
+    const closed = block(page, 'faq').locator('details:not([open])').first();
+    // Switch to print straight after opening: no screen transition may carry
+    // over, and the section is not held at its closed height.
+    await closed.evaluate((el) => {
+      (el as HTMLDetailsElement).open = true;
+    });
+    await page.emulateMedia({ media: 'print' });
+    const content = await closed.evaluate((el) => {
+      const style = getComputedStyle(el, '::details-content');
+      return { duration: style.transitionDuration, size: style.blockSize };
+    });
+    expect(content.duration).toBe('0s');
+    expect(content.size).not.toBe('0px');
+  });
 });
 
 test.describe('a tab marker that first shows from a hidden block', () => {

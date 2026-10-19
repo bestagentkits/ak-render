@@ -240,6 +240,10 @@ Release mechanics and the compatibility contract live in
 
 ### Fixed
 
+- The `accordion-expand` recipe animates only on screen. A section opened
+  just before printing used to print mid-growth and partly clipped, because
+  its `::details-content` transition also ran in print
+  ([#48](https://github.com/bestagentkits/ak-render/issues/48)).
 - Chart data tables scroll inside their own box instead of widening the page
   on a phone when the chart's table is opened, the y-axis title no longer
   starts outside the chart, and the kanban board no longer overflows the
