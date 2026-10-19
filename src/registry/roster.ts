@@ -12,6 +12,7 @@
  * cannot drift apart.
  */
 
+import { KPI_CITE_SCHEMA } from '../data/kpi-cite.js';
 import { EMBED_PROVIDER_NAMES } from '../spec/providers.js';
 import type { ActionType } from './actions.js';
 import type { BlockCategory } from './block-module.js';
@@ -124,8 +125,11 @@ export interface BlockDefinition {
   parents?: readonly string[];
   /** Rows carry `data-ak-filter-item` and a `data-ak-row` JSON payload a filter can read. */
   filterable?: boolean;
-  /** The block reads rows from `dataRef` or inline `data`, reshaped by an optional `transform`. */
-  data?: { required: boolean; description: string };
+  /**
+   * The block reads rows from `dataRef` or inline `data`, reshaped by an
+   * optional `transform`. `total` marks a block that shows a `transform.rollup`.
+   */
+  data?: { required: boolean; description: string; total?: boolean };
   purpose: string;
   /** One line, used by the compact `catalog()` surface. */
   summary: string;
@@ -751,7 +755,12 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
       items: itemsOf(
         {
           label: LABEL,
-          value: str({ required: true, maxLength: 40 }),
+          value: str({
+            maxLength: 40,
+            description:
+              'Display value. Required unless cite is set; with cite, checked against it.',
+          }),
+          cite: KPI_CITE_SCHEMA,
           delta: str({ maxLength: 24 }),
           trend: enumStr(['up', 'down', 'flat'], { default: 'flat' }),
           good: enumStr(['up', 'down'], {

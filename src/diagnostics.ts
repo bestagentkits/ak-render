@@ -134,35 +134,39 @@ export function pathIndex(base: string, index: number): string {
 }
 
 // Validation drops an invalid list item and compacts the list. Each compacted
-// list remembers where its items sat in the authored one and how long the
-// authored one was, so a later check reports the index the author wrote, not
-// the compacted one, and counts the items the author wrote.
-interface AuthoredList {
-  indexes: readonly number[];
-  length: number;
-}
-const authoredLists = new WeakMap<readonly unknown[], AuthoredList>();
+// list remembers where its items sat in the authored one, so a later check
+// reports the index the author wrote, not the compacted one.
+const authoredLists = new WeakMap<
+  readonly unknown[],
+  { readonly indexes: readonly number[]; readonly length: number }
+>();
 
 /**
- * Record, for a compacted list, the authored index of each item it kept and
- * the authored list's length. A list that dropped nothing records nothing.
+ * Record, for a list built from `source`, the authored index of each item it
+ * kept. `source` is the authored list or an earlier compacted one.
  */
 export function keepAuthoredIndexes(
   list: readonly unknown[],
   indexes: readonly number[],
-  length: number,
+  source: readonly unknown[],
+  absent = 0,
 ): void {
-  if (length !== list.length) authoredLists.set(list, { indexes, length });
+  // `absent` counts items that dropped without an error (a programmatic
+  // `undefined` or a hole); the author did not write them.
+  const length = (authoredLists.get(source)?.length ?? source.length) - absent;
+  if (indexes.length === length) return;
+  authoredLists.set(list, { indexes, length });
+}
+
+/** The authored length of a validated list, counting items validation dropped. */
+export function authoredLength(list: unknown): number {
+  if (!Array.isArray(list)) return 0;
+  return authoredLists.get(list)?.length ?? list.length;
 }
 
 /** The authored index of item `index` of a validated list. */
 export function authoredIndex(list: unknown, index: number): number {
   return (Array.isArray(list) ? authoredLists.get(list)?.indexes[index] : undefined) ?? index;
-}
-
-/** How many items the author wrote in a validated list, dropped ones included. */
-export function authoredLength(list: readonly unknown[]): number {
-  return authoredLists.get(list)?.length ?? list.length;
 }
 
 /** Append the authored index of item `index` of a validated list to a JSON path. */

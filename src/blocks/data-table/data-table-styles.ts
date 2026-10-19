@@ -60,7 +60,7 @@ const STICKY = `@media (min-width:561px){${ROOT}[data-ak-sticky] thead th{positi
 
 /** At 560px and below every row becomes a card of labelled values. */
 const CARDS = `@media (max-width:560px){${ROOT} .ak-table-wrap{overflow:visible;border:0;border-radius:0;background:none;box-shadow:none;animation:none}
-${ROOT} table,${ROOT} tbody,${ROOT} tbody tr,${ROOT} tbody td,${ROOT} tbody th{display:block;width:auto;min-width:0}
+${ROOT} table,${ROOT} tbody,${ROOT} tfoot,${ROOT} :is(tbody,tfoot) tr,${ROOT} :is(tbody,tfoot) td,${ROOT} :is(tbody,tfoot) th{display:block;width:auto;min-width:0}
 ${ROOT} tbody tr[hidden]{display:none}
 ${ROOT} thead{${SR_ONLY}}
 ${ROOT}[data-ak-table-ready] thead{position:static;width:auto;height:auto;margin:0 0 ${UNIT(1)};overflow:visible;clip:auto;white-space:normal;display:block}
@@ -68,13 +68,13 @@ ${ROOT}[data-ak-table-ready] thead tr{display:flex;flex-wrap:wrap;gap:${UNIT(0.7
 ${ROOT}[data-ak-table-ready] thead th{padding:0;border:0;background:none;box-shadow:none}
 ${ROOT}[data-ak-table-ready] .ak-dt-sort{min-height:44px;padding:0 .9em;border:var(--ak-border-width) solid var(--ak-color-border);border-radius:999px;background:var(--ak-color-surface)}
 ${ROOT}[data-ak-table-ready] th[aria-sort] .ak-dt-sort{border-color:color-mix(in srgb,var(--ak-color-accent) 45%,var(--ak-color-border))}
-${ROOT} tbody tr{margin:0 0 ${UNIT(1.5)};padding:${UNIT(0.5)} ${UNIT(2)};border:var(--ak-border-width) solid var(--ak-color-border);border-radius:var(--ak-radius-medium);background:var(--ak-fill);box-shadow:var(--ak-elevation-card)}
+${ROOT} :is(tbody,tfoot) tr{margin:0 0 ${UNIT(1.5)};padding:${UNIT(0.5)} ${UNIT(2)};border:var(--ak-border-width) solid var(--ak-color-border);border-radius:var(--ak-radius-medium);background:var(--ak-fill);box-shadow:var(--ak-elevation-card)}
 ${ROOT} tbody tr:hover{background:var(--ak-fill)}
-${ROOT} tbody tr > *{display:flex;align-items:center;justify-content:space-between;gap:${UNIT(2)};padding:.6em 0;text-align:right;min-width:0;overflow-wrap:anywhere}
-${ROOT} tbody tr > *:not(:last-child){border-bottom:var(--ak-border-width) solid var(--ak-color-border)}
-${ROOT} tbody tr > *::before{content:attr(data-label);flex:none;max-width:45%;text-align:left;font-family:var(--ak-font-mono);font-size:.7rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ak-color-text-muted)}
-${ROOT} tbody th[scope="row"]{justify-content:flex-start;text-align:left;font-family:var(--ak-font-heading);font-size:1.02rem}
-${ROOT} tbody th[scope="row"]::before{display:none}
+${ROOT} :is(tbody,tfoot) tr > *{display:flex;align-items:center;justify-content:space-between;gap:${UNIT(2)};padding:.6em 0;text-align:right;min-width:0;overflow-wrap:anywhere}
+${ROOT} :is(tbody,tfoot) tr > *:not(:last-child){border-bottom:var(--ak-border-width) solid var(--ak-color-border)}
+${ROOT} :is(tbody,tfoot) tr > *::before{content:attr(data-label);flex:none;max-width:45%;text-align:left;font-family:var(--ak-font-mono);font-size:.7rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ak-color-text-muted)}
+${ROOT} :is(tbody,tfoot) th[scope="row"]{justify-content:flex-start;text-align:left;font-family:var(--ak-font-heading);font-size:1.02rem}
+${ROOT} :is(tbody,tfoot) th[scope="row"]::before{display:none}
 ${ROOT} .ak-dt-search{max-width:none}
 ${ROOT} .ak-dt-search input{min-height:44px}}`;
 
@@ -82,4 +82,8 @@ const NARROW = `@media (max-width:768px) and (min-width:561px){${ROOT}[data-ak-t
 
 const PRINT = `@media print{${ROOT} .ak-dt-tools,${ROOT} .ak-dt-empty,${ROOT} .ak-dt-sort-icon{display:none!important}${ROOT} tbody tr[data-ak-dt-miss]{display:table-row!important}${ROOT} thead th{position:static!important}${ROOT} tbody tr{break-inside:avoid}}`;
 
-export const DATA_TABLE_CSS = [TOOLS, SORT, CELLS, STICKY, NARROW, CARDS, PRINT].join('\n');
+// The rollup total sits in <tfoot>, outside sorting and filtering, set off by a heavier rule.
+const TOTAL = `${ROOT} tfoot tr > *{font-weight:600}
+@media (min-width:561px){${ROOT} tfoot tr > *{border-top:calc(var(--ak-border-width) * 2) solid var(--ak-color-border);border-bottom:0}}`;
+
+export const DATA_TABLE_CSS = [TOOLS, SORT, CELLS, TOTAL, STICKY, NARROW, CARDS, PRINT].join('\n');

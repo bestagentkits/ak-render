@@ -398,7 +398,7 @@ export function renderChart(input: ChartInput): string {
     )}><title>${escapeText(input.title ?? 'Chart')}</title>${body}</svg></div>`,
     legend(input),
     `<p class="ak-sr">${escapeText(summary)}</p>`,
-    `<details class="ak-details"><summary>Chart data table</summary>${dataTable(input)}</details>`,
+    `<details class="ak-details"><summary>Chart data table</summary><div class="ak-chart-table-scroll">${dataTable(input)}</div></details>`,
     '</figure>',
   ]
     .filter((part) => part !== '')

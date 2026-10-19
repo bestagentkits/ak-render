@@ -4,7 +4,6 @@
  * list alone carries everything the bar shows.
  */
 
-import { FORMAT_FIELDS } from '../../data/format-value.js';
 import { pathKey } from '../../diagnostics.js';
 import type { IrNode } from '../../ir.js';
 import { isPlainObject, type JsonValue } from '../../json.js';
@@ -35,6 +34,7 @@ import {
   fieldMap,
   formatMeasure,
   formatSpecOf,
+  MEASURE_FORMAT_FIELDS,
   projectRow,
 } from './evidence-helpers.js';
 
@@ -260,7 +260,7 @@ export const metricBreakdownBlock: BlockModule = {
         },
         { description: 'Data fields for the part label and value.' },
       ),
-      ...FORMAT_FIELDS,
+      ...MEASURE_FORMAT_FIELDS,
       ...anchorProps,
     },
     data: { required: false, description: 'Rows with a label and a non-negative value field.' },

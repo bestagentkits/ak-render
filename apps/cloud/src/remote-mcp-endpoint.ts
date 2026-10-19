@@ -26,7 +26,7 @@
  * what an MCP client expects from a protected resource. Where OAuth is enabled
  * (`OAUTH_RESOURCE`), a request without a bearer gets the same 401, carrying
  * the protected-resource metadata URL so the client can sign in. Otherwise it
- * is still served: discovery works, and `validate`/`render` answer a tool
+ * is still served: discovery works, and `validate`/`compose`/`render` answer a tool
  * error with code `UNAUTHENTICATED`.
  */
 
@@ -42,16 +42,23 @@ import {
 } from '../../../src/mcp/mcp-protocol.js';
 import {
   AUDIT_MOTION_TOOL,
+  AUDIT_UI_QUICK_TOOL,
   BUILTIN_THEMES_TOOL,
   CATALOG_TOOL,
+  composeReplyExtras,
+  checkComposeFlags,
+  composeToolStep,
   DESCRIBE_ICON_TOOL,
   DESCRIBE_TOOL,
   ICON_PACKS_TOOL,
+  isComposeToolStep,
   type McpTool,
   MOTIONS_TOOL,
+  PATCH_TOOL,
   optionalTheme,
   RECIPE_TOOL,
   RECIPES_TOOL,
+  REMOTE_COMPOSE_DEFINITION,
   REMOTE_RENDER_DEFINITION,
   SEARCH_CATALOG_TOOL,
   SEARCH_ICONS_TOOL,
@@ -75,9 +82,11 @@ import { renderArtifact } from './render.js';
 import { createArtifact, createShare } from './share.js';
 
 export const REMOTE_INSTRUCTIONS = `AK Render compiles a Page Spec (YAML or JSON) into one self-contained, offline HTML file.
-Loop: call catalog once (or search-catalog with a few words), describe only the block types you plan to use (several at once with types, compact: true for the short form), find icons by meaning with search-icons (describe-icon, icon-packs for detail), find motion recipes with motions, optionally start from a recipe (list them with recipes), validate the spec and fix every diagnostic by its JSON path (repair applies the safe fixes; validate with suggest: true lists the rest as JSON Patches; audit-motion checks the motion it names), then render (themes lists the presets).
+Fastest path: compose builds a whole page from a typed intent and content (e.g. investment-report) in one call; pass dryRun or returnSpec to get the Page Spec back for edits.
+Full control: call catalog once (or search-catalog with a few words), describe only the block types you plan to use (several at once with types, compact: true for the short form), find icons by meaning with search-icons (describe-icon, icon-packs for detail), find motion recipes with motions, optionally start from a recipe (list them with recipes), validate the spec and fix every diagnostic by its JSON path (repair applies the safe fixes; validate with suggest: true lists the rest as JSON Patches; audit-motion checks the motion it names), then render (themes lists the presets). For a later edit, send patch ops (paths like /blocks/@<id>/title) instead of rewriting the spec.
 On this remote server render stores the page and returns its artifactUrl and a short summary, never the HTML. Pass share: true for a longer-lived share link.
-validate, repair, audit-motion and render need an AgentKit API key or OAuth access token as the bearer in the Authorization header.
+audit-ui runs the quick visual checks here; the publication preset needs the local CLI.
+validate, repair, patch, audit-motion, audit-ui, compose and render need an AgentKit API key or OAuth access token as the bearer in the Authorization header.
 Describe meaning, not presentation: the compiler owns layout, colour, typography and motion.`;
 
 /** Per-request context every remote tool call receives. */
@@ -150,6 +159,16 @@ const REMOTE_VALIDATE_TOOL: RemoteTool = {
   },
 };
 
+/** `patch` is metered like `validate`: it parses and validates, and stores nothing. */
+const REMOTE_PATCH_TOOL: RemoteTool = {
+  ...PATCH_TOOL,
+  run: async (args, context) => {
+    const guarded = await guard(context, ['render'], 'validate');
+    if (!guarded.ok) return guarded.result;
+    return PATCH_TOOL.run(args, context);
+  },
+};
+
 /**
  * The Worker refuses request bodies over MAX_REQUEST_BYTES. The schema states
  * that as an upper bound on the page: the envelope, escaping and multi-byte
@@ -175,46 +194,126 @@ const REMOTE_AUDIT_MOTION_TOOL: RemoteTool = {
   },
 };
 
+/**
+ * `audit-ui` with the quick preset only: a Worker has no browser to drive, so
+ * the schema offers no publication preset and a call that asks for one is
+ * refused with a pointer to the local CLI. Counted like `validate`.
+ */
+const AUDIT_UI_PROPERTIES = AUDIT_UI_QUICK_TOOL.inputSchema.properties as Record<string, object>;
+const REMOTE_AUDIT_UI_TOOL: RemoteTool = {
+  ...AUDIT_UI_QUICK_TOOL,
+  inputSchema: {
+    ...AUDIT_UI_QUICK_TOOL.inputSchema,
+    properties: {
+      ...AUDIT_UI_PROPERTIES,
+      html: { ...AUDIT_UI_PROPERTIES.html, maxLength: MAX_REQUEST_BYTES },
+    },
+  },
+  run: async (args, context) => {
+    const guarded = await guard(context, ['render'], 'validate');
+    if (!guarded.ok) return guarded.result;
+    return AUDIT_UI_QUICK_TOOL.run(args, context);
+  },
+};
+
+/** Check the `share` flag and run the guard for a storing call. */
+async function guardStore(
+  args: Record<string, unknown>,
+  context: RemoteMcpContext,
+): Promise<{ ok: true; principal: Principal; share: boolean } | { ok: false; result: ToolResult }> {
+  if (args.share !== undefined && typeof args.share !== 'boolean') {
+    return { ok: false, result: failure('"share" must be a boolean') };
+  }
+  const share = args.share === true;
+  // A shared render counts against `share` only, exactly like POST /v1/share:
+  // each call consumes the one class that matches what it stores.
+  const guarded = await guard(
+    context,
+    share ? ['render', 'share'] : ['render'],
+    share ? 'share' : 'render',
+  );
+  return guarded.ok ? { ...guarded, share } : guarded;
+}
+
+/**
+ * Compile through the same path as POST /v1/render, budgets included, so the
+ * stored bytes are exactly what the REST route would have returned, then store
+ * the artifact and describe it.
+ */
+async function renderAndStore(
+  spec: unknown,
+  theme: string | undefined,
+  principal: Principal,
+  share: boolean,
+  context: RemoteMcpContext,
+): Promise<ToolResult | Record<string, unknown>> {
+  const rendered = renderArtifact(
+    { spec, ...(theme === undefined ? {} : { theme }) },
+    context.env,
+  );
+  if (!rendered.ok) {
+    return failure({
+      code: rendered.code,
+      message: rendered.message,
+      ...(rendered.details === undefined ? {} : { details: rendered.details }),
+    });
+  }
+  const stored = share
+    ? await createShare(context.env, principal, rendered.artifact, context.now)
+    : await createArtifact(context.env, principal, rendered.artifact, context.now);
+  return {
+    ...rendered.artifact.summary,
+    artifactUrl: `${context.origin}${stored.url}`,
+    expiresAt: stored.expiresAt,
+    shared: share,
+    version: rendered.artifact.version,
+  };
+}
+
+function isToolResult(value: ToolResult | Record<string, unknown>): value is ToolResult {
+  return Array.isArray(value.content);
+}
+
 const REMOTE_RENDER_TOOL: RemoteTool = {
   ...REMOTE_RENDER_DEFINITION,
   run: async (args, context) => {
-    const share = args.share === true;
-    if (args.share !== undefined && typeof args.share !== 'boolean') {
-      return failure('"share" must be a boolean');
-    }
-    // A shared render counts against `share` only, exactly like POST /v1/share:
-    // each call consumes the one class that matches what it stores.
-    const guarded = await guard(
-      context,
-      share ? ['render', 'share'] : ['render'],
-      share ? 'share' : 'render',
-    );
+    const guarded = await guardStore(args, context);
     if (!guarded.ok) return guarded.result;
-
-    const theme = optionalTheme(args);
-    // The same compile path as POST /v1/render, budgets included, so the stored
-    // bytes are exactly what the REST route would have returned.
-    const rendered = renderArtifact(
-      { spec: args.spec, ...(theme === undefined ? {} : { theme }) },
-      context.env,
+    const stored = await renderAndStore(
+      args.spec,
+      optionalTheme(args),
+      guarded.principal,
+      guarded.share,
+      context,
     );
-    if (!rendered.ok) {
-      return failure({
-        code: rendered.code,
-        message: rendered.message,
-        ...(rendered.details === undefined ? {} : { details: rendered.details }),
-      });
+    return isToolResult(stored) ? stored : text(stored);
+  },
+};
+
+const REMOTE_COMPOSE_TOOL: RemoteTool = {
+  ...REMOTE_COMPOSE_DEFINITION,
+  run: async (args, context) => {
+    checkComposeFlags(args);
+    if (args.dryRun === true) {
+      // A dry run stores nothing, so it is metered like validate.
+      const guarded = await guard(context, ['render'], 'validate');
+      if (!guarded.ok) return guarded.result;
+      const step = composeToolStep(args);
+      return isComposeToolStep(step) ? text({ ok: true, ...composeReplyExtras(step) }) : step;
     }
-    const stored = share
-      ? await createShare(context.env, guarded.principal, rendered.artifact, context.now)
-      : await createArtifact(context.env, guarded.principal, rendered.artifact, context.now);
-    return text({
-      ...rendered.artifact.summary,
-      artifactUrl: `${context.origin}${stored.url}`,
-      expiresAt: stored.expiresAt,
-      shared: share,
-      version: rendered.artifact.version,
-    });
+    const guarded = await guardStore(args, context);
+    if (!guarded.ok) return guarded.result;
+    const step = composeToolStep(args);
+    if (!isComposeToolStep(step)) return step;
+    // The theme is already in the composed spec.
+    const stored = await renderAndStore(
+      step.composed.spec,
+      undefined,
+      guarded.principal,
+      guarded.share,
+      context,
+    );
+    return isToolResult(stored) ? stored : text({ ok: true, ...stored, ...composeReplyExtras(step) });
   },
 };
 
@@ -231,7 +330,10 @@ export const REMOTE_TOOLS: readonly RemoteTool[] = [
   anonymous(RECIPE_TOOL),
   REMOTE_VALIDATE_TOOL,
   REMOTE_REPAIR_TOOL,
+  REMOTE_PATCH_TOOL,
   REMOTE_AUDIT_MOTION_TOOL,
+  REMOTE_AUDIT_UI_TOOL,
+  REMOTE_COMPOSE_TOOL,
   REMOTE_RENDER_TOOL,
   anonymous(BUILTIN_THEMES_TOOL),
 ];

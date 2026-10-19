@@ -80,6 +80,60 @@ describe('authored list indexes in diagnostics', () => {
     );
   });
 
+  it('adds no feature-matrix width error when a plan or value was dropped', () => {
+    const found = diagnosticsFor({
+      type: 'feature-matrix',
+      plans: ['Free', 5],
+      rows: [
+        { feature: 'A', values: [true, true] },
+        { feature: 'B', values: [true, {}] },
+      ],
+    });
+    expect(found.map((item) => item.path)).toEqual([
+      '$.blocks[0].plans[1]',
+      '$.blocks[0].rows[1].values[1]',
+    ]);
+  });
+
+  it('still reports a feature-matrix width error after a dropped value in another row', () => {
+    const found = diagnosticsFor({
+      type: 'feature-matrix',
+      plans: ['Free', 'Pro'],
+      rows: [
+        { feature: 'A', values: [true, {}] },
+        { feature: 'B', values: [true] },
+      ],
+    });
+    expect(found.map((item) => item.path)).toEqual([
+      '$.blocks[0].rows[0].values[1]',
+      '$.blocks[0].rows[1].values',
+    ]);
+  });
+
+  it('reports a feature-matrix width error that a dropped value does not explain', () => {
+    const found = diagnosticsFor({
+      type: 'feature-matrix',
+      plans: ['A', 'B', 'C'],
+      rows: [{ feature: 'f', values: [{}, true] }],
+    });
+    expect(found.map((item) => item.path)).toEqual([
+      '$.blocks[0].rows[0].values[0]',
+      '$.blocks[0].rows[0].values',
+    ]);
+  });
+
+  it('reports a feature-matrix width error after a dropped plan', () => {
+    const found = diagnosticsFor({
+      type: 'feature-matrix',
+      plans: ['A', 'B', 5],
+      rows: [{ feature: 'f', values: [true] }],
+    });
+    expect(found.map((item) => item.path)).toEqual([
+      '$.blocks[0].plans[2]',
+      '$.blocks[0].rows[0].values',
+    ]);
+  });
+
   it('reports a second highlighted pricing plan at the authored plan', () => {
     const plan = (name: string) => ({ name, price: 1, highlight: true });
     const found = diagnosticsFor({ type: 'pricing', plans: ['oops', plan('A'), plan('B')] });
