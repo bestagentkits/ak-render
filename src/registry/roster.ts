@@ -271,7 +271,7 @@ export const CORE_BLOCK_DEFINITIONS: readonly BlockDefinition[] = [
     },
     assets: ['code'],
     runtimeFeatures: ['copy'],
-    a11y: 'Renders <pre><code> with the authored text and a labelled Copy button; no syntax highlighting requires network access.',
+    a11y: 'Renders <pre><code> with the authored text and a labelled Copy button; syntax colors are compiled into the page, so they need no network or script and never enter the copied text.',
     serializer:
       'Emits the code text verbatim inside the fenced block when serialized back to Markdown.',
   }),
