@@ -97,6 +97,17 @@ const GRAMMARS: Readonly<Record<string, Grammar>> = {
     capitalizedTypes: true,
     identifier: /[A-Za-z_$][\w$]*/y,
   },
+  typescript: {
+    keywords: words(
+      `${JS_KEYWORDS} any asserts bigint boolean is never number object string symbol unique unknown`,
+    ),
+    literals: words('true false null undefined NaN Infinity'),
+    ...C_COMMENTS,
+    strings: ['"', "'", '`'],
+    atAttributes: true,
+    capitalizedTypes: true,
+    identifier: /[A-Za-z_$][\w$]*/y,
+  },
   python: {
     keywords: words(
       'and as assert async await break class continue def del elif else except finally for from global if import in is lambda match case nonlocal not or pass raise return try while with yield self',
@@ -231,9 +242,10 @@ const ALIASES: Readonly<Record<string, string>> = {
   jsx: 'javascript',
   mjs: 'javascript',
   cjs: 'javascript',
-  ts: 'javascript',
-  tsx: 'javascript',
-  typescript: 'javascript',
+  ts: 'typescript',
+  tsx: 'typescript',
+  mts: 'typescript',
+  cts: 'typescript',
   py: 'python',
   golang: 'go',
   rs: 'rust',
@@ -253,24 +265,41 @@ const ALIASES: Readonly<Record<string, string>> = {
   mysql: 'sql',
   sqlite: 'sql',
   patch: 'diff',
+  htm: 'html',
+  xhtml: 'html',
+  xml: 'html',
+  svg: 'html',
+  md: 'markdown',
 };
+
+/** Languages with their own scanner instead of a grammar table. */
+const SCANNED = ['diff', 'html', 'css', 'markdown'] as const;
 
 /** The languages the compiler highlights, with their aliases. */
 export const HIGHLIGHTED_LANGUAGES: readonly string[] = [
   ...Object.keys(GRAMMARS),
-  'diff',
+  ...SCANNED,
   ...Object.keys(ALIASES),
 ].sort();
 
 function canonical(language: string): string {
   const name = language.trim().toLowerCase();
-  return ALIASES[name] ?? name;
+  return Object.hasOwn(ALIASES, name) ? (ALIASES[name] as string) : name;
+}
+
+/** The grammar or scanner for a canonical name; own keys only, so `constructor` stays plain. */
+function grammarOf(name: string): Grammar | undefined {
+  return Object.hasOwn(GRAMMARS, name) ? GRAMMARS[name] : undefined;
+}
+
+function isScanned(name: string): name is (typeof SCANNED)[number] {
+  return (SCANNED as readonly string[]).includes(name);
 }
 
 /** Whether a code block in this language gets highlighted. */
 export function isHighlighted(language: string): boolean {
   const name = canonical(language);
-  return name === 'diff' || GRAMMARS[name] !== undefined;
+  return isScanned(name) || grammarOf(name) !== undefined;
 }
 
 const NUMBER = /0[xX][\da-fA-F_]+|0[bB][01_]+|\d[\d_]*(?:\.\d+)?(?:[eE][+-]?\d+)?/y;
@@ -295,13 +324,27 @@ function stringEnd(text: string, index: number, delimiter: string): number {
   return text.length;
 }
 
-/** The index of `character` at or after `from` on the same line, or -1. */
-function indexOnLine(text: string, character: string, from: number): number {
-  for (let cursor = from; cursor < text.length; cursor += 1) {
-    if (text[cursor] === character) return cursor;
-    if (text[cursor] === '\n') return -1;
-  }
-  return -1;
+/**
+ * Finds `character` at or after `from` on the same line, or -1. The scanner
+ * only moves forward, so each search remembers its span: a later search that
+ * starts inside it reuses the answer, which keeps a line full of unclosed
+ * openers such as `${${${` linear instead of quadratic.
+ */
+function lineSearch(text: string): (character: string, from: number) => number {
+  const last = new Map<string, { from: number; to: number; found: boolean }>();
+  return (character, from) => {
+    const previous = last.get(character);
+    if (previous !== undefined && from >= previous.from && from <= previous.to) {
+      return previous.found ? previous.to : -1;
+    }
+    let cursor = from;
+    while (cursor < text.length && text[cursor] !== character && text[cursor] !== '\n') {
+      cursor += 1;
+    }
+    const found = cursor < text.length && text[cursor] === character;
+    last.set(character, { from, to: cursor, found });
+    return found ? cursor : -1;
+  };
 }
 
 /** Whether a key ends at `index`: a `:` follows, after optional spaces, and then whitespace or the end. */
@@ -333,6 +376,7 @@ function tokenize(text: string, grammar: Grammar): Token[] {
     tokens.push({ kind, text: value });
   };
   const identifier = grammar.identifier ?? IDENTIFIER;
+  const indexOnLine = lineSearch(text);
   let index = 0;
   while (index < text.length) {
     const previous = text[index - 1] ?? '';
@@ -343,7 +387,7 @@ function tokenize(text: string, grammar: Grammar): Token[] {
       continue;
     }
     if (grammar.hashAttributes === true && text.startsWith('#[', index)) {
-      const close = indexOnLine(text, ']', index);
+      const close = indexOnLine(']', index);
       if (close !== -1) {
         push('attribute', text.slice(index, close + 1));
         index = close + 1;
@@ -377,7 +421,7 @@ function tokenize(text: string, grammar: Grammar): Token[] {
       continue;
     }
     if (grammar.dollarVariables === true && text[index] === '$') {
-      const braced = text.startsWith('${', index) ? indexOnLine(text, '}', index) : -1;
+      const braced = text.startsWith('${', index) ? indexOnLine('}', index) : -1;
       const name =
         braced !== -1 ? text.slice(index, braced + 1) : matchAt(IDENTIFIER, text, index + 1);
       if (name !== null) {
@@ -434,6 +478,303 @@ function tokenizeDiff(text: string): Token[] {
   });
 }
 
+/** Collects tokens, merging adjacent plain text into one token. */
+class TokenSink {
+  readonly tokens: Token[] = [];
+  private plainText = '';
+
+  plain(text: string): void {
+    this.plainText += text;
+  }
+
+  push(kind: TokenKind, text: string): void {
+    if (text === '') return;
+    this.flush();
+    this.tokens.push({ kind, text });
+  }
+
+  done(): Token[] {
+    this.flush();
+    return this.tokens;
+  }
+
+  private flush(): void {
+    if (this.plainText !== '') this.tokens.push({ kind: null, text: this.plainText });
+    this.plainText = '';
+  }
+}
+
+const CSS_IDENTIFIER = /-?[A-Za-z_][\w-]*/y;
+const CSS_NUMBER = /-?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?(?:%|[A-Za-z]+)?/y;
+const CSS_GROUP_RULES = words('media supports container layer scope document starting-style');
+const CSS_HEX = /#[\da-fA-F]{3,8}\b/y;
+
+function tokenizeCss(text: string): Token[] {
+  const sink = new TokenSink();
+  // One entry per open `{`: true when it holds declarations, false when it holds rules.
+  const blocks: boolean[] = [];
+  let groupRule = false;
+  let parens = 0;
+  let index = 0;
+  while (index < text.length) {
+    const character = text[index] ?? '';
+    const previous = text[index - 1] ?? '';
+    const inRules = blocks[blocks.length - 1] !== true;
+    const depth = inRules && parens === 0 ? 0 : 1;
+    if (text.startsWith('/*', index)) {
+      const close = text.indexOf('*/', index + 2);
+      const end = close === -1 ? text.length : close + 2;
+      sink.push('comment', text.slice(index, end));
+      index = end;
+      continue;
+    }
+    if (character === '"' || character === "'") {
+      const end = stringEnd(text, index, character);
+      sink.push('string', text.slice(index, end));
+      index = end;
+      continue;
+    }
+    if (character === '{' || character === '}' || character === ';') {
+      if (character === '{') blocks.push(!groupRule);
+      if (character === '}') blocks.pop();
+      groupRule = false;
+      parens = 0;
+      sink.plain(character);
+      index += 1;
+      continue;
+    }
+    if (inRules && (character === '(' || character === ')')) {
+      parens = character === '(' ? parens + 1 : Math.max(0, parens - 1);
+      sink.plain(character);
+      index += 1;
+      continue;
+    }
+    if (character === '@') {
+      const name = matchAt(CSS_IDENTIFIER, text, index + 1);
+      if (name !== null) {
+        if (inRules) groupRule = CSS_GROUP_RULES.has(name.toLowerCase());
+        sink.push('keyword', `@${name}`);
+        index += name.length + 1;
+        continue;
+      }
+    }
+    if (text.startsWith('!important', index)) {
+      sink.push('keyword', '!important');
+      index += '!important'.length;
+      continue;
+    }
+    if (character === '#' && depth > 0) {
+      const hex = matchAt(CSS_HEX, text, index);
+      if (hex !== null) {
+        sink.push('number', hex);
+        index += hex.length;
+        continue;
+      }
+    }
+    if ((character === '.' || character === '#') && depth === 0) {
+      const name = matchAt(CSS_IDENTIFIER, text, index + 1);
+      if (name !== null) {
+        sink.push('function', `${character}${name}`);
+        index += name.length + 1;
+        continue;
+      }
+    }
+    if (!/[\w-]/u.test(previous)) {
+      const number = matchAt(CSS_NUMBER, text, index);
+      if (number !== null && depth > 0) {
+        sink.push('number', number);
+        index += number.length;
+        continue;
+      }
+      const word = matchAt(CSS_IDENTIFIER, text, index);
+      if (word !== null) {
+        const end = index + word.length;
+        if (depth === 0) sink.push('keyword', word);
+        else if (keyEndsAt(text, end, true)) sink.push('attribute', word);
+        else if (text[end] === '(') sink.push('function', word);
+        else sink.plain(word);
+        index = end;
+        continue;
+      }
+    }
+    sink.plain(character);
+    index += 1;
+  }
+  return sink.done();
+}
+
+const TAG_NAME = /[A-Za-z][\w:.-]*/y;
+const ATTRIBUTE_NAME = /[^\s"'>/=]+/y;
+const UNQUOTED_VALUE = /[^\s"'>]+/y;
+const ENTITY = /&(?:#\d+|#x[\da-fA-F]+|[A-Za-z]\w*);/y;
+
+/** The tag that opens at `index`, as tokens, and the index after its `>`. */
+function scanTag(text: string, index: number, sink: TokenSink): { name: string; end: number } {
+  const closing = text[index + 1] === '/';
+  let cursor = index + (closing ? 2 : 1);
+  sink.plain(closing ? '</' : '<');
+  const name = matchAt(TAG_NAME, text, cursor) ?? '';
+  sink.push('keyword', name);
+  cursor += name.length;
+  while (cursor < text.length && text[cursor] !== '>') {
+    const character = text[cursor] ?? '';
+    if (character === '"' || character === "'") {
+      const close = text.indexOf(character, cursor + 1);
+      const end = close === -1 ? text.length : close + 1;
+      sink.push('string', text.slice(cursor, end));
+      cursor = end;
+      continue;
+    }
+    if (character === '=') {
+      sink.plain('=');
+      cursor += 1;
+      const value =
+        text[cursor] === '"' || text[cursor] === "'" ? null : matchAt(UNQUOTED_VALUE, text, cursor);
+      if (value !== null) {
+        sink.push('string', value);
+        cursor += value.length;
+      }
+      continue;
+    }
+    const attribute = matchAt(ATTRIBUTE_NAME, text, cursor);
+    if (attribute !== null) {
+      sink.push('attribute', attribute);
+      cursor += attribute.length;
+      continue;
+    }
+    sink.plain(character);
+    cursor += 1;
+  }
+  if (cursor < text.length) sink.plain('>');
+  return { name: closing ? '' : name.toLowerCase(), end: Math.min(cursor + 1, text.length) };
+}
+
+const SCRIPT_CLOSE = /<\/script/giu;
+const STYLE_CLOSE = /<\/style/giu;
+
+/** HTML and XML, with `<script>` and `<style>` bodies highlighted as JavaScript and CSS. */
+function tokenizeMarkup(text: string): Token[] {
+  const sink = new TokenSink();
+  let index = 0;
+  while (index < text.length) {
+    const character = text[index] ?? '';
+    if (text.startsWith('<!--', index)) {
+      const close = text.indexOf('-->', index + 4);
+      const end = close === -1 ? text.length : close + 3;
+      sink.push('comment', text.slice(index, end));
+      index = end;
+      continue;
+    }
+    if (text.startsWith('<!', index) || text.startsWith('<?', index)) {
+      const close = text.indexOf('>', index + 2);
+      const end = close === -1 ? text.length : close + 1;
+      sink.push('meta', text.slice(index, end));
+      index = end;
+      continue;
+    }
+    if (character === '<' && /[A-Za-z/]/u.test(text[index + 1] ?? '')) {
+      const tag = scanTag(text, index, sink);
+      index = tag.end;
+      if (tag.name === 'script' || tag.name === 'style') {
+        // A regex on the source itself: lowercasing can change string length (`İ`).
+        const closer = tag.name === 'style' ? STYLE_CLOSE : SCRIPT_CLOSE;
+        closer.lastIndex = index;
+        const close = closer.exec(text)?.index ?? -1;
+        const end = close === -1 ? text.length : close;
+        const body = text.slice(index, end);
+        const tokens =
+          tag.name === 'style' ? tokenizeCss(body) : tokenize(body, GRAMMARS.javascript as Grammar);
+        for (const token of tokens) {
+          if (token.kind === null) sink.plain(token.text);
+          else sink.push(token.kind, token.text);
+        }
+        index = end;
+      }
+      continue;
+    }
+    if (character === '&') {
+      const entity = matchAt(ENTITY, text, index);
+      if (entity !== null) {
+        sink.push('number', entity);
+        index += entity.length;
+        continue;
+      }
+    }
+    sink.plain(character);
+    index += 1;
+  }
+  return sink.done();
+}
+
+const MARKDOWN_INLINE = /`[^`\n]*`|\*\*[^*\n]+\*\*|\]\([^)\s\]]*\)/gu;
+
+function markdownInline(line: string, sink: TokenSink): void {
+  let index = 0;
+  for (const match of line.matchAll(MARKDOWN_INLINE)) {
+    const start = match.index ?? 0;
+    sink.plain(line.slice(index, start));
+    const value = match[0];
+    if (value.startsWith('`')) sink.push('string', value);
+    else if (value.startsWith('**')) sink.push('keyword', value);
+    else {
+      sink.plain('](');
+      sink.push('string', value.slice(2, -1));
+      sink.plain(')');
+    }
+    index = start + value.length;
+  }
+  sink.plain(line.slice(index));
+}
+
+function tokenizeMarkdown(text: string): Token[] {
+  const sink = new TokenSink();
+  let fence: string | null = null;
+  text.split('\n').forEach((line, index) => {
+    if (index > 0) sink.plain('\n');
+    // A fence opens with up to three spaces of indent; it closes with at least as long a run of the same character and nothing after.
+    const fenceMark = /^ {0,3}(`{3,}|~{3,})(.*)$/u.exec(line);
+    const opens = fence === null && fenceMark !== null;
+    const closes =
+      fence !== null &&
+      fenceMark !== null &&
+      fenceMark[1]?.startsWith(fence) === true &&
+      fenceMark[2]?.trim() === '';
+    if (fenceMark !== null && (opens || closes)) {
+      const mark = fenceMark[1] ?? '';
+      fence = fence === null ? mark : null;
+      sink.push('meta', line);
+      return;
+    }
+    if (fence !== null) {
+      sink.push('string', line);
+      return;
+    }
+    if (/^\s{0,3}#{1,6}(?:\s|$)/u.test(line)) {
+      sink.push('keyword', line);
+      return;
+    }
+    if (/^\s{0,3}>/u.test(line)) {
+      sink.push('comment', line);
+      return;
+    }
+    const marker = /^\s*(?:[-*+]|\d{1,9}[.)])(?=\s)/u.exec(line)?.[0];
+    if (marker !== undefined) {
+      sink.push('attribute', marker);
+      markdownInline(line.slice(marker.length), sink);
+      return;
+    }
+    markdownInline(line, sink);
+  });
+  return sink.done();
+}
+
+const SCANNERS: Readonly<Record<(typeof SCANNED)[number], (text: string) => Token[]>> = {
+  diff: tokenizeDiff,
+  html: tokenizeMarkup,
+  css: tokenizeCss,
+  markdown: tokenizeMarkdown,
+};
+
 /** Markup that only a highlighted token emits; spec text is escaped and cannot forge it. */
 export const SYNTAX_TOKEN_MARKUP = '<span class="ak-tk-';
 
@@ -452,13 +793,12 @@ function renderPiece(kind: TokenKind | null, text: string): string {
 export function codeLines(text: string, language: string): string {
   const source = text.replace(/\n$/u, '');
   const name = canonical(language);
-  const grammar = GRAMMARS[name];
-  const tokens: Token[] =
-    name === 'diff'
-      ? tokenizeDiff(source)
-      : grammar === undefined
-        ? [{ kind: null, text: source }]
-        : tokenize(source, grammar);
+  const grammar = grammarOf(name);
+  const tokens: Token[] = isScanned(name)
+    ? SCANNERS[name](source)
+    : grammar === undefined
+      ? [{ kind: null, text: source }]
+      : tokenize(source, grammar);
   const lines: string[] = [''];
   for (const token of tokens) {
     const pieces = token.text.split('\n');
