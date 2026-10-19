@@ -13,7 +13,8 @@ timings or scripts, and an omitted `motion` keeps the block's existing
 behaviour. The registry lives in [`src/motion/recipes.ts`](../src/motion/recipes.ts),
 and the library exports it as `MOTION_RECIPES`, `getMotionRecipe` and
 `motionPresetsFor`. `describe --compact` lists the recipes specific to a block
-type under `motion:`.
+type under `motion:`, and [discovery](#discovery-and-audit) searches and
+describes them.
 
 ## Recipes
 
@@ -81,6 +82,167 @@ There is no page- or theme-level default recipe: motion is opt-in per block.
 
 Recipes are original implementations from web-platform primitives. No
 third-party transition recipe is copied or repackaged.
+
+## Discovery and audit
+
+Motion recipes are separate from the page recipes that `recipes` and `recipe`
+return: a page recipe is a starting spec, a motion recipe is a value for one
+block's `motion` field. Every answer below is projected from `MOTION_RECIPES`,
+so discovery cannot disagree with validation, and no answer contains CSS.
+
+### Finding a recipe
+
+```bash
+ak-render motions                                # one line per recipe
+ak-render motions search smooth tabs             # ranked by word overlap
+ak-render motions describe tabs-slide --compact  # blocks, triggers, fallback, example
+ak-render motions describe tabs-slide --json     # the full descriptor
+```
+
+MCP clients call one tool, `motions`: no arguments for the list, `query` for a
+search, `id` (with `compact: true` for the short form) for one recipe. The
+remote server answers it without a bearer, like `catalog`. The library exports
+`motionCatalog`, `searchMotions` and `describeMotion`.
+
+Search is deterministic word overlap over the id, aliases, target blocks,
+triggers and purpose, with no fuzzy matching. An unknown id fails with
+`SPEC_VALIDATION_ERROR` and lists the closest ids.
+
+What an agent reads to pick a recipe for "make the tabs switch smoothly",
+measured with `node scripts/motion-token-cost.mjs` after `pnpm build`
+(tokens estimated as characters / 4):
+
+| Workflow | Reads | Characters | ~Tokens | vs. guide |
+| --- | --- | ---: | ---: | ---: |
+| Before: read the motion guide | `docs/motion.md` | 4404 | 1101 | 100% |
+| Before: read the recipe registry source | `src/motion/recipes.ts` | 18485 | 4622 | 420% |
+| After: search, then compact describe | `motions { query: "smooth tabs" }` + `motions { id: "tabs-slide", compact: true }` | 751 | 188 | 17% |
+| After: list every recipe, then compact describe | `motions {}` + `motions { id: "tabs-slide", compact: true }` | 2725 | 682 | 62% |
+
+Search plus a compact describe reads about a sixth of the guide and a
+twenty-fifth of the registry source, and it names the exact field to write.
+
+### Auditing motion
+
+```bash
+ak-render motion audit page.yaml                 # spec audit, authoritative
+ak-render motion audit page.html --json          # compiled-page audit, best effort
+ak-render motion audit page.yaml --fail-on warning --baseline motion-baseline.json
+```
+
+MCP clients call `audit-motion` with exactly one of `spec` or `html`. Remotely
+it needs a bearer, like `validate`. The library exports `auditMotionSpec`,
+`auditMotionHtml`, `motionAuditFails` and `compareMotionAudits`. The audit
+reads its input and never rewrites it, runs no page script and fetches
+nothing.
+
+Each finding has a stable `rule`, a `severity` (`error`, `warning` or `info`),
+a `message`, a JSON `path` (or `css`, `html`, `script`), the block id when
+there is one, reproducible `evidence` and a `fix`. Findings are sorted, so the
+same input always gives the same report. A report lists at most 25 findings per
+rule, plus one that counts the rest and fingerprints them in its `evidence`, so
+a `--baseline` run still sees a change among the unlisted findings. Because of
+that, fixing a listed finding of a capped rule also reports the moved finding and
+the new fingerprint as added; write a fresh baseline after such a fix. `counts`
+and the score cover every finding. The audit takes linear time and quotes at most
+a short excerpt of the input, so a hostile page cannot stall it or inflate the
+report.
+
+**Spec audit (authoritative).** It runs on the normalized spec and the theme it
+resolves:
+
+| Rule | Severity | Finds |
+| --- | --- | --- |
+| `motion/unknown-recipe`, `motion/incompatible-recipe`, `motion/needs-visible-when`, `motion/raw-motion-field`, `motion/invalid-value` | error | The validation errors above, with the compatible recipes |
+| `spec/invalid` | error | Any other validation error; the motion rules cannot run |
+| `motion/nested-arrival` | warning | An arrival recipe inside a block that already arrives with one |
+| `motion/state-never-changes` | warning | A `visibleWhen` recipe whose state no control or action ever writes |
+| `motion/arrival-overuse` | warning | More than six blocks that arrive with motion |
+| `motion/stagger-capped` | info | `stagger` on more than eight items; the rest arrive together |
+| `motion/policy-off` | info | Recipes on a page whose theme `motion-policy` is `reduced` or `none`, where no recipe plays |
+
+**Compiled-page audit (best effort).** It reads the emitted stylesheets and
+runtime. A page AK Render did not compile is still scanned, with
+`html/untrusted-source` noted, because a scan cannot prove arbitrary HTML is
+accessible.
+
+| Rule | Severity | Finds |
+| --- | --- | --- |
+| `html/unguarded-motion`, `html/duplicate-keyframes` | error | What `motionDiagnostics` rejects at compile time, including a stylesheet nested more than 32 blocks deep, which cannot be checked |
+| `html/missing-recipe-css`, `html/missing-exit`, `html/missing-lifecycle` | error | A block names a recipe whose CSS, exit phase or runtime is missing |
+| `html/missing-csp`, `html/unsafe-csp`, `html/remote-resource` | error | No CSP, a CSP that allows `unsafe-inline` or `unsafe-eval`, or a remote script, stylesheet, import or `url()` |
+| `html/transition-all`, `html/layout-keyframes` | warning | `transition: all`, or keyframes that animate layout properties |
+| `html/unknown-recipe` | warning | A `data-ak-motion` value the registry does not know |
+| `html/unbounded-motion` | info | More than one infinite loop |
+| `html/fixed-timing` | info | Guarded rules timed in fixed units instead of the motion tokens (one finding per page) |
+| `html/untrusted-source` | info | The page has no AK Render generator mark |
+
+A clean compiled page shows only the two notes the compiler's own ambient
+loops and hero effects cause (`html/unbounded-motion`, `html/fixed-timing`).
+
+**Gate and score.** `--fail-on` (default `error`; `none` never fails) sets the
+exit code: 1 when a finding at that severity or above is present, 2 for a usage
+error. `--baseline` takes an earlier `--json` report and gates only on new
+findings, plus every current error: a baseline can forgive a known warning,
+never a standing error. A finding on a block with an `id` is matched by that id,
+so inserting or moving other blocks does not turn it into a new one. The score is advisory: 100 minus 25 per error, 8 per
+warning and 2 per note, floored at 0. It never decides the gate.
+
+## Motion Studio
+
+`ak-render motion studio page.yaml` opens a local, development-only dashboard
+over one Page Spec: inspect, tune, preview, then accept a reviewed diff. It
+prints a URL and runs until Ctrl-C (`--port <n>` picks the port; `--json`
+prints `{url, port, file}`).
+
+```sh
+ak-render motion studio page.yaml
+# Motion Studio for page.yaml
+#   http://127.0.0.1:52144/studio/<session>/
+# Press Ctrl-C to stop.
+```
+
+- **Blocks and gallery.** The block list shows every block with its recipe.
+  The recipe gallery plays each recipe's registry example, compiled by AK.
+  Both lists take the arrow keys.
+- **Inspector.** For the selected block it shows the recipe's phase timeline,
+  the duration in milliseconds at the current `motion-duration`, the easing,
+  the animated properties, the runtime, the states it plays in, the
+  reduced-motion fallback and the CSS the compiled page actually emits. The
+  recipe select offers only recipes that block can take.
+- **Tuning.** A slider sets `motion-duration` (0–1000ms, 10ms steps) and two
+  selects set `motion-easing` and `motion-policy`. Values outside those bounds
+  are refused by the server, never written. The studio sets no CSS, selector
+  or script of its own.
+- **Preview.** The preview is the real compiled page for the proposal.
+  Replay reloads it, Pause freezes its animations, Rapid toggle clicks the
+  selected block's tabs, toggles and disclosures three times to check that it
+  settles. **Preview as** recompiles both previews under `full`, `reduced`,
+  `none` or OS reduced motion (the still state) for viewing only. Compare
+  shows the original beside the proposal.
+- **Accept.** Undo steps back, Reset drops every edit, and the panel shows
+  the unified diff and the motion audit of the proposal. Accept writes
+  exactly the diff on screen. Only the changed lines are rewritten: comments,
+  key order, each line's ending (LF or CRLF), indentation (spaces or tabs) and the
+  rest of the file's formatting stay as written. When an edit cannot be mapped
+  onto the authored lines, the whole file is serialized again, and the diff
+  shows that before you accept. A symlinked spec is written through to its
+  target, which keeps its permissions. Accept is refused if the file changed
+  on disk since the studio read it (checked again just before the write), if
+  the proposal does not compile or if it changes nothing.
+- **Limits.** The studio edits version 1 specs; a bare version 0 block list
+  is refused when the studio starts. An edit is refused when a YAML alias
+  copies the value, block, list or theme it would change, because the edit
+  would change every copy; replacing an alias itself is allowed. A spec with YAML
+  errors or more than one YAML document is refused when the studio starts. Accept
+  replaces the spec with a new file, so a hard link to the old spec keeps the
+  old content.
+
+The studio never touches compiled HTML and is never part of a compiled page.
+It listens on 127.0.0.1 only, behind a random session path, sends a strict
+CSP with no inline script or style, refuses foreign `Host` headers, and needs
+a session header on every write. It needs no network access, account or AI
+service.
 
 ## Adding a recipe
 

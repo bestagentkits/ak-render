@@ -225,49 +225,41 @@ for (const name of FIXTURES) {
     }) => {
       const titles = disclosureTitles(name);
       const views = initialViews(name);
-      // The walk checks content, not motion. On the recipe page, reduced motion
-      // keeps an expanding section from moving the summaries below it while
-      // they are clicked; every other page walks at full motion.
-      await withContext(
-        browser,
-        {
-          javaScriptEnabled: false,
-          reducedMotion: name === 'motion-recipes' ? 'reduce' : 'no-preference',
-        },
-        async (page) => {
-          const audit = await open(page, name);
-          // Disclosures are native <details>: a reader opens them without
-          // scripts, outermost first, so nested panels become readable too.
-          const closed = page.locator('details:not([open]) > summary').filter({ visible: true });
-          for (let guard = 0; guard < 200 && (await closed.count()) > 0; guard += 1) {
-            await closed.first().click();
-          }
-          const text = flat(await page.locator('body').innerText());
-          for (const title of titles) expect(text, `title "${title}"`).toContain(flat(title));
+      await withContext(browser, { javaScriptEnabled: false }, async (page) => {
+        const audit = await open(page, name);
+        // Disclosures are native <details>: a reader opens them without
+        // scripts, outermost first, so nested panels become readable too.
+        // Enter opens a summary natively; a click would wait for a stable box,
+        // which smooth scrolling can keep moving while it retries.
+        const closed = page.locator('details:not([open]) > summary').filter({ visible: true });
+        for (let guard = 0; guard < 200 && (await closed.count()) > 0; guard += 1) {
+          await closed.first().press('Enter');
+        }
+        const text = flat(await page.locator('body').innerText());
+        for (const title of titles) expect(text, `title "${title}"`).toContain(flat(title));
 
-          // Every tab panel and carousel slide renders its own text.
-          const panels = await page
-            .locator('[role="tabpanel"], .ak-carousel-slide')
-            .evaluateAll((elements) =>
-              elements.map((element) => ({
-                rendered: (element as HTMLElement).innerText.replace(/\s+/gu, ' ').trim().length,
-                hidden: (element as HTMLElement).closest('[hidden]') !== null,
-              })),
-            );
-          for (const panel of panels) {
-            expect(panel.hidden).toBe(false);
-            expect(panel.rendered).toBeGreaterThan(0);
-          }
+        // Every tab panel and carousel slide renders its own text.
+        const panels = await page
+          .locator('[role="tabpanel"], .ak-carousel-slide')
+          .evaluateAll((elements) =>
+            elements.map((element) => ({
+              rendered: (element as HTMLElement).innerText.replace(/\s+/gu, ' ').trim().length,
+              hidden: (element as HTMLElement).closest('[hidden]') !== null,
+            })),
+          );
+        for (const panel of panels) {
+          expect(panel.hidden).toBe(false);
+          expect(panel.rendered).toBeGreaterThan(0);
+        }
 
-          const shown = page.locator('.ak-when:not([hidden])');
-          await expect(shown).toHaveCount(views.shown);
-          await expect(page.locator('.ak-when[hidden]')).toHaveCount(views.hidden);
-          for (const view of await shown.all()) {
-            expect(flat(await view.innerText()).length).toBeGreaterThan(0);
-          }
-          expect(audit().external).toEqual([]);
-        },
-      );
+        const shown = page.locator('.ak-when:not([hidden])');
+        await expect(shown).toHaveCount(views.shown);
+        await expect(page.locator('.ak-when[hidden]')).toHaveCount(views.hidden);
+        for (const view of await shown.all()) {
+          expect(flat(await view.innerText()).length).toBeGreaterThan(0);
+        }
+        expect(audit().external).toEqual([]);
+      });
     });
 
     test('print shows every panel', async ({ page }) => {
@@ -291,6 +283,9 @@ for (const name of FIXTURES) {
     });
 
     test('Tab reaches every control, each with a visible focus ring', async ({ page }) => {
+      // The walk presses Tab once per stop, so its time grows with the page:
+      // the largest fixtures need more than the default budget under load.
+      test.slow();
       const audit = await open(page, name);
       const stops = await markTabStops(page);
       // Every page has at least the skip link and the theme toggle.

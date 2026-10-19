@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { DiagnosticBag } from '../../src/diagnostics.js';
 import { isRenderError, type RenderError } from '../../src/index.js';
 import { checkBounds, LIMITS } from '../../src/spec/bounds.js';
@@ -48,6 +48,39 @@ describe('input boundary', () => {
       expect(renderError.code).toBe('SPEC_PARSE_ERROR');
       expect(renderError.message).toContain('page.yaml');
     }
+  });
+
+  it('fails on every YAML document error instead of compiling a different page', () => {
+    for (const [input, pattern] of [
+      ['version: 1\nmeta:\n  title: A\n  title: B\n', /unique/iu],
+      ['version: 1\nmeta:\n  title: "A\n', /line \d+, column \d+/u],
+      ['version: 1\n---\nversion: 2\n', /multiple documents/iu],
+      ['a: 1\n b: 2\n', /line \d+, column \d+/u],
+    ] as const) {
+      expect(() => parseSpec(input, { source: 'page.yaml' }), input).toThrowError(pattern);
+      try {
+        parseSpec(input, { source: 'page.yaml' });
+      } catch (error) {
+        expect((error as RenderError).code).toBe('SPEC_PARSE_ERROR');
+        expect((error as RenderError).message).toContain('page.yaml');
+        expect((error as RenderError).message).not.toContain('\n');
+      }
+    }
+  });
+
+  it('keeps yaml warnings about the input off the process warning channel', () => {
+    const warnings: unknown[] = [];
+    const listener = (warning: unknown) => warnings.push(warning);
+    process.on('warning', listener);
+    const emit = vi.spyOn(process, 'emitWarning');
+    try {
+      expect(parseSpec('version: 1\n? [a]\n: 1\n')).toEqual({ version: 1, '[ a ]': 1 });
+      expect(emit).not.toHaveBeenCalled();
+    } finally {
+      emit.mockRestore();
+      process.off('warning', listener);
+    }
+    expect(warnings).toEqual([]);
   });
 
   it('bounds YAML alias expansion so a small document cannot inflate', () => {

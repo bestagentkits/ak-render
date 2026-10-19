@@ -30,6 +30,11 @@ export interface RuntimeOptions {
   moduleFeatures?: readonly FeatureModule[];
   /** Motion recipe ids the page's blocks opt into. */
   motion?: ReadonlySet<string>;
+  /**
+   * True when a binding runs the `theme` action. The theme runtime then ships
+   * without the toggle feature, whose stylesheet and marker belong to the toggle.
+   */
+  themeAction?: boolean;
 }
 
 const helpers = (conditions: boolean): string => `
@@ -473,7 +478,7 @@ function closeDialog(dialog) {
   fire(dialog, 'close');
 }
 function toggleDialog(dialog) {
-  if (dialog.open) closeDialog(dialog);
+  if (dialog.hasAttribute('open')) closeDialog(dialog);
   else openDialog(dialog);
 }`;
 
@@ -561,9 +566,10 @@ export function buildRuntime(options: RuntimeOptions): string {
   const parts: string[] = [];
   const motion = options.motion ?? new Set<string>();
   const lifecycle = motionRuntime(motion);
+  const theme = features.has('theme') || options.themeAction === true;
 
   if (conditions) parts.push(STATE);
-  if (features.has('theme')) parts.push(THEME);
+  if (theme) parts.push(THEME);
   if (features.has('copy')) parts.push(COPY);
   if (features.has('dialog')) parts.push(motion.has('dialog-pop') ? MOTION_DIALOG : DIALOG);
   if (features.has('filter')) parts.push(FILTER);
@@ -608,8 +614,8 @@ export function buildRuntime(options: RuntimeOptions): string {
     ...parts,
     DELEGATION,
     BOOT,
-    // Only a page with the theme toggle defines restoreTheme.
-    features.has('theme') ? 'restoreTheme();' : '',
+    // restoreTheme is defined only where the theme part ships.
+    theme ? 'restoreTheme();' : '',
     ...wiring,
     '})();',
   ]

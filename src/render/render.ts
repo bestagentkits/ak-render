@@ -166,6 +166,24 @@ function usedMotionRecipes(ir: IrDocument): Set<string> {
   return used;
 }
 
+/** True when a binding anywhere in a node, nested props included, runs `action`. */
+function usesAction(value: unknown, action: string, inBindings = false): boolean {
+  if (Array.isArray(value)) return value.some((item) => usesAction(item, action, inBindings));
+  if (value === null || typeof value !== 'object') return false;
+  const record = value as Record<string, unknown>;
+  if (inBindings && record.action === action) return true;
+  return Object.entries(record).some(([key, child]) =>
+    usesAction(child, action, inBindings || key === 'on'),
+  );
+}
+
+/** The `theme` action needs the theme runtime even when the page has no toggle. */
+function usesThemeAction(ir: IrDocument): boolean {
+  return ir.nodes.some(
+    (node) => usesAction(node.bindings, 'theme', true) || usesAction(node.props, 'theme'),
+  );
+}
+
 function bodyNeedsRuntime(body: string): boolean {
   return body.includes('data-ak-on-') || body.includes('data-ak-dialog-open');
 }
@@ -322,6 +340,7 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
         hasBindings: bodyNeedsRuntime(body),
         moduleFeatures,
         motion: usedMotionRecipes(ir),
+        themeAction: usesThemeAction(ir),
       })
     : '';
 

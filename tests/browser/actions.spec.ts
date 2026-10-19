@@ -111,6 +111,32 @@ test.describe('theme toggle', () => {
     expect(await page.locator('html').getAttribute('data-theme')).toBe(chosen);
   });
 
+  test('a theme action works on a page without the toggle', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    const source = `version: 1
+meta:
+  title: Theme action
+blocks:
+  - type: button
+    label: Go dark
+    on:
+      click: { action: theme, value: dark }
+`;
+    const file = workspace.write(
+      'theme-action',
+      compile(source, { source: 'theme-action.yaml', themeToggle: false }).html,
+    );
+    await page.goto(`file://${file}`, { waitUntil: 'load' });
+    await expect(page.locator('[data-ak-theme-toggle]')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Go dark' }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    // The choice persists like the toggle's.
+    await page.reload({ waitUntil: 'load' });
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    expect(errors).toEqual([]);
+  });
+
   test('follows the system preference when no choice was stored', async ({ page }) => {
     await page.emulateMedia({ colorScheme: 'dark' });
     await open(page);

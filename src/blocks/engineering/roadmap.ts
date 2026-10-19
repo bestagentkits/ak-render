@@ -8,7 +8,7 @@
  * the clock and break determinism.
  */
 
-import { type DiagnosticBag, pathIndex, pathKey } from '../../diagnostics.js';
+import { type DiagnosticBag, pathKey } from '../../diagnostics.js';
 import type { IrNode } from '../../ir.js';
 import type { BlockModule } from '../../registry/block-module.js';
 import {
@@ -27,6 +27,7 @@ import {
   listProp,
   nodeAttributes,
   objectListProp,
+  propItemPath,
   str,
   stringProp,
   titleHeader,
@@ -172,16 +173,10 @@ function reportDuplicates(
 function checkRoadmap(node: IrNode, bag: DiagnosticBag): void {
   const periods = listProp(node, 'periods').map((period) => str(period));
   const laneIds = objectListProp(node, 'lanes').map((lane) => str(lane.id));
-  reportDuplicates(
-    periods,
-    (index) => pathIndex(pathKey(node.path, 'periods'), index),
-    'period',
-    node,
-    bag,
-  );
+  reportDuplicates(periods, (index) => propItemPath(node, 'periods', index), 'period', node, bag);
   reportDuplicates(
     laneIds,
-    (index) => pathKey(pathIndex(pathKey(node.path, 'lanes'), index), 'id'),
+    (index) => pathKey(propItemPath(node, 'lanes', index), 'id'),
     'lane id',
     node,
     bag,
@@ -189,7 +184,7 @@ function checkRoadmap(node: IrNode, bag: DiagnosticBag): void {
   const items = node.props.items;
   if (!Array.isArray(items)) return;
   objectListProp(node, 'items').forEach((item, index) => {
-    const itemPath = pathIndex(pathKey(node.path, 'items'), index);
+    const itemPath = propItemPath(node, 'items', index);
     const error = (key: string, message: string, allowed: readonly string[]): void =>
       bag.add({
         code: 'SPEC_VALIDATION_ERROR',

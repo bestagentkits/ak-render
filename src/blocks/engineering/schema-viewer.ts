@@ -8,7 +8,7 @@
  * reads without script and in print.
  */
 
-import { pathIndex, pathKey } from '../../diagnostics.js';
+import { pathKey } from '../../diagnostics.js';
 import type { IrNode } from '../../ir.js';
 import type { BlockModule } from '../../registry/block-module.js';
 import {
@@ -24,6 +24,7 @@ import {
   element,
   nodeAttributes,
   objectListProp,
+  propItemPath,
   str,
   titleHeader,
 } from '../../render/block-helpers.js';
@@ -147,7 +148,7 @@ export const schemaViewerBlock: BlockModule = {
     const seen = new Set<string>();
     objectListProp(node, 'fields').forEach((field, index) => {
       const path = str(field.path);
-      const at = pathKey(pathIndex(pathKey(node.path, 'fields'), index), 'path');
+      const at = pathKey(propItemPath(node, 'fields', index), 'path');
       if (path.split('.').some((segment) => segment === '')) {
         bag.add({
           code: 'SPEC_VALIDATION_ERROR',

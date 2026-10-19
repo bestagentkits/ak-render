@@ -1,0 +1,42 @@
+# A compose input for the investment-report intent. compose expands it into
+# investment-report.spec.yaml; tests check both the spec and the HTML match.
+intent: investment-report
+content:
+  title: Northwind Robotics Series B
+  subtitle: A $40M round to scale warehouse picking robots across three regions.
+  facts:
+    - { label: Company, value: Northwind Robotics }
+    - { label: Stage, value: Series B }
+    - { label: Ticket, value: $12M of $40M }
+    - { label: Memo date, value: 2026-10-17 }
+  thesis:
+    summary: Northwind has the lowest cost per pick in the segment and a contracted pipeline that covers 70% of next year's plan. We recommend leading the round.
+    recommendation: invest
+    points:
+      - Gross margin rose from 31% to 44% in four quarters as fleet utilisation improved.
+      - Two of the top five US 3PLs have signed multi-site agreements.
+      - The round funds a European launch the team has already staffed.
+  metrics:
+    - { label: ARR, value: $18.4M, delta: '+142%', trend: up, good: up }
+    - { label: Gross margin, value: 44%, delta: '+13 pt', trend: up, good: up }
+    - { label: Net retention, value: 131%, trend: flat }
+    - { label: Burn multiple, value: '1.6x', delta: '-0.9x', trend: down, good: down }
+  scenarios:
+    metric: Revenue
+    format: compact
+    periods: ['2026', '2027', '2028', '2029']
+    items:
+      - { name: Bear, probability: 0.25, values: [18000000, 24000000, 31000000, 38000000], note: Europe slips a year }
+      - { name: Base, probability: 0.5, values: [18000000, 32000000, 52000000, 78000000] }
+      - { name: Bull, probability: 0.25, values: [18000000, 38000000, 70000000, 120000000], note: Second 3PL rollout lands early }
+  risks:
+    - { area: Hardware supply, impact: high, likelihood: medium, mitigation: Dual-sourced actuators from Q2. }
+    - { area: Customer concentration, impact: medium, likelihood: medium }
+    - { area: European labour rules, impact: medium, likelihood: low }
+  milestones:
+    - { when: Q1 2027, title: Close the round }
+    - { when: Q3 2027, title: First EU site live, text: Rotterdam pilot with an existing US customer. }
+    - { when: Q2 2028, title: Cash-flow positive in the US }
+  sources:
+    - { title: Northwind management accounts FY2026, publisher: Northwind Robotics, year: 2026 }
+    - { title: Warehouse automation market outlook, authors: Lee and Ortiz, publisher: Logistics Review, year: 2026, href: 'https://example.com/warehouse-outlook' }

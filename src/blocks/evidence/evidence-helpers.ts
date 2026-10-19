@@ -19,11 +19,19 @@ import type { CheckContext } from '../../registry/block-module.js';
 import type { PropSchema } from '../../registry/prop-schema.js';
 
 /**
- * `FORMAT_FIELDS` without defaults, for an item that overrides the block's
+ * The format fields the evidence widgets take. `signed` is left out: these
+ * widgets sign a change themselves and show measured values unsigned.
+ */
+export const MEASURE_FORMAT_FIELDS: Record<string, PropSchema> = Object.fromEntries(
+  Object.entries(FORMAT_FIELDS).filter(([key]) => key !== 'signed'),
+);
+
+/**
+ * `MEASURE_FORMAT_FIELDS` without defaults, for an item that overrides the block's
  * format: an absent field must read as "inherit", not as the default.
  */
 export const FORMAT_OVERRIDE_FIELDS: Record<string, PropSchema> = Object.fromEntries(
-  Object.entries(FORMAT_FIELDS).map(([key, schema]) => {
+  Object.entries(MEASURE_FORMAT_FIELDS).map(([key, schema]) => {
     const { default: _default, ...rest } = schema as PropSchema & { default?: unknown };
     return [key, rest as PropSchema];
   }),

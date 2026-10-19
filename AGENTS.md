@@ -33,13 +33,14 @@ Inlining in the compiler is the point, not overhead: the theme stylesheet, embed
 
 - Do not trade output semantics, visual quality, no-JS and print readability, accessibility, security or determinism for a few kilobytes of output.
 - Do not add a minified-output or file-size target, budget or gate. Byte counts in benchmarks and render summaries are reported for transparency and determinism checks, not as goals.
-- Judge a change by task-level agent cost: the median and p95 tokens per task (guidance read, spec written, tool round-trips and repairs), task completion rate, iterations to a valid page, and page quality. `benchmarks/agent-token-cost.mjs` and `benchmarks/spec-compression.mjs` measure the parts that do not need a live model; `agent-token-cost.mjs` lists live token counts and repair loops as not measured yet.
+- Judge a change by task-level agent cost: the median and p95 tokens per task (guidance read, spec written, tool round-trips and repairs), task completion rate, iterations to a valid page, and page quality. `benchmarks/agent-token-cost.mjs` and `benchmarks/spec-compression.mjs` measure the parts that do not need a live model. `benchmarks/agent-ab-harness.mjs` (`pnpm bench:agent`) runs identical tasks through a live model on the existing flow and, when the build exposes `compose` or `repair`, on the compose/repair flow, and records provider-reported tokens, round-trips, repairs, wall time and, with `--visual`, a viewport overflow check; its versioned baseline is `docs/artifacts/agent-ab-baseline.md`. Report a saving as measured only when it comes from that harness with both arms run; anything else is an estimate and is labelled so.
 
 ## Working rules
 
 - Read `README.md` and `docs/adr/0001-page-spec-compiler-boundary.md` for the compiler boundary.
 - Read `DESIGN.md` before changing anything in `src/render/styles.ts`, `src/render/charts.ts`, `src/render/document.ts` or `src/theme/`.
-- Read `docs/adr/0002-motion-policy.md` before adding or changing any animation or transition; `src/render/motion.ts` owns the guard and its compile-time check. Per-block motion recipes live in `src/motion/recipes.ts`; see `docs/motion.md`.
+- Read `docs/adr/0002-motion-policy.md` before adding or changing any animation or transition; `src/render/motion.ts` owns the guard and its compile-time check. Per-block motion recipes live in `src/motion/recipes.ts`; discovery (`motion-catalog.ts`) and the audit (`motion-audit.ts`) project from it, so add a rule there rather than a second checker. The dev-only Motion Studio (`src/motion/studio/`) reads the same registry and writes only the spec. See `docs/motion.md`.
+- The visual audit (`src/audit/ui-audit*.ts`, `docs/audit-ui.md`) owns real-browser checks of the compiled page; keep `validate` browser-free and add a rule to `ui-audit-rules.ts` with its fix rather than a second checker. `ui-audit-quick.ts` is imported by the Worker, so it must stay free of Node built-ins.
 - Emitted CSS must stay token-driven. Feature CSS belongs in `FEATURE_CSS`, never in `BASE_CSS`.
 - After an intentional output change, run `pnpm build`, `pnpm snapshots:generate` and `pnpm gallery:generate`, then commit the regenerated files.
 - Verify with `REVIEW.md`: run the gates, then check the screenshots at 1440, 768 and 375 in light and dark.
