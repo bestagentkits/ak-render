@@ -43,6 +43,7 @@ export const CHART_CSS = `.ak-chart{display:flex;flex-direction:column;gap:calc(
 .ak-chart-swatch{width:.7em;height:.7em;border-radius:2px;background:var(--ak-series,var(--ak-c0))}
 .ak-details{border-top:var(--ak-border-width) solid var(--ak-color-border);padding-top:calc(var(--ak-space-unit) * 1.5);margin-top:calc(var(--ak-space-unit) * -.5)}
 ${disclosureSummary('.ak-details')}
+.ak-chart-table-scroll{overflow-x:auto;overscroll-behavior-x:contain}
 .ak-details table{font-size:.85rem;border:var(--ak-border-width) solid var(--ak-color-border)}
 .ak-details caption{font-size:.8rem}
 @media (max-width:768px){.ak-details summary{min-height:44px}}

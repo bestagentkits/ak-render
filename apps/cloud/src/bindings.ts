@@ -105,4 +105,10 @@ export interface Env {
    * answer `DOWNLOAD_UNAVAILABLE`.
    */
   DOWNLOAD_SIGNING_KEY?: string;
+  /**
+   * Commit the deployed Worker was built from. The deploy workflow passes it
+   * with `wrangler deploy --var`; `/v1/version` reports it so a stale deploy
+   * is visible. Absent in a local or manual deploy.
+   */
+  BUILD_SHA?: string;
 }

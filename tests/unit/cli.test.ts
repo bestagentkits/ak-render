@@ -134,6 +134,28 @@ describe('ak-render CLI', () => {
     expect(c.out()).toBe('');
   });
 
+  it('lists each warning once when the spec also has an error', () => {
+    const c = capture();
+    const spec = join(workspace, 'warn-and-error.yaml');
+    writeFileSync(
+      spec,
+      'version: 1\nmeta:\n  title: T\nblocks:\n  - type: table\n    columns: [Name, Age]\n    rows: [Alice, ["30"]]\n',
+    );
+    expect(run(['validate', spec], c.io)).toBe(1);
+    expect(c.err().match(/row has 1 cells/g)).toHaveLength(1);
+  });
+
+  it('still lists warnings for a spec that validates', () => {
+    const c = capture();
+    const spec = join(workspace, 'warn-only.yaml');
+    writeFileSync(
+      spec,
+      'version: 1\nmeta:\n  title: T\nblocks:\n  - type: table\n    columns: [Name, Age]\n    rows: [["30"]]\n',
+    );
+    expect(run(['validate', spec], c.io)).toBe(0);
+    expect(c.err().match(/warning: \$\.blocks\[0\]\.rows\[0\]: row has 1 cells/g)).toHaveLength(1);
+  });
+
   it('emits JSON diagnostics with --json', () => {
     const c = capture();
     expect(run(['validate', join(workspace, 'bad.yaml'), '--json'], c.io)).toBe(1);

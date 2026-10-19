@@ -145,12 +145,16 @@ export function textValueLabel(x: number, y: number, text: string, halo = false)
   )}</text>`;
 }
 
-/** Axis titles: the y title above the value ticks, the x title centred under the categories. */
+/**
+ * Axis titles: the y title above the value ticks, starting at the left edge so
+ * a long title grows over the plot rather than out of the SVG; the x title
+ * centred under the categories.
+ */
 export function axisTitles(frame: Frame, x: string | undefined, y: string | undefined): string {
   const parts: string[] = [];
   if (y !== undefined && y !== '') {
     parts.push(
-      `<text class="ak-chart-axis-title" x="${frame.left - 8}" y="${frame.top - 14}" text-anchor="end">${escapeText(y)}</text>`,
+      `<text class="ak-chart-axis-title" x="0" y="${frame.top - 14}" text-anchor="start">${escapeText(y)}</text>`,
     );
   }
   if (x !== undefined && x !== '') {

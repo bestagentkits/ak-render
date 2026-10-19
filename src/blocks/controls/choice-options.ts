@@ -6,13 +6,13 @@
  */
 
 import { reportUnknownField } from '../../data/resolve-block-data.js';
-import { pathIndex, pathKey } from '../../diagnostics.js';
+import { pathKey } from '../../diagnostics.js';
 import type { IrNode } from '../../ir.js';
 import { isPlainObject } from '../../json.js';
 import type { CheckContext } from '../../registry/block-module.js';
 import { list, obj, str } from '../../registry/define-helpers.js';
 import type { PropSchema } from '../../registry/prop-schema.js';
-import { objectListProp } from '../../render/block-helpers.js';
+import { objectListProp, propItemPath } from '../../render/block-helpers.js';
 import {
   type ControlPlacement,
   distinctFieldValues,
@@ -112,7 +112,7 @@ export function checkChoices(node: IrNode, maxOptions: number, context: CheckCon
     const seen = new Set<string>();
     authored.forEach((option, index) => {
       if (!isPlainObject(option) || typeof option.value !== 'string') return;
-      const at = pathKey(pathIndex(pathKey(node.path, 'options'), index), 'value');
+      const at = pathKey(propItemPath(node, 'options', index), 'value');
       if (option.value === '') add(at, 'an option value cannot be empty');
       else if (seen.has(option.value)) add(at, `duplicate option value "${option.value}"`);
       seen.add(option.value);

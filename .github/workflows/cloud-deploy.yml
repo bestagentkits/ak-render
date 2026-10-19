@@ -85,7 +85,8 @@ jobs:
       - name: Deploy
         if: ${{ inputs.dry-run == false && inputs.smoke-only == false }}
         working-directory: apps/cloud
-        run: npx --yes "wrangler@${WRANGLER_VERSION}" deploy
+        # BUILD_SHA is what GET /v1/version reports, so deploy lag is visible.
+        run: npx --yes "wrangler@${WRANGLER_VERSION}" deploy --var "BUILD_SHA:${GITHUB_SHA}"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -101,7 +102,9 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-      # MCP initialize, tools/list and catalog; render refused without a
+      # /v1/version (and, after a deploy, that it reports this commit); MCP
+      # initialize, tools/list (equal to /v1/version), 2026-07-28
+      # server/discover and tools/list, and catalog; render refused without a
       # bearer; with the smoke token, MCP and REST render with identical bytes,
       # a valid HTML artifact, the share lifecycle, and screenshot plus PDF
       # through the Browser Run binding.
@@ -121,3 +124,6 @@ jobs:
           BASE_URL: ${{ inputs.base-url }}
           TOKEN: ${{ secrets.AK_RENDER_SMOKE_TOKEN }}
           EXPECT_EXPORT: '1'
+          # A deploy must report this commit; a smoke-only run just notes lag.
+          EXPECT_BUILD: ${{ inputs.smoke-only == false && github.sha || '' }}
+          CURRENT_SHA: ${{ github.sha }}

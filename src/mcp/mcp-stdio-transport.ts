@@ -16,38 +16,44 @@
 import { homedir } from 'node:os';
 import type { Interface } from 'node:readline';
 import { createInterface } from 'node:readline';
-import { routeMcpMessage } from './mcp-json-rpc-dispatch.js';
+import { routeMcpMessage, toolCallResponse } from './mcp-json-rpc-dispatch.js';
 import { LOCAL_INSTRUCTIONS, LOCAL_TOOLS, type McpContext } from './mcp-local-tools.js';
 import {
+  isModernProtocol,
   JSON_RPC_ERRORS,
   type JsonRpcResponse,
+  metaProtocolVersion,
   rpcError,
   type ToolResult,
   toolErrorResult,
 } from './mcp-protocol.js';
 
 /**
- * Answer one JSON-RPC message. Returns `undefined` for notifications and for
- * responses sent to us, which need no reply.
+ * Answer one JSON-RPC message. Resolves to `undefined` for notifications and
+ * for responses sent to us, which need no reply. Most tools answer at once;
+ * `audit-ui` with the publication preset waits for a browser.
  */
-export function handleMcpMessage(
+export async function handleMcpMessage(
   message: unknown,
   context: McpContext,
-): JsonRpcResponse | undefined {
+): Promise<JsonRpcResponse | undefined> {
   const route = routeMcpMessage(message, LOCAL_TOOLS, { instructions: LOCAL_INSTRUCTIONS });
   if (route.kind === 'silent') return undefined;
   if (route.kind === 'reply') return route.response;
   let result: ToolResult;
   try {
-    result = route.tool.run(route.args, context);
+    result = await route.tool.run(route.args, context);
   } catch (error) {
     result = toolErrorResult(error);
   }
-  return { jsonrpc: '2.0', id: route.id, result };
+  return toolCallResponse(route, result);
 }
 
-/** Answer one line of the stdio transport, or return `undefined` for no reply. */
-export function handleMcpLine(line: string, context: McpContext): string | undefined {
+/** Answer one line of the stdio transport, or resolve to `undefined` for no reply. */
+export async function handleMcpLine(
+  line: string,
+  context: McpContext,
+): Promise<string | undefined> {
   if (line.trim() === '') return undefined;
   let message: unknown;
   try {
@@ -57,24 +63,40 @@ export function handleMcpLine(line: string, context: McpContext): string | undef
   }
   // Revision 2025-03-26 allows batches: answer each member, omit the silent ones.
   if (Array.isArray(message)) {
-    if (message.length === 0) {
+    // Revision 2026-07-28 has no batching, so a batch never carries its requests.
+    if (
+      message.length === 0 ||
+      message.some((member) => isModernProtocol(metaProtocolVersion(member)))
+    ) {
       return JSON.stringify(rpcError(null, JSON_RPC_ERRORS.invalidRequest, 'invalid request'));
     }
-    const responses = message
-      .map((member) => handleMcpMessage(member, context))
-      .filter((response) => response !== undefined);
+    const responses = (
+      await Promise.all(message.map((member) => handleMcpMessage(member, context)))
+    ).filter((response) => response !== undefined);
     return responses.length === 0 ? undefined : JSON.stringify(responses);
   }
-  const response = handleMcpMessage(message, context);
+  const response = await handleMcpMessage(message, context);
   return response === undefined ? undefined : JSON.stringify(response);
 }
 
-/** Serve MCP on stdin/stdout until stdin closes. Logs go to stderr only. */
+/**
+ * Serve MCP on stdin/stdout until stdin closes. Logs go to stderr only. A
+ * reply is written when its call finishes; every reply carries its request id.
+ */
 export function serveMcp(context: McpContext = { cwd: process.cwd(), home: homedir() }): Interface {
   const lines = createInterface({ input: process.stdin, crlfDelay: Number.POSITIVE_INFINITY });
   lines.on('line', (line) => {
-    const response = handleMcpLine(line, context);
-    if (response !== undefined) process.stdout.write(`${response}\n`);
+    handleMcpLine(line, context).then(
+      (response) => {
+        if (response !== undefined) process.stdout.write(`${response}\n`);
+      },
+      (error: unknown) => {
+        // Tool failures are already replies; this is a bug in the transport itself.
+        process.stderr.write(
+          `ak-render mcp: ${error instanceof Error ? error.message : String(error)}\n`,
+        );
+      },
+    );
   });
   return lines;
 }

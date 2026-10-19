@@ -4,7 +4,7 @@
  * and the summary line, so the author writes only the measurements.
  */
 
-import { FORMAT_FIELDS, type FormatSpec, groupedNumber } from '../../data/format-value.js';
+import { type FormatSpec, groupedNumber } from '../../data/format-value.js';
 import { pathKey } from '../../diagnostics.js';
 import type { IrNode } from '../../ir.js';
 import { isPlainObject, type JsonValue } from '../../json.js';
@@ -46,6 +46,7 @@ import {
   fieldMap,
   formatMeasure,
   formatSpecOf,
+  MEASURE_FORMAT_FIELDS,
   projectRow,
 } from './evidence-helpers.js';
 
@@ -325,7 +326,7 @@ export const benchmarkComparisonBlock: BlockModule = {
         },
         { description: 'Data fields for each column when rows come from dataRef or data.' },
       ),
-      ...FORMAT_FIELDS,
+      ...MEASURE_FORMAT_FIELDS,
       method: txt({ maxLength: 600, description: 'How the numbers were measured.' }),
       limitations: txt({ maxLength: 600, description: 'What the numbers do not show.' }),
       source: obj(

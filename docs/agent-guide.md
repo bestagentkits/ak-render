@@ -7,6 +7,13 @@ do not try to position or style blocks: there is no field for it.
 
 ## The loop
 
+**Shortcut for known page kinds.** When the page is one `compose` knows (see
+`ak-render compose intents`), fill its typed content slots and run
+`ak-render compose input.yaml --out page.html --spec-out page.yaml`. One call
+replaces the whole loop; diagnostics point into your input
+(`content.scenarios.items[1].values`), and `page.yaml` is an ordinary spec you
+can keep editing with the loop below. See [compose](./compose.md).
+
 1. **Find the blocks.** `ak-render search-catalog <intent words>` ranks block
    types for what the page needs, for example `search-catalog sortable table`
    or `search-catalog pricing`. Vietnamese works too, with or without
@@ -25,10 +32,25 @@ do not try to position or style blocks: there is no field for it.
    `{ ok, diagnostics[] }`. Each diagnostic has a stable `code` and the JSON
    `path` to fix (for example `$.blocks[0].titl`); an unknown prop lists the
    allowed ones in `details.allowed`. Exit code 1 means "fix and retry".
+   Add `--suggest` to get `fixes` on each diagnostic it can fix: RFC 6902
+   patches whose first operation is a `test` of the current value, with a
+   `rule` id and a `classification`. `safe` fixes keep the author's meaning
+   (a single item or block where a list is required, an enum value that
+   differs only in letter case); `ambiguous` ones are guesses (a near block,
+   action or property name, or wrapping text such as `a, b` that may mean
+   several items) for you to choose. Apply one fix per diagnostic, then
+   validate again. `ak-render repair page.yaml --out page.yaml` applies only
+   the safe fixes, revalidates and logs each change; it keeps YAML comments
+   when it can replay the edit in place (otherwise it re-emits the spec), and
+   it never deletes a field, changes data or picks between guesses.
    Icons are named by meaning (`icon: gauge`); find names with
    `ak-render icons search <words>` and see [icons.md](./icons.md).
 5. **Compile.** `ak-render page.yaml --out page.html --json` writes the file and
    prints a summary (bytes, hash, features, warnings).
+6. **Check the page (optional).** `ak-render audit-ui page.yaml --json` lists
+   visual problems in the compiled page, each with the block's `path` and a
+   `fix`; add `--preset publication` when a Chromium is available for the
+   real-browser pass. See [audit-ui.md](./audit-ui.md).
 
 Pass `-` instead of a path to read the spec from standard input, so no temporary
 file is needed:
@@ -39,6 +61,53 @@ cat spec.yaml | ak-render validate - --json
 ```
 
 Every command accepts `--json` and never prompts.
+
+## Edit an existing page
+
+Change a page with a small patch instead of rewriting or resending its spec.
+`ak-render patch` applies an [RFC 6902](https://www.rfc-editor.org/rfc/rfc6902)
+JSON Patch to the spec file in place and prints a hash and the applied changes,
+never the spec:
+
+```bash
+ak-render patch page.yaml '[{"op":"replace","path":"/blocks/@revenue/title","value":"Revenue, FY26"}]' --json
+ak-render patch page.yaml ops.json --base-hash s-0h3k2...   # ops from a file, or - for stdin
+```
+
+- **Address blocks by id.** A path that starts `/blocks/@<id>` resolves to the
+  block whose `id` field is `<id>`, at any depth (sections, columns, tab
+  panels), so a nested edit needs no array indexes. Give a block an `id` to
+  make it addressable; compiler-derived ids are not, because they change when
+  the page changes. An unknown id is refused and lists the ids that exist
+  (`details.known`); a duplicate id lists the blocks that share it
+  (`details.matches`). Plain pointers such as `/meta/title` and
+  `/blocks/2` work as RFC 6902 specifies.
+- **Optimistic concurrency.** Every reply carries `hash`, the spec's content
+  hash (formatting and comments do not change it). Pass it back as
+  `--base-hash` (MCP `baseHash`): if the spec changed since, nothing is applied
+  and the diagnostic `SPEC_PATCH_CONFLICT` carries the current hash. `patch
+  page.yaml '[]'` reads the hash without changing anything.
+- **All or nothing.** Operations run in order on a copy. One failing
+  operation (missing target, failed `test`, unknown id) applies none and
+  reports `SPEC_PATCH_ERROR` at `ops[i].path`, `ops[i].from` or `ops[i].value`.
+  A patch may not grow the spec past 4 MiB of JSON.
+- **Canonical file kept.** YAML comments, key order and untouched blocks stay as
+  written; JSON keeps its indentation, and CRLF line endings stay CRLF. The
+  file is replaced atomically and the patch is refused if the file changed
+  during the write. Only a file that reads as a Page Spec (`version` and a
+  `blocks` list) is edited. A patch that raises the error count is not written
+  (`written: false`); one that lowers it on an already broken spec is. The exit
+  code is 0 only when the patched spec has no errors, so a written partial fix
+  still exits 1: read `written`. `--dry-run` reports without writing.
+
+The patched spec is validated like any other, so the reply's `diagnostics`
+list what to fix next. Over MCP, `patch` takes `ops`, optional `baseHash`, and
+either `file` (local server: a spec file under its working directory, edited
+in place, no spec in the reply) or `spec`
+(the reply carries the patched spec, as text when you sent text). The
+library exports `patch(spec, ops, { baseHash })`, `patchSpecText(text, ops)`
+and `specHash(spec)`. A fix from `validate --suggest` is itself a patch, so an
+ambiguous fix you choose applies with `ak-render patch page.yaml '<its patch>'`.
 
 ## Minimal spec
 
@@ -77,8 +146,10 @@ Check every block's real props with `describe` before relying on this shape.
 (optional `category`), `search-catalog` (`query`), `describe` (`type`, or
 `types` with optional `compact`), `search-icons` (`query`, optional `pack`, `limit`),
 `describe-icon` (`icon`), `icon-packs`, `motions` (optional `query`, or `id`
-with `compact`), `recipes`, `recipe` (`name`), `validate`, `audit-motion`
-(`spec` or `html`), `render` and `themes`. `render` writes the HTML to the
+with `compact`), `recipes`, `recipe` (`name`), `validate` (optional `suggest`), `repair`, `patch` (`ops` with `file`
+or `spec`, optional `baseHash`), `audit-motion`
+(`spec` or `html`), `audit-ui` (`spec` or `html`, optional `preset`), `compose` (`intent`, `content`, optional `theme`, `out`,
+`dryRun`, `returnSpec`), `render` and `themes`. `render` and `compose` write the HTML to the
 `out` path and returns only the summary, so the page never enters your context.
 `out` must end in `.html` or `.htm`. A relative path resolves against the
 directory the server was started in; an absolute or `..` path is written where
@@ -96,7 +167,7 @@ it points, so review it like any file write. `spec` may be YAML/JSON text or the
 
 Without Node, use the hosted server at `https://render.agentkit.best/mcp` (MCP
 Streamable HTTP). It serves `catalog`, `search-catalog`, `describe`,
-`search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `audit-motion`, `render` and `themes` with the same names and
+`search-icons`, `describe-icon`, `icon-packs`, `motions`, `recipes`, `recipe`, `validate`, `repair`, `patch`, `audit-motion`, `audit-ui` (quick preset only), `compose`, `render` and `themes` with the same names and
 contracts, and the
 loop is the same. Two things differ:
 
@@ -137,7 +208,9 @@ compiler code such as `SPEC_UNKNOWN_BLOCK` with the JSON path to fix. A token
 that is missing or rejected fails the whole request with HTTP 401 instead: an
 OAuth client signs in again, and an API key must be replaced in the client
 configuration. Under protocol revision 2025-06-18 or later
-send one message per request: batches are refused. Local
+send one message per request: batches are refused. The remote server also
+speaks the stateless 2026-07-28 revision, and `GET /v1/version` lists the tools
+it currently serves. Local
 rendering never needs the token or the network.
 
 ## Rules that save retries
@@ -166,7 +239,10 @@ rendering never needs the token or the network.
   from `ak-render recipe newspaper`.
 - Put shared numbers in `datasets` once and bind blocks with `dataRef`, instead
   of repeating rows in a chart and a table. A field a block names that the rows
-  lack comes back with `details.allowed`. `percent` takes `87` for "87%". See
+  lack comes back with `details.allowed`. `percent` takes `87` for "87%".
+  Compute ratios, deltas and totals with `transform.derive` and
+  `transform.rollup`, and let a `kpi` item `cite` its dataset instead of
+  copying the number. See
   [data-and-state.md](./data-and-state.md).
 - State keys are lowercase kebab case (`state.show-details`), and every key a
   control binds must be declared under `state`.

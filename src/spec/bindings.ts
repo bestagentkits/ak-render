@@ -6,7 +6,13 @@
  * vocabulary, so there is no position where an action escapes validation.
  */
 
-import { type DiagnosticBag, pathIndex, pathKey } from '../diagnostics.js';
+import {
+  authoredIndex,
+  type DiagnosticBag,
+  keepAuthoredIndexes,
+  listItemPath,
+  pathKey,
+} from '../diagnostics.js';
 import { isPlainObject, type JsonValue } from '../json.js';
 import { validateActionMap } from '../registry/actions.js';
 import type { PropValues } from '../registry/prop-schema.js';
@@ -24,10 +30,14 @@ export function validateBindingsDeep(
 ): JsonValue | undefined {
   if (Array.isArray(value)) {
     const result: JsonValue[] = [];
+    const kept: number[] = [];
     for (let index = 0; index < value.length; index += 1) {
-      const item = validateBindingsDeep(value[index], pathIndex(path, index), bag);
-      if (item !== undefined) result.push(item);
+      const item = validateBindingsDeep(value[index], listItemPath(path, value, index), bag);
+      if (item === undefined) continue;
+      result.push(item);
+      kept.push(authoredIndex(value, index));
     }
+    keepAuthoredIndexes(result, kept, value);
     return result;
   }
   if (!isPlainObject(value)) {
