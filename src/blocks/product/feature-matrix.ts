@@ -91,11 +91,15 @@ export const featureMatrixBlock: BlockModule = {
       }<thead>${head}</thead><tbody>${body}</tbody></table></div>`,
     );
   },
+  // Counts the plans and values the author wrote: validation drops an invalid
+  // one, and its own error already explains it. A list rejected outright is
+  // already an error too, so it is not counted again here.
   check: (node, context) => {
-    // Compare authored widths: a dropped plan or value already has its own
-    // error and must not make an otherwise matching row look short.
-    const expected = authoredLength(node.props.plans);
+    const plans = node.props.plans;
+    if (!Array.isArray(plans)) return;
+    const expected = authoredLength(plans);
     objectListProp(node, 'rows').forEach((row, index) => {
+      if (!Array.isArray(row.values)) return;
       const actual = authoredLength(row.values);
       if (actual !== expected) {
         reportAt(

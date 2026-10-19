@@ -149,8 +149,11 @@ export function keepAuthoredIndexes(
   list: readonly unknown[],
   indexes: readonly number[],
   source: readonly unknown[],
+  absent = 0,
 ): void {
-  const length = authoredLists.get(source)?.length ?? source.length;
+  // `absent` counts items that dropped without an error (a programmatic
+  // `undefined` or a hole); the author did not write them.
+  const length = (authoredLists.get(source)?.length ?? source.length) - absent;
   if (indexes.length === length) return;
   authoredLists.set(list, { indexes, length });
 }

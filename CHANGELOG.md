@@ -271,6 +271,12 @@ Release mechanics and the compatibility contract live in
   feature-matrix rows, asset policy checks and other item lists reported
   later items one index too early. Nested item blocks are matched to their authored item
   the same way.
+- Feature-matrix row, chart series and table row-width checks count the
+  items the author wrote. A dropped plan, label, value or column used to add
+  a spurious "expected N values" error, "has N values for M labels" warning or
+  row-width warning on top of its own error, or hide a real table row-width
+  mismatch. A plans list rejected outright no longer makes every row report
+  "expected 0 values".
 - `feature-matrix` compares the authored number of plans and values, so a
   plan or value dropped as invalid no longer adds a width error to every row,
   and a real width mismatch is still reported alongside it.

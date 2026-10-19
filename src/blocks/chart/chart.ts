@@ -1,6 +1,6 @@
 /** Chart block: a deterministic SVG chart with a text summary. */
 
-import type { DiagnosticBag } from '../../diagnostics.js';
+import { authoredIndex, authoredLength, type DiagnosticBag } from '../../diagnostics.js';
 import type { IrNode } from '../../ir.js';
 import { isPlainObject } from '../../json.js';
 import type { BlockModule } from '../../registry/block-module.js';
@@ -24,21 +24,25 @@ import { buildChartInput } from './chart-model.js';
 /**
  * Warn when a series carries a different number of values than there are
  * labels. Shared with the progress block, which takes the same labels/series
- * shape.
+ * shape. Counts the labels and values the author wrote: validation drops an
+ * invalid one, and its own error already explains it.
  */
 export function checkSeriesLengths(node: IrNode, bag: DiagnosticBag): void {
   const labels = node.props.labels;
   const series = node.props.series;
   if (!Array.isArray(labels) || labels.length === 0 || !Array.isArray(series)) return;
+  const labelCount = authoredLength(labels);
   for (let index = 0; index < series.length; index += 1) {
     const entry = series[index];
     if (!isPlainObject(entry)) continue;
     const values = entry.values;
-    if (Array.isArray(values) && values.length !== labels.length) {
+    if (!Array.isArray(values)) continue;
+    const valueCount = authoredLength(values);
+    if (valueCount !== labelCount) {
       bag.add({
         code: 'SPEC_VALIDATION_ERROR',
         severity: 'warning',
-        message: `series "${String(entry.label ?? index)}" has ${values.length} values for ${labels.length} labels`,
+        message: `series "${String(entry.label ?? authoredIndex(series, index))}" has ${valueCount} values for ${labelCount} labels`,
         path: propItemPath(node, 'series', index),
         nodeId: node.id,
       });

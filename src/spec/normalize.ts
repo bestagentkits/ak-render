@@ -13,7 +13,13 @@ import type { DataRow } from '../data/dataset-types.js';
 import { resolveKpiCites } from '../data/kpi-cite.js';
 import { type BlockDataInput, resolveBlockData } from '../data/resolve-block-data.js';
 import { validateDatasets } from '../data/validate-datasets.js';
-import { type Diagnostic, DiagnosticBag, pathIndex, pathKey } from '../diagnostics.js';
+import {
+  authoredLength,
+  type Diagnostic,
+  DiagnosticBag,
+  pathIndex,
+  pathKey,
+} from '../diagnostics.js';
 import { isRenderError, RenderError } from '../errors.js';
 import { derivedNodeId } from '../hash.js';
 import { ICON_PROFILE_NAMES, isIconProfileName } from '../icons/icon-packs.js';
@@ -807,12 +813,14 @@ function checkTableRowWidths(
   bag: DiagnosticBag,
 ): void {
   if (!Array.isArray(columns) || !Array.isArray(rows)) return;
+  // A dropped column already has its own error; count the ones the author wrote.
+  const columnCount = authoredLength(columns);
   rows.forEach((row, index) => {
-    if (!Array.isArray(row) || row.length === columns.length) return;
+    if (!Array.isArray(row) || row.length === columnCount) return;
     bag.add({
       code: 'SPEC_VALIDATION_ERROR',
       severity: 'warning',
-      message: `row has ${row.length} cells but the table declares ${columns.length} columns`,
+      message: `row has ${row.length} cells but the table declares ${columnCount} columns`,
       path: pathIndex(pathKey(path, 'rows'), index),
       nodeId,
     });

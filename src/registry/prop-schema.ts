@@ -499,13 +499,15 @@ export function validateProp(
       }
       const result: JsonValue[] = [];
       const kept: number[] = [];
+      let absent = 0;
       for (let index = 0; index < value.length; index += 1) {
+        if (value[index] === undefined) absent += 1;
         const item = validateProp(schema.of, value[index], pathIndex(path, index), bag);
         if (item === undefined) continue;
         result.push(item);
         kept.push(index);
       }
-      keepAuthoredIndexes(result, kept, value);
+      keepAuthoredIndexes(result, kept, value, absent);
       return result;
     }
     case 'object': {
