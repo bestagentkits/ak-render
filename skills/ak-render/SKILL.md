@@ -16,28 +16,17 @@ Use `ak-render` if it is on `PATH`. Otherwise prefix every command with
 `npx -y @bestagentkits/render`. Node.js 20.11 or later is required. Reading the
 spec from stdin (`-`) and the `mcp` command need version 0.2.0 or later, and
 `search-catalog`, `describe --compact`, `catalog --category` and recipes need
-0.3.0 or later, so check `npx -y @bestagentkits/render --version` first.
-`compose`, `repair`, `validate --suggest`, `patch`, `audit-ui`, block
-`motion` with the `motions` and `motion` commands, the icon tools, and the
-`crimson-press` and `newspaper` presets need a release newer than 0.3.0; when
-`--help` does not list a command, skip that step. Every command accepts
-`--json` and never prompts.
+0.3.0 or later, so check `npx -y @bestagentkits/render --version` first. Every command except
+`mcp` accepts `--json`, and none prompts.
+
+Everything above [Newer than 0.3.0](#newer-than-030) works with 0.3.0, the
+version the plugins pin and npm serves as `latest`. Use a command from that
+section only when `--version` reports a newer release.
 
 ## The loop
 
-**Shortcut for known page kinds.** When the page matches an intent (list them
-with `npx -y @bestagentkits/render compose intents --json`, e.g.
-`investment-report`), write only the typed content and compose it in one call;
-keep the emitted spec for later edits. See [compose](https://github.com/bestagentkits/ak-render/blob/main/docs/compose.md).
-
-```bash
-npx -y @bestagentkits/render compose input.yaml --out page.html --spec-out page.yaml
-```
-
-Otherwise, or to change the page further, use the full loop:
-
 1. **Find the blocks.** Search by intent, or list one category. The full
-   catalog of 90 block types and every action is about 8 kB:
+   catalog of block types (83 in 0.3.0) and every action is about 8 kB:
 
    ```bash
    npx -y @bestagentkits/render search-catalog sortable table
@@ -71,9 +60,7 @@ Otherwise, or to change the page further, use the full loop:
    The result is `{ ok, diagnostics[] }`. Each diagnostic has a stable `code`
    and a JSON `path` to fix, such as `$.blocks[0].titl`. For an unknown prop,
    `details.allowed` lists the valid props. Fix every diagnostic by its path,
-   then validate again. `validate --suggest` adds `fixes` (JSON Patches marked
-   `safe` or `ambiguous`), and `repair page.yaml --out page.yaml` applies only
-   the safe ones; pick ambiguous ones yourself.
+   then validate again.
 
 5. **Compile** to an `.html` file. The first argument is the spec path, or
    `-` for stdin. `--theme` overrides the spec's preset:
@@ -95,20 +82,8 @@ Otherwise, or to change the page further, use the full loop:
    every opener call adds one more tab. Tell the user to refresh the page to
    see the update.
 
-7. **Edit with a patch, not a rewrite.** For a change to an existing spec,
-   send RFC 6902 ops; `/blocks/@<id>` addresses the block with that `id` at
-   any depth, so give blocks you will edit an `id`. The file keeps its
-   comments, the reply is a hash and the changes, never the spec, and a patch
-   that raises the error count is not written (check `written`; exit 1 still
-   means errors remain). Pass the previous reply's `hash` as
-   `--base-hash` so a stale edit is refused. Needs a release newer than 0.3.0
-   (`ak-render patch --help` prints its usage when it exists):
-
-   ```bash
-   npx -y @bestagentkits/render patch page.yaml '[{"op":"replace","path":"/blocks/@revenue/title","value":"Revenue, FY26"}]' --json
-   ```
-
-   Then compile again.
+7. **Edit the spec, not the HTML.** Change the `.yaml` file and compile
+   again. Never edit the emitted page.
 
 ## Minimal spec
 
@@ -146,7 +121,7 @@ block with `describe` before you use it.
 
 | Page | Start with |
 | --- | --- |
-| Plan or roadmap | `hero`, `steps`, `timeline`, `risk-matrix`, `checklist`, `callout`, `decision`, `feedback` |
+| Plan or roadmap | `hero`, `steps`, `timeline`, `risk-matrix`, `checklist`, `callout` |
 | Recap or status | `hero`, `stats`, `timeline`, `checklist`, `list` |
 | Diff or code review | `diff-summary`, `code-review`, `file-tree`, `code` |
 | Dashboard | `kpi`, `chart`, `data-table`, `filter-bar`, `grid-item`, `main-aside` |
@@ -156,21 +131,13 @@ block with `describe` before you use it.
 | Explainer | `hero`, `card-grid`, `tabs`, `accordion`, `code`, `callout` |
 | Comparison or decision | `comparison`, `table`, `before-after`, `callout` |
 
-For a plan the user must approve, put each open question in a `decision` and
-mark the option you would pick `recommended`. End the page with one `feedback`
-block: the user comments on any text, answers the decisions, and copies it all
-back to you as one prompt. Act on that prompt before you build.
-
 Group blocks with `section`. Tabs, accordion sections, carousel slides, and
 bento tiles can hold blocks in `items[i].blocks`. Use `grid`, `split`, and
 `stack` only when the semantic blocks can't express the structure.
 
 Put numbers that several blocks show in top-level `datasets` and bind each
 block with `dataRef`. Native controls write page `state`, and `visibleWhen`
-switches views from it. `percent` takes `87` for "87%". Derive ratios,
-deltas, percent changes and totals with `transform.derive` and
-`transform.rollup` (data-table footer only) instead of computing them by hand, and give a `kpi` item a
-`cite` (omit `value`) so its number comes from the same dataset.
+switches views from it. `percent` takes `87` for "87%".
 
 ## Themes
 
@@ -181,22 +148,11 @@ the compile command:
 npx -y @bestagentkits/render themes
 ```
 
-The twelve built-in presets are `blueprint`, `crimson-press`, `data-console`,
-`editorial`, `executive-report`, `newspaper`, `paper-ink`, `product-studio`,
-`research-notebook`, `swiss-clean`, `terminal-mono`, and `warm-signal`, and `themes` also lists any
-project or user presets it finds. Use only a name it lists. Don't try to restyle the page.
-
-Motion is named, not authored. A block may opt into one recipe, such as
-`motion: reveal-soft` on a card, `stagger` on steps, or `tabs-slide` on tabs;
-`describe --compact` lists a type's recipes under `motion:`, `motions search
-<intent>` ranks them, and `fade-swap` fits any block with `visibleWhen`.
-`motion audit page.yaml` flags nested, excessive or never-playing motion, and
-`motion studio page.yaml` lets a person tune it locally and accept a diff. Leave `motion` out unless motion helps the
-reader; the compiler handles reduced motion and print.
-
-Before handing a page to someone, run `audit-ui page.yaml --json` (add
-`--preset publication` when a browser is available) and fix each finding at
-its `path` with the `fix` it gives.
+The ten built-in presets in 0.3.0 are `blueprint`, `data-console`,
+`editorial`, `executive-report`, `paper-ink`, `product-studio`,
+`research-notebook`, `swiss-clean`, `terminal-mono`, and `warm-signal`, and
+`themes` also lists any project or user presets it finds. Use only a name it
+lists. Don't try to restyle the page.
 
 ## Rules
 
@@ -204,12 +160,11 @@ its `path` with the `fix` it gives.
   as `rawHTML`, `iframe`, `srcdoc`, or `script` are rejected. Don't look for
   an escape hatch, and don't post-process the emitted file. Links accept
   `https`, `http`, `mailto`, and relative paths, and `javascript:` is rejected.
-- **Backticks and double asterisks are the only inline markup.** In prose text
-  (a `text`, a step or list item's `text`, a `description`, a `caption`), a
-  pair of backticks renders as inline code, so write `` `ak-render validate` ``
-  for a command, path or URL, and `**key phrase**` renders as bold. Use bold
-  sparingly. Block titles, table cells and comparison items render the same
-  spans. `meta.title`, `code` blocks, and `terminal` lines stay literal.
+- **Backticks are the only inline markup.** In prose text (a `text`, a step
+  or list item's `text`, a `description`, a `caption`), a pair of backticks
+  renders as inline code, so write `` `ak-render validate` `` for a command,
+  path or URL. Titles, table cells, `meta.title`, `code` blocks, and
+  `terminal` lines stay literal.
 - **Never invent data.** Every number, date, name, path, and finding must come
   from the conversation, the repository, or tool output. If a value is
   unknown, leave the block out or ask. Don't fill it with a plausible guess.
@@ -228,10 +183,11 @@ its `path` with the `fix` it gives.
 
 `npx -y @bestagentkits/render mcp` serves the same loop over stdio as the tools
 `catalog` (optional `category`), `search-catalog` (`query`), `describe`
-(`type`, or `types` with optional `compact`), `search-icons` (`query`), `describe-icon`, `icon-packs`, `motions` (optional `query`, or `id` with `compact`), `recipes`, `recipe` (`name`),
-`validate` (`spec`, optional `suggest`), `repair` (`spec`), `patch` (`ops` with `file` or `spec`, optional `baseHash`), `audit-motion` (`spec` or `html`), `audit-ui` (`spec` or `html`, optional `preset`), `compose` (`intent`, `content`, optional `theme`, `out`, `dryRun`, `returnSpec`), `render` (`spec`, `out`, optional `theme`), and `themes`. `spec` may be YAML or JSON text, or the parsed
-object. `render` writes the file to `out` and returns only the summary. When
-these tools are available, use them instead of the shell commands.
+(`type`, or `types` with optional `compact`), `recipes`, `recipe` (`name`),
+`validate` (`spec`), `render` (`spec`, `out`, optional `theme`), and `themes`.
+`spec` may be YAML or JSON text, or the parsed object. `render` writes the file
+to `out` and returns only the summary. When these tools are available, use them
+instead of the shell commands.
 
 ```json
 {
@@ -240,3 +196,62 @@ these tools are available, use them instead of the shell commands.
   }
 }
 ```
+
+## Newer than 0.3.0
+
+Each item below needs a release newer than 0.3.0. On 0.3.0 the command is
+unknown or the field fails validation, so skip this section unless
+`--version` reports a newer release.
+
+- **Compose a known page kind in one call.** List the intents with
+  `compose intents --json` (for example `investment-report`), write only the
+  typed content, and keep the emitted spec for later edits. See
+  [compose](https://github.com/bestagentkits/ak-render/blob/main/docs/compose.md).
+
+  ```bash
+  npx -y @bestagentkits/render compose input.yaml --out page.html --spec-out page.yaml
+  ```
+
+- **Suggested fixes.** `validate --suggest` adds `fixes` (JSON Patches marked
+  `safe` or `ambiguous`), and `repair page.yaml --out page.yaml` applies only
+  the safe ones; pick ambiguous ones yourself.
+- **Patch instead of rewrite.** Send RFC 6902 ops; `/blocks/@<id>` addresses
+  the block with that `id` at any depth, so give blocks you will edit an `id`.
+  The file keeps its comments, the reply is a hash and the changes, never the
+  spec, and a patch that raises the error count is not written (check
+  `written`; exit 1 still means errors remain). Pass the previous reply's
+  `hash` as `--base-hash` so a stale edit is refused, then compile again:
+
+  ```bash
+  npx -y @bestagentkits/render patch page.yaml '[{"op":"replace","path":"/blocks/@revenue/title","value":"Revenue, FY26"}]' --json
+  ```
+
+- **Plan review blocks.** For a plan the user must approve, put each open
+  question in a `decision` and mark the option you would pick `recommended`.
+  End the page with one `feedback` block: the user comments on any text,
+  answers the decisions, and copies it all back to you as one prompt. Act on
+  that prompt before you build.
+- **Derived numbers.** Derive ratios, deltas, percent changes and totals with
+  `transform.derive` and `transform.rollup` (data-table footer only) instead of
+  computing them by hand, and give a `kpi` item a `cite` (omit `value`) so its
+  number comes from the same dataset.
+- **Bold and spans in titles.** `**key phrase**` renders as bold in prose; use
+  it sparingly. Block titles, table cells and comparison items render backtick
+  and bold spans.
+- **More presets.** `crimson-press` and `newspaper` join the built-in themes.
+- **Named motion.** A block may opt into one recipe, such as
+  `motion: reveal-soft` on a card, `stagger` on steps, or `tabs-slide` on tabs;
+  `describe --compact` lists a type's recipes under `motion:`,
+  `motions search <intent>` ranks them, and `fade-swap` fits any block with
+  `visibleWhen`. `motion audit page.yaml` flags nested, excessive or
+  never-playing motion, and `motion studio page.yaml` lets a person tune it
+  locally and accept a diff. Leave `motion` out unless motion helps the reader.
+- **Visual audit.** Before handing a page to someone, run
+  `audit-ui page.yaml --json` (add `--preset publication` when a browser is
+  available) and fix each finding at its `path` with the `fix` it gives.
+- **More MCP tools.** `search-icons` (`query`), `describe-icon`, `icon-packs`,
+  `motions` (optional `query`, or `id` with `compact`), `repair` (`spec`),
+  `patch` (`ops` with `file` or `spec`, optional `baseHash`), `audit-motion`
+  (`spec` or `html`), `audit-ui` (`spec` or `html`, optional `preset`),
+  `compose` (`intent`, `content`, optional `theme`, `out`, `dryRun`,
+  `returnSpec`), and `suggest` on `validate`.
