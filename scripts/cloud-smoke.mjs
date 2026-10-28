@@ -28,8 +28,8 @@
  * a smoke-only run shows deploy lag without failing.
  *
  * Every listed tool must state readOnlyHint, destructiveHint and openWorldHint
- * as booleans, every tool the ChatGPT package's review cases name must be
- * listed, and the authorization server must support the OAuth client mode
+ * as booleans (with OAuth on, that needs TOKEN), /v1/version must name every
+ * tool the ChatGPT package's review cases name, and the authorization server must support the OAuth client mode
  * that package declares (packaging/chatgpt/mcp.json). With TOKEN, the artifact
  * must be served as text/html, an invalid spec must come back as a tool error
  * naming its diagnostic, and the expiry of a private render and of a share must
@@ -275,9 +275,16 @@ async function oauthDiscovery() {
 
 async function unauthenticatedSurface() {
   const deployedTools = await versionCheck();
+  const unlisted = reviewedToolNames().filter((name) => !deployedTools.includes(name));
+  check(
+    unlisted.length === 0,
+    'deployment serves every tool the ChatGPT review cases name',
+    unlisted.join(','),
+  );
   const oauth = await oauthDiscovery();
   if (oauth && TOKEN === '') {
     notice('OAuth is on and TOKEN is not set; MCP discovery calls skipped');
+    notice('tool hints in tools/list not checked; they need TOKEN');
   } else {
     await mcpDiscovery(oauth, deployedTools);
   }
@@ -352,12 +359,6 @@ async function mcpDiscovery(withToken, deployedTools) {
     )
     .map((tool) => tool.name);
   check(unhinted.length === 0, 'mcp tools/list states every tool hint', unhinted.join(','));
-  const unlisted = reviewedToolNames().filter((name) => !names.includes(name));
-  check(
-    unlisted.length === 0,
-    'mcp tools/list has every tool the ChatGPT review cases name',
-    unlisted.join(','),
-  );
 
   const discover = await modernMcp('server/discover', {}, withToken);
   check(

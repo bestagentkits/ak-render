@@ -15,15 +15,19 @@
  * the Agent Plugins 1.0.0 schemas (vendored under `schema/agent-plugins/`),
  * the listing limits, one Streamable HTTP server over HTTPS with OAuth and no
  * headers, five positive and three negative review cases, and square PNG icons.
- * The ZIP is deterministic: fixed entry order and timestamps, so the same
- * sources always give the same bytes and hash.
+ * Icons are read from the repository's `assets/` (`assetRoot`): the manifest's
+ * `./assets/…` paths name where they sit inside the ZIP, so the package folder
+ * itself holds only the two manifests.
+ * The ZIP is deterministic: fixed entry order and timestamps, and entries are
+ * stored uncompressed, so the same sources give the same bytes and hash on any
+ * Node or zlib build. It is written to `.tmp/chatgpt-plugin/`, outside the npm
+ * package's `files`.
  */
 
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { deflateRawSync } from 'node:zlib';
 import Ajv2020 from 'ajv/dist/2020.js';
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
@@ -86,7 +90,7 @@ export function referencedAssets(plugin) {
 }
 
 /** Every problem with the package in `dir`; an empty list means it is ready to upload. */
-export function checkPackage({ dir = PACKAGE_DIR, version } = {}) {
+export function checkPackage({ dir = PACKAGE_DIR, assetRoot = repoRoot, version } = {}) {
   const problems = [];
   const fail = (message) => problems.push(message);
   const plugin = readJson(join(dir, 'plugin.json'));
@@ -148,14 +152,17 @@ export function checkPackage({ dir = PACKAGE_DIR, version } = {}) {
   if (
     prompts.length > LIMITS.prompts ||
     new Set(prompts).size !== prompts.length ||
-    prompts.some((prompt) => prompt.length > LIMITS.prompt || prompt.includes('@'))
+    prompts.some(
+      (prompt) =>
+        typeof prompt !== 'string' || prompt.length > LIMITS.prompt || prompt.includes('@'),
+    )
   ) {
     fail(`interface.defaultPrompt takes up to ${LIMITS.prompts} unique prompts without @mentions`);
   }
   const capabilities = ui.capabilities ?? [];
   if (
     capabilities.length > LIMITS.capabilities ||
-    capabilities.some((label) => label.length > LIMITS.capability)
+    capabilities.some((label) => typeof label !== 'string' || label.length > LIMITS.capability)
   ) {
     fail(`interface.capabilities takes up to ${LIMITS.capabilities} short labels`);
   }
@@ -171,7 +178,7 @@ export function checkPackage({ dir = PACKAGE_DIR, version } = {}) {
     }
     let bytes;
     try {
-      bytes = readFileSync(join(repoRoot, path));
+      bytes = readFileSync(join(assetRoot, path));
     } catch {
       fail(`${path} does not exist`);
       continue;
@@ -243,18 +250,24 @@ export function checkPackage({ dir = PACKAGE_DIR, version } = {}) {
 export function reviewedToolNames({ dir = PACKAGE_DIR } = {}) {
   const plugin = readJson(join(dir, 'plugin.json'));
   const positive = plugin.extensions?.['com.openai']?.review?.test_cases?.positive ?? [];
-  return [...new Set(positive.flatMap(({ tools_triggered }) => tools_triggered.split(/\s*,\s*/u)))];
+  return [
+    ...new Set(
+      positive.flatMap(({ tools_triggered }) =>
+        typeof tools_triggered === 'string' ? tools_triggered.split(/\s*,\s*/u) : [],
+      ),
+    ),
+  ];
 }
 
 /** ZIP entries in a fixed order: the two manifests, then the listed assets. */
-export function packageEntries({ dir = PACKAGE_DIR } = {}) {
+export function packageEntries({ dir = PACKAGE_DIR, assetRoot = repoRoot } = {}) {
   const plugin = readJson(join(dir, 'plugin.json'));
   return [
     { name: 'plugin.json', data: readFileSync(join(dir, 'plugin.json')) },
     { name: 'mcp.json', data: readFileSync(join(dir, 'mcp.json')) },
     ...[...new Set(referencedAssets(plugin))].sort().map((path) => ({
       name: path.slice(2),
-      data: readFileSync(join(repoRoot, path)),
+      data: readFileSync(join(assetRoot, path)),
     })),
   ];
 }
@@ -274,45 +287,44 @@ function crc32(bytes) {
 /** 1980-01-01 00:00 in DOS time: a fixed stamp keeps the archive deterministic. */
 const DOS_DATE = (1 << 5) | 1;
 
-/** A deflated ZIP of `entries`, byte-identical for identical input. */
+/** A stored (uncompressed) ZIP of `entries`, byte-identical for identical input. */
 export function zip(entries) {
   const locals = [];
   const centrals = [];
   let offset = 0;
   for (const { name, data } of entries) {
     const nameBytes = Buffer.from(name, 'utf8');
-    const deflated = deflateRawSync(data, { level: 9 });
     const crc = crc32(data);
     const header = Buffer.alloc(30);
     header.writeUInt32LE(0x04034b50, 0);
-    header.writeUInt16LE(20, 4); // version needed
+    header.writeUInt16LE(10, 4); // version needed: stored
     header.writeUInt16LE(0x0800, 6); // UTF-8 names
-    header.writeUInt16LE(8, 8); // deflate
+    header.writeUInt16LE(0, 8); // stored
     header.writeUInt16LE(0, 10);
     header.writeUInt16LE(DOS_DATE, 12);
     header.writeUInt32LE(crc, 14);
-    header.writeUInt32LE(deflated.length, 18);
+    header.writeUInt32LE(data.length, 18);
     header.writeUInt32LE(data.length, 22);
     header.writeUInt16LE(nameBytes.length, 26);
     header.writeUInt16LE(0, 28);
-    locals.push(header, nameBytes, deflated);
+    locals.push(header, nameBytes, data);
 
     const central = Buffer.alloc(46);
     central.writeUInt32LE(0x02014b50, 0);
     central.writeUInt16LE(0x0314, 4); // made by: Unix, 2.0
-    central.writeUInt16LE(20, 6);
+    central.writeUInt16LE(10, 6);
     central.writeUInt16LE(0x0800, 8);
-    central.writeUInt16LE(8, 10);
+    central.writeUInt16LE(0, 10);
     central.writeUInt16LE(0, 12);
     central.writeUInt16LE(DOS_DATE, 14);
     central.writeUInt32LE(crc, 16);
-    central.writeUInt32LE(deflated.length, 20);
+    central.writeUInt32LE(data.length, 20);
     central.writeUInt32LE(data.length, 24);
     central.writeUInt16LE(nameBytes.length, 28);
     central.writeUInt32LE((0o100644 << 16) >>> 0, 38); // -rw-r--r--
     central.writeUInt32LE(offset, 42);
     centrals.push(central, nameBytes);
-    offset += header.length + nameBytes.length + deflated.length;
+    offset += header.length + nameBytes.length + data.length;
   }
   const directory = Buffer.concat(centrals);
   const end = Buffer.alloc(22);
@@ -335,7 +347,7 @@ if (process.argv[1] !== undefined && fileURLToPath(import.meta.url) === process.
   console.log('ChatGPT plugin package: ok');
   if (!process.argv.includes('--check')) {
     const archive = zip(packageEntries());
-    const outDir = join(repoRoot, 'dist/chatgpt-plugin');
+    const outDir = join(repoRoot, '.tmp/chatgpt-plugin');
     const out = join(outDir, `ak-render-chatgpt-${version}.zip`);
     mkdirSync(outDir, { recursive: true });
     writeFileSync(out, archive);

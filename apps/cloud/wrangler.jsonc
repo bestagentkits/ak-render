@@ -47,6 +47,7 @@
     "ENTITLEMENTS_URL": "https://agentkit.best",
     "OAUTH_ISSUER": "https://agentkit.best",
     "OAUTH_RESOURCE": "https://render.agentkit.best/mcp",
+    // scripts/cloud-smoke.mjs expects this expiry (SHARE_DAYS, default 30).
     "SHARE_RETENTION_DAYS": "30"
   },
   "r2_buckets": [

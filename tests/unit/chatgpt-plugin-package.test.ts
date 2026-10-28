@@ -1,7 +1,7 @@
 import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { inflateRawSync } from 'node:zlib';
+import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import { REMOTE_TOOLS } from '../../apps/cloud/src/remote-mcp-endpoint.js';
 // @ts-expect-error -- plain ESM build script without type declarations
@@ -9,6 +9,7 @@ import * as chatgptPackage from '../../scripts/build-chatgpt-plugin.mjs';
 import { VERSION } from '../../src/version.js';
 
 const { checkPackage, PACKAGE_DIR, packageEntries, reviewedToolNames, zip } = chatgptPackage;
+const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const temps: string[] = [];
 
 // biome-ignore lint/suspicious/noExplicitAny: tests edit arbitrary manifest JSON.
@@ -27,7 +28,7 @@ function packageCopy(edit: (plugin: Json, mcp: Json) => void): string {
   return dir;
 }
 
-/** Entry names and contents read back from a stored or deflated ZIP. */
+/** Entry names and contents read back from a stored ZIP. */
 function unzip(archive: Buffer): Map<string, Buffer> {
   const files = new Map<string, Buffer>();
   let at = 0;
@@ -39,7 +40,8 @@ function unzip(archive: Buffer): Map<string, Buffer> {
     const name = archive.subarray(at + 30, at + 30 + nameLength).toString('utf8');
     const start = at + 30 + nameLength + extraLength;
     const body = archive.subarray(start, start + size);
-    files.set(name, method === 8 ? inflateRawSync(body) : body);
+    expect(method).toBe(0);
+    files.set(name, body);
     at = start + size;
   }
   return files;
@@ -72,7 +74,7 @@ describe('ChatGPT plugin package', () => {
   });
 
   it('leaves the local stdio manifest for desktop and Codex installs untouched', () => {
-    const local = JSON.parse(readFileSync('mcp.json', 'utf8'));
+    const local = JSON.parse(readFileSync(join(REPO_ROOT, 'mcp.json'), 'utf8'));
     for (const server of Object.values<{ command?: string; type?: string }>(local.mcpServers)) {
       expect(server.command).toBe('npx');
       expect(server.type).not.toBe('streamable-http');
@@ -90,7 +92,9 @@ describe('ChatGPT plugin package', () => {
       'assets/logo.png',
     ]);
     expect(files.get('mcp.json')?.equals(readFileSync(join(PACKAGE_DIR, 'mcp.json')))).toBe(true);
-    expect(files.get('assets/logo.png')?.equals(readFileSync('assets/logo.png'))).toBe(true);
+    expect(
+      files.get('assets/logo.png')?.equals(readFileSync(join(REPO_ROOT, 'assets/logo.png'))),
+    ).toBe(true);
   });
 
   it('reports a version mismatch, headers, a secret and a missing review case', () => {
@@ -134,6 +138,37 @@ describe('ChatGPT plugin package', () => {
     });
     expect(checkPackage({ dir })).toEqual(
       expect.arrayContaining([expect.stringContaining('must be streamable-http over HTTPS')]),
+    );
+  });
+
+  it('reports a missing icon and a non-square one', () => {
+    const assetRoot = mkdtempSync(join(tmpdir(), 'ak-render-chatgpt-assets-'));
+    temps.push(assetRoot);
+    cpSync(join(REPO_ROOT, 'assets'), join(assetRoot, 'assets'), { recursive: true });
+    // A PNG header that claims 128 x 64.
+    const header = Buffer.alloc(24);
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(header);
+    header.write('IHDR', 12, 'latin1');
+    header.writeUInt32BE(128, 16);
+    header.writeUInt32BE(64, 20);
+    writeFileSync(join(assetRoot, 'assets/composer-icon.png'), header);
+    const dir = packageCopy((plugin) => {
+      plugin.extensions['com.openai'].interface.logo = './assets/missing.png';
+    });
+    expect(checkPackage({ dir, assetRoot })).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('./assets/missing.png does not exist'),
+        expect.stringContaining('./assets/composer-icon.png must be a square PNG'),
+      ]),
+    );
+  });
+
+  it('reports a malformed prompt instead of crashing', () => {
+    const dir = packageCopy((plugin) => {
+      plugin.extensions['com.openai'].interface.defaultPrompt = [42];
+    });
+    expect(checkPackage({ dir })).toEqual(
+      expect.arrayContaining([expect.stringContaining('interface.defaultPrompt')]),
     );
   });
 });

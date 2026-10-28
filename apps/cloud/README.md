@@ -47,7 +47,7 @@ Every tool in `tools/list` states `readOnlyHint`, `destructiveHint` and
 `openWorldHint` as booleans. Remote `render` and `compose` are the only writes:
 they publish a page behind a URL (`openWorldHint: true`) and replace nothing.
 `artifact-export` stores a PNG or PDF of the caller's own page for reuse, so it
-is not read-only, but it publishes nothing new. Everything else is read-only.
+is not read-only, but no new content leaves the conversation. Everything else is read-only.
 Locally, `render`, `compose` and `patch` with `file` overwrite a file, so they
 are the destructive ones there.
 
@@ -512,7 +512,9 @@ Streamable HTTP server with OAuth (client ID metadata document). It sends no
 headers and holds no credentials. `pnpm plugin:chatgpt:check` validates it
 against the vendored schemas in `schema/agent-plugins/1.0.0/` and the
 directory limits; `pnpm plugin:chatgpt` also writes a deterministic
-`dist/chatgpt-plugin/ak-render-chatgpt-<version>.zip` and prints its sha256.
+`.tmp/chatgpt-plugin/ak-render-chatgpt-<version>.zip` (stored, uncompressed) and prints
+its sha256. Icons come from the repository's `assets/`; the manifest's
+`./assets/…` paths are where they sit inside the ZIP.
 The 1.0.0 `mcp.json` schema does not list the `extensions` key OpenAI reads
 auth from, so the check validates the rest of each server against it.
 

@@ -72,7 +72,10 @@ export const LOCAL_FILE_WRITE: McpToolAnnotations = {
   openWorldHint: false,
 };
 
-/** Stores a new page behind a link anyone holding it can open; never replaces one. */
+/**
+ * Publishes new content: a page the caller wrote, behind a link meant to be
+ * opened outside the conversation. Each call stores a new page; none replaces one.
+ */
 export const REMOTE_PUBLISH: McpToolAnnotations = {
   readOnlyHint: false,
   destructiveHint: false,
@@ -806,8 +809,9 @@ export type ArtifactExportFormat = (typeof ARTIFACT_EXPORT_FORMATS)[number];
 export const REMOTE_ARTIFACT_EXPORT_DEFINITION: McpToolDefinition = {
   name: 'artifact-export',
   annotations: {
-    // Mints download links to the caller's own artifact and may store its PNG
-    // or PDF once for reuse; it publishes nothing new and replaces nothing.
+    // Mints download links to a page the caller already published and may
+    // store its PNG or PDF once for reuse. No new content leaves the
+    // conversation and nothing is replaced, so only readOnlyHint is false.
     readOnlyHint: false,
     destructiveHint: false,
     openWorldHint: false,

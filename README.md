@@ -344,7 +344,7 @@ add `"headers": { "Authorization": "Bearer ${AGENTKIT_TOKEN}" }`.
 [`packaging/chatgpt/`](./packaging/chatgpt/) points at this same endpoint with
 OAuth, so a ChatGPT user signs in to AgentKit and needs neither Node nor npm.
 `pnpm plugin:chatgpt` checks it against the Agent Plugins schemas and the
-directory limits, then writes the upload ZIP to `dist/chatgpt-plugin/`. The
+directory limits, then writes the upload ZIP to `.tmp/chatgpt-plugin/`. The
 root `mcp.json` and `plugin.json` stay the local stdio install for Codex and
 desktop clients.
 

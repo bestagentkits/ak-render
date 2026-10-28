@@ -163,8 +163,15 @@ describe('cloud OAuth: discovery', () => {
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toBe('text/plain; charset=utf-8');
     expect(await response.text()).toBe('challenge-token-123');
+    const head = await handleRequest(new Request(path, { method: 'HEAD' }), withToken);
+    expect(head.status).toBe(200);
     const posted = await handleRequest(new Request(path, { method: 'POST' }), withToken);
     expect(posted.status).toBe(404);
+    // Without OAuth the route answers the same: it never depends on sign-in.
+    const plain = { ...harness().env, OPENAI_APPS_CHALLENGE: 'challenge-token-123' };
+    expect(await (await handleRequest(new Request(path), plain)).text()).toBe(
+      'challenge-token-123',
+    );
   });
 
   it('serves no metadata where OAuth is not enabled', async () => {
