@@ -16,8 +16,8 @@ Use `ak-render` if it is on `PATH`. Otherwise prefix every command with
 `npx -y @bestagentkits/render`. Node.js 20.11 or later is required. Reading the
 spec from stdin (`-`) and the `mcp` command need version 0.2.0 or later, and
 `search-catalog`, `describe --compact`, `catalog --category` and recipes need
-0.3.0 or later, so check `npx -y @bestagentkits/render --version` first. Every command accepts
-`--json` and never prompts.
+0.3.0 or later, so check `npx -y @bestagentkits/render --version` first. Every command except
+`mcp` accepts `--json`, and none prompts.
 
 Everything above [Newer than 0.3.0](#newer-than-030) works with 0.3.0, the
 version the plugins pin and npm serves as `latest`. Use a command from that
