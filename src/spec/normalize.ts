@@ -615,7 +615,7 @@ function closestBlockTypes(
   const near = nearNames.flatMap((fix) =>
     'replaceWith' in fix && typeof fix.replaceWith === 'string' ? [fix.replaceWith] : [],
   );
-  // A type longer than a search query cannot be a near miss worth searching for.
+  // search-catalog rejects an over-long query, so such a type keeps only its typo matches.
   const searched =
     type.length > CATALOG_SEARCH_LIMITS.maxQueryLength
       ? []

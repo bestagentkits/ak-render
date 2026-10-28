@@ -106,9 +106,19 @@ describe('normalizer', () => {
       blocks: [{ type: 'pricing-table' }],
     });
     const closest = error.details?.closest as string[];
-    expect(closest).toContain('pricing');
+    expect(closest[0]).toBe('pricing');
     expect(closest.length).toBeLessThanOrEqual(3);
     expect(error.details).not.toHaveProperty('known');
+  });
+
+  it('ranks typo matches ahead of intent-search hits', () => {
+    const error = errorFrom({
+      version: 1,
+      meta: { title: 'X' },
+      blocks: [{ type: 'tabel' }],
+    });
+    const closest = error.details?.closest as string[];
+    expect(closest[0]).toBe('table');
   });
 
   it('suggests nothing for an unknown type too long to be a search query', () => {
