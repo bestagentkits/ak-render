@@ -43,6 +43,14 @@ adds authorization, rate limits and storage in
 | `render` or `compose` with `share: true` | yes | `render` + `share` | `share` | Stores a share for the retention period. |
 | `artifact-export` | yes | `render` | `export` (png, pdf) or `validate` | Remote only. Signed download URLs for a page you own. |
 
+Every tool in `tools/list` states `readOnlyHint`, `destructiveHint` and
+`openWorldHint` as booleans. Remote `render` and `compose` are the only writes:
+they publish a page behind a URL (`openWorldHint: true`) and replace nothing.
+`artifact-export` stores a PNG or PDF of the caller's own page for reuse, so it
+is not read-only, but it publishes nothing new. Everything else is read-only.
+Locally, `render`, `compose` and `patch` with `file` overwrite a file, so they
+are the destructive ones there.
+
 `catalog`, `describe`, `themes`, `search-catalog`, `recipes`, `recipe` and
 `motions` take no spec and read only static data, so they answer without a bearer: a client
 can discover the server before it is configured with a token. Each call still builds a response of several
@@ -380,17 +388,19 @@ cannot accidentally make shares permanent.
 The committed [`wrangler.jsonc`](./wrangler.jsonc) is the configuration of
 record. It binds the private R2 bucket, six Workers Rate Limiting bindings
 (`RATE_LIMIT_*`), the Browser Run binding (`BROWSER`, Quick Actions,
-compatibility date 2026-03-24 or later), and two routes on the zone
+compatibility date 2026-03-24 or later), and four routes on the zone
 `agentkit.best`:
 
 ```text
 render.agentkit.best/mcp
 render.agentkit.best/v1/*
+render.agentkit.best/.well-known/oauth-protected-resource*
+render.agentkit.best/.well-known/openai-apps-challenge
 ```
 
 `render.agentkit.best` is the Custom Domain of the static site
 (`site/wrangler.jsonc`). Cloudflare runs Worker routes before a Custom Domain on
-the same hostname, so those two paths reach this Worker and every other path,
+the same hostname, so those paths reach this Worker and every other path,
 including `/` and `/gallery/`, still reaches the site. Neither deploy changes
 the other.
 
@@ -407,6 +417,10 @@ npx wrangler@4.147.0 r2 bucket create ak-render-shares
 # rotating it invalidates every outstanding download URL and nothing else.
 openssl rand -base64 48 | npx wrangler@4.147.0 secret put DOWNLOAD_SIGNING_KEY \
   --config apps/cloud/wrangler.jsonc
+# Only while submitting the ChatGPT plugin: the domain-verification token the
+# OpenAI plugin portal shows. Served verbatim as text/plain at
+# /.well-known/openai-apps-challenge; unset, that path answers 404.
+npx wrangler@4.147.0 secret put OPENAI_APPS_CHALLENGE --config apps/cloud/wrangler.jsonc
 ```
 
 The rate-limit bindings need no resource to be created: each `namespace_id` in
@@ -481,6 +495,31 @@ with a Bearer challenge; and, with `TOKEN`, MCP `validate` and
 the share lifecycle (create, read, revoke, gone), an MCP share, a `retainSpec`
 render exported through `artifact-export` with its HTML and spec downloads,
 and a PNG and a PDF export. It revokes every share it creates.
+For the ChatGPT plugin it also checks that every listed tool states its three
+hints, that every tool the package's review cases name is listed, that the
+authorization server supports the package's OAuth client mode with PKCE S256,
+and, with `TOKEN`, that the artifact is served as `text/html`, that an invalid
+spec comes back as a tool error naming its JSON path, and that a render expires
+in one hour and a share in 30 days (`SHARE_DAYS`). The domain-verification
+route is reported, and fails only with `EXPECT_OPENAI_CHALLENGE=1`.
+
+## ChatGPT plugin
+
+[`packaging/chatgpt/`](../../packaging/chatgpt/) is the package for the ChatGPT
+plugin directory: an Agent Plugins `plugin.json` with the listing and review
+cases, and an `mcp.json` naming `https://render.agentkit.best/mcp` as a
+Streamable HTTP server with OAuth (client ID metadata document). It sends no
+headers and holds no credentials. `pnpm plugin:chatgpt:check` validates it
+against the vendored schemas in `schema/agent-plugins/1.0.0/` and the
+directory limits; `pnpm plugin:chatgpt` also writes a deterministic
+`dist/chatgpt-plugin/ak-render-chatgpt-<version>.zip` and prints its sha256.
+The 1.0.0 `mcp.json` schema does not list the `extensions` key OpenAI reads
+auth from, so the check validates the rest of each server against it.
+
+Submission is a person's job in the OpenAI organization's plugin portal:
+upload the ZIP, set `OPENAI_APPS_CHALLENGE` (above) and redeploy, verify the
+domain, give reviewers an AgentKit account with an active entitlement, and
+attach a demo recording. The package's version follows `package.json`.
 
 ## Parity
 

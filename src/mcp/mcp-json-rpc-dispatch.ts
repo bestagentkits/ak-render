@@ -224,10 +224,11 @@ export function routeMcpMessage<T extends McpToolDefinition>(
       return reply({});
     case 'tools/list':
       return reply({
-        tools: tools.map(({ name, description, inputSchema }) => ({
+        tools: tools.map(({ name, description, inputSchema, annotations }) => ({
           name,
           description,
           inputSchema,
+          annotations,
         })),
         ...(modern ? { ttlMs: DISCOVERY_TTL_MS, cacheScope: 'public' } : {}),
       });

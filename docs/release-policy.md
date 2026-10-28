@@ -57,7 +57,10 @@ release.
 ## Release procedure
 
 1. Confirm `main` (or the release branch) is green in CI.
-2. Update `CHANGELOG.md` and bump both version locations.
+2. Update `CHANGELOG.md` and bump both version locations, plus the version in
+   `packaging/chatgpt/plugin.json` (a unit test keeps it equal). A new ChatGPT
+   plugin ZIP comes from `pnpm plugin:chatgpt`; it needs a portal upload only
+   when the listing, review cases or endpoint changed.
 3. Build from a clean checkout: `pnpm install --frozen-lockfile && pnpm build`.
 4. Verify the artifact as a consumer:
    `pnpm test:package` (packs, installs into a temp project, imports the

@@ -12,10 +12,12 @@
  *                  mirror RATE_LIMITS in src/config.ts (a unit test keeps them equal).
  *   BROWSER        Browser Run binding. Screenshot and PDF only.
  *
- * Routes: the Worker answers /mcp, /v1/* and the OAuth protected-resource
- * metadata under /.well-known/oauth-protected-resource on render.agentkit.best. That
- * hostname is a Custom Domain of the static site (site/wrangler.jsonc); Worker
- * routes on a Custom Domain's hostname run before it, so these paths reach
+ * Routes: the Worker answers /mcp, /v1/*, the OAuth protected-resource
+ * metadata under /.well-known/oauth-protected-resource and the OpenAI
+ * domain-verification token at /.well-known/openai-apps-challenge on
+ * render.agentkit.best. That hostname is a Custom Domain of the static site
+ * (site/wrangler.jsonc); Worker routes on a Custom Domain's hostname run
+ * before it, so these paths reach
  * this Worker and every other path still reaches the site. workers.dev stays
  * enabled as an undocumented fallback.
  *
@@ -26,6 +28,8 @@
  * Secrets (`wrangler secret put`, never in this file):
  *   DOWNLOAD_SIGNING_KEY  signs artifact-export download URLs (32+ characters).
  *                         Without it artifact-export answers DOWNLOAD_UNAVAILABLE.
+ *   OPENAI_APPS_CHALLENGE the OpenAI plugin portal's domain-verification token,
+ *                         served at /.well-known/openai-apps-challenge.
  */
 {
   "$schema": "node_modules/wrangler/config-schema.json",
@@ -71,7 +75,8 @@
   "routes": [
     { "pattern": "render.agentkit.best/mcp", "zone_name": "agentkit.best" },
     { "pattern": "render.agentkit.best/v1/*", "zone_name": "agentkit.best" },
-    { "pattern": "render.agentkit.best/.well-known/oauth-protected-resource*", "zone_name": "agentkit.best" }
+    { "pattern": "render.agentkit.best/.well-known/oauth-protected-resource*", "zone_name": "agentkit.best" },
+    { "pattern": "render.agentkit.best/.well-known/openai-apps-challenge", "zone_name": "agentkit.best" }
   ],
   "triggers": {
     // Hourly sweep so an expired share or render artifact stops resolving even

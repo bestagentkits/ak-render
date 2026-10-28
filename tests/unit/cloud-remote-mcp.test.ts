@@ -195,8 +195,20 @@ describe('remote MCP: discovery', () => {
     expect(discovered.instructions).toBe(REMOTE_INSTRUCTIONS);
     expect(discovered.supportedVersions).toEqual(remoteVersion(env).protocolVersions);
     const listed = await handleRequest(request('tools/list', {}), env);
-    const tools = ((await listed.json()) as { result: { tools: { name: string }[] } }).result.tools;
+    const tools = (
+      (await listed.json()) as { result: { tools: { name: string; annotations: unknown }[] } }
+    ).result.tools;
     expect(tools.map((tool) => tool.name)).toEqual(remoteVersion(env).tools);
+    // A directory review rejects a tool without explicit hints. Only render and
+    // compose publish a page; artifact-export stores exports of one already made.
+    for (const { name, annotations } of tools) {
+      const publishes = name === 'render' || name === 'compose';
+      expect(annotations, name).toEqual({
+        readOnlyHint: !publishes && name !== 'artifact-export',
+        destructiveHint: false,
+        openWorldHint: publishes,
+      });
+    }
     const called = await handleRequest(
       request('tools/call', { name: 'recipes', arguments: {} }, 'recipes'),
       env,

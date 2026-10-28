@@ -20,6 +20,8 @@
  *                               revisions and tool names, so deploy lag is visible.
  *   GET    /.well-known/oauth-protected-resource[/mcp]
  *                               OAuth protected-resource metadata, when OAuth is enabled.
+ *   GET    /.well-known/openai-apps-challenge
+ *                               the OpenAI plugin domain-verification token, when set.
  *
  * No content telemetry. No analytics. The bearer is validated against the
  * canonical AgentKit entitlements endpoint, or as an OAuth access token against
@@ -52,6 +54,9 @@ const JSON_TYPE = 'application/json; charset=utf-8';
 
 /** RFC 9728 well-known prefix; the resource's own path may follow it. */
 const PROTECTED_RESOURCE_PATH = '/.well-known/oauth-protected-resource';
+
+/** Where the OpenAI plugin portal reads its domain-verification token. */
+const OPENAI_CHALLENGE_PATH = '/.well-known/openai-apps-challenge';
 
 function json(status: number, body: unknown): Response {
   return new Response(`${JSON.stringify(body)}\n`, {
@@ -168,6 +173,17 @@ export async function handleRequest(
     response.headers.set('cache-control', 'public, max-age=300');
     response.headers.set('access-control-allow-origin', '*');
     return response;
+  }
+
+  // --- OpenAI plugin domain verification: the exact token, nothing else ----
+  if (path === OPENAI_CHALLENGE_PATH) {
+    const token = env.OPENAI_APPS_CHALLENGE?.trim() ?? '';
+    if (token === '' || (method !== 'GET' && method !== 'HEAD')) {
+      return json(404, { code: 'NOT_FOUND', message: 'no such route' });
+    }
+    return new Response(token, {
+      headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' },
+    });
   }
 
   // --- version: what is deployed, so tool-list drift is visible ------------

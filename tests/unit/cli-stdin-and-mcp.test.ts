@@ -186,6 +186,26 @@ describe('MCP server', () => {
     ]);
   });
 
+  // Only the tools that write into the working directory may change anything.
+  it('states every tool hint, marking only the file writers as writes', async () => {
+    const response = await handleMcpMessage(
+      { jsonrpc: '2.0', id: 2, method: 'tools/list' },
+      context,
+    );
+    const tools =
+      (response?.result as { tools: { name: string; annotations: unknown }[] } | undefined)
+        ?.tools ?? [];
+    expect(tools.length).toBeGreaterThan(0);
+    const writers = ['patch', 'compose', 'render'];
+    for (const tool of tools) {
+      expect(tool.annotations, tool.name).toEqual({
+        readOnlyHint: !writers.includes(tool.name),
+        destructiveHint: writers.includes(tool.name),
+        openWorldHint: false,
+      });
+    }
+  });
+
   it('serves icon discovery with limited, SVG-free replies', async () => {
     const hits = JSON.parse(
       (await call('search-icons', { query: 'bieu do', limit: 3 })).content[0]?.text ?? '',

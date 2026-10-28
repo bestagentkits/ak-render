@@ -47,11 +47,44 @@ import { builtinPresetEntries } from '../theme/presets.js';
 import type { ThemeCatalog } from '../theme/theme-catalog.js';
 import { failure, ToolArgumentError, type ToolResult, text } from './mcp-protocol.js';
 
+/**
+ * MCP tool hints. Clients such as ChatGPT gate confirmations on them and their
+ * directory review rejects a tool that omits one, so every tool states all
+ * three explicitly rather than relying on the protocol defaults.
+ */
+export interface McpToolAnnotations {
+  readonly readOnlyHint: boolean;
+  readonly destructiveHint: boolean;
+  readonly openWorldHint: boolean;
+}
+
+/** Computes or looks up an answer and changes nothing. */
+export const READ_ONLY: McpToolAnnotations = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  openWorldHint: false,
+};
+
+/** Writes a caller-named file in the working directory, replacing any file there. */
+export const LOCAL_FILE_WRITE: McpToolAnnotations = {
+  readOnlyHint: false,
+  destructiveHint: true,
+  openWorldHint: false,
+};
+
+/** Stores a new page behind a link anyone holding it can open; never replaces one. */
+export const REMOTE_PUBLISH: McpToolAnnotations = {
+  readOnlyHint: false,
+  destructiveHint: false,
+  openWorldHint: true,
+};
+
 /** What `tools/list` announces for one tool. */
 export interface McpToolDefinition {
   readonly name: string;
   readonly description: string;
   readonly inputSchema: Record<string, unknown>;
+  readonly annotations: McpToolAnnotations;
 }
 
 /**
@@ -106,6 +139,7 @@ function optionalString(args: Record<string, unknown>, key: string): string | un
 
 export const CATALOG_TOOL: McpTool<unknown> = {
   name: 'catalog',
+  annotations: READ_ONLY,
   description:
     'List block types (category, tags, one-line summary) and actions. Pass category for one group. Call once per task, then describe only the types you use.',
   inputSchema: {
@@ -127,6 +161,7 @@ export const CATALOG_TOOL: McpTool<unknown> = {
 
 export const SEARCH_CATALOG_TOOL: McpTool<unknown> = {
   name: 'search-catalog',
+  annotations: READ_ONLY,
   description:
     'Find block types by intent words, in English or Vietnamese, e.g. "sortable table", "pricing" or "bieu do". Returns up to 8 ranked hits with type, category, summary and score.',
   inputSchema: {
@@ -146,6 +181,7 @@ export const SEARCH_CATALOG_TOOL: McpTool<unknown> = {
 
 export const SEARCH_ICONS_TOOL: McpTool<unknown> = {
   name: 'search-icons',
+  annotations: READ_ONLY,
   description: `Find icons by meaning, in English or Vietnamese, e.g. "gauge" or "bieu do". Returns up to ${SEARCH_DEFAULT_LIMIT} short hits (id, packs); pass limit up to ${SEARCH_MAX_LIMIT}. Use the id as an icon prop. Never returns SVG.`,
   inputSchema: {
     type: 'object',
@@ -195,6 +231,7 @@ function iconSearchOptions(args: Record<string, unknown>): { pack?: IconPackId; 
 
 export const DESCRIBE_ICON_TOOL: McpTool<unknown> = {
   name: 'describe-icon',
+  annotations: READ_ONLY,
   description:
     'Describe one icon id (a meaning like "gauge" or "pack:name"): packs, variants, fallback order, license, examples. Unknown ids get close suggestions. Never returns SVG.',
   inputSchema: {
@@ -217,6 +254,7 @@ export const DESCRIBE_ICON_TOOL: McpTool<unknown> = {
 
 export const ICON_PACKS_TOOL: McpTool<unknown> = {
   name: 'icon-packs',
+  annotations: READ_ONLY,
   description:
     'List the bundled icon packs with their role, variants, glyph count, license, version and the theme icon profiles that use them.',
   inputSchema: NO_INPUT,
@@ -241,6 +279,7 @@ function requireTypes(args: Record<string, unknown>): string[] {
 
 export const DESCRIBE_TOOL: McpTool<unknown> = {
   name: 'describe',
+  annotations: READ_ONLY,
   description:
     'Block contracts: props with defaults and bounds, slots, actions, features, network, accessibility. Pass type, or types (up to 12). compact: true gives one line per prop.',
   inputSchema: {
@@ -280,6 +319,7 @@ export const DESCRIBE_TOOL: McpTool<unknown> = {
 
 export const RECIPES_TOOL: McpTool<unknown> = {
   name: 'recipes',
+  annotations: READ_ONLY,
   description:
     'List page recipes (name, summary, use cases, block types): complete starter specs for common pages such as dashboard or incident-report. Fetch one with recipe.',
   inputSchema: NO_INPUT,
@@ -288,6 +328,7 @@ export const RECIPES_TOOL: McpTool<unknown> = {
 
 export const RECIPE_TOOL: McpTool<unknown> = {
   name: 'recipe',
+  annotations: READ_ONLY,
   description:
     'Get one page recipe as a valid starter Page Spec in YAML. Replace its placeholder text and sample dataset rows, then validate and render.',
   inputSchema: {
@@ -303,6 +344,7 @@ export const RECIPE_TOOL: McpTool<unknown> = {
 
 export const VALIDATE_TOOL: McpTool<unknown> = {
   name: 'validate',
+  annotations: READ_ONLY,
   description:
     'Check a Page Spec without rendering. Returns ok plus diagnostics, each with a code and the JSON path to fix. suggest: true adds fixes: JSON Patches marked safe or ambiguous.',
   inputSchema: {
@@ -328,6 +370,7 @@ export const VALIDATE_TOOL: McpTool<unknown> = {
 
 export const REPAIR_TOOL: McpTool<unknown> = {
   name: 'repair',
+  annotations: READ_ONLY,
   description:
     'Apply only the safe fixes, revalidate, and return the change log and what is left (ambiguous fixes included). spec is returned, in the input format, only when it changed.',
   inputSchema: {
@@ -388,6 +431,7 @@ function patchOptions(args: Record<string, unknown>): { baseHash?: string; sourc
 
 export const PATCH_TOOL: McpTool<unknown> = {
   name: 'patch',
+  annotations: READ_ONLY,
   description:
     'Edit a Page Spec with JSON Patch ops instead of resending it. Returns the patched spec (YAML keeps comments), its hash for the next baseHash, the changes and diagnostics.',
   inputSchema: {
@@ -417,6 +461,7 @@ export const PATCH_TOOL: McpTool<unknown> = {
 
 export const MOTIONS_TOOL: McpTool<unknown> = {
   name: 'motions',
+  annotations: READ_ONLY,
   description:
     'Motion recipes for the block field motion. No arguments: one line each. query: rank recipes for an intent ("smooth tabs"). id: one recipe, compact: true for the short form. No CSS.',
   inputSchema: {
@@ -455,6 +500,7 @@ export const AUDIT_HTML_MAX_LENGTH = 8_000_000;
 
 export const AUDIT_MOTION_TOOL: McpTool<unknown> = {
   name: 'audit-motion',
+  annotations: READ_ONLY,
   description:
     'Audit motion. spec: authoritative checks on the normalized Page Spec. html: best-effort checks on a compiled page. Returns findings (rule, severity, path, fix), counts and an advisory score.',
   inputSchema: {
@@ -495,6 +541,7 @@ export function auditUiDefinition(presets: readonly UiAuditPreset[]): McpToolDef
   const publication = presets.includes('publication');
   return {
     name: 'audit-ui',
+    annotations: READ_ONLY,
     description: publication
       ? 'Visual QA of the compiled page. quick: no browser. publication: real browser at 375/768/1440, light/dark, print, no-JS, reduced motion, network blocked. Findings carry rule, path, fix.'
       : 'Visual QA of the compiled page (quick preset: theme contrast, wide tables, long chart labels; no browser). Findings carry rule, severity, path and fix.',
@@ -663,6 +710,7 @@ export function composeReplyExtras(step: ComposeToolStep): Record<string, unknow
 /** `compose` as the local stdio server runs it: the HTML goes to a file. */
 export const LOCAL_COMPOSE_DEFINITION: McpToolDefinition = {
   name: 'compose',
+  annotations: LOCAL_FILE_WRITE,
   description: `${COMPOSE_DESCRIPTION} HTML goes to out.`,
   inputSchema: {
     ...COMPOSE_INPUT,
@@ -680,6 +728,7 @@ export const LOCAL_COMPOSE_DEFINITION: McpToolDefinition = {
 /** `compose` as a remote server runs it: the HTML is stored behind a URL. */
 export const REMOTE_COMPOSE_DEFINITION: McpToolDefinition = {
   name: 'compose',
+  annotations: REMOTE_PUBLISH,
   description: `${COMPOSE_DESCRIPTION} HTML at artifactUrl.`,
   inputSchema: {
     ...COMPOSE_INPUT,
@@ -696,6 +745,7 @@ export const REMOTE_COMPOSE_DEFINITION: McpToolDefinition = {
 /** `render` as the local stdio server runs it: the HTML goes to a file. */
 export const LOCAL_RENDER_DEFINITION: McpToolDefinition = {
   name: 'render',
+  annotations: LOCAL_FILE_WRITE,
   description:
     'Compile a Page Spec and write the standalone HTML to `out`. Returns a summary (bytes, hash, features, warnings), never the HTML itself.',
   inputSchema: {
@@ -721,6 +771,7 @@ export const LOCAL_RENDER_DEFINITION: McpToolDefinition = {
  */
 export const REMOTE_RENDER_DEFINITION: McpToolDefinition = {
   name: 'render',
+  annotations: REMOTE_PUBLISH,
   description:
     'Compile a Page Spec and store the HTML behind a URL. Returns a summary (bytes, hash, features, warnings, artifactUrl, expiresAt), never the HTML. Short-lived unless `share` is true.',
   inputSchema: {
@@ -754,6 +805,13 @@ export type ArtifactExportFormat = (typeof ARTIFACT_EXPORT_FORMATS)[number];
  */
 export const REMOTE_ARTIFACT_EXPORT_DEFINITION: McpToolDefinition = {
   name: 'artifact-export',
+  annotations: {
+    // Mints download links to the caller's own artifact and may store its PNG
+    // or PDF once for reuse; it publishes nothing new and replaces nothing.
+    readOnlyHint: false,
+    destructiveHint: false,
+    openWorldHint: false,
+  },
   description:
     'Signed, expiring download URLs for an artifact or share you rendered: html, png, pdf, or spec (only when rendered with retainSpec). Returns URLs, never the content.',
   inputSchema: {
@@ -779,6 +837,7 @@ export const REMOTE_ARTIFACT_EXPORT_DEFINITION: McpToolDefinition = {
 
 export const THEMES_DEFINITION: McpToolDefinition = {
   name: 'themes',
+  annotations: READ_ONLY,
   description:
     'List theme presets (built-ins plus project or user presets discovered on disk) and any preset file that failed to load.',
   inputSchema: NO_INPUT,
@@ -822,6 +881,7 @@ export function themesResult(themes: Pick<ThemeCatalog, 'sources' | 'problems'>)
  */
 export const BUILTIN_THEMES_TOOL: McpTool<unknown> = {
   name: 'themes',
+  annotations: READ_ONLY,
   description: 'List the built-in theme presets this server renders with.',
   inputSchema: NO_INPUT,
   run: () =>

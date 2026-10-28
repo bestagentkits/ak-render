@@ -1,0 +1,97 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "ak-render",
+  "version": "0.3.0",
+  "description": "Turn plans, reports, recaps, diff reviews, dashboards and explainers into one polished, self-contained HTML page from a short YAML Page Spec, without hand-writing HTML.",
+  "author": {
+    "name": "bestagentkits",
+    "url": "https://github.com/bestagentkits"
+  },
+  "homepage": "https://render.agentkit.best",
+  "repository": "https://github.com/bestagentkits/ak-render",
+  "license": "MIT",
+  "keywords": ["html", "report", "page-spec", "yaml", "dashboard", "mcp"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "AK Render",
+        "shortDescription": "HTML pages from a YAML spec",
+        "longDescription": "AK Render turns structured content into one polished, self-contained HTML page: plans, reports, recaps, diff reviews, KPI dashboards, timelines, checklists, explainers and comparisons. ChatGPT writes a short Page Spec that describes what the page says; AK Render validates it, points at any mistake by its exact path, and compiles it into a page whose layout, colour, typography, charts and accessibility come from the compiler and a typed theme. The page is stored behind a link that lives for one hour, or for 30 days when you ask for a share link. The page itself is never pasted into the conversation; you open it from the link.\n\nAK Render runs on its hosted server, so nothing needs to be installed. You sign in with an AgentKit account the first time you connect; validating and rendering need an active AgentKit entitlement. Pages contain no scripts, styles or frames from the conversation, and a page makes no network requests once opened. AK Render does not send, post or email pages anywhere, edit files on your computer, or delete pages; links stop working when they expire.",
+        "developerName": "bestagentkits",
+        "category": "Developer Tools",
+        "capabilities": [
+          "Compile Page Specs to HTML pages",
+          "Validate and repair Page Specs",
+          "Publish expiring share links"
+        ],
+        "websiteURL": "https://render.agentkit.best",
+        "supportURL": "https://github.com/bestagentkits/ak-render/issues",
+        "privacyPolicyURL": "https://agentkit.best/privacy",
+        "termsOfServiceURL": "https://agentkit.best/terms",
+        "composerIcon": "./assets/composer-icon.png",
+        "logo": "./assets/logo.png",
+        "brandColor": "#1D4FD7",
+        "defaultPrompt": [
+          "Turn these quarterly metrics into a dashboard page.",
+          "Make a status report page I can share with my team.",
+          "Render this project plan as a timeline page."
+        ]
+      },
+      "review": {
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Build a KPI dashboard page from metrics the user supplies and return its link.",
+              "prompt": "Turn these quarterly metrics into a dashboard page: revenue $1.2M (up 8%), churn 2.1%, NPS 54, new customers 310.",
+              "tools_triggered": "recipe, validate, render",
+              "expected_behavior": "Writes a Page Spec with the four metrics, validates it, renders it, and replies with the artifactUrl and its one-hour expiry. Opening the link shows an HTML page with the four metrics and no invented figures."
+            },
+            {
+              "description": "Publish a shareable status report as a 30-day share link.",
+              "prompt": "Make a status report page for Project Atlas with three milestones (design done, beta in progress, launch planned for March) and two risks (vendor delay, hiring). I need a link my team can open for a few weeks.",
+              "tools_triggered": "search-catalog, validate, render",
+              "expected_behavior": "Renders the page with share set to true and replies with a share link that reports shared: true and an expiry about 30 days out. The page lists the three milestones and two risks as given."
+            },
+            {
+              "description": "Report validation errors by path without rendering a broken page.",
+              "prompt": "Check this Page Spec and tell me what is wrong: {\"version\": 1, \"meta\": {\"title\": \"Demo\"}, \"blocks\": [{\"type\": \"stat-grid\"}]}",
+              "tools_triggered": "validate",
+              "expected_behavior": "Calls validate and explains the SPEC_UNKNOWN_BLOCK error: stat-grid is not a known block type at $.blocks[0].type, and a known type such as stats fits. It does not claim the spec is valid and does not render it."
+            },
+            {
+              "description": "Find the right block type for a need.",
+              "prompt": "Which AK Render block types can show a project timeline, and what fields do they take?",
+              "tools_triggered": "search-catalog, describe",
+              "expected_behavior": "Lists the timeline-capable block types returned by search-catalog and summarizes their fields from describe. It does not render a page."
+            },
+            {
+              "description": "Render a page with a chosen built-in theme.",
+              "prompt": "List the AK Render themes, then render a one-page recap of this week's release (two features shipped, one bug fixed) with the newspaper theme.",
+              "tools_triggered": "themes, validate, render",
+              "expected_behavior": "Lists the built-in presets from themes, renders the recap with the newspaper theme, and replies with the artifactUrl. The render summary reports theme newspaper."
+            }
+          ],
+          "negative": [
+            {
+              "description": "Sending a page to another service is out of scope; the plugin should explain it only returns a link.",
+              "prompt": "Post this report to my company's Slack channel."
+            },
+            {
+              "description": "Raw HTML, CSS or JavaScript cannot be injected into a page; the plugin should decline and offer supported blocks.",
+              "prompt": "Render a page and include this script tag: <script src=\"https://example.com/track.js\"></script>"
+            },
+            {
+              "description": "A request unrelated to building a page should not call AK Render.",
+              "prompt": "What will the weather be in Hanoi tomorrow?"
+            }
+          ]
+        },
+        "commerce": false,
+        "commerce_description": "AK Render does not sell products or process payments."
+      },
+      "publication": {
+        "release_notes": "First ChatGPT release: validate, repair, patch and render Page Specs through the hosted AK Render server, with one-hour artifact links and 30-day share links."
+      }
+    }
+  }
+}
