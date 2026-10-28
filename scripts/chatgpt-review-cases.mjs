@@ -124,6 +124,9 @@ export const CASES = [
 const BASE_URL = (process.env.BASE_URL ?? 'https://render.agentkit.best').replace(/\/+$/u, '');
 const TOKEN = process.env.TOKEN ?? '';
 
+/** Hide the bearer in anything printed or written, whatever produced the text. */
+const redact = (text) => (TOKEN === '' ? text : text.replaceAll(TOKEN, '[redacted]'));
+
 const auth = (withToken) => (withToken && TOKEN !== '' ? { authorization: `Bearer ${TOKEN}` } : {});
 
 let rpcId = 0;
@@ -163,6 +166,8 @@ async function callTool(name, args, withToken = true, bearer) {
   return {
     status: response.status,
     challenge: response.headers.get('www-authenticate') ?? '',
+    // The server's clock, so an expiry window does not depend on the runner's.
+    serverNow: Date.parse(response.headers.get('date') ?? '') || Date.now(),
     isError: body?.result?.isError === true,
     payload,
     error: body?.error,
@@ -214,7 +219,7 @@ const RUNNERS = {
       },
     );
     state.reportHash = rendered.payload.hash;
-    const ttl = Date.parse(rendered.payload.expiresAt ?? '') - Date.now();
+    const ttl = Date.parse(rendered.payload.expiresAt ?? '') - rendered.serverNow;
     check(ttl > 50 * 60_000 && ttl <= 61 * 60_000, 'artifact expires in about one hour', { ttl });
     const page = await fetchPage(url);
     check(page.status === 200 && page.isHtml, 'artifact serves a complete HTML document', {
@@ -254,7 +259,7 @@ const RUNNERS = {
         expiresAt: rendered.payload.expiresAt,
       },
     );
-    const days = (Date.parse(rendered.payload.expiresAt ?? '') - Date.now()) / 86_400_000;
+    const days = (Date.parse(rendered.payload.expiresAt ?? '') - rendered.serverNow) / 86_400_000;
     check(days > 29 && days <= 30.1, 'share expires in about 30 days', { days });
     const page = await fetchPage(url);
     check(page.status === 200 && page.isHtml, 'share opens without a bearer', {
@@ -293,7 +298,9 @@ const RUNNERS = {
     );
     const rendered = await callTool('render', { spec: patched.payload.spec });
     check(
-      !rendered.isError && rendered.payload.hash !== state.reportHash,
+      !rendered.isError &&
+        typeof state.reportHash === 'string' &&
+        rendered.payload.hash !== state.reportHash,
       're-render produces a new page',
       { hash: rendered.payload.hash, before: state.reportHash },
     );
@@ -313,6 +320,7 @@ const RUNNERS = {
     check(
       rendered.isError &&
         typeof rendered.payload.code === 'string' &&
+        typeof rendered.payload.details === 'string' &&
         rendered.payload.artifactUrl === undefined,
       'render refuses with a code and stores nothing',
       { code: rendered.payload.code, path: rendered.payload.details },
@@ -343,7 +351,10 @@ const RUNNERS = {
     check(anonymousRevoke.status === 401, 'revoking without a bearer answers 401', {
       status: anonymousRevoke.status,
     });
-    if (state.shareId === undefined) return;
+    if (state.shareId === undefined) {
+      check(false, 'a revoked share answers 404', { skipped: 'P3 created no share' });
+      return;
+    }
     const revoked = await fetch(`${BASE_URL}/v1/share/${shareId}`, {
       method: 'DELETE',
       headers: auth(true),
@@ -360,7 +371,43 @@ const RUNNERS = {
 /** Cases that cannot run without a bearer. */
 const NEEDS_TOKEN = new Set(['P1', 'P2', 'P3', 'P4', 'P5', 'N1']);
 
+/** Revoke every share a case left behind; each outcome goes into the evidence. */
+async function revokeAll() {
+  const cleanup = [];
+  for (const id of createdShares.splice(0)) {
+    let status;
+    try {
+      status = (
+        await fetch(`${BASE_URL}/v1/share/${id}`, { method: 'DELETE', headers: auth(true) })
+      ).status;
+    } catch (error) {
+      status = redact(String(error));
+    }
+    cleanup.push({ id, status });
+    if (status !== 200) console.log(`FAIL  could not revoke share ${id}: ${status}`);
+  }
+  return cleanup;
+}
+
+/**
+ * Refuse to send the bearer anywhere it could leak: over plain HTTP to a remote
+ * host, or with characters a header cannot carry (the fetch error would echo
+ * the value).
+ */
+function preflight() {
+  if (TOKEN === '') return;
+  if (!/^[\x21-\x7e]+$/u.test(TOKEN)) {
+    console.log('FAIL  TOKEN is malformed (whitespace or non-ASCII); not sending it');
+    process.exit(2);
+  }
+  if (!/^(?:https:\/\/|http:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?$)/u.test(BASE_URL)) {
+    console.log('FAIL  BASE_URL must be https:// (or a loopback http://) when TOKEN is set');
+    process.exit(2);
+  }
+}
+
 async function main() {
+  preflight();
   const jsonAt = process.argv.indexOf('--json');
   const jsonPath = jsonAt === -1 ? undefined : process.argv[jsonAt + 1];
   const version = await (await fetch(`${BASE_URL}/v1/version`)).json().catch(() => ({}));
@@ -370,65 +417,71 @@ async function main() {
 
   const state = {};
   const results = [];
-  for (const testCase of CASES) {
-    if (NEEDS_TOKEN.has(testCase.id) && TOKEN === '') {
-      results.push({ id: testCase.id, kind: testCase.kind, status: 'skipped', checks: [] });
-      console.log(`skip  ${testCase.id} ${testCase.title} (TOKEN is not set)`);
-      continue;
+  let cleanup = [];
+  const interrupt = async () => {
+    await revokeAll();
+    process.exit(130);
+  };
+  process.once('SIGINT', interrupt);
+  process.once('SIGTERM', interrupt);
+  try {
+    for (const testCase of CASES) {
+      if (NEEDS_TOKEN.has(testCase.id) && TOKEN === '') {
+        results.push({ id: testCase.id, kind: testCase.kind, status: 'skipped', checks: [] });
+        console.log(`skip  ${testCase.id} ${testCase.title} (TOKEN is not set)`);
+        continue;
+      }
+      const record = recorder();
+      try {
+        await RUNNERS[testCase.id](record, state);
+      } catch (error) {
+        record.check(false, 'case ran to completion', { error: redact(String(error)) });
+      }
+      const passed = record.checks.every((entry) => entry.ok);
+      results.push({
+        id: testCase.id,
+        kind: testCase.kind,
+        status: passed ? 'passed' : 'failed',
+        checks: record.checks,
+      });
+      console.log(`${passed ? 'ok   ' : 'FAIL '} ${testCase.id} ${testCase.title}`);
+      for (const entry of record.checks) {
+        console.log(
+          redact(
+            `      ${entry.ok ? 'ok  ' : 'FAIL'} ${entry.label} ${JSON.stringify(entry.observed)}`,
+          ),
+        );
+      }
     }
-    const record = recorder();
-    try {
-      await RUNNERS[testCase.id](record, state);
-    } catch (error) {
-      record.check(false, 'case ran to completion', { error: String(error) });
-    }
-    const passed = record.checks.every((entry) => entry.ok);
-    results.push({
-      id: testCase.id,
-      kind: testCase.kind,
-      status: passed ? 'passed' : 'failed',
-      checks: record.checks,
-    });
-    console.log(`${passed ? 'ok   ' : 'FAIL '} ${testCase.id} ${testCase.title}`);
-    for (const entry of record.checks) {
-      console.log(
-        `      ${entry.ok ? 'ok  ' : 'FAIL'} ${entry.label} ${JSON.stringify(entry.observed)}`,
-      );
-    }
-  }
-
-  for (const id of createdShares) {
-    const response = await fetch(`${BASE_URL}/v1/share/${id}`, {
-      method: 'DELETE',
-      headers: auth(true),
-    });
-    if (response.status !== 200)
-      console.log(`note  could not revoke share ${id}: status ${response.status}`);
+  } finally {
+    cleanup = await revokeAll();
   }
 
   const count = (kind, status) =>
     results.filter((result) => result.kind === kind && result.status === status).length;
+  const complete = results.every((result) => result.status !== 'skipped');
   console.log(
     `positive: ${count('positive', 'passed')} passed, ${count('positive', 'failed')} failed, ${count('positive', 'skipped')} skipped; ` +
       `negative: ${count('negative', 'passed')} passed, ${count('negative', 'failed')} failed, ${count('negative', 'skipped')} skipped`,
   );
+  if (!complete) console.log('NOT A FULL RUN: set TOKEN to run all eight cases');
   if (jsonPath !== undefined) {
-    writeFileSync(
-      jsonPath,
-      `${JSON.stringify(
-        {
-          target: BASE_URL,
-          build: version.build,
-          version: version.version,
-          ranAt: new Date().toISOString(),
-          results,
-        },
-        null,
-        2,
-      )}\n`,
-    );
+    const evidence = {
+      target: BASE_URL,
+      build: version.build,
+      version: version.version,
+      ranAt: new Date().toISOString(),
+      complete,
+      results,
+      cleanup,
+    };
+    writeFileSync(jsonPath, redact(`${JSON.stringify(evidence, null, 2)}\n`));
   }
-  if (results.some((result) => result.status === 'failed')) process.exit(1);
+  const failed =
+    results.some((result) => result.status === 'failed') ||
+    cleanup.some((entry) => entry.status !== 200);
+  // Evidence is only evidence when every case ran.
+  if (failed || (jsonPath !== undefined && !complete)) process.exit(1);
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {

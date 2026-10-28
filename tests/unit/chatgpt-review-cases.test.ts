@@ -44,7 +44,9 @@ describe('ChatGPT review cases', () => {
   );
 
   it('keeps the invalid spec invalid at the paths the negative case checks', () => {
-    const paths = validate(INVALID_SPEC).diagnostics.map((diagnostic) => diagnostic.path);
-    expect(paths).toContain('$.blocks[1].type');
+    const unknown = validate(INVALID_SPEC).diagnostics.find(
+      (diagnostic) => diagnostic.code === 'SPEC_UNKNOWN_BLOCK',
+    );
+    expect(unknown?.path).toBe('$.blocks[1].type');
   });
 });
