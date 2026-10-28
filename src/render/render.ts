@@ -65,6 +65,7 @@ export interface CompileResult {
   html: string;
   /** Content hash of the emitted bytes; identical input yields an identical hash. */
   hash: string;
+  /** UTF-8 size of `html`, which is what a file written from it occupies on disk. */
   bytes: number;
   ir: IrDocument;
   theme: ResolvedTheme;
@@ -385,7 +386,7 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
   return {
     html: assembled.html,
     hash: stableHash(assembled.html),
-    bytes: assembled.html.length,
+    bytes: new TextEncoder().encode(assembled.html).byteLength,
     ir,
     theme: resolved,
     features: [
