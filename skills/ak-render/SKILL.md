@@ -16,7 +16,11 @@ Use `ak-render` if it is on `PATH`. Otherwise prefix every command with
 `npx -y @bestagentkits/render`. Node.js 20.11 or later is required. Reading the
 spec from stdin (`-`) and the `mcp` command need version 0.2.0 or later, and
 `search-catalog`, `describe --compact`, `catalog --category` and recipes need
-0.3.0 or later, so check `npx -y @bestagentkits/render --version` first. Every command accepts
+0.3.0 or later, so check `npx -y @bestagentkits/render --version` first.
+`compose`, `repair`, `validate --suggest`, `patch`, `audit-ui`, block
+`motion` with the `motions` and `motion` commands, the icon tools, and the
+`crimson-press` and `newspaper` presets need a release newer than 0.3.0; when
+`--help` does not list a command, skip that step. Every command accepts
 `--json` and never prompts.
 
 ## The loop
