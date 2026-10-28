@@ -265,6 +265,9 @@ Release mechanics and the compatibility contract live in
 - The render summary's `bytes` is the UTF-8 size of the emitted file. It used
   to count UTF-16 code units, so a page with any non-ASCII character reported
   fewer bytes than `--out` wrote.
+- A tab panel or `fade-swap` block now fades in even when the main thread is
+  busy right after the change. The fallback that clears the entering mark
+  used to fall due before the first frame and skip the fade.
 
 - Charts no longer draw at `NaN` or stop compiling on extreme or near-equal
   numbers. A dataset value such as `1e308` used to pass `validate` while the
