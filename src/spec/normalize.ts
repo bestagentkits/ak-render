@@ -17,6 +17,7 @@ import {
   authoredLength,
   type Diagnostic,
   DiagnosticBag,
+  type FixHint,
   pathIndex,
   pathKey,
 } from '../diagnostics.js';
@@ -27,6 +28,7 @@ import type { IrDocument, IrNode, IrTheme, NetworkPolicy } from '../ir.js';
 import { isPlainObject, type JsonValue } from '../json.js';
 import { getMotionRecipe, motionPresetsFor, motionRecipeTargets } from '../motion/recipes.js';
 import type { BlockRegistry, CheckContext } from '../registry/block-module.js';
+import { CATALOG_SEARCH_LIMITS, searchCatalog } from '../registry/catalog-search.js';
 import {
   enumFixHints,
   nameFixHints,
@@ -595,6 +597,34 @@ function validateMotion(
   return recipe.id;
 }
 
+/** Block types an unknown type is offered, as `describe` offers them. */
+const CLOSEST_BLOCK_TYPES = 3;
+
+/**
+ * The few block types an unknown type most likely meant, best first: the near
+ * names its fix hints already rank (which catch typos such as `carusel`), then
+ * intent-search hits (which catch a description such as `pricing-table`).
+ * The whole roster stays behind `catalog` and `search-catalog`, so one unknown
+ * type costs a handful of names rather than every registered type.
+ */
+function closestBlockTypes(
+  type: string,
+  nearNames: readonly FixHint[],
+  registry: BlockRegistry,
+): string[] {
+  const near = nearNames.flatMap((fix) =>
+    'replaceWith' in fix && typeof fix.replaceWith === 'string' ? [fix.replaceWith] : [],
+  );
+  // A type longer than a search query cannot be a near miss worth searching for.
+  const searched =
+    type.length > CATALOG_SEARCH_LIMITS.maxQueryLength
+      ? []
+      : searchCatalog(type)
+          .map((hit) => hit.type)
+          .filter((candidate) => registry.byType.has(candidate));
+  return [...new Set([...near, ...searched])].slice(0, CLOSEST_BLOCK_TYPES);
+}
+
 function buildNode(
   entry: unknown,
   parentId: string | null,
@@ -620,12 +650,15 @@ function buildNode(
 
   const definition = getBlockDefinition(typeValue, context.registry);
   if (definition === undefined) {
+    const fixes = nameFixHints(typeValue, blockTypes(context.registry), 'block/unknown-type');
+    const closest = closestBlockTypes(typeValue, fixes, context.registry);
+    const hint = closest.length === 0 ? '' : `; closest: ${closest.join(', ')}`;
     context.bag.add({
       code: 'SPEC_UNKNOWN_BLOCK',
       path: pathKey(path, 'type'),
-      message: `unknown block type "${typeValue}"`,
-      details: { type: typeValue, known: blockTypes(context.registry) },
-      fixes: nameFixHints(typeValue, blockTypes(context.registry), 'block/unknown-type'),
+      message: `unknown block type "${typeValue}"${hint} (catalog or search-catalog lists every type)`,
+      details: { type: typeValue, closest },
+      fixes,
     });
     return undefined;
   }
