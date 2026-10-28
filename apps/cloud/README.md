@@ -429,6 +429,12 @@ BASE_URL=https://render.agentkit.best TOKEN="$AGENTKIT_TOKEN" EXPECT_EXPORT=1 \
   node scripts/cloud-smoke.mjs
 ```
 
+Before a ChatGPT Plugins Directory submission, also run the five positive and
+three negative review cases with the reviewer account's bearer:
+`TOKEN=... pnpm review:chatgpt --json review-evidence.json`. The prompts,
+expected results and go/no-go checklist are in
+[`docs/chatgpt-review/README.md`](../../docs/chatgpt-review/README.md).
+
 Or run the **Cloud renderer deploy** workflow with `dry-run` off. It deploys,
 applies the lifecycle rules, then runs the same smoke script against
 `base-url`, which is a choice between `render.agentkit.best` and the
