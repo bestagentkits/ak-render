@@ -46,4 +46,34 @@ describe('agent plugin manifests', () => {
     const skill = readFileSync(`${root}skills/ak-render/SKILL.md`, 'utf8');
     expect(skill).toMatch(/^---\nname: ak-render\ndescription: .+\n---\n/u);
   });
+
+  // The plugins pin VERSION, so the skill's main text must work on it. Commands
+  // and fields from later commits wait under a "Newer than VERSION" heading, and
+  // the terms below, keyed by the version that lacks them, must stay out of the
+  // main text. A release bump fails here until the section and link are renamed;
+  // add a key for the new version as unreleased features land.
+  it('keep known unreleased commands out of the main skill text', () => {
+    const skill = readFileSync(`${root}skills/ak-render/SKILL.md`, 'utf8');
+    const heading = `\n## Newer than ${VERSION}\n`;
+    expect(skill).toContain(heading);
+    expect(skill).toContain(`[Newer than ${VERSION}](#newer-than-${VERSION.replace(/\W/gu, '')})`);
+    const unreleasedAfter: Record<string, RegExp[]> = {
+      '0.3.0': [
+        /\bcompose\b/u,
+        /\brepair\b/u,
+        /\bpatch\b/u,
+        /suggest/u,
+        /audit-ui|audit-motion|motion audit|motion studio/u,
+        /`motions?\b|motion:/u,
+        /search-icons|describe-icon|icon-packs|`icons\b/u,
+        /`decision`|`feedback`/u,
+        /\bderive\b|\brollup\b|`cite`/u,
+        /crimson-press|newspaper/u,
+        /`\*\*/u,
+      ],
+    };
+    const pinned = skill.slice(0, skill.indexOf(heading));
+    for (const term of unreleasedAfter[VERSION] ?? [])
+      expect(pinned, String(term)).not.toMatch(term);
+  });
 });

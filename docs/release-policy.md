@@ -57,7 +57,13 @@ release.
 ## Release procedure
 
 1. Confirm `main` (or the release branch) is green in CI.
-2. Update `CHANGELOG.md` and bump both version locations.
+2. Update `CHANGELOG.md` and bump both version locations, plus the version
+   and package pin in `.claude-plugin/plugin.json`, `plugin.json` and
+   `mcp.json`. The root skill (`skills/ak-render/SKILL.md`) teaches the pinned
+   version: fold its `## Newer than X.Y.Z` section into the main text, rename
+   that heading and the link to it to the new version, and update the block
+   count and preset list stated for the old one. The plugin manifest test fails
+   until the heading and link match the new version.
 3. Build from a clean checkout: `pnpm install --frozen-lockfile && pnpm build`.
 4. Verify the artifact as a consumer:
    `pnpm test:package` (packs, installs into a temp project, imports the
