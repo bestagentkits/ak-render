@@ -57,7 +57,11 @@ release.
 ## Release procedure
 
 1. Confirm `main` (or the release branch) is green in CI.
-2. Update `CHANGELOG.md` and bump both version locations.
+2. Update `CHANGELOG.md` and bump both version locations, plus the plugin
+   manifests and pins (`plugin.json`, `mcp.json`,
+   `plugins/ak-render/.claude-plugin/plugin.json`, and every
+   `@bestagentkits/render@…` in `plugins/ak-render/`). Update the Claude plugin
+   skill for any new command; see [claude-plugin.md](./claude-plugin.md).
 3. Build from a clean checkout: `pnpm install --frozen-lockfile && pnpm build`.
 4. Verify the artifact as a consumer:
    `pnpm test:package` (packs, installs into a temp project, imports the
@@ -68,7 +72,7 @@ release.
 6. Tag the released commit (`vX.Y.Z` or `vX.Y.Z-next.N`) and attach the
    changelog section as the release notes.
 7. Verify the published tarball from a clean temporary project before announcing
-   the release.
+   the release, and run `pnpm test:plugin` against the published version.
 
 Steps 5 through 7 require registry credentials that the repository does not
 hold. When credentials are unavailable, prepare the release (changelog, version

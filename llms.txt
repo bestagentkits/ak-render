@@ -12,6 +12,7 @@ Do not write HTML, CSS or inline scripts: the spec has no field for them. In pro
 
 - [Compose](https://github.com/bestagentkits/ak-render/blob/main/docs/compose.md): build a page from a typed intent and content slots in one call
 - [Agent guide](https://github.com/bestagentkits/ak-render/blob/main/docs/agent-guide.md): the loop, a minimal spec, MCP setup, and rules that save retries
+- [Claude plugin](https://github.com/bestagentkits/ak-render/blob/main/docs/claude-plugin.md): the self-contained `plugins/ak-render/` folder, its supported surfaces (Claude Code and Cowork on your computer, not claude.ai chat) and how it is verified
 - [README](https://github.com/bestagentkits/ak-render/blob/main/README.md): install, library API, CLI and the three agent modes
 - [Cloud renderer](https://github.com/bestagentkits/ak-render/blob/main/apps/cloud/README.md): remote MCP endpoint, REST routes, scopes and limits
 - [Data and state](https://github.com/bestagentkits/ak-render/blob/main/docs/data-and-state.md): datasets, transforms, value formats, state, visibleWhen, controls and filter-bar

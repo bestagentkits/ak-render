@@ -8,8 +8,8 @@
   "plugins": [
     {
       "name": "ak-render",
-      "source": "./",
-      "description": "Skill and MCP server that turn plans, reports, recaps, diff reviews and dashboards into polished offline HTML pages from a YAML Page Spec.",
+      "source": "./plugins/ak-render",
+      "description": "Skill and local MCP server that turn reports, dashboards and architecture reviews into polished offline HTML pages from a YAML Page Spec.",
       "category": "productivity",
       "tags": ["html", "report", "page", "yaml", "offline"]
     }

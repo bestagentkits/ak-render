@@ -280,6 +280,12 @@ claude plugin marketplace add bestagentkits/ak-render
 claude plugin install ak-render@ak-render
 ```
 
+The Claude plugin is the self-contained folder
+[`plugins/ak-render/`](./plugins/ak-render/README.md). It needs Node.js 20.11+
+on the machine running Claude, so it works in Claude Code and in Cowork
+sessions on your computer, not in claude.ai chat; use the remote MCP server
+below there. See [docs/claude-plugin.md](./docs/claude-plugin.md).
+
 **Codex and ChatGPT**, as a plugin:
 
 ```bash
@@ -515,7 +521,8 @@ capability is not done until a fixture exercises it.
 | `benchmarks/` | Reproducible measurement harnesses |
 | `docs/adr/` | Architecture decision records |
 | `docs/artifacts/` | Captured measurements and evidence |
-| `skills/`, `.claude-plugin/`, `.agents/plugins/`, `plugin.json`, `mcp.json` | Agent skill and plugin manifests |
+| `skills/`, `.claude-plugin/`, `.agents/plugins/`, `plugin.json`, `mcp.json` | Agent skill, marketplace and Codex plugin manifests |
+| `plugins/ak-render/` | Self-contained Claude plugin folder (see [docs/claude-plugin.md](./docs/claude-plugin.md)) |
 | `assets/` | Embedded font licences and the plugin icon (`icon.svg` is the source of `logo.png` and `composer-icon.png`) |
 | `site/` | Landing page spec, build script output and Cloudflare config |
 | `src/mcp/` | MCP protocol, shared tool contracts, stdio and Streamable HTTP transports |

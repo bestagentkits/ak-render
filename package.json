@@ -57,6 +57,7 @@
     "test:browser": "playwright test",
     "test:package": "node scripts/package-smoke.mjs",
     "test:clean-install": "node scripts/clean-install-verify.mjs",
+    "test:plugin": "node scripts/claude-plugin-smoke.mjs",
     "icons:generate": "node scripts/generate-icons.mjs",
     "icons:check": "node scripts/generate-icons.mjs --check",
     "gallery:generate": "node scripts/generate-gallery.mjs",

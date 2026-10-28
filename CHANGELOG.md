@@ -11,6 +11,14 @@ Release mechanics and the compatibility contract live in
 
 ### Added
 
+- Claude plugin folder. `plugins/ak-render/` is a self-contained plugin for
+  the Claude plugin directory: a manifest that starts the pinned
+  `@bestagentkits/render` MCP server, a skill written for that version with
+  report, dashboard and architecture review examples, an icon, screenshots, a
+  README with a supported-surface matrix, privacy and support details, and the
+  license. The repository marketplace now installs that folder instead of the
+  repository root. `pnpm test:plugin` smoke-tests it against the published
+  package. See [docs/claude-plugin.md](./docs/claude-plugin.md).
 - Remote artifact export. The hosted MCP server adds `artifact-export`: given
   an `artifactUrl`, share URL or id the caller owns, it returns signed URLs
   (HMAC-SHA256, one hour, never past the page's own expiry) for the HTML, a
@@ -253,6 +261,10 @@ Release mechanics and the compatibility contract live in
   refused it. A deployment without OAuth keeps anonymous discovery.
 
 ### Fixed
+
+- The render summary's `bytes` is the UTF-8 size of the emitted file. It used
+  to count UTF-16 code units, so a page with any non-ASCII character reported
+  fewer bytes than `--out` wrote.
 
 - Charts no longer draw at `NaN` or stop compiling on extreme or near-equal
   numbers. A dataset value such as `1e308` used to pass `validate` while the
