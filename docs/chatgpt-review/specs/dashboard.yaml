@@ -1,0 +1,32 @@
+# Synthetic reviewer spec: a service health dashboard. All names and numbers are invented.
+version: 1
+meta:
+  title: Orbit service health
+datasets:
+  services:
+    - { service: Checkout, latency: 182, errors: 0.4, status: healthy }
+    - { service: Search, latency: 96, errors: 0.1, status: healthy }
+    - { service: Billing, latency: 341, errors: 1.8, status: degraded }
+blocks:
+  - type: hero
+    eyebrow: Synthetic demo data
+    title: Orbit service health
+    description: Weekly latency and error rates for three invented services.
+  - type: kpi
+    items:
+      - { label: p50 latency, value: 182 ms, delta: "-6%", trend: down, good: down }
+      - { label: Error rate, value: "0.8%", delta: "+0.2 pt", trend: up, good: down }
+  - type: chart
+    kind: bar
+    title: Latency by service (ms)
+    dataRef: services
+    x: { field: service }
+    y: { field: latency, format: integer, unit: ms }
+  - type: data-table
+    title: Services
+    dataRef: services
+    columns:
+      - { key: service, label: Service }
+      - { key: latency, label: Latency (ms), type: number }
+      - { key: errors, label: Errors (%), type: number }
+      - { key: status, label: Status, type: badge }

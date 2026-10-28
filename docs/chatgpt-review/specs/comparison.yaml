@@ -1,0 +1,21 @@
+# Synthetic reviewer spec: a two-option comparison. All names are invented.
+version: 1
+meta:
+  title: Vertex vs Lumen hosting options
+blocks:
+  - type: hero
+    eyebrow: Synthetic demo data
+    title: Vertex vs Lumen hosting options
+    description: A short comparison of two invented hosting plans.
+  - type: comparison
+    title: At a glance
+    left:
+      label: Vertex
+      items: [Managed backups, Two regions, Email support]
+    right:
+      label: Lumen
+      items: [Self-managed backups, Five regions, Chat support]
+  - type: callout
+    tone: success
+    title: Recommendation
+    text: Pick Vertex for a small team that wants managed backups.
