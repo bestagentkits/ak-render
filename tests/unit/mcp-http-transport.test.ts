@@ -15,6 +15,7 @@ import {
   CATALOG_TOOL,
   DESCRIBE_TOOL,
   type McpTool,
+  READ_ONLY,
   VALIDATE_TOOL,
 } from '../../src/mcp/mcp-tool-definitions.js';
 import { handleMcpMessage } from '../../src/mcp-server.js';
@@ -32,6 +33,7 @@ const ECHO_TOOL: McpTool<Context, Promise<ToolResult>> = {
   name: 'echo',
   description: 'Echo the context the transport handed over.',
   inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+  annotations: READ_ONLY,
   run: async (_args, context) => {
     context.calls.push('echo');
     return text({ calls: context.calls.length });
@@ -42,6 +44,7 @@ const THROWING_TOOL: McpTool<Context> = {
   name: 'boom',
   description: 'Always throws.',
   inputSchema: { type: 'object' },
+  annotations: READ_ONLY,
   run: () => {
     throw new TypeError('"thing" must be a non-empty string');
   },

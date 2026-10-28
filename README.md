@@ -340,6 +340,14 @@ left idle expires after 365 days. For CI or a client without OAuth, send a
 personal AgentKit API key (`ck_live_…`) instead, which lasts until revoked:
 add `"headers": { "Authorization": "Bearer ${AGENTKIT_TOKEN}" }`.
 
+**ChatGPT.** The ChatGPT plugin package in
+[`packaging/chatgpt/`](./packaging/chatgpt/) points at this same endpoint with
+OAuth, so a ChatGPT user signs in to AgentKit and needs neither Node nor npm.
+`pnpm plugin:chatgpt` checks it against the Agent Plugins schemas and the
+directory limits, then writes the upload ZIP to `.tmp/chatgpt-plugin/`. The
+root `mcp.json` and `plugin.json` stay the local stdio install for Codex and
+desktop clients.
+
 Details, limits and the REST routes are in
 [apps/cloud/README.md](./apps/cloud/README.md).
 
