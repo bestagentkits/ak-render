@@ -11,6 +11,17 @@ Release mechanics and the compatibility contract live in
 
 ### Added
 
+- ChatGPT plugin package. `packaging/chatgpt/` connects ChatGPT to the hosted
+  MCP server at `https://render.agentkit.best/mcp` with AgentKit OAuth, so no
+  Node or npm is needed; the local stdio manifests are unchanged.
+  `pnpm plugin:chatgpt` checks it against the Agent Plugins schemas and the
+  directory limits and writes a deterministic upload ZIP to `.tmp/chatgpt-plugin/`. The Worker serves
+  the portal's domain-verification token from the `OPENAI_APPS_CHALLENGE`
+  secret at `/.well-known/openai-apps-challenge`, and the cloud smoke checks
+  tool hints, the OAuth client mode, artifact content type, truthful render
+  errors and expiry. See [apps/cloud/README.md](./apps/cloud/README.md#chatgpt-plugin).
+- MCP tool annotations. Every tool in `tools/list`, local and remote, states
+  `readOnlyHint`, `destructiveHint` and `openWorldHint`.
 - Remote artifact export. The hosted MCP server adds `artifact-export`: given
   an `artifactUrl`, share URL or id the caller owns, it returns signed URLs
   (HMAC-SHA256, one hour, never past the page's own expiry) for the HTML, a

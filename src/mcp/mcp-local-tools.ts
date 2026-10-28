@@ -28,6 +28,7 @@ import {
   ICON_PACKS_TOOL,
   isComposeToolStep,
   LOCAL_COMPOSE_DEFINITION,
+  LOCAL_FILE_WRITE,
   LOCAL_RENDER_DEFINITION,
   type McpTool,
   MOTIONS_TOOL,
@@ -125,6 +126,8 @@ const LOCAL_COMPOSE_TOOL: McpTool<McpContext> = {
  */
 const LOCAL_PATCH_TOOL: McpTool<McpContext> = {
   ...PATCH_TOOL,
+  // With `file` it rewrites that spec in place.
+  annotations: LOCAL_FILE_WRITE,
   description:
     'Edit a spec file in place (file) or a Page Spec (spec) with JSON Patch ops. Returns the new hash for baseHash, the changes and diagnostics; a file reply carries no spec.',
   inputSchema: {

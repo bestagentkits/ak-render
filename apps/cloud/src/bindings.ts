@@ -106,6 +106,13 @@ export interface Env {
    */
   DOWNLOAD_SIGNING_KEY?: string;
   /**
+   * The domain-verification token the OpenAI plugin portal shows when the
+   * remote MCP server is connected. Served verbatim at
+   * `/.well-known/openai-apps-challenge`; without it that path is a 404.
+   * Set it with `wrangler secret put` so a new token needs no code change.
+   */
+  OPENAI_APPS_CHALLENGE?: string;
+  /**
    * Commit the deployed Worker was built from. The deploy workflow passes it
    * with `wrangler deploy --var`; `/v1/version` reports it so a stale deploy
    * is visible. Absent in a local or manual deploy.

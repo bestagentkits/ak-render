@@ -57,6 +57,7 @@
     "test:browser": "playwright test",
     "test:package": "node scripts/package-smoke.mjs",
     "test:clean-install": "node scripts/clean-install-verify.mjs",
+    "review:chatgpt": "node scripts/chatgpt-review-cases.mjs",
     "icons:generate": "node scripts/generate-icons.mjs",
     "icons:check": "node scripts/generate-icons.mjs --check",
     "gallery:generate": "node scripts/generate-gallery.mjs",
@@ -77,6 +78,8 @@
     "site:deploy": "pnpm site:build && wrangler deploy --config site/wrangler.jsonc",
     "recipes:generate": "node scripts/generate-recipes-module.mjs",
     "recipes:check": "node scripts/generate-recipes-module.mjs --check",
+    "plugin:chatgpt": "node scripts/build-chatgpt-plugin.mjs",
+    "plugin:chatgpt:check": "node scripts/build-chatgpt-plugin.mjs --check",
     "verify": "pnpm lint && pnpm typecheck && pnpm fonts:check && pnpm recipes:check && pnpm icons:check && pnpm test && pnpm build"
   },
   "devDependencies": {

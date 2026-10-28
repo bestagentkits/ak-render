@@ -27,16 +27,38 @@
  * commit (the deploy job sets it); CURRENT_SHA=<sha> only notes a mismatch, so
  * a smoke-only run shows deploy lag without failing.
  *
+ * Every listed tool must state readOnlyHint, destructiveHint and openWorldHint
+ * as booleans (with OAuth on, that needs TOKEN), /v1/version must name every
+ * tool the ChatGPT package's review cases name, and the authorization server must support the OAuth client mode
+ * that package declares (packaging/chatgpt/mcp.json). With TOKEN, the artifact
+ * must be served as text/html, an invalid spec must come back as a tool error
+ * naming its diagnostic, and the expiry of a private render and of a share must
+ * match the documented one hour and SHARE_DAYS (default 30) days.
+ * /.well-known/openai-apps-challenge is reported when it answers and fails only
+ * with EXPECT_OPENAI_CHALLENGE=1.
+ *
  * The token is sent only as an Authorization header to BASE_URL and is never
  * printed. Every share this script creates is revoked before it exits.
  */
+
+import { readFileSync } from 'node:fs';
+import { reviewedToolNames } from './build-chatgpt-plugin.mjs';
 
 const BASE_URL = (process.env.BASE_URL ?? 'https://render.agentkit.best').replace(/\/+$/u, '');
 const TOKEN = process.env.TOKEN ?? '';
 const EXPECT_EXPORT = process.env.EXPECT_EXPORT === '1';
 const EXPECT_BUILD = process.env.EXPECT_BUILD ?? '';
 const CURRENT_SHA = process.env.CURRENT_SHA ?? '';
+const EXPECT_OPENAI_CHALLENGE = process.env.EXPECT_OPENAI_CHALLENGE === '1';
+const SHARE_DAYS = Number(process.env.SHARE_DAYS ?? '30');
 const MODERN_PROTOCOL = '2026-07-28';
+const ARTIFACT_SECONDS = 60 * 60;
+
+const chatgptPackage = JSON.parse(
+  readFileSync(new URL('../packaging/chatgpt/mcp.json', import.meta.url), 'utf8'),
+);
+const CHATGPT_CLIENT_MODE = Object.values(chatgptPackage.mcpServers)[0]?.extensions?.['com.openai']
+  ?.auth?.client?.mode;
 
 const SPEC = {
   version: 1,
@@ -182,6 +204,12 @@ async function callTool(name, args, withToken = false) {
   return { status, isError: result?.isError === true, payload, error: body?.error };
 }
 
+/** Whether an ISO expiry lies `seconds` from now, give or take five minutes. */
+function expiresIn(expiresAt, seconds) {
+  const remaining = (Date.parse(String(expiresAt)) - Date.now()) / 1000;
+  return Math.abs(remaining - seconds) < 5 * 60;
+}
+
 function isHtmlDocument(html) {
   return /^<!doctype html>/iu.test(html.trimStart()) && html.trimEnd().endsWith('</html>');
 }
@@ -227,18 +255,56 @@ async function oauthDiscovery() {
     'authorization server advertises the resource scopes',
     JSON.stringify(server.scopes_supported),
   );
+  const clientModeSupported = {
+    cimd: server.client_id_metadata_document_supported === true,
+    dcr: typeof server.registration_endpoint === 'string',
+    provided: true,
+  }[CHATGPT_CLIENT_MODE ?? 'provided'];
+  check(
+    clientModeSupported === true &&
+      (server.code_challenge_methods_supported ?? []).includes('S256'),
+    `authorization server supports the ChatGPT package's ${CHATGPT_CLIENT_MODE ?? 'provided'} client with PKCE S256`,
+    JSON.stringify({
+      registration_endpoint: server.registration_endpoint,
+      client_id_metadata_document_supported: server.client_id_metadata_document_supported,
+      code_challenge_methods_supported: server.code_challenge_methods_supported,
+    }),
+  );
   return true;
 }
 
 async function unauthenticatedSurface() {
   const deployedTools = await versionCheck();
+  const unlisted = reviewedToolNames().filter((name) => !deployedTools.includes(name));
+  check(
+    unlisted.length === 0,
+    'deployment serves every tool the ChatGPT review cases name',
+    unlisted.join(','),
+  );
   const oauth = await oauthDiscovery();
   if (oauth && TOKEN === '') {
     notice('OAuth is on and TOKEN is not set; MCP discovery calls skipped');
+    notice('tool hints in tools/list not checked; they need TOKEN');
   } else {
     await mcpDiscovery(oauth, deployedTools);
   }
   await rejectedBearerChecks();
+  await openaiChallenge();
+}
+
+/** The OpenAI plugin portal's domain-verification token, when one is set. */
+async function openaiChallenge() {
+  const response = await fetch(`${BASE_URL}/.well-known/openai-apps-challenge`);
+  const body = (await response.text()).trim();
+  const served =
+    response.status === 200 &&
+    (response.headers.get('content-type') ?? '').startsWith('text/plain') &&
+    body !== '';
+  if (served || EXPECT_OPENAI_CHALLENGE) {
+    check(served, 'openai-apps-challenge serves a plain-text token', `status ${response.status}`);
+  } else {
+    notice(`openai-apps-challenge: status ${response.status} (no token set); skipped`);
+  }
 }
 
 /** initialize, tools/list, catalog and recipe; with a bearer where OAuth requires one. */
@@ -285,6 +351,14 @@ async function mcpDiscovery(withToken, deployedTools) {
     'mcp tools/list matches /v1/version',
     `${names.join(',')} vs ${deployedTools.join(',')}`,
   );
+  const unhinted = (listed.body?.result?.tools ?? [])
+    .filter((tool) =>
+      ['readOnlyHint', 'destructiveHint', 'openWorldHint'].some(
+        (hint) => typeof tool.annotations?.[hint] !== 'boolean',
+      ),
+    )
+    .map((tool) => tool.name);
+  check(unhinted.length === 0, 'mcp tools/list states every tool hint', unhinted.join(','));
 
   const discover = await modernMcp('server/discover', {}, withToken);
   check(
@@ -386,9 +460,29 @@ async function authenticatedSurface() {
   const artifact = await fetch(render.payload.artifactUrl);
   const artifactHtml = await artifact.text();
   check(
-    artifact.status === 200 && isHtmlDocument(artifactHtml),
-    'mcp artifact is an HTML document',
-    `status ${artifact.status}`,
+    artifact.status === 200 &&
+      (artifact.headers.get('content-type') ?? '').startsWith('text/html') &&
+      isHtmlDocument(artifactHtml),
+    'mcp artifact is an HTML document served as text/html',
+    `status ${artifact.status} ${artifact.headers.get('content-type')}`,
+  );
+  check(
+    expiresIn(render.payload.expiresAt, ARTIFACT_SECONDS),
+    'mcp render artifact expires in one hour',
+    String(render.payload.expiresAt),
+  );
+
+  const invalid = await callTool(
+    'render',
+    { spec: { ...SPEC, blocks: [{ type: 'no-such-block' }] } },
+    true,
+  );
+  check(
+    invalid.isError &&
+      typeof invalid.payload.code === 'string' &&
+      JSON.stringify(invalid.payload).includes('$.blocks[0].type'),
+    'mcp render of an invalid spec is a tool error naming the diagnostic path',
+    JSON.stringify(invalid.payload).slice(0, 300),
   );
   check(
     new TextEncoder().encode(artifactHtml).length === render.payload.bytes,
@@ -438,6 +532,11 @@ async function authenticatedSurface() {
   ) {
     const id = String(shared.payload.artifactUrl).split('/').pop();
     createdShares.push(id);
+    check(
+      expiresIn(shared.payload.expiresAt, SHARE_DAYS * 24 * 60 * 60),
+      `mcp share expires in ${SHARE_DAYS} days`,
+      String(shared.payload.expiresAt),
+    );
   }
 
   await artifactExport();
