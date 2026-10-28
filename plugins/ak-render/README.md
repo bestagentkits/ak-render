@@ -13,18 +13,14 @@ inject them.
 
 ## Install
 
-In Claude Code 2.1.275 or later:
-
-```bash
-/plugin install ak-render --marketplace bestagentkits/ak-render
-```
-
-On older versions, add the marketplace first:
+In Claude Code, add this repository as a marketplace and install the plugin:
 
 ```bash
 claude plugin marketplace add bestagentkits/ak-render
 claude plugin install ak-render@ak-render
 ```
+
+Inside a session, `/plugin` opens the same marketplace and install flow.
 
 ## What the plugin contains
 
@@ -71,7 +67,7 @@ Copy one of these prompts into Claude Code after installing the plugin:
    tell me where the file is."
 
 Claude validates the spec, fixes every diagnostic, writes the `.html` file and
-reports its path, size and content hash.
+reports its path and title.
 
 ![A sample service health dashboard in dark mode](assets/dashboard.webp)
 

@@ -1,5 +1,5 @@
 import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { basename, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { validate } from '../../src/spec/validate.js';
@@ -19,7 +19,10 @@ const walk = (dir: string): string[] =>
     const path = join(dir, name);
     return lstatSync(path).isDirectory() ? walk(path) : [path];
   });
-const pluginFiles = walk(`${root}${CLAUDE_PLUGIN}`).map((path) => relative(root, path));
+// Forward slashes on every OS, so the patterns below match on Windows too.
+const pluginFiles = walk(`${root}${CLAUDE_PLUGIN}`).map((path) =>
+  relative(root, path).split(sep).join('/'),
+);
 
 describe('agent plugin manifests', () => {
   // Claude keeps users on the listed plugin version until it changes, so a
@@ -93,7 +96,7 @@ describe('Claude plugin folder', () => {
 
   // A registry config beside an npx launcher is a blocking finding.
   it('carries no package-manager config or lockfile', () => {
-    const names = pluginFiles.map((file) => file.split('/').at(-1));
+    const names = pluginFiles.map((file) => basename(file));
     for (const name of ['.npmrc', 'package.json', 'package-lock.json', 'bunfig.toml']) {
       expect(names).not.toContain(name);
     }
@@ -110,11 +113,43 @@ describe('Claude plugin folder', () => {
   it('pins every package reference to the plugin version', () => {
     for (const file of [`${claudeSkill}/SKILL.md`, `${CLAUDE_PLUGIN}/README.md`]) {
       const text = readFileSync(`${root}${file}`, 'utf8');
-      const refs = text.match(/@bestagentkits\/render(?:@[\w.-]+)?/gu) ?? [];
+      // The link to the npm package page is the only unversioned mention allowed.
+      const unlinked = text.replaceAll(
+        '[`@bestagentkits/render`](https://www.npmjs.com/package/@bestagentkits/render)',
+        '',
+      );
+      const refs = unlinked.match(/@bestagentkits\/render(?:@[\w.-]+)?/gu) ?? [];
       expect(refs.length, file).toBeGreaterThan(0);
-      for (const ref of refs) {
-        if (file.endsWith('README.md') && ref === '@bestagentkits/render') continue;
-        expect(ref, file).toBe(`@bestagentkits/render@${VERSION}`);
+      for (const ref of refs) expect(ref, file).toBe(`@bestagentkits/render@${VERSION}`);
+    }
+  });
+
+  // The pinned release ships only these CLI commands. Later commands live in
+  // the source tree first, and naming one here would send Claude to a command
+  // the installed package rejects.
+  it('names only commands the pinned release ships', () => {
+    const shipped = new Set([
+      'catalog',
+      'describe',
+      'mcp',
+      'recipe',
+      'recipes',
+      'search-catalog',
+      'themes',
+      'validate',
+    ]);
+    for (const file of [`${claudeSkill}/SKILL.md`, `${CLAUDE_PLUGIN}/README.md`]) {
+      const text = readFileSync(`${root}${file}`, 'utf8');
+      const launches = [...text.matchAll(/@bestagentkits\/render@[\w.-]+ ([\w./-]+)/gu)];
+      expect(launches.length, file).toBeGreaterThan(0);
+      for (const [, word = ''] of launches) {
+        // `--version` and a spec path such as page.yaml compile; anything else
+        // must be a shipped command.
+        if (word.startsWith('-') || /\.(?:ya?ml|json)$/u.test(word)) continue;
+        expect(shipped, `${file}: ${word}`).toContain(word);
+      }
+      for (const later of ['compose', 'repair', 'patch', 'audit-ui', 'motions', 'search-icons']) {
+        expect(text, file).not.toMatch(new RegExp(`\\b${later}\\b`, 'u'));
       }
     }
   });

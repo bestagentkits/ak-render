@@ -20,8 +20,8 @@ When the `ak-render` MCP tools are available (`catalog`, `search-catalog`,
 `spec` may be YAML or JSON text. `render` writes the HTML to `out` and returns
 only a summary.
 
-Otherwise use the CLI with the same pinned version. Every command accepts
-`--json` and never prompts:
+Otherwise use the CLI with the same pinned version. Every command except
+`mcp` accepts `--json`, and none of them prompts:
 
 ```bash
 npx -y @bestagentkits/render@0.3.0 --version
