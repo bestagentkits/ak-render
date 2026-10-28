@@ -73,6 +73,7 @@ describe('agent plugin manifests', () => {
       ],
     };
     const pinned = skill.slice(0, skill.indexOf(heading));
-    for (const term of unreleasedAfter[VERSION] ?? []) expect(pinned, String(term)).not.toMatch(term);
+    for (const term of unreleasedAfter[VERSION] ?? [])
+      expect(pinned, String(term)).not.toMatch(term);
   });
 });
