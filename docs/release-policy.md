@@ -60,13 +60,17 @@ release.
 2. Update `CHANGELOG.md` and bump both version locations, plus the plugin
    manifests and pins (`plugin.json`, `mcp.json`,
    `plugins/ak-render/.claude-plugin/plugin.json`, and every
-   `@bestagentkits/render@…` in `plugins/ak-render/`). Update the Claude plugin
-   skill for any new command; see [claude-plugin.md](./claude-plugin.md). The
-   root skill (`skills/ak-render/SKILL.md`) teaches the pinned version: fold its
+   `@bestagentkits/render@…` in `plugins/ak-render/`), and the version in
+   `packaging/chatgpt/plugin.json` (a unit test keeps it equal). Update the
+   Claude plugin skill for any new command; see
+   [claude-plugin.md](./claude-plugin.md). The root skill
+   (`skills/ak-render/SKILL.md`) teaches the pinned version: fold its
    `## Newer than X.Y.Z` section into the main text, rename that heading and the
    link to it to the new version, and update the block count and preset list
    stated for the old one. The plugin manifest test fails until the heading and
-   link match the new version.
+   link match the new version. A new ChatGPT plugin ZIP comes from
+   `pnpm plugin:chatgpt`; it needs a portal upload only when the listing, review
+   cases or endpoint changed.
 3. Build from a clean checkout: `pnpm install --frozen-lockfile && pnpm build`.
 4. Verify the artifact as a consumer:
    `pnpm test:package` (packs, installs into a temp project, imports the

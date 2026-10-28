@@ -1,0 +1,25 @@
+# Synthetic reviewer spec: a quarterly status report. All names and numbers are invented.
+version: 1
+meta:
+  title: Northwind Q3 status report
+blocks:
+  - type: hero
+    id: report-hero
+    eyebrow: Synthetic demo data
+    title: Northwind Q3 status report
+    description: Delivery, reliability and support numbers for an invented product team.
+  - type: stats
+    items:
+      - { label: Releases shipped, value: "12" }
+      - { label: Uptime, value: "99.95%" }
+      - { label: Median ticket time, value: 3.1 h }
+  - type: chart
+    kind: bar
+    title: Releases per month
+    labels: [Jul, Aug, Sep]
+    series:
+      - { label: Releases, values: [3, 4, 5] }
+  - type: callout
+    tone: info
+    title: Next quarter
+    text: Focus on onboarding speed and fewer paging alerts.

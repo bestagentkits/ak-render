@@ -152,6 +152,28 @@ describe('cloud OAuth: discovery', () => {
     expect(other.status).toBe(404);
   });
 
+  // The OpenAI plugin portal reads the exact token, not JSON, and only from
+  // the MCP hostname or a parent, so the Worker serves it beside /mcp.
+  it('serves the OpenAI domain-verification token verbatim only when it is set', async () => {
+    const path = `${ORIGIN}/.well-known/openai-apps-challenge`;
+    const { env } = oauthHarness();
+    expect((await handleRequest(new Request(path), env)).status).toBe(404);
+    const withToken = { ...env, OPENAI_APPS_CHALLENGE: ' challenge-token-123\n' };
+    const response = await handleRequest(new Request(path), withToken);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toBe('text/plain; charset=utf-8');
+    expect(await response.text()).toBe('challenge-token-123');
+    const head = await handleRequest(new Request(path, { method: 'HEAD' }), withToken);
+    expect(head.status).toBe(200);
+    const posted = await handleRequest(new Request(path, { method: 'POST' }), withToken);
+    expect(posted.status).toBe(404);
+    // Without OAuth the route answers the same: it never depends on sign-in.
+    const plain = { ...harness().env, OPENAI_APPS_CHALLENGE: 'challenge-token-123' };
+    expect(await (await handleRequest(new Request(path), plain)).text()).toBe(
+      'challenge-token-123',
+    );
+  });
+
   it('serves no metadata where OAuth is not enabled', async () => {
     const { env } = harness();
     const response = await handleRequest(
