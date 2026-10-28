@@ -46,4 +46,28 @@ describe('agent plugin manifests', () => {
     const skill = readFileSync(`${root}skills/ak-render/SKILL.md`, 'utf8');
     expect(skill).toMatch(/^---\nname: ak-render\ndescription: .+\n---\n/u);
   });
+
+  // The plugins pin VERSION, so the skill's main text must work on it. Commands
+  // and fields from later commits wait under a "Newer than VERSION" heading;
+  // a release bump fails here until that section is folded in.
+  it('teach only what the pinned package ships above the newer-release section', () => {
+    const skill = readFileSync(`${root}skills/ak-render/SKILL.md`, 'utf8');
+    const heading = `\n## Newer than ${VERSION}\n`;
+    expect(skill).toContain(heading);
+    const pinned = skill.slice(0, skill.indexOf(heading));
+    const unreleased = [
+      /\bcompose\b/u,
+      /\brepair\b/u,
+      /\bpatch\b/u,
+      /suggest/u,
+      /audit-ui|audit-motion|motion audit|motion studio/u,
+      /`motions?\b|motion:/u,
+      /search-icons|describe-icon|icon-packs/u,
+      /`decision`|`feedback`/u,
+      /\bderive\b|\brollup\b|`cite`/u,
+      /crimson-press|newspaper/u,
+      /`\*\*/u,
+    ];
+    for (const term of unreleased) expect(pinned, String(term)).not.toMatch(term);
+  });
 });

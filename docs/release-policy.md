@@ -57,7 +57,11 @@ release.
 ## Release procedure
 
 1. Confirm `main` (or the release branch) is green in CI.
-2. Update `CHANGELOG.md` and bump both version locations.
+2. Update `CHANGELOG.md` and bump both version locations. The plugin
+   manifests pin the same version, so fold the root skill's
+   `## Newer than X.Y.Z` section (`skills/ak-render/SKILL.md`) into its main
+   text and rename the heading to the new version; the plugin manifest test
+   fails until both match.
 3. Build from a clean checkout: `pnpm install --frozen-lockfile && pnpm build`.
 4. Verify the artifact as a consumer:
    `pnpm test:package` (packs, installs into a temp project, imports the
