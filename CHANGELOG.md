@@ -250,6 +250,13 @@ Release mechanics and the compatibility contract live in
 
 ### Changed
 
+- An unknown block type in `validate`, `render` and `patch` now reports up to
+  three near types in `details.closest` (typo matches first, then
+  `search-catalog` hits) instead of every registered type in `details.known`,
+  so the diagnostic shrinks from about 1.1 kB to under 300 bytes. Its code,
+  path and fix hints are unchanged; `catalog` and `search-catalog` list every
+  type. Breaking for any client that read `details.known` from this
+  diagnostic.
 - An unsupported `MCP-Protocol-Version` header now answers JSON-RPC `-32022`
   with `data: { supported, requested }` instead of `-32600` (still HTTP 400).
 - The remote MCP instructions name `motions` and `audit-motion`, so every

@@ -85,7 +85,7 @@ describe('normalizer', () => {
     expect(error.path).toBe('$.blocks[0].blocks');
   });
 
-  it('rejects an unknown block type with the type and the known list', () => {
+  it('rejects an unknown block type with the type and its closest types', () => {
     const error = errorFrom({
       version: 1,
       meta: { title: 'X' },
@@ -93,7 +93,42 @@ describe('normalizer', () => {
     });
     expect(error.code).toBe('SPEC_UNKNOWN_BLOCK');
     expect(error.path).toBe('$.blocks[0].type');
-    expect(JSON.stringify(error.details?.known)).toContain('carousel');
+    expect(error.details).toMatchObject({ type: 'carusel', closest: ['carousel'] });
+    expect(error.details).not.toHaveProperty('known');
+    expect(error.message).toContain('unknown block type "carusel"; closest: carousel');
+    expect(error.message).toContain('search-catalog');
+  });
+
+  it('suggests intent-search hits for an unknown type that is no typo, never the whole roster', () => {
+    const error = errorFrom({
+      version: 1,
+      meta: { title: 'X' },
+      blocks: [{ type: 'pricing-table' }],
+    });
+    const closest = error.details?.closest as string[];
+    expect(closest[0]).toBe('pricing');
+    expect(closest.length).toBeLessThanOrEqual(3);
+    expect(error.details).not.toHaveProperty('known');
+  });
+
+  it('ranks typo matches ahead of intent-search hits', () => {
+    const error = errorFrom({
+      version: 1,
+      meta: { title: 'X' },
+      blocks: [{ type: 'tabel' }],
+    });
+    const closest = error.details?.closest as string[];
+    expect(closest[0]).toBe('table');
+  });
+
+  it('suggests nothing for an unknown type too long to be a search query', () => {
+    const error = errorFrom({
+      version: 1,
+      meta: { title: 'X' },
+      blocks: [{ type: 'z'.repeat(201) }],
+    });
+    expect(error.code).toBe('SPEC_UNKNOWN_BLOCK');
+    expect(error.details?.closest).toEqual([]);
   });
 
   it('rejects an unknown property instead of silently ignoring it', () => {
