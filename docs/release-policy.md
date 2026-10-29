@@ -57,16 +57,20 @@ release.
 ## Release procedure
 
 1. Confirm `main` (or the release branch) is green in CI.
-2. Update `CHANGELOG.md` and bump both version locations, plus the version
-   and package pin in `.claude-plugin/plugin.json`, `plugin.json` and
-   `mcp.json`, and the version in `packaging/chatgpt/plugin.json` (a unit test
-   keeps it equal). The root skill (`skills/ak-render/SKILL.md`) teaches the pinned
-   version: fold its `## Newer than X.Y.Z` section into the main text, rename
-   that heading and the link to it to the new version, and update the block
-   count and preset list stated for the old one. The plugin manifest test fails
-   until the heading and link match the new version. A new ChatGPT plugin ZIP
-   comes from `pnpm plugin:chatgpt`; it needs a portal upload only when the
-   listing, review cases or endpoint changed.
+2. Update `CHANGELOG.md` and bump both version locations, plus the plugin
+   manifests and pins (`plugin.json`, `mcp.json`,
+   `plugins/ak-render/.claude-plugin/plugin.json`, and every
+   `@bestagentkits/render@…` in `plugins/ak-render/`), and the version in
+   `packaging/chatgpt/plugin.json` (a unit test keeps it equal). Update the
+   Claude plugin skill for any new command; see
+   [claude-plugin.md](./claude-plugin.md). The root skill
+   (`skills/ak-render/SKILL.md`) teaches the pinned version: fold its
+   `## Newer than X.Y.Z` section into the main text, rename that heading and the
+   link to it to the new version, and update the block count and preset list
+   stated for the old one. The plugin manifest test fails until the heading and
+   link match the new version. A new ChatGPT plugin ZIP comes from
+   `pnpm plugin:chatgpt`; it needs a portal upload only when the listing, review
+   cases or endpoint changed.
 3. Build from a clean checkout: `pnpm install --frozen-lockfile && pnpm build`.
 4. Verify the artifact as a consumer:
    `pnpm test:package` (packs, installs into a temp project, imports the
@@ -77,7 +81,7 @@ release.
 6. Tag the released commit (`vX.Y.Z` or `vX.Y.Z-next.N`) and attach the
    changelog section as the release notes.
 7. Verify the published tarball from a clean temporary project before announcing
-   the release.
+   the release, and run `pnpm test:plugin` against the published version.
 
 Steps 5 through 7 require registry credentials that the repository does not
 hold. When credentials are unavailable, prepare the release (changelog, version

@@ -63,7 +63,14 @@ function motionSettle(el, attribute, done) {
   if (!motionAllowed() || ms === 0 || doc.hidden) { finish(); return; }
   el.addEventListener('animationend', onEnd, false);
   el.addEventListener('animationcancel', onEnd, false);
-  timer = window.setTimeout(finish, ms + 150);
+  // Arm the fallback once a frame has rendered the attribute. Armed earlier, a
+  // busy main thread lets it fall due before that frame, so it clears the
+  // attribute and the animation never starts.
+  var arm = function () {
+    if (!finished) timer = window.setTimeout(finish, ms + 150);
+  };
+  if (typeof window.requestAnimationFrame === 'function') window.requestAnimationFrame(arm);
+  else arm();
 }
 function motionCancel(el, attribute) {
   motionToken(el, attribute, {});

@@ -45,5 +45,6 @@ Inlining in the compiler is the point, not overhead: the theme stylesheet, embed
 - After an intentional output change, run `pnpm build`, `pnpm snapshots:generate` and `pnpm gallery:generate`, then commit the regenerated files.
 - Verify with `REVIEW.md`: run the gates, then check the screenshots at 1440, 768 and 375 in light and dark.
 - When gallery content or routes change, keep the discovery surfaces it advertises (meta and share tags) in sync.
+- `plugins/ak-render/` is the folder people install as the Claude plugin. Keep it self-contained (regular files only, no paths outside it) and keep its skill to what the pinned package version ships; `docs/claude-plugin.md` owns the rules and `pnpm test:plugin` checks the published package.
 - Do not commit to `main`. Use a branch and a PR with conventional commits.
 - Claim an issue before working on it: assign yourself and keep one state label current (`in progress`, `blocked`, `in review` during agent review, `done` once the PR is open, `shipped` after merge to `main`). Check those labels first so parallel contributors and agents do not duplicate work. File unrelated gaps you find as new issues, and comment on related or duplicate issues with a reference.

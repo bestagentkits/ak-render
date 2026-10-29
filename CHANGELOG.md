@@ -11,6 +11,14 @@ Release mechanics and the compatibility contract live in
 
 ### Added
 
+- Claude plugin folder. `plugins/ak-render/` is a self-contained plugin for
+  the Claude plugin directory: a manifest that starts the pinned
+  `@bestagentkits/render` MCP server, a skill written for that version with
+  report, dashboard and architecture review examples, an icon, screenshots, a
+  README with a supported-surface matrix, privacy and support details, and the
+  license. The repository marketplace now installs that folder instead of the
+  repository root. `pnpm test:plugin` smoke-tests it against the published
+  package. See [docs/claude-plugin.md](./docs/claude-plugin.md).
 - ChatGPT plugin package. `packaging/chatgpt/` connects ChatGPT to the hosted
   MCP server at `https://render.agentkit.best/mcp` with AgentKit OAuth, so no
   Node or npm is needed; the local stdio manifests are unchanged.
@@ -271,6 +279,13 @@ Release mechanics and the compatibility contract live in
   refused it. A deployment without OAuth keeps anonymous discovery.
 
 ### Fixed
+
+- The render summary's `bytes` is the UTF-8 size of the emitted file. It used
+  to count UTF-16 code units, so a page with any non-ASCII character reported
+  fewer bytes than `--out` wrote.
+- A tab panel or `fade-swap` block now fades in even when the main thread is
+  busy right after the change. The fallback that clears the entering mark
+  used to fall due before the first frame and skip the fade.
 
 - Charts no longer draw at `NaN` or stop compiling on extreme or near-equal
   numbers. A dataset value such as `1e308` used to pass `validate` while the
