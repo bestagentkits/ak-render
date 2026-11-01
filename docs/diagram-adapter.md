@@ -145,6 +145,25 @@ the print stylesheet opens it through `::details-content`, and where a browser
 lacks that selector the runtime opens it for the print and folds it again
 afterwards.
 
+The description reads every ak:diagram archetype the same way the adapter does
+(`src/diagram/semantic-graph.ts`), and shows only what the spec declares:
+
+| `diagram_type` | Nodes | Relationships (label fields) | Groups |
+| --- | --- | --- | --- |
+| `architecture` | `components` | `connections` (`label`, `protocol`) | `boundaries[].components` |
+| `workflow` | `steps` | `transitions` (`label`, `condition`) | `lanes`, by `step.lane` |
+| `sequence` | `participants` | `messages`, numbered in order (`label`) | — |
+| `dataflow` | `nodes` | `flows` (`label`, `schema_type`) | `stages` by `order`, by `node.stage` |
+| `lifecycle` | `states` | `transitions` (`event`, `action`) | `lanes`, by `state.lane` |
+| none or other | `components`, `nodes` | `connections`, `edges` (`label`) | — |
+
+A simple chain without groups is drawn as a flow; anything else lists the
+groups with their members, then every relationship. `validate` warns at the
+exact spec path when a relationship, lane, stage or boundary member names an
+undeclared id, when a node id repeats or is missing, when a typed diagram has
+no nodes, and when `diagram_type` is not one of the archetypes above. The
+hosted renderer has no adapter, so this description is what its pages show.
+
 ## Size and scrolling
 
 Adapter output is shown at its natural size. A diagram wider than the column is

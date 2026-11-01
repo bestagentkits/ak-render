@@ -272,6 +272,13 @@ Release mechanics and the compatibility contract live in
 
 ### Fixed
 
+- `diagram-panel` without an adapter (including every hosted render) shows typed
+  `workflow`, `sequence`, `lifecycle` and `dataflow` diagrams in full. The
+  fallback read only `components`, `nodes` and `connections`, so steps,
+  participants, states, transitions, messages and flows were dropped with no
+  warning. Groups list their members, sequence messages keep their order, and
+  `validate` warns at the exact path of an undeclared reference (#128).
+
 - Charts no longer draw at `NaN` or stop compiling on extreme or near-equal
   numbers. A dataset value such as `1e308` used to pass `validate` while the
   chart's range overflowed to `Infinity`, so the page carried `NaN`
