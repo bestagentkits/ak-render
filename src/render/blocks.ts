@@ -1,4 +1,5 @@
 import { runDiagramAdapter } from '../diagram/adapter.js';
+import { readDiagramGraph } from '../diagram/semantic-graph.js';
 import type { IconSize } from '../icons/icon-packs.js';
 import { renderIcon } from '../icons/icon-render.js';
 import type { IrNode } from '../ir.js';
@@ -646,10 +647,6 @@ const RENDERERS: Record<string, Renderer> = {
 
   'diagram-panel': (node, context) => {
     const spec = isPlainObject(node.props.spec) ? node.props.spec : {};
-    const asObjects = (value: unknown): Record<string, JsonValue>[] =>
-      (Array.isArray(value) ? value.filter(isPlainObject) : []) as Record<string, JsonValue>[];
-    const described = [...asObjects(spec.components), ...asObjects(spec.nodes)];
-    const edges = asObjects(spec.connections);
     const meta = isPlainObject(spec.meta) ? (spec.meta as Record<string, JsonValue>) : {};
     const diagramTitle = str(meta.title, stringProp(node, 'title', 'Diagram'));
     const caption = stringProp(node, 'caption');
@@ -657,7 +654,7 @@ const RENDERERS: Record<string, Renderer> = {
     // The semantic fallback is always available: it is the only rendering when
     // no adapter is installed, and it stays in the document as the accessible
     // description when one is.
-    const fallbackBody = renderDiagramFallback(described, edges);
+    const fallbackBody = renderDiagramFallback(readDiagramGraph(spec as Record<string, JsonValue>));
 
     const adapterResult = runDiagramAdapter(context.diagramAdapter, {
       spec: (node.props.spec ?? null) as JsonValue,

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { readDiagramGraph } from '../../src/diagram/semantic-graph.js';
 import { chainOrder, renderDiagramFallback } from '../../src/render/diagram-fallback.js';
+
+const untyped = (nodes: object[], connections: object[]) =>
+  readDiagramGraph({ nodes, connections } as never);
 
 const nodes = [
   { id: 'a', label: 'Alpha' },
@@ -29,11 +33,10 @@ describe('diagram fallback', () => {
 
   it('draws a chain as a flow with labelled connectors', () => {
     const html = renderDiagramFallback(
-      nodes.map((node) => ({ ...node })),
-      [
+      untyped(nodes, [
         { from: 'a', to: 'b', label: 'parsed' },
         { from: 'b', to: 'c', label: '<escaped>' },
-      ],
+      ]),
     );
     expect(html.startsWith('<ol class="ak-flow">')).toBe(true);
     expect(html.match(/class="ak-flow-edge"/gu)).toHaveLength(2);
@@ -41,10 +44,7 @@ describe('diagram fallback', () => {
   });
 
   it('falls back to nodes plus an explicit connection list for any other graph', () => {
-    const html = renderDiagramFallback(
-      nodes.map((node) => ({ ...node })),
-      [{ from: 'a', to: 'c', label: 'skip' }],
-    );
+    const html = renderDiagramFallback(untyped(nodes, [{ from: 'a', to: 'c', label: 'skip' }]));
     expect(html).toContain('<ul class="ak-flow-nodes">');
     expect(html).toContain('<ul class="ak-flow-links">');
     expect(html).not.toContain('ak-flow-edge');

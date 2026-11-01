@@ -1,27 +1,29 @@
 /**
  * Structured diagram fallback.
  *
- * Without an adapter a diagram still has to read as a diagram. When the
- * connections form one simple chain (every node has at most one way in and one
- * way out, and the chain visits every node), the nodes are drawn as a flow with
- * labelled connectors. Any other graph is shown as a set of nodes plus an
- * explicit connection list, because drawing arrows between nodes that are not
- * connected would state something the spec does not.
+ * Without an adapter a diagram still has to read as a diagram. It reads the
+ * semantic graph of any ak:diagram archetype (see `semantic-graph.ts`):
+ *
+ * - A sequence keeps its messages in their declared, numbered order.
+ * - Declared groups (boundaries, lanes, stages) list their member nodes under
+ *   the group label, followed by the explicit connection list.
+ * - When the connections form one simple chain (every node has at most one way
+ *   in and one way out, and the chain visits every node), the nodes are drawn
+ *   as a flow with labelled connectors.
+ * - Any other graph is shown as a set of nodes plus an explicit connection
+ *   list, because drawing arrows between nodes that are not connected would
+ *   state something the spec does not.
  */
 
-import type { JsonValue } from '../json.js';
-import { escapeText } from './escape.js';
+import type {
+  DiagramEdge,
+  DiagramGroup,
+  DiagramNode,
+  SemanticGraph,
+} from '../diagram/semantic-graph.js';
+import { escapeAttribute, escapeText } from './escape.js';
 
-export interface DiagramNode {
-  id: string;
-  label: string;
-}
-
-export interface DiagramEdge {
-  from: string;
-  to: string;
-  label: string;
-}
+export type { DiagramEdge, DiagramNode } from '../diagram/semantic-graph.js';
 
 /** Order nodes along the single chain the edges describe, or return undefined when they do not form one. */
 export function chainOrder(nodes: DiagramNode[], edges: DiagramEdge[]): DiagramNode[] | undefined {
@@ -72,40 +74,55 @@ function flowMarkup(ordered: DiagramNode[], edges: DiagramEdge[]): string {
   return `<ol class="ak-flow">${items.join('')}</ol>`;
 }
 
-function graphMarkup(nodes: DiagramNode[], edges: DiagramEdge[]): string {
-  const nodeList =
-    nodes.length === 0
-      ? ''
-      : `<ul class="ak-flow-nodes">${nodes.map((node) => `<li>${nodeMarkup(node)}</li>`).join('')}</ul>`;
-  const edgeList =
-    edges.length === 0
-      ? ''
-      : `<ul class="ak-flow-links">${edges
-          .map(
-            (edge) =>
-              `<li><code>${escapeText(edge.from)}</code><span class="ak-flow-arrow" aria-hidden="true">\u2192</span><span class="ak-sr">to</span><code>${escapeText(
-                edge.to,
-              )}</code>${edge.label === '' ? '' : `<span class="ak-flow-link-label">${escapeText(edge.label)}</span>`}</li>`,
-          )
-          .join('')}</ul>`;
-  return `${nodeList}${edgeList}`;
+function nodeList(nodes: DiagramNode[]): string {
+  return nodes.length === 0
+    ? ''
+    : `<ul class="ak-flow-nodes">${nodes.map((node) => `<li>${nodeMarkup(node)}</li>`).join('')}</ul>`;
 }
 
-function text(value: JsonValue | undefined): string {
-  return typeof value === 'string' ? value : '';
+function linkList(edges: DiagramEdge[], ordered: boolean): string {
+  if (edges.length === 0) return '';
+  const tag = ordered ? 'ol' : 'ul';
+  const items = edges
+    .map(
+      (edge) =>
+        `<li><code>${escapeText(edge.from)}</code><span class="ak-flow-arrow" aria-hidden="true">\u2192</span><span class="ak-sr">to</span><code>${escapeText(
+          edge.to,
+        )}</code>${edge.label === '' ? '' : `<span class="ak-flow-link-label">${escapeText(edge.label)}</span>`}</li>`,
+    )
+    .join('');
+  return `<${tag} class="ak-flow-links${ordered ? ' ak-flow-steps' : ''}">${items}</${tag}>`;
 }
 
-/** Render the fallback body for the described nodes and connections. */
-export function renderDiagramFallback(
-  described: Record<string, JsonValue>[],
-  connections: Record<string, JsonValue>[],
-): string {
-  const nodes = described.map((item) => ({ id: text(item.id), label: text(item.label) }));
-  const edges = connections.map((item) => ({
-    from: text(item.from),
-    to: text(item.to),
-    label: text(item.label),
-  }));
-  const ordered = chainOrder(nodes, edges);
-  return ordered === undefined ? graphMarkup(nodes, edges) : flowMarkup(ordered, edges);
+function groupedMarkup(nodes: DiagramNode[], groups: DiagramGroup[]): string {
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const grouped = new Set<string>();
+  const sections = groups
+    .filter((group) => group.members.length > 0)
+    .map((group) => {
+      const members = group.members.flatMap((id) => {
+        grouped.add(id);
+        const node = byId.get(id);
+        return node === undefined ? [] : [node];
+      });
+      const label = group.label === '' ? group.id : group.label;
+      return `<div class="ak-flow-group" role="group" aria-label="${escapeAttribute(label)}"><p class="ak-flow-group-label">${escapeText(label)}</p>${nodeList(members)}</div>`;
+    });
+  const rest = nodes.filter((node) => !grouped.has(node.id));
+  return `<div class="ak-flow-groups">${sections.join('')}${
+    rest.length === 0 ? '' : `<div class="ak-flow-group">${nodeList(rest)}</div>`
+  }</div>`;
+}
+
+/** Render the fallback body for a diagram's semantic graph. */
+export function renderDiagramFallback(graph: SemanticGraph): string {
+  const { nodes, edges, groups, ordered } = graph;
+  if (ordered) return `${nodeList(nodes)}${linkList(edges, true)}`;
+  if (groups.some((group) => group.members.length > 0)) {
+    return `${groupedMarkup(nodes, groups)}${linkList(edges, false)}`;
+  }
+  const chain = chainOrder(nodes, edges);
+  return chain === undefined
+    ? `${nodeList(nodes)}${linkList(edges, false)}`
+    : flowMarkup(chain, edges);
 }
