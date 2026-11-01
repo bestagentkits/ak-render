@@ -21,6 +21,7 @@ import {
   pathIndex,
   pathKey,
 } from '../diagnostics.js';
+import { checkDiagramGraph } from '../diagram/semantic-graph.js';
 import { isRenderError, RenderError } from '../errors.js';
 import { derivedNodeId } from '../hash.js';
 import { ICON_PROFILE_NAMES, isIconProfileName } from '../icons/icon-packs.js';
@@ -1019,6 +1020,18 @@ function postChecks(
           path: pathKey(node.path, 'spec'),
           nodeId: node.id,
         });
+      } else {
+        // The fallback (and the hosted renderer, which has no adapter) reads the
+        // same graph, so a broken reference would silently drop content.
+        for (const issue of checkDiagramGraph(spec as Record<string, JsonValue>)) {
+          bag.add({
+            code: 'SPEC_VALIDATION_ERROR',
+            severity: 'warning',
+            message: issue.message,
+            path: pathKey(pathKey(node.path, 'spec'), issue.path),
+            nodeId: node.id,
+          });
+        }
       }
     }
 
