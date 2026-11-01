@@ -106,12 +106,12 @@ function groupedMarkup(nodes: DiagramNode[], groups: DiagramGroup[]): string {
         return node === undefined ? [] : [node];
       });
       const label = group.label === '' ? group.id : group.label;
-      return `<div class="ak-flow-group" role="group" aria-label="${escapeAttribute(label)}"><p class="ak-flow-group-label">${escapeText(label)}</p>${nodeList(members)}</div>`;
+      return label === ''
+        ? `<div class="ak-flow-group">${nodeList(members)}</div>`
+        : `<div class="ak-flow-group" role="group" aria-label="${escapeAttribute(label)}"><p class="ak-flow-group-label">${escapeText(label)}</p>${nodeList(members)}</div>`;
     });
   const rest = nodes.filter((node) => !grouped.has(node.id));
-  return `<div class="ak-flow-groups">${sections.join('')}${
-    rest.length === 0 ? '' : `<div class="ak-flow-group">${nodeList(rest)}</div>`
-  }</div>`;
+  return `<div class="ak-flow-groups">${sections.join('')}${nodeList(rest)}</div>`;
 }
 
 /** Render the fallback body for a diagram's semantic graph. */

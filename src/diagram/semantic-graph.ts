@@ -108,12 +108,21 @@ function text(value: JsonValue | undefined): string {
   return typeof value === 'string' ? value : '';
 }
 
-function firstText(item: JsonObject, fields: readonly string[]): string {
-  for (const field of fields) {
-    const value = text(item[field]);
-    if (value !== '') return value;
-  }
-  return '';
+/** Every declared label field, in schema order, so no condition or action is dropped. */
+function joinedText(item: JsonObject, fields: readonly string[]): string {
+  return fields
+    .map((field) => text(item[field]))
+    .filter((value) => value !== '')
+    .join(' \u00b7 ');
+}
+
+/** Object items with their authored index, so diagnostics point at the real element. */
+function indexedObjects(value: JsonValue | undefined): [JsonObject, number][] {
+  return Array.isArray(value)
+    ? value.flatMap((item, index): [JsonObject, number][] =>
+        isObject(item) ? [[item, index]] : [],
+      )
+    : [];
 }
 
 function toNode(item: JsonObject): DiagramNode {
@@ -121,7 +130,7 @@ function toNode(item: JsonObject): DiagramNode {
 }
 
 function toEdge(item: JsonObject, labelFields: readonly string[]): DiagramEdge {
-  return { from: text(item.from), to: text(item.to), label: firstText(item, labelFields) };
+  return { from: text(item.from), to: text(item.to), label: joinedText(item, labelFields) };
 }
 
 /** The archetype a spec declares, or undefined for an untyped or unknown spec. */
@@ -156,7 +165,8 @@ function readGroups(
     if ('nodeField' in membership) {
       members = nodeItems
         .filter((item) => id !== '' && text(item[membership.nodeField]) === id)
-        .map((item) => text(item.id));
+        .map((item) => text(item.id))
+        .filter((nodeId, index, all) => all.indexOf(nodeId) === index);
     } else {
       const listed = new Set(
         (Array.isArray(group[membership.groupField])
@@ -164,7 +174,9 @@ function readGroups(
           : []
         ).filter((value): value is string => typeof value === 'string'),
       );
-      members = nodeIds.filter((nodeId) => listed.has(nodeId));
+      members = nodeIds.filter(
+        (nodeId, index) => listed.has(nodeId) && nodeIds.indexOf(nodeId) === index,
+      );
     }
     return { id, label: text(group.label), members };
   });
@@ -228,7 +240,10 @@ export function checkDiagramGraph(spec: JsonObject): DiagramGraphIssue[] {
     });
   }
   const graph = readDiagramGraph(spec);
+  // An untyped spec may be adapter-only input (Mermaid source and the like), so
+  // an empty graph is only reported for a typed archetype.
   if (graph.nodes.length === 0) {
+    if (graph.type === undefined) return issues;
     issues.push({
       path: graph.nodeFields[0] ?? 'nodes',
       message: `the diagram declares no ${graph.nodeFields.join(' or ')}, so it shows nothing without an adapter`,
@@ -237,7 +252,7 @@ export function checkDiagramGraph(spec: JsonObject): DiagramGraphIssue[] {
   }
   const seen = new Set<string>();
   for (const field of graph.nodeFields) {
-    objects(spec[field]).forEach((item, index) => {
+    for (const [item, index] of indexedObjects(spec[field])) {
       const id = text(item.id);
       if (id === '') {
         issues.push({ path: `${field}[${index}].id`, message: 'a diagram node needs an id' });
@@ -248,10 +263,10 @@ export function checkDiagramGraph(spec: JsonObject): DiagramGraphIssue[] {
         });
       }
       seen.add(id);
-    });
+    }
   }
   for (const field of graph.edgeFields) {
-    objects(spec[field]).forEach((item, index) => {
+    for (const [item, index] of indexedObjects(spec[field])) {
       for (const end of ['from', 'to'] as const) {
         const id = text(item[end]);
         if (!seen.has(id)) {
@@ -263,6 +278,43 @@ export function checkDiagramGraph(spec: JsonObject): DiagramGraphIssue[] {
                 : `"${id}" is not a declared diagram node; declare it or fix the reference`,
           });
         }
+      }
+    }
+  }
+  issues.push(...checkGroupReferences(spec, seen));
+  return issues;
+}
+
+/** Group membership that names an undeclared group or node would silently drop a node from its group. */
+function checkGroupReferences(spec: JsonObject, nodeIds: ReadonlySet<string>): DiagramGraphIssue[] {
+  const type = diagramArchetype(spec);
+  const fields = type === undefined ? undefined : DIAGRAM_ARCHETYPES[type];
+  if (fields?.groups === undefined || fields.membership === undefined) return [];
+  const issues: DiagramGraphIssue[] = [];
+  const groups = indexedObjects(spec[fields.groups]);
+  const membership = fields.membership;
+  if ('nodeField' in membership) {
+    const groupIds = new Set(groups.map(([group]) => text(group.id)));
+    for (const [item, index] of indexedObjects(spec[fields.nodes])) {
+      const ref = item[membership.nodeField];
+      if (typeof ref === 'string' && !groupIds.has(ref)) {
+        issues.push({
+          path: `${fields.nodes}[${index}].${membership.nodeField}`,
+          message: `"${ref}" is not a declared ${fields.groups} id; declare it or fix the reference`,
+        });
+      }
+    }
+    return issues;
+  }
+  for (const [group, index] of groups) {
+    const listed = group[membership.groupField];
+    if (!Array.isArray(listed)) continue;
+    listed.forEach((ref, member) => {
+      if (typeof ref === 'string' && !nodeIds.has(ref)) {
+        issues.push({
+          path: `${fields.groups}[${index}].${membership.groupField}[${member}]`,
+          message: `"${ref}" is not a declared diagram node; declare it or fix the reference`,
+        });
       }
     });
   }

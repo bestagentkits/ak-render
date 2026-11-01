@@ -149,6 +149,53 @@ describe('diagram semantic graph', () => {
   });
 });
 
+describe('diagram graph review cases', () => {
+  it('points at the authored index when a list holds non-objects', () => {
+    const issues = checkDiagramGraph({
+      diagram_type: 'workflow',
+      steps: ['junk', { id: 'a' }, { id: 'a' }],
+      transitions: ['junk', { from: 'a', to: 'ghost' }],
+    } as never);
+    expect(issues.map((issue) => issue.path)).toEqual(['steps[2].id', 'transitions[1].to']);
+  });
+
+  it('reports undeclared lanes, stages and boundary members', () => {
+    const lane = checkDiagramGraph({
+      diagram_type: 'workflow',
+      lanes: [{ id: 'ci', label: 'CI' }],
+      steps: [{ id: 'a', lane: 'nope' }],
+      transitions: [],
+    } as never);
+    expect(lane.map((issue) => issue.path)).toEqual(['steps[0].lane']);
+    const boundary = checkDiagramGraph({
+      diagram_type: 'architecture',
+      boundaries: [{ id: 'vpc', label: 'VPC', components: ['a', 'ghost'] }],
+      components: [{ id: 'a' }],
+      connections: [],
+    } as never);
+    expect(boundary.map((issue) => issue.path)).toEqual(['boundaries[0].components[1]']);
+  });
+
+  it('keeps every declared edge label field', () => {
+    const graph = readDiagramGraph({
+      diagram_type: 'lifecycle',
+      states: [{ id: 'a' }, { id: 'b' }],
+      transitions: [{ from: 'a', to: 'b', event: 'pay', action: 'send receipt' }],
+    } as never);
+    expect(graph.edges[0]?.label).toBe('pay \u00b7 send receipt');
+  });
+
+  it('does not frame ungrouped nodes as an undeclared group', () => {
+    const html = renderDiagramFallback(readDiagramGraph(specs.architecture as never));
+    expect(html.match(/class="ak-flow-group"/gu)).toHaveLength(1);
+    expect(html).toContain('<code>web</code>');
+  });
+
+  it('does not warn about an empty untyped spec meant only for an adapter', () => {
+    expect(checkDiagramGraph({ source: 'graph TD; a-->b' } as never)).toEqual([]);
+  });
+});
+
 describe('diagram-panel without an adapter', () => {
   const page = (spec: object) => ({
     version: 1,
