@@ -3,6 +3,8 @@ import { arch, cpus, platform, release, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, type Page, test } from '@playwright/test';
+import { createModelResolver } from '../../src/assets/model-assets.js';
+import { createPointCloudResolver } from '../../src/assets/point-cloud-assets.js';
 import { ExportError, exportPage, pickBrowser } from '../../src/export/page-export.js';
 import { compile, VERSION } from '../../src/index.js';
 import { browserWorkspace } from './browser-workspace.js';
@@ -12,14 +14,30 @@ import { browserWorkspace } from './browser-workspace.js';
 // it: that compares draws against the committed baseline, and
 // `pnpm bench:3d:update` (Playwright's --update-snapshots) rewrites it.
 
+// One representative fixture per 3D widget.
 const FIXTURES = [
   'scene-3d-basic',
-  'scene-3d-dense',
   'network-3d-basic',
-  'network-3d-stress',
   'scatter-3d-20k',
   'bars-3d-dense',
+  'model-3d-crate',
+  'globe-3d-routes',
+  'product-3d-speaker',
+  'particles-3d-galaxy',
+  'shader-3d-controls',
+  'text-3d-hero',
+  'point-cloud-3d-basic',
+  'timeline-3d-space',
+  'morph-3d-shapes',
+  'terrain-3d-alpine',
 ] as const;
+/**
+ * Fixtures whose runtime does not yet react to WebGL context loss. The bench
+ * asserts the gap as it stands, so a fix fails here and must remove the entry.
+ */
+const CONTEXT_LOSS_GAPS: Record<string, string> = {
+  'model-3d-crate': 'https://github.com/bestagentkits/ak-render/issues/177',
+};
 const VIEWPORTS = [
   { name: 'mobile', width: 375, height: 812, scale: 1, isMobile: true, hasTouch: true },
   { name: 'tablet', width: 768, height: 1024, scale: 1, isMobile: true, hasTouch: true },
@@ -209,18 +227,31 @@ function markdown(artifact: Artifact): string {
     );
   }
   lines.push('', 'Export time includes launching the browser.');
+  const gaps = Object.entries(CONTEXT_LOSS_GAPS);
+  if (gaps.length > 0) {
+    lines.push(
+      '',
+      'Known gaps: a context loss state of `ready → ready` means the runtime ignores WebGL context loss.',
+      '',
+      ...gaps.map(([fixture, issue]) => `- ${fixture}: ${issue}`),
+    );
+  }
   return `${lines.join('\n')}\n`;
 }
 
 test('3D benchmark @bench', async ({ browser, browserName }, testInfo) => {
-  test.setTimeout(400_000);
+  test.setTimeout(1_200_000);
   const results: FixtureRun[] = [];
   let gpu = '';
   const exportBrowser = (await pickBrowser()).path;
 
   for (const name of FIXTURES) {
     const spec = readFileSync(join(fixtureDir, `${name}.yaml`), 'utf8');
-    const html = compile(spec, { source: name }).html;
+    const html = compile(spec, {
+      source: name,
+      modelResolver: createModelResolver(fixtureDir),
+      pointCloudResolver: createPointCloudResolver(fixtureDir),
+    }).html;
     const url = `file://${workspace.write(name, html)}`;
     const viewports: ViewportRun[] = [];
 
@@ -331,10 +362,12 @@ test('3D benchmark @bench', async ({ browser, browserName }, testInfo) => {
     for (const run of fixture.viewports) {
       const label = `${fixture.fixture} ${run.viewport}`;
       expect(run.calls, `${label} draws`).toBeGreaterThan(0);
-      expect(run.contextLoss, `${label} context loss`).toEqual({
-        lostState: 'lost',
-        restoredState: 'ready',
-      });
+      const gap = CONTEXT_LOSS_GAPS[fixture.fixture];
+      expect(run.contextLoss, `${label} context loss${gap ? ` (known gap ${gap})` : ''}`).toEqual(
+        gap
+          ? { lostState: 'ready', restoredState: 'ready' }
+          : { lostState: 'lost', restoredState: 'ready' },
+      );
       expect(run.disposal, `${label} disposal`).toEqual({
         cyclesLeak: false,
         emptyAfterUnmount: true,
