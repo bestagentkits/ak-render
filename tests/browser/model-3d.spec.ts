@@ -40,7 +40,7 @@ const violations = (p: Page) => p.evaluate(() => (window as unknown as { __csp: 
 const model = (p: Page) => p.locator('[data-ak-3d="model"]');
 const ready = (p: Page) => expect(model(p)).toHaveAttribute('data-ak-3d-state', 'ready');
 
-test.describe('model-3d', () => {
+test.describe('model-3d', { tag: '@gl' }, () => {
   for (const [kind, url] of [
     ['gltf with relative files', gltfPage],
     ['glb with an embedded texture', glbPage],

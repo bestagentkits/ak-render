@@ -32,7 +32,7 @@ async function visibleServices(page: Page): Promise<string[]> {
     );
 }
 
-test.describe('network-3d', () => {
+test.describe('network-3d', { tag: '@gl' }, () => {
   test('renders a live WebGL frame with nodes and links, offline', async ({ page }) => {
     const requests: string[] = [];
     page.on('request', (request) => {
@@ -225,7 +225,6 @@ test.describe('network-3d', () => {
   }
 
   test('the 1000-node stress graph mounts in a handful of draw calls', async ({ page }) => {
-    test.setTimeout(60_000);
     await page.goto(stress());
     await ready(page);
     const stats = await page.evaluate(() =>
@@ -240,7 +239,7 @@ test.describe('network-3d', () => {
   });
 });
 
-test.describe('network-3d export', () => {
+test.describe('network-3d export', { tag: '@gl' }, () => {
   test.describe.configure({ timeout: 90_000 });
   const outDir = workspace.write('placeholder', '').replace(/[^\\/]+$/u, '');
 
