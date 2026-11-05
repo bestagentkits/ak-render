@@ -36,6 +36,9 @@ export default defineConfig({
       grep: GL_TAG,
       grepInvert: BENCH,
       timeout: GL_TIMEOUT_MS,
+      // Software GL is CPU-bound and the GL specs land in one shard, so four
+      // scenes rasterizing at once starve each other past the budget on CI.
+      workers: process.env.CI ? 2 : 4,
       use: { ...devices['Desktop Chromium'] },
     },
   ],
