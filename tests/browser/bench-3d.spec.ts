@@ -12,7 +12,7 @@ import { browserWorkspace } from './browser-workspace.js';
 // it: that compares draws against the committed baseline, and
 // `pnpm bench:3d:update` (Playwright's --update-snapshots) rewrites it.
 
-const FIXTURES = ['scene-3d-basic', 'scene-3d-dense'] as const;
+const FIXTURES = ['scene-3d-basic', 'scene-3d-dense', 'bars-3d-dense'] as const;
 const VIEWPORTS = [
   { name: 'mobile', width: 375, height: 812, scale: 1, isMobile: true, hasTouch: true },
   { name: 'tablet', width: 768, height: 1024, scale: 1, isMobile: true, hasTouch: true },

@@ -28,5 +28,25 @@ export const THREE_CSS = `
 .ak-3d-objects button:focus-visible{outline:2px solid var(--ak-color-accent);outline-offset:2px}
 .ak-3d-objects .ak-3d-name{font-weight:600}
 .ak-3d-note{color:var(--ak-color-text-muted);font-size:.875em}
+.ak-bars-legend{display:flex;flex-wrap:wrap;gap:var(--ak-space-unit)}
+.ak-bars-legend button{display:inline-flex;align-items:center;gap:calc(var(--ak-space-unit)*.75);font:inherit;font-size:.875em;color:var(--ak-color-text);background:var(--ak-color-surface);border:var(--ak-border-width) solid var(--ak-color-border);border-radius:999px;padding:calc(var(--ak-space-unit)*.5) calc(var(--ak-space-unit)*1.25);min-height:36px}
+.ak-bars-legend button:not([disabled]){cursor:pointer}
+.ak-bars-legend button[disabled]{opacity:1}
+.ak-bars-legend button[aria-pressed="true"]:not([disabled]){border-color:var(--ak-color-accent);box-shadow:inset 0 0 0 1px var(--ak-color-accent)}
+.ak-bars-legend button:focus-visible{outline:2px solid var(--ak-color-accent);outline-offset:2px}
+.ak-bars-swatch{display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--ak-3d-tone,var(--ak-color-accent))}
+.ak-bars [data-shade]{filter:brightness(.68) saturate(1.15)}
+.ak-bars-grid{stroke:var(--ak-color-border);stroke-width:1}
+.ak-bars-zero{stroke:var(--ak-color-text);stroke-width:1.5}
+.ak-bars-tick{fill:var(--ak-color-text-muted);font:12px var(--ak-font-body,inherit);text-anchor:end;font-variant-numeric:tabular-nums}
+.ak-bars-cat{fill:var(--ak-color-text-muted);font:12px var(--ak-font-body,inherit);text-anchor:middle}
+.ak-bars-poster .ak-3d-mark{stroke:none;fill-opacity:.9}
+.ak-bars-data{max-height:22rem;overflow:auto}
+.ak-bars-data td button{font:inherit;font-variant-numeric:tabular-nums;color:inherit;background:none;border:0;border-radius:var(--ak-radius-small);padding:2px 6px;min-height:28px;text-align:right}
+.ak-bars-data td button:not([disabled]){cursor:pointer}
+.ak-bars-data td button:not([disabled]):hover{background:color-mix(in oklab,var(--ak-color-accent) 10%,transparent)}
+.ak-bars-data td button[aria-pressed="true"]{background:color-mix(in oklab,var(--ak-color-accent) 18%,transparent);box-shadow:inset 0 0 0 1px var(--ak-color-accent)}
+.ak-bars-data td button:focus-visible{outline:2px solid var(--ak-color-accent);outline-offset:1px}
+@media print{.ak-bars-data{max-height:none;overflow:visible}}
 @media print{.ak-3d[data-ak-3d-state="ready"] .ak-3d-poster{visibility:visible}.ak-3d-canvas{display:none}}
 `;

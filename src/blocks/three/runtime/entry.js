@@ -44,6 +44,10 @@ import {
   WebGLRenderer,
 } from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { barsWidget } from './bars.js';
+
+/** Data widgets that add marks and transitions on top of the shared scene, by `data-ak-3d` kind. */
+const WIDGETS = { bars: barsWidget };
 
 const TONE_VARS = {
   accent: '--ak-color-accent',
@@ -409,6 +413,22 @@ function mount(el) {
       };
     })
     .filter(Boolean);
+  const widget =
+    WIDGETS[el.getAttribute('data-ak-3d')]?.({
+      el,
+      config,
+      scene,
+      nodes,
+      camera,
+      target,
+      motion,
+      api,
+      requestRender: () => requestRender(),
+      animate() {
+        record.animating = true;
+        schedule();
+      },
+    }) || null;
 
   let selected = null;
   const buttons = Array.prototype.slice.call(el.querySelectorAll('[data-ak-3d-pick]'));
@@ -583,7 +603,7 @@ function mount(el) {
     el,
     visible: true,
     lost: false,
-    animating: motion && tweens.length > 0,
+    animating: motion && (tweens.length > 0 || widget !== null),
     started: 0,
     frames: 0,
     /** The most recent render durations, for the benchmark; a fixed ring. */
@@ -605,6 +625,7 @@ function mount(el) {
           );
         }
       }
+      if (widget && !widget.tick(now) && !(motion && tweens.length > 0)) record.animating = false;
       const begin = performance.now();
       renderer.render(scene, camera);
       record.renderMs.push(performance.now() - begin);
@@ -629,6 +650,7 @@ function mount(el) {
       const frozen = stage.querySelector('.ak-3d-frame');
       if (frozen) return { width: canvas.width, height: canvas.height };
       record.animating = false;
+      widget?.settle();
       renderer.render(scene, camera);
       const frame = document.createElement('img');
       frame.className = 'ak-3d-frame';
@@ -639,6 +661,7 @@ function mount(el) {
       return { width: canvas.width, height: canvas.height };
     },
     sync() {
+      widget?.sync();
       if (config.bind) {
         const value = api.readPath(config.bind);
         if (typeof value === 'string' && value !== selected && nodes.has(value)) highlight(value);
@@ -650,6 +673,7 @@ function mount(el) {
     },
     unmount() {
       cancelVisibility();
+      widget?.dispose();
       resizeObserver?.disconnect();
       for (const button of buttons) {
         button.removeEventListener('click', onButton);

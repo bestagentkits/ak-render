@@ -481,6 +481,9 @@
         },
         {
           "$ref": "#/$defs/block-scene-3d"
+        },
+        {
+          "$ref": "#/$defs/block-bars-3d"
         }
       ]
     },
@@ -8256,6 +8259,142 @@
         }
       },
       "description": "Scene 3D: nested primitives, materials, lighting, camera, views; pick writes state."
+    },
+    "block-bars-3d": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "summary",
+        "categories",
+        "series",
+        "values"
+      ],
+      "properties": {
+        "type": {
+          "const": "bars-3d"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 600,
+          "description": "What the chart shows, in words; the caption and the text alternative."
+        },
+        "mode": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "grouped",
+            "stacked"
+          ]
+        },
+        "categories": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 2000,
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 200
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "label"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 100
+        },
+        "series": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 2000,
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "tone": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "accent",
+                  "neutral",
+                  "success",
+                  "warning",
+                  "danger",
+                  "info"
+                ]
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "label"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 12
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "minimum": -1000000000000,
+              "maximum": 1000000000000
+            },
+            "minItems": 1,
+            "maxItems": 12
+          },
+          "minItems": 1,
+          "maxItems": 100
+        },
+        "unit": {
+          "type": "string",
+          "maxLength": 16
+        },
+        "bind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "filterBind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "on": {
+          "description": "Bindings fired with `{ value }` (the bar id) when a bar is selected.",
+          "$ref": "#/$defs/actionMap"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
+        }
+      },
+      "description": "Bars 3D: categories x series matrix; grouped or stacked; pick writes state."
     }
   }
 }

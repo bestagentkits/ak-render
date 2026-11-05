@@ -1,6 +1,7 @@
 /** 3D blocks: declarative Three.js scenes sharing one runtime, emitted only on pages that use them. */
 
 import type { BlockGroup } from '../../registry/block-module.js';
+import { bars3dBlock } from './bars-3d.js';
 import { scene3dBlock } from './scene-3d.js';
 import { THREE_RUNTIME } from './three-runtime.generated.js';
 import { THREE_CSS } from './three-styles.js';
@@ -22,7 +23,7 @@ function wireThree() {
 
 export const THREE_GROUP: BlockGroup = {
   name: 'three',
-  blocks: [scene3dBlock],
+  blocks: [scene3dBlock, bars3dBlock],
   features: [
     {
       name: 'three',
