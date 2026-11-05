@@ -117,7 +117,18 @@ test.describe('diagram golden cases', () => {
         // Visual regression on geometry: relative node boxes against the committed baseline.
         if (viewport.name === 'desktop') {
           if (RECORD) geometry[golden.name] = boxes;
-          else expect(boxes).toEqual(geometry[golden.name]);
+          else {
+            const expected = geometry[golden.name] ?? {};
+            expect(Object.keys(boxes).sort()).toEqual(Object.keys(expected).sort());
+            // A small tolerance absorbs sub-pixel rounding between platforms.
+            for (const [id, box] of Object.entries(boxes)) {
+              box.forEach((value, index) =>
+                expect(Math.abs(value - (expected[id]?.[index] ?? Number.NaN)), id).toBeLessThan(
+                  0.003,
+                ),
+              );
+            }
+          }
         }
       });
     }

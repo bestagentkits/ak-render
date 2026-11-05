@@ -43,6 +43,9 @@ describe('diagram golden cases', () => {
         expect(edges).toEqual(golden.edges.map((_, index) => String(index)));
         const from = attrs(drawn, 'data-ak-from');
         const to = attrs(drawn, 'data-ak-to');
+        // Every drawn line belongs to a declared relationship: none is drawn bare.
+        const lines = drawn.slice(drawn.indexOf('</defs>')).match(/<path /gu) ?? [];
+        expect(lines).toHaveLength(golden.edges.length);
         expect(from.map((id, index) => [id, to[index]])).toEqual(
           golden.edges.map((edge) => [...edge]),
         );
@@ -56,7 +59,9 @@ describe('diagram golden cases', () => {
 
       it('names the drawing and every node for assistive technology', () => {
         expect(drawn).toMatch(/role="img"/u);
-        for (const label of attrs(drawn, 'data-ak-label')) expect(label).not.toBe(undefined);
+        const named = attrs(drawn, 'data-ak-node').length;
+        expect(attrs(drawn, 'data-ak-label').length).toBeGreaterThanOrEqual(named);
+        expect(drawn).toMatch(/aria-label="[^"]+"/u);
         expect(result.html).toContain('Text description');
       });
 
