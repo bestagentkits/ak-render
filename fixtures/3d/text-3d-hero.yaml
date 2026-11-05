@@ -1,0 +1,11 @@
+version: 1
+meta:
+  title: Extruded headline
+blocks:
+  - type: text-3d
+    id: hero
+    text: Ship it.
+    summary: A launch wordmark rises letter by letter, then floats.
+    material: satin
+    depth: 0.32
+    bevel: round
