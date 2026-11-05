@@ -135,8 +135,10 @@ async function readJson(request: IncomingMessage): Promise<Record<string, unknow
 export function startMotionStudio(options: MotionStudioOptions): Promise<MotionStudio> {
   const session = randomBytes(16).toString('hex');
   const prefix = `/studio/${session}/`;
-  const modelOptions: StudioOptions =
-    options.themeCatalog === undefined ? {} : { themeCatalog: options.themeCatalog };
+  const modelOptions: StudioOptions = {
+    ...(options.themeCatalog === undefined ? {} : { themeCatalog: options.themeCatalog }),
+    ...(options.diagramAdapter === undefined ? {} : { diagramAdapter: options.diagramAdapter }),
+  };
   const previews = new Map<string, string>();
   let port = 0;
   // Accept writes through a symlink to the file it names, never over the link.
