@@ -47,6 +47,7 @@ import {
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { barsWidget } from './bars.js';
+import { mountGlobe } from './globe.js';
 import { mountModel } from './model.js';
 import { mountNetwork } from './network.js';
 import { liveParticleResources, mountParticles } from './particles.js';
@@ -783,6 +784,7 @@ const WIDGETS = {
   network: mountNetwork,
   scatter: mountScatter,
   particles: mountParticles,
+  globe: mountGlobe,
 };
 /** What a widget module needs from the shared runtime. */
 const kit = {
