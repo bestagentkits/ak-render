@@ -7,6 +7,8 @@ import { network3dBlock } from './network-3d.js';
 import { NETWORK_CSS } from './network-styles.js';
 import { particles3dBlock } from './particles-3d.js';
 import { PARTICLES_CSS } from './particles-styles.js';
+import { product3dBlock } from './product-3d.js';
+import { PRODUCT_CSS } from './product-styles.js';
 import { scatter3dBlock } from './scatter-3d.js';
 import { SCATTER_CSS } from './scatter-styles.js';
 import { scene3dBlock } from './scene-3d.js';
@@ -40,12 +42,13 @@ export const THREE_GROUP: BlockGroup = {
     bars3dBlock,
     particles3dBlock,
     shader3dBlock,
+    product3dBlock,
   ],
   features: [
     {
       name: 'three',
       marker: '.ak-3d{',
-      css: THREE_CSS + NETWORK_CSS + SCATTER_CSS + PARTICLES_CSS + SHADER_CSS,
+      css: THREE_CSS + NETWORK_CSS + SCATTER_CSS + PARTICLES_CSS + SHADER_CSS + PRODUCT_CSS,
       script: { code: `${THREE_RUNTIME}\n${THREE_BOOT}`, boot: 'wireThree();' },
     },
   ],
