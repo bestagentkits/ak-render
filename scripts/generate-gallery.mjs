@@ -291,6 +291,14 @@ const THREE_D_SHOWCASE = {
     'Ring to knot',
     'A ring ties itself into a trefoil knot, then twists into a square band, all on one wrapped surface.',
   ],
+  'terrain-3d-alpine': [
+    'Alpine flyover',
+    'A 256 x 256 heightmap of twin peaks and a glacial valley, with contours, an elevation legend and a flyover of four places.',
+  ],
+  'terrain-3d-crater': [
+    'Volcanic caldera',
+    'A caldera rim and a young cone in a volcanic colour ramp, with 50 m contours and each place at its elevation.',
+  ],
   'network-3d-stress': [
     'A thousand-node graph',
     'A large force-laid graph that shows the network widget holding up at scale.',

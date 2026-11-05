@@ -1,0 +1,39 @@
+version: 1
+meta:
+  title: Alpine terrain
+state:
+  place: overview
+blocks:
+  - type: terrain-3d
+    id: alpine
+    title: Valley and twin peaks
+    summary: A 12 km alpine block with two summits joined by a ridge, a hanging lake basin and a long glacial valley, flown over place by place.
+    unit: m
+    width: 12000
+    bind: state.place
+    relief:
+      seed: 7
+      resolution: 256
+      roughness: 0.55
+      range: [820, 3120]
+      features:
+        - { kind: peak, at: [0.38, 0.34], radius: 0.24, height: 1.2 }
+        - { kind: peak, at: [0.68, 0.26], radius: 0.17, height: 0.85 }
+        - { kind: ridge, at: [0.38, 0.34], to: [0.68, 0.26], radius: 0.07, height: 0.45 }
+        - { kind: valley, at: [0.04, 0.86], to: [0.96, 0.6], radius: 0.13, height: 0.6 }
+        - { kind: basin, at: [0.2, 0.62], radius: 0.08, height: 0.25 }
+    annotations:
+      - { id: summit, label: Grand Pic, at: [0.38, 0.34], description: The highest ground on the block. }
+      - { id: col, label: Col du Vent, at: [0.53, 0.3], tone: info, description: The saddle on the ridge between the peaks. }
+      - { id: lake, label: Lac Noir, at: [0.2, 0.62], tone: success, description: A hanging basin above the valley floor. }
+      - { id: trailhead, label: Trailhead, at: [0.82, 0.66], tone: warning, description: Where the valley road ends. }
+  - type: select
+    id: place-pick
+    label: Place
+    bind: state.place
+    options:
+      - { value: overview, label: Whole block }
+      - { value: summit, label: Grand Pic }
+      - { value: col, label: Col du Vent }
+      - { value: lake, label: Lac Noir }
+      - { value: trailhead, label: Trailhead }
