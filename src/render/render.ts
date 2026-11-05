@@ -20,6 +20,11 @@ import type { BlockRegistry, FeatureModule } from '../registry/block-module.js';
 import { DEFAULT_REGISTRY } from '../registry/registry.js';
 import type { RuntimeFeature } from '../registry/roster.js';
 import { assetOrigins, assetReferences } from '../spec/asset-references.js';
+import { CONNECT_CAPABILITIES, type MediaCapability } from '../spec/network-policy.js';
+
+/** Capabilities the page displays from a remote origin: `img-src` and `media-src`. */
+const DISPLAY_CAPABILITIES: readonly MediaCapability[] = ['images', 'media'];
+
 import { evaluateCondition } from '../spec/conditions.js';
 import { type NormalizeResult, normalizeSpec } from '../spec/normalize.js';
 import { loadTheme, type ResolvedTheme, resolveTheme } from '../theme/load-theme.js';
@@ -118,13 +123,18 @@ function collectFeatures(ir: IrDocument, includeTheme: boolean): Set<RuntimeFeat
 }
 
 /** Origins of the allowed remote assets, found through each block's `asset` props. */
-function collectOrigins(ir: IrDocument, registry: BlockRegistry): string[] {
+function collectOrigins(
+  ir: IrDocument,
+  registry: BlockRegistry,
+  capabilities: readonly MediaCapability[],
+): string[] {
   return ir.nodes.flatMap((node) => {
     const definition = registry.byType.get(node.type);
     if (definition === undefined) return [];
     return assetOrigins(
       ir.policy.network,
       assetReferences(definition.props, node.props, node.path),
+      capabilities,
     );
   });
 }
@@ -350,7 +360,8 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
     css,
     js,
     body,
-    allowedOrigins: collectOrigins(ir, registry),
+    allowedOrigins: collectOrigins(ir, registry, DISPLAY_CAPABILITIES),
+    connectOrigins: collectOrigins(ir, registry, CONNECT_CAPABILITIES),
     themeToggle: includeThemeToggle,
     density: resolved.density,
     motion: motionPolicyOf(resolved.motionPolicy),

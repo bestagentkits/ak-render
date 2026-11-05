@@ -5,6 +5,7 @@
  * data: validation, the JSON Schema and `describe()` all read the result.
  */
 
+import type { MediaCapability } from '../spec/network-policy.js';
 import type { PropSchema } from './prop-schema.js';
 import type { BlockDefinition, SizingContract } from './roster.js';
 
@@ -62,7 +63,7 @@ export const urlProp = (
     required?: boolean;
     schemes?: readonly string[];
     description?: string;
-    asset?: 'images' | 'media';
+    asset?: MediaCapability;
     rejectBlocked?: boolean;
   } = {},
 ): PropSchema => ({
