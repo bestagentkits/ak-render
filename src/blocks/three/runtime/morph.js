@@ -11,7 +11,8 @@ import {
   BufferGeometry,
   Color,
   MeshPhysicalMaterial,
-} from "three";
+  SRGBColorSpace,
+} from 'three';
 import {
   buildMorph,
   LIVE_DETAIL,
@@ -19,8 +20,8 @@ import {
   topologyBreak,
   triangles,
   vertexNormals,
-} from "../morph-sim.ts";
-import { resolvedColor } from "./product.js";
+} from '../morph-sim.ts';
+import { resolvedColor } from './product.js';
 
 /** Radians per millisecond the surface turns while the timeline plays. */
 const SPIN = 0.00016;
@@ -34,7 +35,7 @@ let live = 0;
 export const liveMorphResources = () => live;
 function track(resource) {
   live += 1;
-  resource.addEventListener("dispose", () => {
+  resource.addEventListener('dispose', () => {
     live -= 1;
   });
   return resource;
@@ -53,9 +54,9 @@ export function morphValid(config) {
 export function morphWidget(ctx) {
   const { el, config, nodes, camera, motion, api } = ctx;
   const morph = config.morph;
-  const mesh = nodes.get("morph")?.object;
+  const mesh = nodes.get('morph')?.object;
   if (!morph || !mesh?.isMesh) return null;
-  const stage = el.querySelector(".ak-3d-stage") || el;
+  const stage = el.querySelector('.ak-3d-stage') || el;
   const targets = morph.targets;
   const listeners = [];
   const on = (target, type, handler) => {
@@ -70,39 +71,31 @@ export function morphWidget(ctx) {
   );
   const geometry = track(new BufferGeometry());
   geometry.setIndex(new BufferAttribute(triangles(built.grid.quads), 1));
-  const normals = built.targets.map((positions) =>
-    vertexNormals(positions, built.grid.quads),
-  );
-  geometry.setAttribute("position", new BufferAttribute(built.targets[0], 3));
-  geometry.setAttribute("normal", new BufferAttribute(normals[0], 3));
-  geometry.morphAttributes.position = built.targets.map(
-    (p) => new BufferAttribute(p, 3),
-  );
-  geometry.morphAttributes.normal = normals.map(
-    (n) => new BufferAttribute(n, 3),
-  );
+  const normals = built.targets.map((positions) => vertexNormals(positions, built.grid.quads));
+  geometry.setAttribute('position', new BufferAttribute(built.targets[0], 3));
+  geometry.setAttribute('normal', new BufferAttribute(normals[0], 3));
+  geometry.morphAttributes.position = built.targets.map((p) => new BufferAttribute(p, 3));
+  geometry.morphAttributes.normal = normals.map((n) => new BufferAttribute(n, 3));
   geometry.morphTargetsRelative = false;
   geometry.computeBoundingSphere();
 
   // Tones resolve through the same CSS the drawing uses, oklch and color-mix included.
-  const probe = document
-    .createElement("canvas")
-    .getContext("2d", { willReadFrequently: true });
+  const probe = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
   const tones = targets.map((t) => {
-    const swatch = document.createElement("span");
-    swatch.className = "ak-3d-mark ak-product-swatch";
-    swatch.setAttribute("data-tone", t.tone || "accent");
-    swatch.setAttribute("aria-hidden", "true");
+    const swatch = document.createElement('span');
+    swatch.className = 'ak-3d-mark ak-product-swatch';
+    swatch.setAttribute('data-tone', t.tone || 'accent');
+    swatch.setAttribute('aria-hidden', 'true');
     stage.appendChild(swatch);
     const color =
-      (probe &&
-        resolvedColor(getComputedStyle(swatch).backgroundColor, probe)) ||
+      (probe && resolvedColor(getComputedStyle(swatch).backgroundColor, probe)) ||
       new Color(0x6b7cff);
     swatch.remove();
     // Lit glossy surfaces wash pale tones out: keep the hue's chroma and cap the lightness.
     const hsl = { h: 0, s: 0, l: 0 };
-    color.getHSL(hsl);
-    color.setHSL(hsl.h, Math.min(1, hsl.s * 1.2), Math.min(hsl.l, 0.6));
+    // HSL in sRGB, as the theme wrote the tone; three's default working space is linear.
+    color.getHSL(hsl, SRGBColorSpace);
+    color.setHSL(hsl.h, Math.min(1, hsl.s * 1.25), Math.min(hsl.l, 0.58), SRGBColorSpace);
     return color;
   });
 
@@ -129,7 +122,7 @@ export function morphWidget(ctx) {
     duration: morph.duration,
     hold: morph.hold,
     easing: morph.easing,
-    mode: motion ? morph.mode : "manual",
+    mode: motion ? morph.mode : 'manual',
   });
   let spin = 0;
   // The timeline runs on its own clock, so Pause freezes the blend on screen mid-morph.
@@ -154,42 +147,38 @@ export function morphWidget(ctx) {
       Math.min(1, Math.max(0, blended.g)),
       Math.min(1, Math.max(0, blended.b)),
     );
-    const swell = timeline.morphing
-      ? Math.sin(Math.PI * Math.min(1, timeline.progress))
-      : 0;
+    const swell = timeline.morphing ? Math.sin(Math.PI * Math.min(1, timeline.progress)) : 0;
     mesh.scale.setScalar(1 + SWELL * Math.max(0, swell));
     mesh.rotation.y = spin;
   }
 
   // ---- Controls ----------------------------------------------------------------------------
-  const buttons = [...el.querySelectorAll("[data-ak-morph-target]")];
+  const buttons = [...el.querySelectorAll('[data-ak-morph-target]')];
   for (const button of buttons) {
     button.disabled = false;
-    on(button, "click", () =>
-      choose(button.getAttribute("data-ak-morph-target")),
-    );
+    on(button, 'click', () => choose(button.getAttribute('data-ak-morph-target')));
   }
   // Pause: WCAG 2.2.2 asks for a way to stop motion that runs on its own.
-  const pause = document.createElement("button");
-  pause.type = "button";
-  pause.className = "ak-mo-pause";
+  const pause = document.createElement('button');
+  pause.type = 'button';
+  pause.className = 'ak-mo-pause';
   function labelPause() {
-    pause.textContent = paused ? "Play" : "Pause";
-    pause.setAttribute("aria-pressed", paused ? "true" : "false");
+    pause.textContent = paused ? 'Play' : 'Pause';
+    pause.setAttribute('aria-pressed', paused ? 'true' : 'false');
     pause.setAttribute(
-      "aria-label",
-      paused ? "Play the morph timeline" : "Pause the morph timeline",
+      'aria-label',
+      paused ? 'Play the morph timeline' : 'Pause the morph timeline',
     );
   }
-  if (motion && morph.mode !== "manual") {
+  if (motion && morph.mode !== 'manual') {
     labelPause();
     stage.appendChild(pause);
-    on(pause, "click", () => setPaused(!paused));
+    on(pause, 'click', () => setPaused(!paused));
   }
   function setPaused(value) {
     paused = value;
     frozen = value;
-    timeline.playing = !paused && morph.mode !== "manual";
+    timeline.playing = !paused && morph.mode !== 'manual';
     last = 0;
     labelPause();
     paint();
@@ -206,12 +195,12 @@ export function morphWidget(ctx) {
     const id = targets[shown].id;
     for (const button of buttons)
       button.setAttribute(
-        "aria-pressed",
-        button.getAttribute("data-ak-morph-target") === id ? "true" : "false",
+        'aria-pressed',
+        button.getAttribute('data-ak-morph-target') === id ? 'true' : 'false',
       );
-    el.setAttribute("data-ak-morph-current", id);
-    el.querySelector(".ak-3d-canvas")?.setAttribute(
-      "aria-description",
+    el.setAttribute('data-ak-morph-current', id);
+    el.querySelector('.ak-3d-canvas')?.setAttribute(
+      'aria-description',
       `Shape: ${targets[shown].label || id}`,
     );
   }
@@ -229,7 +218,7 @@ export function morphWidget(ctx) {
     if (user) {
       const id = targets[index].id;
       bound = id;
-      api.fire(el, "select", { value: id });
+      api.fire(el, 'select', { value: id });
       if (morph.bind) api.setPath(morph.bind, id);
     }
     if (!motion) timeline.settle();
@@ -244,8 +233,7 @@ export function morphWidget(ctx) {
       true,
     );
   }
-  const step = (by) =>
-    goTo((timeline.target + by + targets.length) % targets.length, true);
+  const step = (by) => goTo((timeline.target + by + targets.length) % targets.length, true);
 
   mark();
   paint();
@@ -270,7 +258,11 @@ export function morphWidget(ctx) {
       const turning = motion && !paused && timeline.playing;
       if (turning) spin += Math.min(dt, 50) * SPIN;
       // A once timeline that has played through needs no pause control.
-      if (!paused && !timeline.playing && pause.isConnected) pause.remove();
+      if (!paused && !timeline.playing && pause.isConnected) {
+        // Keep keyboard focus in the figure when the focused control goes away.
+        if (document.activeElement === pause) el.querySelector('.ak-3d-canvas')?.focus();
+        pause.remove();
+      }
       last = morphing || turning ? now : 0;
       mark();
       paint();
@@ -312,11 +304,11 @@ export function morphWidget(ctx) {
     key(event) {
       if (event.ctrlKey || event.metaKey || event.altKey) return false;
       const key = event.key;
-      if (key === "Enter" || key === " " || key === "n") {
+      if (key === 'Enter' || key === ' ' || key === 'n') {
         step(1);
         return true;
       }
-      if (key === "p") {
+      if (key === 'p') {
         step(-1);
         return true;
       }
@@ -324,8 +316,7 @@ export function morphWidget(ctx) {
     },
     interrupt() {},
     dispose() {
-      for (const [target, type, handler] of listeners)
-        target.removeEventListener(type, handler);
+      for (const [target, type, handler] of listeners) target.removeEventListener(type, handler);
       for (const button of buttons) button.disabled = true;
       pause.remove();
       geometry.dispose();

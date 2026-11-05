@@ -51,7 +51,8 @@ export const THREE_GROUP: BlockGroup = {
     {
       name: 'three',
       marker: '.ak-3d{',
-      css: THREE_CSS + NETWORK_CSS + SCATTER_CSS + PARTICLES_CSS + PRODUCT_CSS + TEXT_CSS + MORPH_CSS,
+      css:
+        THREE_CSS + NETWORK_CSS + SCATTER_CSS + PARTICLES_CSS + PRODUCT_CSS + TEXT_CSS + MORPH_CSS,
       script: { code: `${THREE_RUNTIME}\n${THREE_BOOT}`, boot: 'wireThree();' },
     },
   ],

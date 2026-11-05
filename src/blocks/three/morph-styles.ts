@@ -12,11 +12,11 @@ const LIT_STEPS = SHADE_STEPS - 1;
 /** The share of the lit range below the bare tone: these steps mix toward ink, the rest toward white. */
 const TONE_AT = 0.42;
 function shadeFill(step: number): string {
-  if (step === LIT_STEPS) return `color-mix(in oklch,${TONE} 30%,#fff)`;
+  if (step === LIT_STEPS) return `color-mix(in oklab,${TONE} 32%,#fff)`;
   const t = step / (LIT_STEPS - 1);
   if (t <= TONE_AT)
-    return `color-mix(in oklch,${TONE} ${Math.round(62 + (t / TONE_AT) * 38)}%,#10121c)`;
-  return `color-mix(in oklch,${TONE} ${Math.round(100 - ((t - TONE_AT) / (1 - TONE_AT)) * 30)}%,#fff)`;
+    return `color-mix(in oklab,${TONE} ${Math.round(58 + (t / TONE_AT) * 42)}%,#000)`;
+  return `color-mix(in oklab,${TONE} ${Math.round(100 - ((t - TONE_AT) / (1 - TONE_AT)) * 26)}%,#fff)`;
 }
 const shades = Array.from({ length: SHADE_STEPS }, (_, step) => {
   const fill = shadeFill(step);

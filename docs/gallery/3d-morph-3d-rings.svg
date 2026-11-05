@@ -197,30 +197,30 @@ img.ak-3d-poster{object-fit:contain}
 @media (max-width:480px){.ak-sc-labels{font-size:9px}.ak-sc-labels .t{font-size:10px}.ak-sc-tools button{min-height:32px;font-size:12px;padding:0 10px}}
 @media print{.ak-sc-labels,.ak-sc-tip,.ak-sc-brush,.ak-sc-tools{display:none}.ak-sc-table{max-height:none;overflow:visible;border:0}.ak-sc-table thead th{position:static}}
 
-.ak-mo-surface [data-l="0"]{fill:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 62%,#10121c);stroke:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 62%,#10121c)}
-.ak-mo-surface [data-l="1"]{fill:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 66%,#10121c);stroke:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 66%,#10121c)}
-.ak-mo-surface [data-l="2"]{fill:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 70%,#10121c);stroke:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 70%,#10121c)}
-.ak-mo-surface [data-l="3"]{fill:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 74%,#10121c);stroke:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 74%,#10121c)}
-.ak-mo-surface [data-l="4"]{fill:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 78%,#10121c);stroke:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 78%,#10121c)}
-.ak-mo-surface [data-l="5"]{fill:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 83%,#10121c);stroke:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 83%,#10121c)}
-.ak-mo-surface [data-l="6"]{fill:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 87%,#10121c);stroke:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 87%,#10121c)}
-.ak-mo-surface [data-l="7"]{fill:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 91%,#10121c);stroke:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 91%,#10121c)}
-.ak-mo-surface [data-l="8"]{fill:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 95%,#10121c);stroke:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 95%,#10121c)}
-.ak-mo-surface [data-l="9"]{fill:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 99%,#10121c);stroke:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 99%,#10121c)}
-.ak-mo-surface [data-l="10"]{fill:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 98%,#fff);stroke:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 98%,#fff)}
-.ak-mo-surface [data-l="11"]{fill:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 96%,#fff);stroke:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 96%,#fff)}
-.ak-mo-surface [data-l="12"]{fill:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 94%,#fff);stroke:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 94%,#fff)}
-.ak-mo-surface [data-l="13"]{fill:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 91%,#fff);stroke:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 91%,#fff)}
-.ak-mo-surface [data-l="14"]{fill:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 89%,#fff);stroke:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 89%,#fff)}
-.ak-mo-surface [data-l="15"]{fill:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 86%,#fff);stroke:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 86%,#fff)}
-.ak-mo-surface [data-l="16"]{fill:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 84%,#fff);stroke:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 84%,#fff)}
-.ak-mo-surface [data-l="17"]{fill:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 82%,#fff);stroke:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 82%,#fff)}
-.ak-mo-surface [data-l="18"]{fill:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 79%,#fff);stroke:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 79%,#fff)}
-.ak-mo-surface [data-l="19"]{fill:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 77%,#fff);stroke:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 77%,#fff)}
-.ak-mo-surface [data-l="20"]{fill:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 75%,#fff);stroke:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 75%,#fff)}
-.ak-mo-surface [data-l="21"]{fill:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 72%,#fff);stroke:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 72%,#fff)}
-.ak-mo-surface [data-l="22"]{fill:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 70%,#fff);stroke:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 70%,#fff)}
-.ak-mo-surface [data-l="23"]{fill:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 30%,#fff);stroke:color-mix(in oklch,var(--ak-3d-tone,var(--ak-color-accent)) 30%,#fff)}
+.ak-mo-surface [data-l="0"]{fill:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 58%,#000);stroke:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 58%,#000)}
+.ak-mo-surface [data-l="1"]{fill:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 63%,#000);stroke:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 63%,#000)}
+.ak-mo-surface [data-l="2"]{fill:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 67%,#000);stroke:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 67%,#000)}
+.ak-mo-surface [data-l="3"]{fill:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 72%,#000);stroke:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 72%,#000)}
+.ak-mo-surface [data-l="4"]{fill:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 76%,#000);stroke:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 76%,#000)}
+.ak-mo-surface [data-l="5"]{fill:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 81%,#000);stroke:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 81%,#000)}
+.ak-mo-surface [data-l="6"]{fill:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 85%,#000);stroke:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 85%,#000)}
+.ak-mo-surface [data-l="7"]{fill:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 90%,#000);stroke:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 90%,#000)}
+.ak-mo-surface [data-l="8"]{fill:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 94%,#000);stroke:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 94%,#000)}
+.ak-mo-surface [data-l="9"]{fill:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 99%,#000);stroke:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 99%,#000)}
+.ak-mo-surface [data-l="10"]{fill:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 98%,#fff);stroke:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 98%,#fff)}
+.ak-mo-surface [data-l="11"]{fill:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 96%,#fff);stroke:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 96%,#fff)}
+.ak-mo-surface [data-l="12"]{fill:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 94%,#fff);stroke:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 94%,#fff)}
+.ak-mo-surface [data-l="13"]{fill:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 92%,#fff);stroke:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 92%,#fff)}
+.ak-mo-surface [data-l="14"]{fill:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 90%,#fff);stroke:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 90%,#fff)}
+.ak-mo-surface [data-l="15"]{fill:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 88%,#fff);stroke:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 88%,#fff)}
+.ak-mo-surface [data-l="16"]{fill:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 86%,#fff);stroke:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 86%,#fff)}
+.ak-mo-surface [data-l="17"]{fill:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 84%,#fff);stroke:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 84%,#fff)}
+.ak-mo-surface [data-l="18"]{fill:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 82%,#fff);stroke:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 82%,#fff)}
+.ak-mo-surface [data-l="19"]{fill:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 80%,#fff);stroke:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 80%,#fff)}
+.ak-mo-surface [data-l="20"]{fill:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 78%,#fff);stroke:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 78%,#fff)}
+.ak-mo-surface [data-l="21"]{fill:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 76%,#fff);stroke:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 76%,#fff)}
+.ak-mo-surface [data-l="22"]{fill:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 74%,#fff);stroke:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 74%,#fff)}
+.ak-mo-surface [data-l="23"]{fill:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 32%,#fff);stroke:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 32%,#fff)}
 .ak-mo-surface path{stroke-width:.6;stroke-linejoin:round;fill-opacity:1}
 .ak-mo .ak-3d-stage{background:radial-gradient(40% 46% at 50% 44%,color-mix(in oklab,var(--ak-color-accent) 16%,transparent),transparent 72%),radial-gradient(60% 30% at 50% 100%,color-mix(in oklab,var(--ak-color-accent) 10%,transparent),transparent 70%),radial-gradient(120% 95% at 50% 0%,var(--ak-color-surface-raised,var(--ak-color-surface)),color-mix(in oklab,var(--ak-color-background) 90%,var(--ak-color-text)))}
 .ak-mo-outline{mask-type:alpha}
