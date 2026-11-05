@@ -68,7 +68,7 @@ export function mountModel(el, kit) {
     el.setAttribute('data-ak-3d-state', 'unsupported');
     return null;
   }
-  const api = kit.api;
+  const api = kit.api();
   const motion = api.motionAllowed();
   canvas.tabIndex = 0;
   canvas.setAttribute('role', 'img');
@@ -459,11 +459,15 @@ export function mountModel(el, kit) {
     lost: false,
     animating: false,
     frames: 0,
+    renderMs: [],
     tick(now) {
       const dt = lastTick ? Math.min(0.1, (now - lastTick) / 1000) : 0;
       lastTick = now;
       if (mixer && motion && record.animating) mixer.update(dt);
+      const begin = performance.now();
       renderer.render(scene, camera);
+      record.renderMs.push(performance.now() - begin);
+      if (record.renderMs.length > kit.RENDER_SAMPLES) record.renderMs.shift();
       placePins();
       if (!gltf) return;
       record.frames += 1;

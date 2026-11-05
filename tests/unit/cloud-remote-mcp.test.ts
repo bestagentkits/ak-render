@@ -762,7 +762,7 @@ describe('remote MCP: motion tools', () => {
     const { env, fetchMock } = harness();
     const listing = await tool(env, 'motions', {}, null);
     expect(listing.reply.isError).toBeUndefined();
-    expect(listing.payload['recipeCount']).toBe(7);
+    expect(listing.payload['recipeCount']).toBe(12);
     const hits = await tool(env, 'motions', { query: 'smooth tabs' }, null);
     expect(hits.reply.isError).toBeUndefined();
     expect((hits.payload as unknown as { id: string }[])[0]?.id).toBe('tabs-slide');

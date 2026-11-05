@@ -16,6 +16,7 @@ import { CAROUSEL, TABS } from '../blocks/composition/composition-runtime.js';
 import { MOTION_DIALOG, motionRuntime } from '../motion/motion-runtime.js';
 import type { FeatureModule } from '../registry/block-module.js';
 import type { RuntimeFeature } from '../registry/roster.js';
+import { DIAGRAM_VIEWER_RUNTIME } from './diagram-viewer.js';
 import { serializeJsonForScript } from './escape.js';
 
 /** Features that produce user-facing feedback and therefore need a live region. */
@@ -582,6 +583,7 @@ export function buildRuntime(options: RuntimeOptions): string {
   if (features.has('outline')) parts.push(OUTLINE);
   if (features.has('before-after')) parts.push(BEFORE_AFTER);
   if (features.has('diagram')) parts.push(DIAGRAM);
+  if (features.has('diagram-viewer')) parts.push(DIAGRAM_VIEWER_RUNTIME);
   for (const feature of modules) {
     if (feature.script !== undefined) parts.push(feature.script.code);
   }
@@ -596,6 +598,7 @@ export function buildRuntime(options: RuntimeOptions): string {
   if (features.has('outline')) wiring.push('wireOutline();');
   if (features.has('before-after')) wiring.push('wireBeforeAfter();');
   if (features.has('diagram')) wiring.push('wireDiagramPrint();');
+  if (features.has('diagram-viewer')) wiring.push('wireDiagramViewers();');
   for (const feature of modules) {
     if (feature.script?.boot !== undefined) wiring.push(feature.script.boot);
   }
