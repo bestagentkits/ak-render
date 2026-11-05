@@ -1,0 +1,10 @@
+version: 1
+meta:
+  title: Particle galaxy
+blocks:
+  - type: particles-3d
+    id: galaxy
+    title: A galaxy of signals
+    summary: Nine thousand seeded stars wind into three spiral arms, warm at the core and cool at the rim.
+    preset: galaxy
+    seed: 7

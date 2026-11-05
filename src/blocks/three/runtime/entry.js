@@ -47,6 +47,7 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import { barsWidget } from './bars.js';
 import { mountModel } from './model.js';
 import { mountNetwork } from './network.js';
+import { liveParticleResources, mountParticles } from './particles.js';
 import { mountScatter } from './scatter.js';
 
 /** Data widgets that add marks and transitions on top of the shared scene, by `data-ak-3d` kind. */
@@ -759,7 +760,12 @@ function mount(el) {
 }
 
 /** Widgets with their own runtime module, keyed by `data-ak-3d`; the rest mount as a scene. */
-const WIDGETS = { model: mountModel, network: mountNetwork, scatter: mountScatter };
+const WIDGETS = {
+  model: mountModel,
+  network: mountNetwork,
+  scatter: mountScatter,
+  particles: mountParticles,
+};
 /** What a widget module needs from the shared runtime. */
 const kit = {
   api: () => api,
@@ -795,12 +801,14 @@ function mountAll() {
 function stats() {
   let calls = 0;
   let triangles = 0;
+  let frames = 0;
   const renderMs = [];
   const profiles = new Set();
   for (const record of mounts) {
     const info = record.info();
     calls += info.calls;
     triangles += info.triangles;
+    frames += record.frames;
     profiles.add(`${info.quality}@${info.dpr}`);
     renderMs.push(...record.renderMs);
   }
@@ -811,6 +819,9 @@ function stats() {
     triangles,
     profile: [...profiles].join(','),
     renderMs,
+    frames,
+    /** Particle geometries and materials still alive; zero once every scene is unmounted. */
+    particleResources: liveParticleResources(),
   };
 }
 

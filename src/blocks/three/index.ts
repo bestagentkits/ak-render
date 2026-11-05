@@ -5,6 +5,8 @@ import { bars3dBlock } from './bars-3d.js';
 import { model3dBlock } from './model-3d.js';
 import { network3dBlock } from './network-3d.js';
 import { NETWORK_CSS } from './network-styles.js';
+import { particles3dBlock } from './particles-3d.js';
+import { PARTICLES_CSS } from './particles-styles.js';
 import { scatter3dBlock } from './scatter-3d.js';
 import { SCATTER_CSS } from './scatter-styles.js';
 import { scene3dBlock } from './scene-3d.js';
@@ -28,12 +30,19 @@ function wireThree() {
 
 export const THREE_GROUP: BlockGroup = {
   name: 'three',
-  blocks: [scene3dBlock, model3dBlock, network3dBlock, scatter3dBlock, bars3dBlock],
+  blocks: [
+    scene3dBlock,
+    model3dBlock,
+    network3dBlock,
+    scatter3dBlock,
+    bars3dBlock,
+    particles3dBlock,
+  ],
   features: [
     {
       name: 'three',
       marker: '.ak-3d{',
-      css: THREE_CSS + NETWORK_CSS + SCATTER_CSS,
+      css: THREE_CSS + NETWORK_CSS + SCATTER_CSS + PARTICLES_CSS,
       script: { code: `${THREE_RUNTIME}\n${THREE_BOOT}`, boot: 'wireThree();' },
     },
   ],
