@@ -1,0 +1,139 @@
+version: 1
+meta:
+  title: Global network
+state:
+  city: sin
+  year: ""
+datasets:
+  cities:
+    - { id: lhr, name: London, region: Europe, role: Hub, staff: 1840 }
+    - { id: fra, name: Frankfurt, region: Europe, role: Hub, staff: 1210 }
+    - { id: ams, name: Amsterdam, region: Europe, role: Office, staff: 420 }
+    - { id: par, name: Paris, region: Europe, role: Office, staff: 610 }
+    - { id: mad, name: Madrid, region: Europe, role: Office, staff: 260 }
+    - { id: sto, name: Stockholm, region: Europe, role: Office, staff: 190 }
+    - { id: jfk, name: New York, region: Americas, role: Hub, staff: 2100 }
+    - { id: sfo, name: San Francisco, region: Americas, role: Hub, staff: 1650 }
+    - { id: yyz, name: Toronto, region: Americas, role: Office, staff: 380 }
+    - { id: mex, name: Mexico City, region: Americas, role: Office, staff: 310 }
+    - { id: gru, name: São Paulo, region: Americas, role: Hub, staff: 890 }
+    - { id: scl, name: Santiago, region: Americas, role: Office, staff: 140 }
+    - { id: dxb, name: Dubai, region: Middle East & Africa, role: Hub, staff: 760 }
+    - { id: nbo, name: Nairobi, region: Middle East & Africa, role: Office, staff: 170 }
+    - { id: jnb, name: Johannesburg, region: Middle East & Africa, role: Office, staff: 230 }
+    - { id: los, name: Lagos, region: Middle East & Africa, role: Office, staff: 150 }
+    - { id: sin, name: Singapore, region: Asia Pacific, role: Hub, staff: 1320 }
+    - { id: hnd, name: Tokyo, region: Asia Pacific, role: Hub, staff: 1490 }
+    - { id: syd, name: Sydney, region: Asia Pacific, role: Hub, staff: 720 }
+    - { id: bom, name: Mumbai, region: Asia Pacific, role: Office, staff: 640 }
+    - { id: hkg, name: Hong Kong, region: Asia Pacific, role: Office, staff: 410 }
+    - { id: icn, name: Seoul, region: Asia Pacific, role: Office, staff: 280 }
+    - { id: sgn, name: Ho Chi Minh City, region: Asia Pacific, role: Office, staff: 220 }
+    - { id: akl, name: Auckland, region: Asia Pacific, role: Office, staff: 90 }
+blocks:
+  - type: globe-3d
+    id: globe
+    title: Where the network runs
+    summary: Twenty-four offices on five continents, with the private links between them by the year each opened. Nine hubs carry most of the traffic.
+    bind: state.city
+    timeBind: state.year
+    valueLabel: Staff
+    layers:
+      - { id: hubs, label: Hubs, tone: accent }
+      - { id: offices, label: Offices, tone: info }
+      - { id: backbone, label: Backbone links, tone: accent }
+      - { id: regional, label: Regional links, tone: success }
+    markers:
+      - { id: lhr, label: London, lat: 51.47, lon: -0.45, value: 1840, layer: hubs, time: "2016" }
+      - { id: fra, label: Frankfurt, lat: 50.04, lon: 8.56, value: 1210, layer: hubs, time: "2017" }
+      - { id: ams, label: Amsterdam, lat: 52.31, lon: 4.76, value: 420, layer: offices, time: "2019" }
+      - { id: par, label: Paris, lat: 49.01, lon: 2.55, value: 610, layer: offices, time: "2018" }
+      - { id: mad, label: Madrid, lat: 40.47, lon: -3.56, value: 260, layer: offices, time: "2021" }
+      - { id: sto, label: Stockholm, lat: 59.65, lon: 17.92, value: 190, layer: offices, time: "2022" }
+      - { id: jfk, label: New York, lat: 40.64, lon: -73.78, value: 2100, layer: hubs, time: "2016", description: Headquarters and the first backbone landing. }
+      - { id: sfo, label: San Francisco, lat: 37.62, lon: -122.38, value: 1650, layer: hubs, time: "2016" }
+      - { id: yyz, label: Toronto, lat: 43.68, lon: -79.63, value: 380, layer: offices, time: "2019" }
+      - { id: mex, label: Mexico City, lat: 19.44, lon: -99.07, value: 310, layer: offices, time: "2020" }
+      - { id: gru, label: São Paulo, lat: -23.43, lon: -46.47, value: 890, layer: hubs, time: "2018" }
+      - { id: scl, label: Santiago, lat: -33.39, lon: -70.79, value: 140, layer: offices, time: "2023" }
+      - { id: dxb, label: Dubai, lat: 25.25, lon: 55.36, value: 760, layer: hubs, time: "2018" }
+      - { id: nbo, label: Nairobi, lat: -1.32, lon: 36.93, value: 170, layer: offices, time: "2022" }
+      - { id: jnb, label: Johannesburg, lat: -26.13, lon: 28.24, value: 230, layer: offices, time: "2020" }
+      - { id: los, label: Lagos, lat: 6.58, lon: 3.32, value: 150, layer: offices, time: "2023" }
+      - { id: sin, label: Singapore, lat: 1.36, lon: 103.99, value: 1320, layer: hubs, time: "2017", description: Asia Pacific hub and the busiest interconnect. }
+      - { id: hnd, label: Tokyo, lat: 35.55, lon: 139.78, value: 1490, layer: hubs, time: "2017" }
+      - { id: syd, label: Sydney, lat: -33.94, lon: 151.18, value: 720, layer: hubs, time: "2019" }
+      - { id: bom, label: Mumbai, lat: 19.09, lon: 72.87, value: 640, layer: offices, time: "2019" }
+      - { id: hkg, label: Hong Kong, lat: 22.31, lon: 113.92, value: 410, layer: offices, time: "2018" }
+      - { id: icn, label: Seoul, lat: 37.46, lon: 126.44, value: 280, layer: offices, time: "2021" }
+      - { id: sgn, label: Ho Chi Minh City, lat: 10.82, lon: 106.65, value: 220, layer: offices, time: "2022" }
+      - { id: akl, label: Auckland, lat: -37.01, lon: 174.79, value: 90, layer: offices, time: "2024" }
+    arcs:
+      - { from: jfk, to: lhr, value: 400, layer: backbone, time: "2016" }
+      - { from: jfk, to: sfo, value: 320, layer: backbone, time: "2016" }
+      - { from: lhr, to: fra, value: 260, layer: backbone, time: "2017" }
+      - { from: lhr, to: sin, value: 240, layer: backbone, time: "2017" }
+      - { from: sfo, to: hnd, value: 300, layer: backbone, time: "2017" }
+      - { from: sin, to: hnd, value: 220, layer: backbone, time: "2017" }
+      - { from: fra, to: dxb, value: 180, layer: backbone, time: "2018" }
+      - { from: dxb, to: sin, value: 200, layer: backbone, time: "2018" }
+      - { from: jfk, to: gru, value: 160, layer: backbone, time: "2018" }
+      - { from: sin, to: syd, value: 150, layer: backbone, time: "2019" }
+      - { from: lhr, to: par, value: 90, layer: regional, time: "2018" }
+      - { from: lhr, to: ams, value: 80, layer: regional, time: "2019" }
+      - { from: fra, to: sto, value: 40, layer: regional, time: "2022" }
+      - { from: par, to: mad, value: 50, layer: regional, time: "2021" }
+      - { from: jfk, to: yyz, value: 70, layer: regional, time: "2019" }
+      - { from: sfo, to: mex, value: 60, layer: regional, time: "2020" }
+      - { from: gru, to: scl, value: 30, layer: regional, time: "2023" }
+      - { from: dxb, to: bom, value: 110, layer: regional, time: "2019" }
+      - { from: dxb, to: nbo, value: 40, layer: regional, time: "2022" }
+      - { from: dxb, to: jnb, value: 50, layer: regional, time: "2020" }
+      - { from: lhr, to: los, value: 35, layer: regional, time: "2023" }
+      - { from: sin, to: hkg, value: 120, layer: regional, time: "2018" }
+      - { from: sin, to: sgn, value: 60, layer: regional, time: "2022" }
+      - { from: hnd, to: icn, value: 70, layer: regional, time: "2021" }
+      - { from: syd, to: akl, value: 25, layer: regional, time: "2024" }
+      - { from: gru, to: jnb, value: 45, layer: backbone, time: "2020" }
+  - type: filter-bar
+    title: Selected office
+    target: cities-table
+    blocks:
+      - type: select
+        label: Office
+        field: id
+        bind: state.city
+        options:
+          - { value: lhr, label: London }
+          - { value: fra, label: Frankfurt }
+          - { value: ams, label: Amsterdam }
+          - { value: par, label: Paris }
+          - { value: mad, label: Madrid }
+          - { value: sto, label: Stockholm }
+          - { value: jfk, label: New York }
+          - { value: sfo, label: San Francisco }
+          - { value: yyz, label: Toronto }
+          - { value: mex, label: Mexico City }
+          - { value: gru, label: São Paulo }
+          - { value: scl, label: Santiago }
+          - { value: dxb, label: Dubai }
+          - { value: nbo, label: Nairobi }
+          - { value: jnb, label: Johannesburg }
+          - { value: los, label: Lagos }
+          - { value: sin, label: Singapore }
+          - { value: hnd, label: Tokyo }
+          - { value: syd, label: Sydney }
+          - { value: bom, label: Mumbai }
+          - { value: hkg, label: Hong Kong }
+          - { value: icn, label: Seoul }
+          - { value: sgn, label: Ho Chi Minh City }
+          - { value: akl, label: Auckland }
+  - type: data-table
+    id: cities-table
+    title: Office detail
+    dataRef: cities
+    columns:
+      - { key: name, label: Office }
+      - { key: region, label: Region }
+      - { key: role, label: Role }
+      - { key: staff, label: Staff, format: number }

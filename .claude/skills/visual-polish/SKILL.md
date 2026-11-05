@@ -99,6 +99,14 @@ metal metalness 0.85 roughness 0.32.
 - **Products: close-ups keep context.** A hotspot camera stands about three
   quarters of the home distance away, turned partly toward the hotspot's side;
   any closer and an exploded part fills the frame.
+- **Globes: mix in linear space with care.** A shader mix toward a cream ink
+  turns the ocean tan; scale the surface navy instead. Put the sun west of the
+  view and a little north, so a warm terminator and night crescent show on the
+  eastern limb. The atmosphere is a back-face shell whose glow peaks at the
+  limb and fades outward.
+- **Globes: dense routes thin out.** Past a few dozen arcs, scale arc width and
+  opacity down with the count, and link near neighbours rather than random
+  pairs, or 200 arcs become a hairball. Cluster markers when far out.
 - **Morphs: soft shading, sharp outline.** A shaded SVG drawing of a smooth
   surface bands badly at 8 steps. Use about two dozen shade steps, then draw
   the faces once crisp and once blurred (stdDeviation about 4) under an alpha
