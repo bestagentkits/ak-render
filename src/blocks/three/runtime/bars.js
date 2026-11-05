@@ -27,7 +27,7 @@ const LABEL_GAP = 6;
 const FILL_X = 0.84;
 const FILL_Y = 0.78;
 /** Least share of the stage height a framed chart should span before the view tilts down. */
-const MIN_HEIGHT = 0.68;
+const MIN_HEIGHT = 0.76;
 
 function readColor(el, name, fallback) {
   const color = new Color(fallback);
@@ -66,11 +66,12 @@ function fitBox(camera, target, base, corners, aspect, pad) {
   const flat = Math.hypot(base.x, base.z) || 1;
   const start = Math.atan2(base.y, flat);
   let fit = null;
-  for (let tilt = 0; tilt <= 0.4 + 1e-9; tilt += 0.05) {
+  for (let tilt = 0; tilt <= 0.6 + 1e-9; tilt += 0.05) {
     const elevation = Math.min(1.05, start + tilt);
     const scale = Math.cos(elevation) / flat;
     const dir = new Vector3(base.x * scale, Math.sin(elevation), base.z * scale).normalize();
-    fit = fitFrom(camera, target, dir, corners, aspect, pad);
+    const next = fitFrom(camera, target, dir, corners, aspect, pad);
+    if (!fit || next.height > fit.height) fit = next;
     if (fit.height >= MIN_HEIGHT || elevation >= 1.05) break;
   }
   return { position: fit.position, target: fit.target };
@@ -82,12 +83,12 @@ function fitFrom(camera, target, dir, corners, aspect, pad) {
   probe.updateProjectionMatrix();
   const aim = target.clone();
   const point = new Vector3();
-  const bounds = (distance) => {
+  const bounds = (distance, points = corners) => {
     probe.position.copy(aim).addScaledVector(dir, distance);
     probe.lookAt(aim);
     probe.updateMatrixWorld();
     let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity];
-    for (const corner of corners) {
+    for (const corner of points) {
       point.copy(corner).project(probe);
       x0 = Math.min(x0, point.x);
       x1 = Math.max(x1, point.x);
@@ -115,7 +116,8 @@ function fitFrom(camera, target, dir, corners, aspect, pad) {
     aim.addScaledVector(right, ((x0 + x1) / 2 - pad) * halfH * aspect);
     aim.addScaledVector(up, ((y0 + y1) / 2) * halfH);
   }
-  const [, y0, , y1] = bounds(distance);
+  // Height is judged on the bars and zero plane (the first eight corners), not the walls.
+  const [, y0, , y1] = bounds(distance, corners.slice(0, 8));
   const position = aim.clone().addScaledVector(dir, distance);
   return { position: position.toArray(), target: aim.toArray(), height: (y1 - y0) / 2 };
 }
@@ -197,7 +199,7 @@ export function barsWidget(ctx) {
   bars.categories.forEach(([x, name], c) => {
     const column = bars.layouts[''].slice(c * per, (c + 1) * per);
     const bottom = Math.min(0, ...column.map((pair) => pair[0]));
-    addLabel(name, new Vector3(x, bottom, z1 + 0.35), 'cat');
+    addLabel(name, new Vector3(x, bottom, z1 + 0.05), 'cat');
   });
   for (const [z, name] of bars.rows) addLabel(name, new Vector3(x1 + 0.5, 0, z), 'row');
   const groups = ['tick', 'cat', 'row'].map((kind) =>

@@ -261,11 +261,21 @@ export function barsConfig(node: IrNode): Record<string, JsonValue> {
 const W = 960;
 const H = 540;
 const PAD = { left: 72, right: 24, top: 24, bottom: 56 };
+const PAD_INNER = (W - PAD.left - PAD.right) * 0.78;
 
 /** A flat, labelled bar chart of the same data: the no-JS, no-WebGL and print view. */
 export function barsPoster(model: BarsModel, label: string, unit: string): string {
   const { mode, categories, series, extents, domain, ticks } = model;
-  const plotW = W - PAD.left - PAD.right;
+  // Room for the widest axis label at the phone poster size (28 units), so none is clipped.
+  const axis =
+    mode === 'grouped' && PAD_INNER / categories.length / series.length < 3
+      ? series.map((entry) => entry.label)
+      : ticks.map((tick) => formatValue(tick, unit));
+  const padLeft = Math.max(
+    PAD.left,
+    Math.ceil(Math.max(0, ...axis.map((text) => text.length)) * 0.62 * 28 + 16),
+  );
+  const plotW = W - padLeft - PAD.right;
   const plotH = H - PAD.top - PAD.bottom;
   const span = domain[1] - domain[0] || 1;
   const y = (v: number) => round(PAD.top + ((domain[1] - v) / span) * plotH);
@@ -279,9 +289,9 @@ export function barsPoster(model: BarsModel, label: string, unit: string): strin
     series.forEach((entry, s) => {
       const ry = (v: number) => round(PAD.top + s * rowH + ((domain[1] - v) / span) * (rowH - 4));
       parts.push(
-        `<text class="ak-bars-tick" x="${PAD.left - 8}" y="${round(ry(0) + 4)}">${escapeText(
+        `<text class="ak-bars-tick" x="${padLeft - 8}" y="${round(ry(0) + 4)}">${escapeText(
           entry.label,
-        )}</text><line class="ak-bars-grid" x1="${PAD.left}" x2="${W - PAD.right}" y1="${ry(
+        )}</text><line class="ak-bars-grid" x1="${padLeft}" x2="${W - PAD.right}" y1="${ry(
           0,
         )}" y2="${ry(0)}"/>`,
       );
@@ -290,7 +300,7 @@ export function barsPoster(model: BarsModel, label: string, unit: string): strin
         if (top === bottom) return;
         parts.push(
           `<rect class="ak-3d-mark" data-tone="${escapeAttribute(entry.tone)}"${hueOf(entry)} x="${round(
-            PAD.left + c * band + (band - inner) / 2,
+            padLeft + c * band + (band - inner) / 2,
           )}" y="${ry(top)}" width="${round(Math.max(inner, 2))}" height="${round(
             Math.max(ry(bottom) - ry(top), 1),
           )}"/>`,
@@ -300,16 +310,16 @@ export function barsPoster(model: BarsModel, label: string, unit: string): strin
   } else {
     for (const tick of ticks) {
       parts.push(
-        `<line class="ak-bars-grid${tick === 0 ? ' ak-bars-zero' : ''}" x1="${PAD.left}" x2="${
+        `<line class="ak-bars-grid${tick === 0 ? ' ak-bars-zero' : ''}" x1="${padLeft}" x2="${
           W - PAD.right
-        }" y1="${y(tick)}" y2="${y(tick)}"/><text class="ak-bars-tick" x="${PAD.left - 8}" y="${
+        }" y1="${y(tick)}" y2="${y(tick)}"/><text class="ak-bars-tick" x="${padLeft - 8}" y="${
           y(tick) + 4
         }">${escapeText(formatValue(tick, unit))}</text>`,
       );
     }
     const every = Math.ceil(categories.length / 12);
     categories.forEach((category, c) => {
-      const left = PAD.left + c * band + (band - inner) / 2;
+      const left = padLeft + c * band + (band - inner) / 2;
       series.forEach((entry, s) => {
         const [bottom, top] = extents[c]?.[s] ?? [0, 0];
         if (top === bottom) return;
@@ -324,7 +334,7 @@ export function barsPoster(model: BarsModel, label: string, unit: string): strin
       });
       if (c % every === 0)
         parts.push(
-          `<text class="ak-bars-cat" x="${round(PAD.left + (c + 0.5) * band)}" y="${
+          `<text class="ak-bars-cat" x="${round(padLeft + (c + 0.5) * band)}" y="${
             H - PAD.bottom + 22
           }">${escapeText(category.label)}</text>`,
         );
@@ -335,7 +345,7 @@ export function barsPoster(model: BarsModel, label: string, unit: string): strin
     categories.forEach((category, c) => {
       if (c % every === 0)
         parts.push(
-          `<text class="ak-bars-cat" x="${round(PAD.left + (c + 0.5) * band)}" y="${
+          `<text class="ak-bars-cat" x="${round(padLeft + (c + 0.5) * band)}" y="${
             H - PAD.bottom + 22
           }">${escapeText(category.label)}</text>`,
         );
@@ -345,7 +355,7 @@ export function barsPoster(model: BarsModel, label: string, unit: string): strin
     )}" preserveAspectRatio="xMidYMid meet">${parts.join('')}</svg>`;
   }
   parts.push(
-    `<line class="ak-bars-zero" x1="${PAD.left}" x2="${W - PAD.right}" y1="${y(0)}" y2="${y(0)}"/>`,
+    `<line class="ak-bars-zero" x1="${padLeft}" x2="${W - PAD.right}" y1="${y(0)}" y2="${y(0)}"/>`,
   );
   return `<svg class="ak-3d-poster ak-bars-poster" viewBox="0 0 ${W} ${H}" role="img" aria-label="${escapeAttribute(
     label,
