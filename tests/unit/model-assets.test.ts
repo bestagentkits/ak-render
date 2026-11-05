@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it, vi } from 'vitest';
 import {
   createModelAssetBudget,
   MODEL_ASSET_LIMITS,
@@ -89,17 +89,75 @@ describe('local model resolver', () => {
     expect(nested.diagnostics[0]?.details?.gltfPath).toBe('buffers[0].uri');
   });
 
-  it('rejects a symlink that leaves baseDir', () => {
+  it('rejects a directory link (junction on win32, symlink elsewhere) that leaves baseDir', () => {
     const outside = dir('outside', { 'm.glb': makeGlb() });
-    const root = dir('linked', {});
-    try {
-      symlinkSync(join(outside, 'm.glb'), join(root, 'm.glb'), 'file');
-    } catch {
-      return; // Symlinks need privileges on some Windows hosts.
-    }
-    const result = resolveModelAsset('m.glb', opts(root));
+    const root = dir('linked', { 'keep.txt': '' });
+    // A junction needs no privilege on Windows, so this runs on every host.
+    symlinkSync(outside, join(root, 'link'), process.platform === 'win32' ? 'junction' : 'dir');
+    const result = resolveModelAsset('link/m.glb', opts(root));
     expect(codes(result)).toEqual(['POLICY_VIOLATION']);
     expect(result.diagnostics[0]?.message).toMatch(/link outside/u);
+  });
+
+  it('rejects backslash, UNC, percent-encoded and drive-relative escapes on every platform', () => {
+    const root = dir('trav3/spec', { 'm.glb': makeGlb() });
+    dir('trav3', { 'x.glb': makeGlb() });
+    for (const ref of [
+      '..\\x.glb',
+      'a\\..\\..\\x.glb',
+      '\\\\server\\share\\x.glb',
+      '//server/share/x.glb',
+      '%2e%2e%2fx.glb',
+      '..%2fx.glb',
+      'C:x.glb',
+    ]) {
+      const result = resolveModelAsset(ref, opts(root));
+      expect(result.asset, ref).toBeUndefined();
+      expect(codes(result), ref).toEqual(['POLICY_VIOLATION']);
+      expect(result.diagnostics[0]?.details?.fix, ref).toEqual(expect.any(String));
+    }
+    const nested = dir('trav4/spec', {
+      'm.gltf': JSON.stringify({ asset: { version: '2.0' }, buffers: [{ uri: '%2e%2e%2fx.bin' }] }),
+    });
+    expect(codes(resolveModelAsset('m.gltf', opts(nested)))).toEqual(['POLICY_VIOLATION']);
+  });
+
+  it('treats a baseDir that differs only in case per the file system', () => {
+    const root = dir('CaseRoot', { 'm.glb': makeGlb() });
+    const flipped = join(scratch, 'caseroot');
+    const result = resolveModelAsset('m.glb', opts(flipped));
+    if (process.platform === 'win32' || process.platform === 'darwin') {
+      // Case-insensitive volume: the real root is the same directory.
+      expect(result.diagnostics).toEqual([]);
+      expect(codes(resolveModelAsset('../CaseRoot/../x.glb', opts(flipped)))).toEqual([
+        'POLICY_VIOLATION',
+      ]);
+    } else {
+      expect(result.diagnostics[0]?.message).toMatch(/spec directory .* does not exist/u);
+    }
+    expect(resolveModelAsset('m.glb', opts(root)).diagnostics).toEqual([]);
+  });
+
+  it('names a missing baseDir in its own message', () => {
+    const result = resolveModelAsset('m.glb', opts(join(scratch, 'nope')));
+    expect(result.diagnostics[0]?.message).toMatch(/spec directory .* does not exist/u);
+  });
+
+  it('never allocates more than perAssetBytes + 1 for a read', () => {
+    const big = Buffer.alloc(64 * 1024, 1);
+    const root = dir('alloc', { 'm.glb': big });
+    const spy = vi.spyOn(Buffer, 'alloc');
+    try {
+      const result = resolveModelAsset(
+        'm.glb',
+        opts(root, { limits: { perAssetBytes: 100, perPageBytes: 1000 } }),
+      );
+      expect(codes(result)).toEqual(['SPEC_BOUNDS_ERROR']);
+      expect(result.diagnostics[0]?.message).toMatch(/MiB/u);
+      expect(Math.max(...spy.mock.calls.map((call) => Number(call[0])))).toBeLessThanOrEqual(101);
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it('enforces the per-asset and per-page caps', () => {
@@ -139,6 +197,45 @@ describe('local model resolver', () => {
       }),
     });
     expect(resolveModelAsset('m.gltf', opts(data)).diagnostics[0]?.message).toMatch(/MIME/u);
+  });
+
+  it('rejects KTX2 textures, since no decoder is bundled', () => {
+    const root = dir('ktx2', {
+      'm.gltf': JSON.stringify({ asset: { version: '2.0' }, images: [{ uri: 't.ktx2' }] }),
+      't.ktx2': Buffer.from([0xab, 0x4b, 0x54, 0x58]),
+    });
+    expect(codes(resolveModelAsset('m.gltf', opts(root)))).toEqual(['SPEC_VALIDATION_ERROR']);
+  });
+
+  it('checks images and buffers by role, MIME type and magic bytes', () => {
+    const png = Buffer.from('89504e470d0a1a0a0000000d49484452', 'hex');
+    const gltf = (extra: Record<string, unknown>) =>
+      JSON.stringify({ asset: { version: '2.0' }, ...extra });
+    const root = dir('roles', {
+      'svg.gltf': gltf({ images: [{ uri: 'fake.png' }] }),
+      'fake.png': '<svg xmlns="http://www.w3.org/2000/svg"/>',
+      'html.gltf': gltf({
+        images: [{ uri: `data:image/png;base64,${Buffer.from('<html>').toString('base64')}` }],
+      }),
+      'buf.gltf': gltf({ buffers: [{ uri: `data:image/png;base64,${png.toString('base64')}` }] }),
+      'bufpng.gltf': gltf({ buffers: [{ uri: 'real.png' }] }),
+      'mime.gltf': gltf({ images: [{ bufferView: 0, mimeType: 'image/svg+xml' }] }),
+      'ok.gltf': gltf({ images: [{ uri: 'real.png', mimeType: 'image/png' }] }),
+      'real.png': png,
+    });
+    for (const [file, pattern] of [
+      ['svg.gltf', /not a image\/png image/u],
+      ['html.gltf', /not a image\/png image/u],
+      ['buf.gltf', /buffer data URI .* unsupported MIME/u],
+      ['bufpng.gltf', /buffer URI .* unsupported file type/u],
+      ['mime.gltf', /mimeType "image\/svg\+xml"/u],
+    ] as const) {
+      const result = resolveModelAsset(file, opts(root));
+      expect(result.asset, file).toBeUndefined();
+      expect(codes(result), file).toEqual(['SPEC_VALIDATION_ERROR']);
+      expect(result.diagnostics[0]?.message, file).toMatch(pattern);
+    }
+    expect(resolveModelAsset('ok.gltf', opts(root)).diagnostics).toEqual([]);
   });
 
   it('validates the glTF shape', () => {
@@ -228,6 +325,9 @@ describe('models network capability', () => {
     ];
     const policy: NetworkPolicy = { allow: ['models', 'images'] };
     expect(assetOrigins(policy, refs, ['models'])).toEqual(['https://m.example.com']);
+    // The capability filter is required, so no caller can mix directives by omission.
+    // @ts-expect-error capabilities must be passed
+    expect(() => assetOrigins(policy, refs)).toThrow();
     expect(assetOrigins(policy, refs, ['images', 'media'])).toEqual(['https://i.example.com']);
 
     const ir = normalize({

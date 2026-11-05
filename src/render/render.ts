@@ -20,12 +20,8 @@ import type { BlockRegistry, FeatureModule } from '../registry/block-module.js';
 import { DEFAULT_REGISTRY } from '../registry/registry.js';
 import type { RuntimeFeature } from '../registry/roster.js';
 import { assetOrigins, assetReferences } from '../spec/asset-references.js';
-import { CONNECT_CAPABILITIES, type MediaCapability } from '../spec/network-policy.js';
-
-/** Capabilities the page displays from a remote origin: `img-src` and `media-src`. */
-const DISPLAY_CAPABILITIES: readonly MediaCapability[] = ['images', 'media'];
-
 import { evaluateCondition } from '../spec/conditions.js';
+import { CONNECT_CAPABILITIES, type MediaCapability } from '../spec/network-policy.js';
 import { type NormalizeResult, normalizeSpec } from '../spec/normalize.js';
 import { loadTheme, type ResolvedTheme, resolveTheme } from '../theme/load-theme.js';
 import { builtinThemeCatalog, type ThemeCatalog } from '../theme/theme-catalog.js';
@@ -41,6 +37,9 @@ import { BASE_CSS, FEATURE_CSS } from './styles.js';
 import { inverseSurfaceCss, usesInverseSurface } from './surface-styles.js';
 import { SYNTAX_TOKEN_MARKUP } from './syntax-highlight.js';
 import { verifyDocument, verifyIr } from './verify.js';
+
+/** Capabilities the page displays from a remote origin: `img-src` and `media-src`. */
+const DISPLAY_CAPABILITIES: readonly MediaCapability[] = ['images', 'media'];
 
 export interface RenderOptions {
   /** Theme preset name or typed theme input; defaults to the spec's theme. */
