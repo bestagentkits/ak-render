@@ -179,30 +179,126 @@ export function scenePoster(
   )}" preserveAspectRatio="xMidYMid meet">${marks}</svg>`;
 }
 
-/** The camera a scene uses: authored, or framed to fit every object. */
+/** Bounding radius of a drawn object; a plane is flat, so its corners set the extent. */
+function radiusOf(object: PlacedObject): number {
+  const half = (object.size * object.scale) / 2;
+  if (object.shape === 'plane') return half * Math.SQRT2;
+  if (object.shape === 'sphere' || object.shape === 'icosahedron') return half;
+  // Boxes, cylinders, cones and tori: the corner of the enclosing cube.
+  return half * Math.sqrt(3);
+}
+
+const FILL = 0.8;
+const ELEVATION = 28 * DEG;
+
+/** The six extreme points of every drawn object's bounding sphere. */
+function extremes(objects: readonly PlacedObject[]): Vec3[] {
+  return objects.flatMap((object) => {
+    const r = radiusOf(object);
+    const [x, y, z] = object.world;
+    return [
+      [x + r, y, z],
+      [x - r, y, z],
+      [x, y + r, z],
+      [x, y - r, z],
+      [x, y, z + r],
+      [x, y, z - r],
+    ] as Vec3[];
+  });
+}
+
+/** True when every point lands inside the central FILL share of the frame. */
+function fits(points: readonly Vec3[], camera: SceneCamera): boolean {
+  return points.every((point) => {
+    const at = project(point, camera);
+    return (
+      at !== null &&
+      Math.abs(at.x - W / 2) <= (W / 2) * FILL &&
+      Math.abs(at.y - H / 2) <= (H / 2) * FILL
+    );
+  });
+}
+
+/** How much the pickable objects cover each other from this camera, in pixels. */
+function overlap(objects: readonly PlacedObject[], camera: SceneCamera): number {
+  const f = H / 2 / Math.tan((camera.fov * DEG) / 2);
+  const marks = objects.flatMap((object) => {
+    const at = project(object.world, camera);
+    return at === null ? [] : [{ x: at.x, y: at.y, r: (radiusOf(object) * f) / at.depth }];
+  });
+  let total = 0;
+  for (let i = 0; i < marks.length; i += 1) {
+    for (let j = i + 1; j < marks.length; j += 1) {
+      const a = marks[i] as (typeof marks)[number];
+      const b = marks[j] as (typeof marks)[number];
+      total += Math.max(0, a.r + b.r - Math.hypot(a.x - b.x, a.y - b.y));
+    }
+  }
+  return total;
+}
+
+/**
+ * The camera a scene uses: authored, or framed by the compiler. The framing
+ * tries eight azimuths at a fixed elevation, keeps the one where the pickable
+ * objects hide each other least, and moves in until the scene fills 80% of the
+ * frame. Every step is arithmetic on the spec, so the result is deterministic.
+ */
 export function frameCamera(
   objects: readonly PlacedObject[],
   authored: JsonValue | undefined,
 ): SceneCamera {
   const given =
     authored !== null && typeof authored === 'object' && !Array.isArray(authored) ? authored : {};
-  const target = vec(given.target, [0, 0, 0]);
-  let position = vec(given.position, [0, 0, 0]);
-  if (!Array.isArray(given.position)) {
-    const radius = Math.max(
-      2,
-      ...objects.map(
-        (o) =>
-          Math.hypot(o.world[0] - target[0], o.world[1] - target[1], o.world[2] - target[2]) +
-          o.size * o.scale,
-      ),
-    );
-    const distance = radius * 2.2;
-    position = [
-      round(target[0] + distance * 0.55),
-      round(target[1] + distance * 0.45),
-      round(target[2] + distance * 0.7),
-    ];
+  const fov = typeof given.fov === 'number' ? given.fov : 45;
+  const drawn = objects.filter((object) => object.shape !== 'group');
+  if (Array.isArray(given.position)) {
+    return { position: vec(given.position, [0, 0, 0]), target: vec(given.target, [0, 0, 0]), fov };
   }
-  return { position, target, fov: typeof given.fov === 'number' ? given.fov : 45 };
+  // The floor frames nothing: fit the subject, and the plane only when it is all there is.
+  const subject = drawn.filter((object) => object.shape !== 'plane');
+  const points = extremes(subject.length > 0 ? subject : drawn);
+  const target: Vec3 = Array.isArray(given.target)
+    ? vec(given.target, [0, 0, 0])
+    : points.length === 0
+      ? [0, 0, 0]
+      : ([0, 1, 2].map((axis) => {
+          const values = points.map((point) => point[axis] as number);
+          return round((Math.min(...values) + Math.max(...values)) / 2);
+        }) as Vec3);
+  const pickable = drawn.filter((object) => object.shape !== 'plane');
+  let best: { camera: SceneCamera; score: number } | undefined;
+  for (let k = 0; k < 8; k += 1) {
+    const azimuth = (35 + k * 45) * DEG;
+    const direction: Vec3 = [
+      Math.cos(ELEVATION) * Math.sin(azimuth),
+      Math.sin(ELEVATION),
+      Math.cos(ELEVATION) * Math.cos(azimuth),
+    ];
+    const at = (distance: number): SceneCamera => ({
+      position: [
+        target[0] + direction[0] * distance,
+        target[1] + direction[1] * distance,
+        target[2] + direction[2] * distance,
+      ],
+      target,
+      fov,
+    });
+    // The closest distance that still fits: fit is monotonic in distance.
+    let near = 0.5;
+    let far = 4000;
+    for (let step = 0; step < 40; step += 1) {
+      const mid = (near + far) / 2;
+      if (fits(points, at(mid))) far = mid;
+      else near = mid;
+    }
+    const camera = at(far);
+    const score = Math.round(overlap(pickable, camera));
+    if (best === undefined || score < best.score) best = { camera, score };
+  }
+  const chosen = (best as { camera: SceneCamera }).camera;
+  return {
+    position: chosen.position.map((n) => round(n)) as Vec3,
+    target,
+    fov,
+  };
 }

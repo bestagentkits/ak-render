@@ -11,12 +11,15 @@
  */
 
 import {
+  ACESFilmicToneMapping,
   AmbientLight,
+  Box3,
   BoxGeometry,
   Color,
   ConeGeometry,
   CylinderGeometry,
   DirectionalLight,
+  Fog,
   Group,
   HemisphereLight,
   IcosahedronGeometry,
@@ -24,11 +27,15 @@ import {
   Mesh,
   MeshPhysicalMaterial,
   MeshStandardMaterial,
+  PCFSoftShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
+  PMREMGenerator,
   PointLight,
   Raycaster,
   Scene,
+  ShadowMaterial,
+  Sphere,
   SphereGeometry,
   TorusGeometry,
   TorusKnotGeometry,
@@ -36,6 +43,7 @@ import {
   Vector3,
   WebGLRenderer,
 } from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 
 const TONE_VARS = {
   accent: '--ak-color-accent',
@@ -49,18 +57,21 @@ const TONE_VARS = {
 /** Light rig presets: the compiler owns lighting, a spec only names the mood. */
 const RIGS = {
   studio: [
-    { kind: 'hemisphere', intensity: 1.1 },
-    { kind: 'directional', intensity: 2.2, position: [5, 8, 6] },
-    { kind: 'directional', intensity: 0.6, position: [-6, 3, -4] },
+    { kind: 'hemisphere', intensity: 0.5 },
+    { kind: 'directional', intensity: 2.4, position: [5, 8, 6] },
+    { kind: 'directional', intensity: 0.5, position: [-6, 3, 4] },
+    { kind: 'rim', intensity: 1.6, position: [-3, 5, -8] },
   ],
   soft: [
-    { kind: 'hemisphere', intensity: 1.6 },
+    { kind: 'hemisphere', intensity: 0.9 },
+    { kind: 'rim', intensity: 0.8, position: [-3, 5, -8] },
     { kind: 'directional', intensity: 0.9, position: [3, 10, 4] },
   ],
   dramatic: [
     { kind: 'ambient', intensity: 0.15 },
     { kind: 'directional', intensity: 3.2, position: [-6, 7, 3] },
     { kind: 'point', intensity: 1.2, position: [4, 2, -4], color: 0xffb070 },
+    { kind: 'rim', intensity: 2.2, position: [2, 4, -8], color: 0xffd0a0 },
   ],
   night: [
     { kind: 'ambient', intensity: 0.25, color: 0x8090ff },
@@ -111,6 +122,22 @@ function toneColor(el, tone) {
     color.set('#6b7cff');
   }
   return color;
+}
+
+function cssColor(el, name, fallback) {
+  const color = new Color(fallback);
+  const raw = getComputedStyle(el).getPropertyValue(name).trim();
+  try {
+    if (raw) color.setStyle(raw);
+  } catch (_error) {
+    // Keep the fallback.
+  }
+  return color;
+}
+
+function isDark(el) {
+  const hsl = cssColor(el, '--ak-color-background', '#ffffff').getHSL({ h: 0, s: 0, l: 0 });
+  return hsl.l < 0.4;
 }
 
 function materialFor(kind, color) {
@@ -211,8 +238,15 @@ function mount(el) {
   stage.appendChild(canvas);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, quality === 'high' ? 2 : 1));
   renderer.shadowMap.enabled = quality === 'high';
+  renderer.shadowMap.type = PCFSoftShadowMap;
+  renderer.toneMapping = ACESFilmicToneMapping;
 
   const scene = new Scene();
+  // A generated studio environment: metal and glass reflect something, with no asset to load.
+  const pmrem = new PMREMGenerator(renderer);
+  const environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  scene.environment = environment;
+  scene.environmentIntensity = 0.55;
   const cfgCamera = config.camera || {};
   const camera = new PerspectiveCamera(cfgCamera.fov || 45, 16 / 9, 0.05, 5000);
   const home = {
@@ -224,7 +258,6 @@ function mount(el) {
   camera.lookAt(target);
 
   const rig = RIGS[config.lighting] || RIGS.studio;
-  const neutral = toneColor(el, 'neutral');
   let keyLight = null;
   for (const spec of rig) {
     const color = new Color(spec.color || 0xffffff);
@@ -234,6 +267,7 @@ function mount(el) {
     else if (spec.kind === 'hemisphere')
       light = new HemisphereLight(color, toneColor(el, 'neutral'), intensity);
     else if (spec.kind === 'point') light = new PointLight(color, intensity * 20);
+    // A rim light sits behind the subject and separates it from the stage.
     else light = new DirectionalLight(color, intensity);
     if (trio(spec.position)) light.position.set(...spec.position);
     // The first directional light is the key light and the only shadow caster.
@@ -247,15 +281,19 @@ function mount(el) {
   const nodes = new Map();
   const pickable = [];
   const owned = { materials: [], geometries: [] };
+  let ground = false;
   for (const spec of config.objects || []) {
     let object;
     if (spec.shape === 'group') object = new Group();
     else {
       const geometry = geometryFor(spec.shape || 'box', spec.size || 1);
-      const material = materialFor(
-        spec.material || 'standard',
-        toneColor(el, spec.tone || 'accent'),
-      );
+      // A neutral plane is the floor: it shows only the shadows cast on it, so the
+      // subject sits on the stage's own light instead of a hard-edged slab.
+      const isGround = spec.shape === 'plane' && (spec.tone || 'accent') === 'neutral';
+      if (isGround) ground = true;
+      const material = isGround
+        ? new ShadowMaterial({ opacity: isDark(el) ? 0.5 : 0.24 })
+        : materialFor(spec.material || 'standard', toneColor(el, spec.tone || 'accent'));
       owned.geometries.push(geometry);
       owned.materials.push(material);
       object = new Mesh(geometry, material);
@@ -280,6 +318,56 @@ function mount(el) {
   for (const [, { object, spec }] of nodes) {
     const parent = spec.parent && nodes.get(spec.parent);
     (parent ? parent.object : scene).add(object);
+  }
+
+  // Stage the subject: a soft shadow catcher under it, fog toward the page
+  // background, and the key light's shadow camera fitted to the scene.
+  const bounds = new Box3().setFromObject(scene);
+  const sphere = bounds.isEmpty()
+    ? new Sphere(new Vector3(), 2)
+    : bounds.getBoundingSphere(new Sphere());
+  const radius = Math.max(sphere.radius, 0.5);
+  const dark = isDark(el);
+  const catcher = new Mesh(
+    geometryFor('plane', 1),
+    new ShadowMaterial({ opacity: dark ? 0.45 : 0.2 }),
+  );
+  owned.geometries.push(catcher.geometry);
+  owned.materials.push(catcher.material);
+  catcher.rotation.x = -Math.PI / 2;
+  catcher.scale.setScalar(radius * 10);
+  catcher.position.set(
+    sphere.center.x,
+    bounds.isEmpty() ? 0 : bounds.min.y - 0.002,
+    sphere.center.z,
+  );
+  catcher.receiveShadow = renderer.shadowMap.enabled;
+  if (!ground) scene.add(catcher);
+  scene.fog = new Fog(cssColor(el, '--ak-color-background', '#ffffff'), radius * 2.6, radius * 6);
+  if (keyLight) {
+    const direction = keyLight.position.clone().normalize();
+    keyLight.position.copy(sphere.center).addScaledVector(direction, radius * 3);
+    keyLight.target.position.copy(sphere.center);
+    scene.add(keyLight.target);
+    const shadow = keyLight.shadow;
+    shadow.mapSize.set(2048, 2048);
+    shadow.camera.left = -radius * 1.4;
+    shadow.camera.right = radius * 1.4;
+    shadow.camera.top = radius * 1.4;
+    shadow.camera.bottom = -radius * 1.4;
+    shadow.camera.near = radius * 0.5;
+    shadow.camera.far = radius * 6;
+    shadow.camera.updateProjectionMatrix();
+    shadow.bias = -0.0004;
+    shadow.normalBias = 0.02;
+    shadow.radius = 4;
+  }
+  for (const light of scene.children) {
+    if (light.isDirectionalLight && light !== keyLight) {
+      light.position
+        .copy(sphere.center)
+        .addScaledVector(light.position.clone().normalize(), radius * 3);
+    }
   }
 
   const motion = api.motionAllowed();
@@ -507,7 +595,9 @@ function mount(el) {
     },
     /** Stop motion and pin the current frame as an image, so print and export carry the live scene. */
     freeze() {
-      if (record.lost || record.frames === 0) return false;
+      if (record.lost || record.frames === 0) return null;
+      const frozen = stage.querySelector('.ak-3d-frame');
+      if (frozen) return { width: canvas.width, height: canvas.height };
       record.animating = false;
       renderer.render(scene, camera);
       const frame = document.createElement('img');
@@ -516,7 +606,7 @@ function mount(el) {
       frame.src = canvas.toDataURL('image/png');
       canvas.after(frame);
       el.setAttribute('data-ak-3d-state', 'frozen');
-      return true;
+      return { width: canvas.width, height: canvas.height };
     },
     sync() {
       if (config.bind) {
@@ -545,8 +635,11 @@ function mount(el) {
       canvas.removeEventListener('webglcontextrestored', onRestored);
       for (const material of owned.materials) material.dispose();
       for (const geometry of owned.geometries) releaseGeometry(geometry);
+      environment.dispose();
+      pmrem.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
+      stage.querySelector('.ak-3d-frame')?.remove();
       canvas.remove();
       mounts.delete(record);
       el.setAttribute('data-ak-3d-state', 'static');
@@ -594,7 +687,13 @@ function mount(el) {
 
 function mountAll() {
   for (const el of document.querySelectorAll('[data-ak-3d]')) {
-    if (![...mounts].some((m) => m.el === el)) mount(el);
+    if ([...mounts].some((m) => m.el === el)) continue;
+    try {
+      mount(el);
+    } catch (_error) {
+      // A scene that cannot be built reports it; the page and its other scenes keep working.
+      el.setAttribute('data-ak-3d-state', 'error');
+    }
   }
 }
 
@@ -617,8 +716,9 @@ export function boot(pageApi) {
       for (const record of [...mounts]) record.unmount();
     },
     stats,
+    /** Pin every live scene's current frame; returns the pixel size of each frozen frame. */
     freeze() {
-      return [...mounts].filter((record) => record.freeze()).length;
+      return [...mounts].map((record) => record.freeze()).filter(Boolean);
     },
     sync() {
       for (const record of mounts) record.sync();

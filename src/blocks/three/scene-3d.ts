@@ -90,7 +90,7 @@ export function objectList(node: IrNode, state: Record<string, JsonValue>): stri
           ? `<span class="ak-3d-note">${escapeText(object.description)}</span>`
           : '';
       if (!isPickable(object))
-        return `<li><span class="ak-3d-name">${label}</span>${description}</li>`;
+        return `<li><span class="ak-3d-item"><span class="ak-3d-name">${label}</span>${description}</span></li>`;
       return `<li><button type="button" disabled data-ak-3d-pick="${escapeAttribute(id)}" aria-pressed="${
         id === selected ? 'true' : 'false'
       }"><span class="ak-3d-name">${label}</span>${description}</button></li>`;

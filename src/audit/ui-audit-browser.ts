@@ -138,7 +138,7 @@ interface ContextLike {
   newPage(): Promise<PageLike>;
   close(): Promise<void>;
 }
-interface RouteLike {
+export interface RouteLike {
   request(): { url(): string };
   fulfill(options: { status: number; contentType?: string; body: string | Buffer }): Promise<void>;
   abort(code?: string): Promise<void>;
@@ -243,6 +243,41 @@ const CONTENT_TYPES: Readonly<Record<string, string>> = {
 function within(root: string, target: string): boolean {
   const inside = relative(root, target);
   return inside !== '' && !inside.startsWith('..') && !isAbsolute(inside);
+}
+
+/**
+ * Answer one request of a page served from the virtual origin: the page itself,
+ * an asset inside `baseDir`, a 404 for anything else there, and an abort for
+ * every other origin. A browser closed mid-answer rejects; that is expected.
+ */
+export async function serveVirtualPage(
+  handle: RouteLike,
+  html: string,
+  baseDir: string | undefined,
+  report: { blocked?: (url: string) => void; missing?: (path: string) => void } = {},
+): Promise<void> {
+  const url = handle.request().url();
+  const parsed = URL.canParse(url) ? new URL(url) : undefined;
+  try {
+    if (parsed?.origin === AUDIT_ORIGIN) {
+      if (parsed.pathname === '/' || parsed.pathname === '/index.html') {
+        await handle.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: html });
+        return;
+      }
+      const asset = baseDir === undefined ? undefined : readAsset(baseDir, parsed.pathname);
+      if (asset !== undefined) {
+        await handle.fulfill({ status: 200, contentType: asset.type, body: asset.body });
+        return;
+      }
+      report.missing?.(parsed.pathname);
+      await handle.fulfill({ status: 404, contentType: 'text/plain', body: 'not found' });
+      return;
+    }
+    report.blocked?.(url);
+    await handle.abort('blockedbyclient');
+  } catch {
+    // The browser closed while this request was in flight.
+  }
 }
 
 /** A local asset under `baseDir`, or undefined when the path leaves it. */
@@ -363,39 +398,16 @@ export async function runBrowserAudit(input: BrowserAuditInput): Promise<Browser
     clearTimeout(launchTimer);
   }
 
-  const answer = async (handle: RouteLike): Promise<void> => {
-    const url = handle.request().url();
-    let parsed: URL | undefined;
-    try {
-      parsed = new URL(url);
-    } catch {
-      parsed = undefined;
-    }
-    if (parsed?.origin === AUDIT_ORIGIN) {
-      if (parsed.pathname === '/' || parsed.pathname === '/index.html') {
-        await handle.fulfill({
-          status: 200,
-          contentType: 'text/html; charset=utf-8',
-          body: input.html,
-        });
-        return;
-      }
-      const asset =
-        input.baseDir === undefined ? undefined : readAsset(input.baseDir, parsed.pathname);
-      if (asset !== undefined) {
-        await handle.fulfill({ status: 200, contentType: asset.type, body: asset.body });
-        return;
-      }
-      await handle.fulfill({ status: 404, contentType: 'text/plain', body: 'not found' });
-      return;
-    }
-    blockedRequests += 1;
-    blocked.add(url.slice(0, 200));
-    await handle.abort('blockedbyclient');
-  };
+  const answer = (handle: RouteLike): Promise<void> =>
+    serveVirtualPage(handle, input.html, input.baseDir, {
+      blocked: (url) => {
+        blockedRequests += 1;
+        blocked.add(url.slice(0, 200));
+      },
+    });
 
   // Once the budget closes the browser, pending answers reject; that is expected.
-  const route = (handle: RouteLike): Promise<void> => answer(handle).catch(() => undefined);
+  const route = answer;
 
   /** Open the page once for a group of checks that share scheme and scripting. */
   const open = async (
