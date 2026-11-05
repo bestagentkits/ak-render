@@ -126,6 +126,9 @@ export function mountShader(el, kit) {
   const dpr = Math.min(window.devicePixelRatio || 1, quality === 'high' ? 2 : 1);
   renderer.setPixelRatio(dpr);
   renderer.toneMapping = NeutralToneMapping;
+  // A software rasterizer (SwiftShader, llvmpipe) cannot afford a bloom pyramid
+  // per effect: it skips bloom and runs the post chain at half resolution.
+  const software = isSoftwareGl(renderer.getContext());
   // A program the driver rejects leaves the poster up and says so, instead of claiming a frame.
   let failed = false;
   renderer.debug.onShaderError = () => {
@@ -216,7 +219,7 @@ export function mountShader(el, kit) {
     material.depthWrite = !additive;
     material.needsUpdate = true;
     const post = compatiblePost(next, params.chain || params.post || []);
-    bloom.enabled = post.includes('bloom');
+    bloom.enabled = !software && post.includes('bloom');
     finish.uniforms.uChromatic.value = post.includes('chromatic') ? 1 : 0;
     finish.uniforms.uScanlines.value = post.includes('scanlines') ? 1 : 0;
     grain = post.includes('grain');
@@ -375,7 +378,7 @@ export function mountShader(el, kit) {
     const width = stage.clientWidth || 640;
     const height = stage.clientHeight || 360;
     renderer.setSize(width, height, false);
-    composer.setPixelRatio(renderer.getPixelRatio());
+    composer.setPixelRatio(software ? renderer.getPixelRatio() / 2 : renderer.getPixelRatio());
     composer.setSize(width, height);
     finish.uniforms.uResolution.value.set(width, height);
     finish.uniforms.uGrain.value = grainAmount();
@@ -555,4 +558,11 @@ export function mountShader(el, kit) {
   record.tick();
   if (record.animating) kit.schedule();
   return record;
+}
+
+/** True when WebGL runs on a CPU rasterizer rather than a GPU. */
+function isSoftwareGl(gl) {
+  const info = gl.getExtension('WEBGL_debug_renderer_info');
+  const name = info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+  return /swiftshader|llvmpipe|software/i.test(String(name));
 }

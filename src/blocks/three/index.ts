@@ -14,6 +14,8 @@ import { SCATTER_CSS } from './scatter-styles.js';
 import { scene3dBlock } from './scene-3d.js';
 import { shader3dBlock } from './shader-3d.js';
 import { SHADER_CSS } from './shader-styles.js';
+import { text3dBlock } from './text-3d.js';
+import { TEXT_CSS } from './text-styles.js';
 import { THREE_RUNTIME } from './three-runtime.generated.js';
 import { THREE_CSS } from './three-styles.js';
 
@@ -42,13 +44,15 @@ export const THREE_GROUP: BlockGroup = {
     bars3dBlock,
     particles3dBlock,
     shader3dBlock,
+    text3dBlock,
     product3dBlock,
   ],
   features: [
     {
       name: 'three',
       marker: '.ak-3d{',
-      css: THREE_CSS + NETWORK_CSS + SCATTER_CSS + PARTICLES_CSS + SHADER_CSS + PRODUCT_CSS,
+      css:
+        THREE_CSS + NETWORK_CSS + SCATTER_CSS + PARTICLES_CSS + SHADER_CSS + PRODUCT_CSS + TEXT_CSS,
       script: { code: `${THREE_RUNTIME}\n${THREE_BOOT}`, boot: 'wireThree();' },
     },
   ],
