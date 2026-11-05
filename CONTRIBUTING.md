@@ -33,6 +33,12 @@ pnpm test:package    # packs, installs into a temp project, exercises the API an
 `pnpm verify` is the expected pre-push gate. Browser and package jobs run in CI
 on Ubuntu.
 
+Browser specs that drive WebGL run on software GL in CI and are slow there. Tag
+them `@gl` (`test('…', { tag: '@gl' }, …)` or on the `describe`) so they run in
+the `chromium-gl` project with its shared 120s budget; do not raise timeouts per
+test. CI prints the slowest tests and each one's share of its budget after the
+browser job (`scripts/playwright-timings.mjs`).
+
 ## Commits and pull requests
 
 - Use Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`, `chore:`).

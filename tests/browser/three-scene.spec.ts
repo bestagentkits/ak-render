@@ -42,7 +42,7 @@ async function canvasPixels(page: Page) {
   });
 }
 
-test.describe('scene-3d', () => {
+test.describe('scene-3d', { tag: '@gl' }, () => {
   test('renders a real WebGL 2 frame, not the poster', async ({ page }) => {
     const requests: string[] = [];
     page.on('request', (request) => {
@@ -104,7 +104,6 @@ test.describe('scene-3d', () => {
 
   test('ten mount/unmount cycles leave no geometry or mount behind', async ({ page }) => {
     // Ten WebGL contexts on a software renderer can outlast the default budget on CI.
-    test.setTimeout(120_000);
     await page.goto(scenePage());
     await ready(page);
     const result = await page.evaluate(() => {
