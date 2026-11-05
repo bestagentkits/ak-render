@@ -17,6 +17,7 @@ const FIXTURES = [
   'scene-3d-dense',
   'network-3d-basic',
   'network-3d-stress',
+  'scatter-3d-20k',
   'bars-3d-dense',
 ] as const;
 const VIEWPORTS = [

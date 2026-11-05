@@ -490,6 +490,9 @@
           "$ref": "#/$defs/block-network-3d"
         },
         {
+          "$ref": "#/$defs/block-scatter-3d"
+        },
+        {
           "$ref": "#/$defs/block-bars-3d"
         }
       ]
@@ -8599,6 +8602,288 @@
         }
       },
       "description": "Network 3D: nodes, edges, groups; force, hierarchical or radial layout; pick, neighbours, filter."
+    },
+    "block-scatter-3d": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "summary",
+        "axes",
+        "data"
+      ],
+      "properties": {
+        "type": {
+          "const": "scatter-3d"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 600,
+          "description": "What the points show, in words; the caption and the text alternative."
+        },
+        "axes": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "unit": {
+                  "type": "string",
+                  "maxLength": 24
+                },
+                "min": {
+                  "type": "number"
+                },
+                "max": {
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "label"
+              ]
+            },
+            "y": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "unit": {
+                  "type": "string",
+                  "maxLength": 24
+                },
+                "min": {
+                  "type": "number"
+                },
+                "max": {
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "label"
+              ]
+            },
+            "z": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "unit": {
+                  "type": "string",
+                  "maxLength": 24
+                },
+                "min": {
+                  "type": "number"
+                },
+                "max": {
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "label"
+              ]
+            },
+            "size": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "unit": {
+                  "type": "string",
+                  "maxLength": 24
+                },
+                "min": {
+                  "type": "number"
+                },
+                "max": {
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "label"
+              ]
+            },
+            "color": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "unit": {
+                  "type": "string",
+                  "maxLength": 24
+                },
+                "min": {
+                  "type": "number"
+                },
+                "max": {
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "label"
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "x",
+            "y",
+            "z"
+          ]
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": -1000000000000,
+                "maximum": 1000000000000
+              },
+              "minItems": 1,
+              "maxItems": 20000
+            },
+            "y": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": -1000000000000,
+                "maximum": 1000000000000
+              },
+              "minItems": 1,
+              "maxItems": 20000
+            },
+            "z": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": -1000000000000,
+                "maximum": 1000000000000
+              },
+              "minItems": 1,
+              "maxItems": 20000
+            },
+            "size": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": -1000000000000,
+                "maximum": 1000000000000
+              },
+              "maxItems": 20000
+            },
+            "value": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": -1000000000000,
+                "maximum": 1000000000000
+              },
+              "maxItems": 20000
+            },
+            "group": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "maxItems": 20000
+            },
+            "id": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "maxItems": 20000
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "x",
+            "y",
+            "z"
+          ]
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "tone": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "accent",
+                  "neutral",
+                  "success",
+                  "warning",
+                  "danger",
+                  "info"
+                ]
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "value"
+            ]
+          },
+          "maxItems": 9
+        },
+        "bind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "filterBind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "on": {
+          "description": "Bindings fired with `{ value }`: the point id on `select`, the brushed count on `brush`.",
+          "$ref": "#/$defs/actionMap"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
+        }
+      },
+      "description": "3D scatter, pick and brush."
     },
     "block-bars-3d": {
       "type": "object",

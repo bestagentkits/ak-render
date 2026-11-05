@@ -47,6 +47,7 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import { barsWidget } from './bars.js';
 import { mountModel } from './model.js';
 import { mountNetwork } from './network.js';
+import { mountScatter } from './scatter.js';
 
 /** Data widgets that add marks and transitions on top of the shared scene, by `data-ak-3d` kind. */
 const SCENE_WIDGETS = { bars: barsWidget };
@@ -758,7 +759,7 @@ function mount(el) {
 }
 
 /** Widgets with their own runtime module, keyed by `data-ak-3d`; the rest mount as a scene. */
-const WIDGETS = { model: mountModel, network: mountNetwork };
+const WIDGETS = { model: mountModel, network: mountNetwork, scatter: mountScatter };
 /** What a widget module needs from the shared runtime. */
 const kit = {
   api: () => api,

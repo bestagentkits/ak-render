@@ -15,7 +15,8 @@ import { BLOCK_DEFINITIONS, blockTypes } from '../../src/registry/registry.js';
 
 const BUDGET = {
   catalogText: 9_000,
-  catalogJson: 20_000,
+  // Raised as the 3D widgets landed; a compact 3D catalog grouping is tracked separately.
+  catalogJson: 20_500,
   categoryText: 3_000,
   compactDescribe: 1_500,
   summaryLength: 110,
