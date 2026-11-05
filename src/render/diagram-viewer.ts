@@ -53,8 +53,7 @@ export function diagramViewerBar(capabilities: readonly string[], title: string)
 }
 
 /** The details panel, filled by the runtime when a node, relationship or route is selected. */
-export const DIAGRAM_VIEWER_DETAILS =
-  '<div class="ak-dv-details" data-ak-dv-details aria-live="polite" hidden></div>';
+export const DIAGRAM_VIEWER_DETAILS = '<div class="ak-dv-details" data-ak-dv-details hidden></div>';
 
 const DIM =
   '[data-ak-dv-active] :is([data-ak-node],[data-ak-edge],[data-ak-group]):not([data-ak-dv-state])';
@@ -110,9 +109,11 @@ function wireDiagramViewers() {
     var search = q('[data-ak-dv-search]', figure);
     var nodes = qa('[data-ak-node]', canvas);
     var edges = qa('[data-ak-edge]', canvas);
-    var byId = {};
-    var out = {};
-    var inc = {};
+    // Null-prototype maps: an id from a link such as constructor finds nothing.
+    var byId = Object.create(null);
+    var out = Object.create(null);
+    var inc = Object.create(null);
+    var armed = null;
     nodes.forEach(function (node) {
       var id = node.getAttribute('data-ak-node');
       byId[id] = node;
@@ -195,6 +196,7 @@ function wireDiagramViewers() {
       }
     }
     function select(id, moveFocus) {
+      armed = null;
       var node = byId[id];
       if (!node) return;
       reset();
@@ -210,6 +212,28 @@ function wireDiagramViewers() {
       var parts = [heading(label(id)), line(after.length + ' outgoing, ' + before.length + ' incoming')];
       if (after.length) parts.push(goList(after, '\\u2192 '));
       if (before.length) parts.push(goList(before, '\\u2190 '));
+      if (out[id].length || inc[id].length) {
+        var links = doc.createElement('ul');
+        out[id].concat(inc[id]).forEach(function (edge) {
+          var item = doc.createElement('li');
+          var button = doc.createElement('button');
+          var text = edge.getAttribute('data-ak-label');
+          button.type = 'button';
+          button.textContent = label(edge.getAttribute('data-ak-from')) + ' \u2192 ' + label(edge.getAttribute('data-ak-to')) + (text ? ' (' + text + ')' : '');
+          button.addEventListener('click', function () { inspect(edge); });
+          item.appendChild(button);
+          links.appendChild(item);
+        });
+        parts.push(line('Relationships'), links);
+      }
+      if (has('trace')) {
+        var arm = doc.createElement('button');
+        arm.type = 'button';
+        arm.className = 'ak-dv-btn';
+        arm.textContent = 'Trace a route from here';
+        arm.addEventListener('click', function () { armed = id; say('Select the destination node to trace a route from ' + label(id) + '.'); });
+        parts.push(arm);
+      }
       if (out[id].length) {
         var downstream = doc.createElement('button');
         downstream.type = 'button';
@@ -220,20 +244,20 @@ function wireDiagramViewers() {
       }
       show(parts);
       setHash(scope + ':node:' + encodeURIComponent(id));
-      say(label(id) + ' selected' + (has('trace') ? '. Shift+select another node to trace a route.' : '.'));
+      say(label(id) + ' selected' + (has('trace') ? '. Choose Trace a route, or Shift+select another node.' : '.'));
       reveal(node, moveFocus);
       emit();
     }
     function reach(id) {
       reset();
       canvas.setAttribute('data-ak-dv-active', '');
-      var seen = {};
+      var seen = Object.create(null);
       seen[id] = true;
       var queue = [id];
       var count = 0;
       while (queue.length) {
         var at = queue.shift();
-        out[at].forEach(function (edge) {
+        (out[at] || []).forEach(function (edge) {
           var to = edge.getAttribute('data-ak-to');
           mark(edge, 'route');
           if (!seen[to]) { seen[to] = true; count += 1; queue.push(to); }
@@ -247,18 +271,24 @@ function wireDiagramViewers() {
       emit();
     }
     function trace(from, to) {
-      if (!byId[from] || !byId[to] || from === to) return select(to, true);
-      var prev = {};
+      if (!byId[from] || !byId[to]) return;
+      if (from === to) return select(to, true);
+      armed = null;
+      var prev = Object.create(null);
       prev[from] = null;
       var queue = [from];
       while (queue.length && !Object.prototype.hasOwnProperty.call(prev, to)) {
         var at = queue.shift();
-        out[at].forEach(function (edge) {
+        (out[at] || []).forEach(function (edge) {
           var next = edge.getAttribute('data-ak-to');
           if (!Object.prototype.hasOwnProperty.call(prev, next)) { prev[next] = edge; queue.push(next); }
         });
       }
       if (!Object.prototype.hasOwnProperty.call(prev, to)) {
+        reset();
+        viewer.mode = 'none';
+        viewer.route = [];
+        emit();
         say('No directed route from ' + label(from) + ' to ' + label(to) + '.');
         show([heading('No route'), line('Nothing leads from ' + label(from) + ' to ' + label(to) + ' along the arrows.')]);
         return;
@@ -315,7 +345,8 @@ function wireDiagramViewers() {
         var node = event.target.closest && event.target.closest('[data-ak-node]');
         if (node && canvas.contains(node)) {
           var id = node.getAttribute('data-ak-node');
-          if (event.shiftKey && has('trace') && viewer.focus && viewer.focus !== id) trace(viewer.focus, id);
+          if (armed && armed !== id) trace(armed, id);
+          else if (event.shiftKey && has('trace') && viewer.focus && viewer.focus !== id) trace(viewer.focus, id);
           else select(id, false);
           return;
         }
@@ -328,7 +359,8 @@ function wireDiagramViewers() {
         if (!node || (event.key !== 'Enter' && event.key !== ' ')) return;
         event.preventDefault();
         var id = node.getAttribute('data-ak-node');
-        if (event.shiftKey && has('trace') && viewer.focus && viewer.focus !== id) trace(viewer.focus, id);
+        if (armed && armed !== id) trace(armed, id);
+          else if (event.shiftKey && has('trace') && viewer.focus && viewer.focus !== id) trace(viewer.focus, id);
         else select(id, false);
       });
     }
@@ -361,7 +393,12 @@ function wireDiagramViewers() {
       var baseHeight = svg.getBoundingClientRect().height;
       var scale = 1;
       var zoomTo = function (next) {
-        if (!baseWidth || !baseHeight) return;
+        if (!baseWidth || !baseHeight) {
+          // Measured late: a drawing set up inside a closed section reports 0.
+          baseWidth = svg.getBoundingClientRect().width / scale;
+          baseHeight = svg.getBoundingClientRect().height / scale;
+          if (!baseWidth || !baseHeight) return;
+        }
         next = Math.max(0.25, Math.min(4, next));
         var center = (scroller.scrollLeft + scroller.clientWidth / 2) / (baseWidth * scale);
         scale = next;
@@ -428,8 +465,11 @@ function wireDiagramViewers() {
     viewer.clear = clear;
     var parts = (location.hash || '').slice(1).split(':');
     if (interactive && scope && parts[0] === scope) {
-      if (parts[1] === 'node' && parts[2]) select(decodeURIComponent(parts[2]), false);
-      else if (parts[1] === 'route' && parts[2] && parts[3]) trace(decodeURIComponent(parts[2]), decodeURIComponent(parts[3]));
+      // A malformed link must not stop this or any later diagram from wiring.
+      try {
+        if (parts[1] === 'node' && parts[2]) select(decodeURIComponent(parts[2]), false);
+        else if (parts[1] === 'route' && parts[2] && parts[3]) trace(decodeURIComponent(parts[2]), decodeURIComponent(parts[3]));
+      } catch (error) {}
     }
   });
 }`;

@@ -74,7 +74,7 @@ test.describe('diagram viewer', () => {
   test('a neighbour button in the details panel moves the selection', async ({ page }) => {
     await open(page);
     await node(page, 'api').click();
-    await page.locator('.ak-dv-details button', { hasText: '→ Cache' }).click();
+    await page.locator('.ak-dv-details button', { hasText: /^→ Cache$/ }).click();
     expect(await state(page, 'cache')).toBe('focus');
     await expect(node(page, 'cache')).toBeFocused();
   });
@@ -172,5 +172,41 @@ test.describe('diagram viewer', () => {
     await expect(page.locator('.ak-dv-details')).toBeHidden();
     const opacity = await node(page, 'audit').evaluate((el) => getComputedStyle(el).opacity);
     expect(opacity).toBe('1');
+  });
+});
+
+test.describe('diagram viewer hardening', () => {
+  for (const hash of ['#flow:node:%E0', '#flow:node:constructor', '#flow:route:__proto__:db']) {
+    test(`a malformed link (${hash}) leaves the viewer working`, async ({ page }) => {
+      const errors = await open(page, hash);
+      await expect(page.locator('[data-ak-dv-state]')).toHaveCount(0);
+      await node(page, 'api').click();
+      expect(await state(page, 'api')).toBe('focus');
+      expect(errors).toEqual([]);
+    });
+  }
+
+  test('Trace a route works by tap, without Shift', async ({ page }) => {
+    await open(page);
+    await node(page, 'client').click();
+    await page.locator('.ak-dv-details button', { hasText: 'Trace a route' }).click();
+    await node(page, 'db').click();
+    expect(await state(page, 'api')).toBe('route');
+  });
+
+  test('relationships are reachable from the details panel by keyboard', async ({ page }) => {
+    await open(page);
+    await node(page, 'api').click();
+    await page
+      .locator('.ak-dv-details button', { hasText: 'API → Cơ sở dữ liệu (SQL)' })
+      .press('Enter');
+    await expect(page.locator('.ak-dv-details h3')).toHaveText('API → Cơ sở dữ liệu');
+  });
+
+  test('a failed trace clears the previous highlight', async ({ page }) => {
+    await open(page);
+    await node(page, 'db').click();
+    await node(page, 'client').click({ modifiers: ['Shift'] });
+    await expect(page.locator('[data-ak-dv-state]')).toHaveCount(0);
   });
 });
