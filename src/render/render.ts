@@ -15,6 +15,7 @@ import { RenderError } from '../errors.js';
 import { stableHash } from '../hash.js';
 import { ICON_CSS, type IconCollector, renderIconSprite } from '../icons/icon-render.js';
 import type { IrDocument, IrNode } from '../ir.js';
+import { DIAGRAM_CANVAS_V2, DIAGRAM_MOTION_RECIPES } from '../motion/diagram-motion.js';
 import { getMotionRecipe, motionRecipeCss } from '../motion/recipes.js';
 import type { BlockRegistry, FeatureModule } from '../registry/block-module.js';
 import { DEFAULT_REGISTRY } from '../registry/registry.js';
@@ -26,6 +27,7 @@ import { type NormalizeResult, normalizeSpec } from '../spec/normalize.js';
 import { loadTheme, type ResolvedTheme, resolveTheme } from '../theme/load-theme.js';
 import { builtinThemeCatalog, type ThemeCatalog } from '../theme/theme-catalog.js';
 import { type RenderContext, renderNode } from './blocks.js';
+import { DIAGRAM_VIEWER_MARKUP } from './diagram-viewer.js';
 import { assembleDocument } from './document.js';
 import { renderAttributes } from './escape.js';
 import { embeddedFontCss } from './font-faces.js';
@@ -89,6 +91,7 @@ const FEATURE_ORDER: readonly RuntimeFeature[] = [
   'theme',
   'chart',
   'diagram',
+  'diagram-viewer',
   'media',
   'outline',
   'frame',
@@ -144,6 +147,7 @@ function buildCss(
   theme: ResolvedTheme,
   ir: IrDocument,
   usesIcons: boolean,
+  motionUsed: ReadonlySet<string>,
 ): string {
   const sheets = [BASE_CSS];
   for (const feature of FEATURE_ORDER) {
@@ -158,7 +162,7 @@ function buildCss(
   if (recipes !== '') sheets.push(recipes);
   // Motion recipes are keyed on their own attribute and follow the feature
   // sheets they animate; the theme still overrides their duration.
-  const motion = motionRecipeCss(usedMotionRecipes(ir));
+  const motion = motionRecipeCss(motionUsed);
   if (motion !== '') sheets.push(motion);
   sheets.push(theme.css);
   // The night band redeclares colour tokens, so it must follow the theme sheet.
@@ -168,10 +172,14 @@ function buildCss(
   return applyMotionPolicy(sheets.join('\n'), motionPolicyOf(theme.motionPolicy));
 }
 
-/** Recipe ids the page's blocks opt into. */
-function usedMotionRecipes(ir: IrDocument): Set<string> {
+/**
+ * Recipe ids the page's blocks opt into. Diagram recipes animate a contract 2
+ * drawing; without one on the page they have nothing to move and ship nothing.
+ */
+function usedMotionRecipes(ir: IrDocument, body: string): Set<string> {
   const used = new Set<string>();
   for (const node of ir.nodes) if (node.motion !== undefined) used.add(node.motion.preset);
+  if (!body.includes(DIAGRAM_CANVAS_V2)) for (const id of DIAGRAM_MOTION_RECIPES) used.delete(id);
   return used;
 }
 
@@ -212,6 +220,14 @@ function withMotion(html: string, node: IrNode): string {
   if (node.motion === undefined) return html;
   const recipe = getMotionRecipe(node.motion.preset);
   if (recipe === undefined) return html;
+  // A diagram recipe without a contract 2 drawing has nothing to move: the
+  // block renders still and the compiler has already warned.
+  if (
+    (DIAGRAM_MOTION_RECIPES as readonly string[]).includes(recipe.id) &&
+    !html.includes(DIAGRAM_CANVAS_V2)
+  ) {
+    return html;
+  }
   return html.replace(OPENING_TAG, (_match, open: string, rest: string) => {
     const arrival =
       recipe.runtime === 'in-view' && !/\sdata-ak-animate[\s=>]|\sdata-ak-animate$/u.test(rest)
@@ -336,9 +352,14 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
   // Code panels live in several blocks and nested props, and only some
   // languages are highlighted, so the emitted tokens decide this sheet.
   if (body.includes(SYNTAX_TOKEN_MARKUP)) features.add('syntax');
+  // Only a contract 2 drawing with declared capabilities gets viewer controls.
+  if (body.includes(DIAGRAM_VIEWER_MARKUP)) features.add('diagram-viewer');
   // Faces come first and need the rendered text, which decides their subsets.
+  const motionUsed = usedMotionRecipes(ir, body);
+  // Only diagram recipes with no drawing to move: nothing of motion ships.
+  if (motionUsed.size === 0) features.delete('motion');
   const fonts = embeddedFontCss(resolved, `${ir.meta.title}\n${body}`);
-  const css = [fonts, buildCss(features, moduleFeatures, resolved, ir, usesIcons)]
+  const css = [fonts, buildCss(features, moduleFeatures, resolved, ir, usesIcons, motionUsed)]
     .filter((sheet) => sheet !== '')
     .join('\n');
   const runtimeNeeded = features.size > 0 || bodyNeedsRuntime(body);
@@ -348,7 +369,7 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
         state: ir.state,
         hasBindings: bodyNeedsRuntime(body),
         moduleFeatures,
-        motion: usedMotionRecipes(ir),
+        motion: motionUsed,
         themeAction: usesThemeAction(ir),
       })
     : '';

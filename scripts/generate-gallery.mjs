@@ -23,6 +23,7 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs';
+import { registerHooks } from 'node:module';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildThemePreview } from './gallery-theme-preview.mjs';
@@ -38,10 +39,11 @@ const galleryAssetsDir = join(galleryDir, 'assets');
 
 let compile;
 let VERSION;
+let exportDiagramSvg;
 let builtinThemeCatalog;
 let themePresetNames;
 try {
-  ({ compile, VERSION, builtinThemeCatalog, themePresetNames } = await import(
+  ({ compile, exportDiagramSvg, VERSION, builtinThemeCatalog, themePresetNames } = await import(
     new URL('../dist/index.js', import.meta.url)
   ));
 } catch {
@@ -75,6 +77,138 @@ function buildFixture(fixture) {
 }
 
 const entries = fixtures.map(buildFixture);
+
+// Diagram showcase: contract 2 drawings need an adapter, which fixtures cannot
+// carry. The reference grid adapter (tests/unit/support, never exported) draws
+// the golden cases so the gallery shows the viewer, motion and SVG export.
+// Its sources use TypeScript import paths ending in .js; map them to .ts.
+registerHooks({
+  resolve(specifier, context, next) {
+    try {
+      return next(specifier, context);
+    } catch (error) {
+      if (specifier.endsWith('.js')) return next(`${specifier.slice(0, -3)}.ts`, context);
+      throw error;
+    }
+  },
+});
+const { GOLDEN_CASES } = await import('../tests/unit/support/diagram-golden.ts');
+const { gridDiagramAdapter } = await import('../tests/unit/support/grid-diagram-adapter.ts');
+const diagramAdapter = gridDiagramAdapter();
+const golden = (name) => GOLDEN_CASES.find((item) => item.name === name).spec;
+const diagramShowcase = {
+  version: 1,
+  meta: {
+    title: 'Diagram showcase',
+    description:
+      'Contract 2 diagrams drawn by the reference adapter: search, focus and trace in the viewer, flowing edges and four more motion recipes under one page governor, and a standalone SVG export.',
+  },
+  theme: { preset: 'blueprint' },
+  blocks: [
+    {
+      type: 'hero',
+      eyebrow: 'Diagrams',
+      title: 'Drawings that explain themselves',
+      description:
+        'Each panel below is a Page Spec diagram drawn through the adapter boundary. Select a node to trace its relationships; motion settles on its own and never plays under reduced motion.',
+      align: 'center',
+    },
+    {
+      type: 'diagram-panel',
+      id: 'pipeline',
+      title: 'Deploy pipeline · edge flow',
+      spec: {
+        diagram_type: 'architecture',
+        components: [
+          { id: 'github', label: 'GitHub', description: 'git push · webhook' },
+          { id: 'cli', label: 'CLI', description: 'ak deploy' },
+          { id: 'api', label: 'API', description: 'REST · tokens' },
+          { id: 'agent', label: 'Agent', description: 'MCP · --json' },
+          { id: 'control', label: 'Control plane', description: 'queue · policy', status: 'live' },
+          { id: 'build', label: 'Build', description: 'buildpacks · OCI' },
+          { id: 'cluster', label: 'Kubernetes', description: 'rolling · 3 pods' },
+          { id: 'domain', label: 'Domain + SSL', description: 'TLS · edge cache' },
+        ],
+        connections: [
+          { from: 'github', to: 'control' },
+          { from: 'cli', to: 'control' },
+          { from: 'api', to: 'control' },
+          { from: 'agent', to: 'control' },
+          { from: 'control', to: 'build', label: 'image' },
+          { from: 'control', to: 'cluster', label: 'rollout' },
+          { from: 'control', to: 'domain', label: 'route' },
+        ],
+        boundaries: [
+          { id: 'sources', label: 'Sources', components: ['github', 'cli', 'api', 'agent'] },
+          { id: 'runtime', label: 'Runtime', components: ['build', 'cluster', 'domain'] },
+        ],
+      },
+      motion: 'edge-flow',
+    },
+    {
+      type: 'diagram-panel',
+      id: 'boundaries',
+      title: 'Nested boundaries · edge trace',
+      spec: golden('nested-boundaries'),
+      motion: 'edge-trace',
+    },
+    {
+      type: 'diagram-panel',
+      id: 'dataflow',
+      title: 'Dataflow stages · signal relay',
+      spec: golden('dataflow-stages'),
+      motion: 'signal-relay',
+    },
+    {
+      type: 'diagram-panel',
+      id: 'diamond',
+      title: 'Diamond · node activation',
+      spec: golden('diamond'),
+      motion: 'node-activation',
+    },
+    {
+      type: 'diagram-panel',
+      id: 'workflow',
+      title: 'Workflow lanes · sequence playback',
+      spec: golden('workflow-lanes'),
+      motion: 'sequence-playback',
+    },
+    {
+      type: 'diagram-panel',
+      id: 'dense',
+      title: 'Two-level tree · search and focus',
+      spec: golden('two-level-tree'),
+    },
+    {
+      type: 'cta',
+      eyebrow: 'Export',
+      title: 'Take the drawing anywhere.',
+      text: 'exportDiagramSvg writes one standalone, deterministic SVG with the theme colours baked in and no motion state.',
+      actions: [
+        { label: 'Open the exported SVG', href: 'diagram-showcase.svg', variant: 'primary' },
+        { label: 'Back to the gallery', href: 'index.html' },
+      ],
+    },
+  ],
+};
+{
+  const result = compile(diagramShowcase, { source: 'diagram-showcase', diagramAdapter });
+  written.set('diagram-showcase.html', result.html);
+  written.set(
+    'diagram-showcase.svg',
+    exportDiagramSvg(diagramShowcase, { diagramAdapter, blockId: 'pipeline' }),
+  );
+  entries.push({
+    slug: 'diagram-showcase',
+    file: 'diagram-showcase.html',
+    title: diagramShowcase.meta.title,
+    description: diagramShowcase.meta.description,
+    bytes: result.bytes,
+    hash: result.hash,
+    nodes: result.ir.nodes.length,
+    features: result.features,
+  });
+}
 
 // One compiled page per built-in preset, plus the dropdown viewer over them.
 for (const [file, html] of buildThemePreview({
@@ -110,7 +244,9 @@ const indexSpec = {
     {
       type: 'marquee',
       label: 'Fixtures in this gallery',
-      items: entries.map((entry) => entry.title),
+      items: entries
+        .filter((entry) => entry.slug !== 'diagram-showcase')
+        .map((entry) => entry.title),
     },
     {
       type: 'showcase',
