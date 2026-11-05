@@ -16,6 +16,10 @@ Release mechanics and the compatibility contract live in
   and lighting presets, camera, timeline, views) drawn live by a shared, inlined
   three.js runtime and backed by a compiler-projected SVG plan for no-JS, print
   and reduced motion. Picking an object writes page state. See [docs/3d.md](./docs/3d.md).
+- `ak-render export <spec> --format png|pdf`: local export through an installed
+  Chrome, Edge or Playwright Chromium (never downloaded) that captures each 3D
+  scene's live WebGL frame and fails with a stable code instead of exporting the
+  static plan. `ak-render export doctor` reports the browser and its WebGL 2 support.
 - `exportDiagramSvg` writes a standalone, deterministic SVG of a contract 2 drawing; `window.akRenderDiagram.freeze()` settles diagram motion for capture; Motion Studio accepts a diagram adapter and inspects the drawing. See [docs/diagram-adapter.md](./docs/diagram-adapter.md#export-and-motion-studio).
 - 22 golden diagram cases with determinism, zero-fabrication, geometry, accessibility, offline, print, no-JS, preset and motion checks, and a recorded compile time, DOM size and memory baseline. See [docs/diagram-adapter.md](./docs/diagram-adapter.md#golden-cases-and-baseline).
 

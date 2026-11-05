@@ -76,12 +76,18 @@ export function sceneConfig(node: IrNode): Record<string, JsonValue> {
 }
 
 /** The list every reader gets: selectable objects are buttons the runtime enables. */
+/** The runtime draws a neutral plane as the shadow-catching floor. */
+function isGround(object: Record<string, JsonValue>): boolean {
+  return object.shape === 'plane' && (object.tone ?? 'accent') === 'neutral';
+}
+
 export function objectList(node: IrNode, state: Record<string, JsonValue>): string {
   const bind = stringProp(node, 'bind');
   const initial = bind.startsWith('state.') ? state[bind.slice(6)] : undefined;
   const selected = typeof initial === 'string' ? initial : '';
   const items = objectsOf(node)
-    .filter((object) => object.shape !== 'group')
+    // A neutral plane is the floor the scene stands on, drawn as shadow only: not a part to list.
+    .filter((object) => object.shape !== 'group' && !isGround(object))
     .map((object) => {
       const id = String(object.id);
       const label = escapeText(typeof object.label === 'string' ? object.label : id);
@@ -90,7 +96,7 @@ export function objectList(node: IrNode, state: Record<string, JsonValue>): stri
           ? `<span class="ak-3d-note">${escapeText(object.description)}</span>`
           : '';
       if (!isPickable(object))
-        return `<li><span class="ak-3d-name">${label}</span>${description}</li>`;
+        return `<li><span class="ak-3d-item"><span class="ak-3d-name">${label}</span>${description}</span></li>`;
       return `<li><button type="button" disabled data-ak-3d-pick="${escapeAttribute(id)}" aria-pressed="${
         id === selected ? 'true' : 'false'
       }"><span class="ak-3d-name">${label}</span>${description}</button></li>`;
