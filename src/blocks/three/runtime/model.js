@@ -168,7 +168,8 @@ export function mountModel(el, kit) {
 
   function setClip(name) {
     if (!gltf || name === clip) return;
-    const found = gltf.animations.find((a, i) => (a.name || `clip-${i + 1}`) === name);
+    // Match by index: the compiler listed the clips in file order.
+    const found = gltf.animations[(config.clips || []).indexOf(name)];
     if (!found) return;
     clip = name;
     action?.stop();
@@ -188,11 +189,12 @@ export function mountModel(el, kit) {
   }
 
   let variantRequest = 0;
+  let applied = variant;
   async function setVariant(name) {
     if (!gltf || name === variant) return;
     const index = (config.variants || []).indexOf(name);
     if (index < 0) return;
-    const previous = variant;
+    const previous = applied;
     variant = name;
     const request = ++variantRequest;
     const parser = gltf.parser;
@@ -210,6 +212,7 @@ export function mountModel(el, kit) {
       if (request === variantRequest) variant = previous;
       return;
     }
+    applied = name;
     if (request !== variantRequest) return;
     variantMeshes.forEach((entry, i) => {
       entry.mesh.material = materials[i];

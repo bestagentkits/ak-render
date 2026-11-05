@@ -141,6 +141,30 @@ test.describe('model-3d', () => {
     expect(new Set(pins).size).toBe(3);
   });
 
+  test('the wheel scrolls the page until the stage is engaged, and Ctrl+wheel zooms', async ({
+    page: p,
+  }) => {
+    await p.emulateMedia({ reducedMotion: 'reduce' });
+    await p.setViewportSize({ width: 900, height: 500 });
+    await p.goto(glbPage());
+    await ready(p);
+    const canvas = p.locator('.ak-3d-canvas');
+    const frame = () => canvas.evaluate((c: HTMLCanvasElement) => c.toDataURL());
+    await canvas.scrollIntoViewIfNeeded();
+    const box = await canvas.boundingBox();
+    if (box === null) throw new Error('no canvas');
+    await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    const before = await frame();
+    const scrolled = await p.evaluate(() => window.scrollY);
+    await p.mouse.wheel(0, 200);
+    await expect.poll(() => p.evaluate(() => window.scrollY)).toBeGreaterThan(scrolled);
+    expect(await frame()).toBe(before);
+    await p.keyboard.down('Control');
+    await p.mouse.wheel(0, -200);
+    await p.keyboard.up('Control');
+    await expect.poll(frame).not.toBe(before);
+  });
+
   test('a compressed model fails at compile time with the decoder diagnostic', () => {
     expect(() => build(base.replace('models/crate.glb', 'models/crate-draco.gltf'))).toThrow(
       /KHR_draco_mesh_compression/u,

@@ -142,11 +142,16 @@ function framingObjects(node: IrNode, info: ModelInfo | undefined): Record<strin
 }
 
 /**
- * Point-framing leaves headroom the box-framed scene does not; move in so a
- * model fills the stage like a scene does. An authored position is kept.
+ * Hotspots pull the framed centre off the model; aim at the model's bounds and
+ * move in so it fills the stage like a scene does. An authored position is kept.
  */
 const MODEL_DOLLY = 0.88;
-function tighten(camera: ReturnType<typeof frameCamera>, authored: JsonValue | undefined) {
+const MODEL_DROP = 0.12;
+function tighten(
+  camera: ReturnType<typeof frameCamera>,
+  authored: JsonValue | undefined,
+  { center, size }: { center: Vec3; size: number },
+) {
   if (
     authored !== null &&
     typeof authored === 'object' &&
@@ -154,15 +159,17 @@ function tighten(camera: ReturnType<typeof frameCamera>, authored: JsonValue | u
     Array.isArray(authored.position)
   )
     return camera;
+  // Aim a little under the centre so the contact shadow keeps its margin.
+  const aim: Vec3 = [center[0], center[1] - size * MODEL_DROP, center[2]];
   const position = [0, 1, 2].map(
     (axis) =>
       Math.round(
-        ((camera.target[axis] ?? 0) +
+        ((aim[axis] ?? 0) +
           ((camera.position[axis] ?? 0) - (camera.target[axis] ?? 0)) * MODEL_DOLLY) *
           1000,
       ) / 1000,
   ) as Vec3;
-  return { ...camera, position };
+  return { ...camera, position, target: aim };
 }
 
 function controls(kind: 'clip' | 'variant', names: readonly string[], current: string): string {
@@ -204,6 +211,7 @@ export function renderModel(node: IrNode, context: RenderContext): string {
   const camera = tighten(
     frameCamera(placeObjects(framingObjects(node, info)), node.props.camera),
     node.props.camera,
+    extentOf(info),
   );
   const summary = stringProp(node, 'summary');
   const state = context.ir.state;
