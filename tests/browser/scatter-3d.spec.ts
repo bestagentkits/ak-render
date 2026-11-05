@@ -91,6 +91,8 @@ test.describe('scatter-3d', () => {
   });
 
   test('legend and state filter by group', async ({ page }) => {
+    // Each filter repaints 20,000 points; software GL on CI needs more than the default 30s.
+    test.setTimeout(120_000);
     await page.goto(pageUrl('scatter-3d-20k'));
     await ready(page);
     const control = page.locator('#cluster-input, [data-ak-id="cluster"] select');
