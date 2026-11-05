@@ -4,7 +4,11 @@ import type { IconSize } from '../icons/icon-packs.js';
 import { renderIcon } from '../icons/icon-render.js';
 import type { IrNode } from '../ir.js';
 import { isPlainObject, type JsonValue } from '../json.js';
-import { DIAGRAM_MOTION_RECIPES, diagramSequenceBar } from '../motion/diagram-motion.js';
+import {
+  DIAGRAM_MOTION_RECIPES,
+  diagramFlowBar,
+  diagramSequenceBar,
+} from '../motion/diagram-motion.js';
 import type { BlockRegistry } from '../registry/block-module.js';
 import { DEFAULT_REGISTRY } from '../registry/registry.js';
 import { EMBED_PROVIDERS } from '../spec/providers.js';
@@ -709,7 +713,9 @@ const RENDERERS: Record<string, Renderer> = {
       // root the adapter's stylesheets are scoped to.
       accepted && adapterResult.contract === 2 && node.motion?.preset === 'sequence-playback'
         ? diagramSequenceBar(diagramTitle)
-        : '',
+        : accepted && adapterResult.contract === 2 && node.motion?.preset === 'edge-flow'
+          ? diagramFlowBar(diagramTitle)
+          : '',
       accepted && adapterResult.contract === 2
         ? diagramViewerBar(adapterResult.capabilities ?? [], diagramTitle)
         : '',

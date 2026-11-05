@@ -2929,12 +2929,12 @@
           "$ref": "#/$defs/condition"
         },
         "motion": {
-          "$ref": "#/$defs/motion-reveal-soft-edge-trace-signal-relay-node-activation-sequence-playback"
+          "$ref": "#/$defs/motion-reveal-soft-edge-trace-signal-relay-edge-flow-node-activation-sequence-playback"
         }
       },
       "description": "DiagramPanel: embeds trusted output from a diagram adapter (ak:diagram when installed)."
     },
-    "motion-reveal-soft-edge-trace-signal-relay-node-activation-sequence-playback": {
+    "motion-reveal-soft-edge-trace-signal-relay-edge-flow-node-activation-sequence-playback": {
       "description": "A compiler-owned motion recipe, named by id; a spec cannot supply CSS or script.",
       "oneOf": [
         {
@@ -2944,6 +2944,7 @@
             "fade-swap",
             "edge-trace",
             "signal-relay",
+            "edge-flow",
             "node-activation",
             "sequence-playback"
           ]
@@ -2962,6 +2963,7 @@
                 "fade-swap",
                 "edge-trace",
                 "signal-relay",
+                "edge-flow",
                 "node-activation",
                 "sequence-playback"
               ]
