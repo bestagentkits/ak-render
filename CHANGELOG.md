@@ -9,6 +9,34 @@ Release mechanics and the compatibility contract live in
 
 ## [Unreleased]
 
+### 3D v1
+
+3D v1 is complete: 14 widgets (`scene-3d`, `model-3d`, `network-3d`,
+`scatter-3d`, `bars-3d`, `globe-3d`, `product-3d`, `particles-3d`, `shader-3d`,
+`text-3d`, `point-cloud-3d`, `timeline-3d`, `morph-3d`, `terrain-3d`), each
+drawn by the shared inlined three.js runtime and backed by a compiler-projected
+static drawing for no-JS, no-WebGL, print and reduced motion. The gallery's 3D
+section shows every widget; the docs hub is [docs/3d.md](./docs/3d.md) with
+[scenes](./docs/3d-scenes.md), [effects](./docs/3d-effects.md) and
+[data](./docs/3d-data.md) recipes. The export matrix records PNG and PDF export
+per widget, and `pnpm bench:3d` now measures one fixture per widget
+([docs/artifacts/benchmark-3d.md](./docs/artifacts/benchmark-3d.md)).
+
+Known limits:
+
+- Cloud export is unverified until Browser Run credentials are available; local
+  export is the verified path.
+- PNG export of `globe-3d` and `product-3d` is not byte-identical across
+  repeated runs (GPU sampling); compiled HTML stays deterministic.
+- Uploading 3D assets to R2 was dropped: pages embed their model, font and data
+  assets, so they stay offline and need no storage.
+- `model-3d` does not yet react to WebGL context loss
+  ([#177](https://github.com/bestagentkits/ak-render/issues/177)).
+
+Migration: no spec changes are needed; existing specs compile unchanged and 3D
+blocks are opt-in. Rollback: pin the previous release, or remove 3D blocks from
+a spec.
+
 ### Added
 
 - `shader-3d` block: five closed shader presets (noise, fresnel, hologram, distortion, dissolve) on a sphere, torus, torus knot or plane, with typed `intensity`, `scale`, `progress` and `speed` dials, theme tones and a seed. Post-processing is a closed chain (bloom, chromatic, scanlines, grain, vignette) checked against each preset. Built-in preset buttons and sliders, and a `bind` map to state, change uniforms live and fire `change`. Shader source is rejected anywhere in a spec; every line of GLSL is compiler-owned. An SVG poster shaded by the same formula covers no-JS, no-WebGL and print, reduced motion holds that frame and a Pause button stops the motion. The gallery's 3D section shows the presets and a live reveal. See [docs/3d-effects.md](./docs/3d-effects.md#shader-3d).
