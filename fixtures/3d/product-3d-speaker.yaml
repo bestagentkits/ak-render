@@ -1,0 +1,86 @@
+version: 1
+meta:
+  title: Aria One speaker
+state:
+  finish: graphite
+  feature: woofer
+  view: assembled
+blocks:
+  - type: product-3d
+    id: speaker
+    title: Aria One
+    summary: A compact studio speaker with a 5-inch woofer, a silk-dome tweeter, a rear bass port and a machined volume dial, offered in four finishes.
+    bind: state.feature
+    variantBind: state.finish
+    explodeBind: state.view
+    parts:
+      - { id: foot, label: Base, shape: cylinder, position: [0, 0.04, 0], scale: [1.5, 0.08, 1.25], tone: dark, material: matte }
+      - { id: body, label: Cabinet, shape: rounded-box, position: [0, 1.2, 0], scale: [1.5, 2.2, 1.3], tone: dark, material: matte, explode: [0, 0.35, -0.6] }
+      - { id: grille, label: Front baffle, shape: rounded-box, position: [0, 1.2, 0.66], scale: [1.38, 2.06, 0.06], tone: dark, material: matte, explode: [0, 0.35, 0.75] }
+      - { id: woofer, label: Woofer, shape: cylinder, position: [0, 0.86, 0.72], rotation: [90, 0, 0], scale: [1.02, 0.08, 1.02], tone: neutral, material: metal, explode: [0, 0.35, 1.5] }
+      - { id: dome, label: Dust cap, shape: sphere, position: [0, 0.86, 0.76], scale: [0.4, 0.4, 0.16], tone: accent, material: standard, explode: [0, 0.35, 1.85] }
+      - { id: plate, label: Tweeter plate, shape: cylinder, position: [0, 1.76, 0.71], rotation: [90, 0, 0], scale: [0.52, 0.05, 0.52], tone: neutral, material: metal, explode: [0, 0.55, 1.5] }
+      - { id: tweeter, label: Tweeter, shape: sphere, position: [0, 1.76, 0.74], scale: [0.3, 0.3, 0.16], tone: light, material: standard, explode: [0, 0.55, 1.75] }
+      - { id: dial, label: Volume dial, shape: cylinder, position: [0, 2.36, 0.1], scale: [0.56, 0.12, 0.56], tone: neutral, material: metal, explode: [0, 1.05, 0.1] }
+      - { id: ring, label: Light ring, shape: torus, position: [0, 2.31, 0.1], rotation: [90, 0, 0], size: 0.68, scale: [1, 1, 0.5], tone: accent, material: emissive, explode: [0, 0.8, 0.1] }
+      - { id: battery, label: Battery, shape: capsule, position: [0, 0.75, -0.25], rotation: [0, 0, 90], scale: [0.9, 1.4, 0.9], tone: success, material: standard, explode: [1.75, 0.35, -0.25] }
+      - { id: port, label: Bass port, shape: cylinder, position: [0, 0.55, -0.62], rotation: [90, 0, 0], scale: [0.34, 0.16, 0.34], tone: neutral, material: metal, explode: [0, 0.35, -1.3] }
+    variants:
+      - id: graphite
+        label: Graphite
+        finishes:
+          - { part: body, tone: dark, material: matte }
+          - { part: grille, tone: dark, material: matte }
+          - { part: foot, tone: dark, material: matte }
+      - id: silver
+        label: Silver
+        finishes:
+          - { part: body, tone: light, material: metal }
+          - { part: grille, tone: neutral, material: matte }
+          - { part: foot, tone: light, material: metal }
+      - id: signal
+        label: Signal
+        finishes:
+          - { part: body, tone: accent, material: standard }
+          - { part: grille, tone: dark, material: matte }
+          - { part: foot, tone: dark, material: standard }
+      - id: chalk
+        label: Chalk
+        finishes:
+          - { part: body, tone: light, material: matte }
+          - { part: grille, tone: light, material: matte }
+          - { part: foot, tone: neutral, material: matte }
+    hotspots:
+      - { id: woofer, label: 5-inch woofer, part: woofer, offset: [0.32, 0, 0.1], description: "Long-throw aluminium cone for clean bass down to 45 Hz." }
+      - { id: tweeter, label: Silk-dome tweeter, part: tweeter, offset: [0, 0, 0.1], description: "A 1-inch silk dome keeps highs smooth off-axis." }
+      - { id: dial, label: Volume dial, part: dial, offset: [0, 0.07, 0.28], description: "Machined aluminium with 64 detents and a light ring." }
+      - { id: grille, label: Cast front baffle, part: grille, offset: [-0.5, 0.72, 0.04], description: "One-piece cast baffle that damps cabinet resonance." }
+      - { id: battery, label: 20-hour battery, part: battery, offset: [0, 0, 0.46], description: "Lithium cells good for 20 hours at moderate volume." }
+      - { id: port, label: Rear bass port, part: port, offset: [0, 0, -0.1], description: "A flared port tuned to 48 Hz, quiet at full volume." }
+  - type: select
+    id: finish-pick
+    label: Finish
+    bind: state.finish
+    options:
+      - { value: graphite, label: Graphite }
+      - { value: silver, label: Silver }
+      - { value: signal, label: Signal }
+      - { value: chalk, label: Chalk }
+  - type: select
+    id: feature-pick
+    label: Feature
+    bind: state.feature
+    options:
+      - { value: woofer, label: Woofer }
+      - { value: tweeter, label: Tweeter }
+      - { value: dial, label: Volume dial }
+      - { value: grille, label: Front baffle }
+      - { value: battery, label: Battery }
+      - { value: port, label: Bass port }
+  - type: select
+    id: view-pick
+    label: View
+    bind: state.view
+    options:
+      - { value: assembled, label: Assembled }
+      - { value: exploded, label: Exploded }

@@ -263,6 +263,10 @@ const THREE_D_SHOWCASE = {
     '3D text finishes',
     'Satin, metal, chrome, glass and neon lettering with wave, spin and float motion by character or word.',
   ],
+  'product-3d-speaker': [
+    'Studio speaker',
+    'A studio-lit speaker in four finishes, with numbered hotspots and an exploded view.',
+  ],
   'network-3d-stress': [
     'A thousand-node graph',
     'A large force-laid graph that shows the network widget holding up at scale.',

@@ -500,6 +500,9 @@
         },
         {
           "$ref": "#/$defs/block-text-3d"
+        },
+        {
+          "$ref": "#/$defs/block-product-3d"
         }
       ]
     },
@@ -9243,6 +9246,276 @@
         }
       },
       "description": "Extruded 3D text with materials and motion."
+    },
+    "block-product-3d": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "summary",
+        "parts"
+      ],
+      "properties": {
+        "type": {
+          "const": "product-3d"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 600,
+          "description": "What the product is, in words; the caption and the text alternative."
+        },
+        "parts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 2000,
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "shape": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "box",
+                  "sphere",
+                  "cylinder",
+                  "cone",
+                  "torus",
+                  "rounded-box",
+                  "capsule"
+                ]
+              },
+              "parent": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "size": {
+                "type": "number",
+                "minimum": 0.01,
+                "maximum": 100
+              },
+              "position": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": -1000,
+                  "maximum": 1000
+                },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "rotation": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": -360,
+                  "maximum": 360
+                },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "scale": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": 0.01,
+                  "maximum": 100
+                },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "material": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "standard",
+                  "matte",
+                  "metal",
+                  "glass",
+                  "wireframe",
+                  "emissive"
+                ]
+              },
+              "tone": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "accent",
+                  "neutral",
+                  "success",
+                  "warning",
+                  "danger",
+                  "info",
+                  "dark",
+                  "light"
+                ]
+              },
+              "explode": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": -1000,
+                  "maximum": 1000
+                },
+                "minItems": 3,
+                "maxItems": 3
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "id"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 64
+        },
+        "variants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 2000,
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "finishes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "part": {
+                      "type": "string",
+                      "maxLength": 64
+                    },
+                    "tone": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "enum": [
+                        "accent",
+                        "neutral",
+                        "success",
+                        "warning",
+                        "danger",
+                        "info",
+                        "dark",
+                        "light"
+                      ]
+                    },
+                    "material": {
+                      "type": "string",
+                      "maxLength": 2000,
+                      "enum": [
+                        "standard",
+                        "matte",
+                        "metal",
+                        "glass",
+                        "wireframe",
+                        "emissive"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "part"
+                  ]
+                },
+                "maxItems": 64
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "label"
+            ]
+          },
+          "maxItems": 12
+        },
+        "hotspots": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 2000,
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 300
+              },
+              "part": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "offset": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": -1000,
+                  "maximum": 1000
+                },
+                "minItems": 3,
+                "maxItems": 3
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "label",
+              "part"
+            ]
+          },
+          "maxItems": 24
+        },
+        "bind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "variantBind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "explodeBind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "on": {
+          "description": "Bindings fired with `{ value }` (the hotspot id) when a hotspot is chosen.",
+          "$ref": "#/$defs/actionMap"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
+        }
+      },
+      "description": "Product: finishes, hotspots, exploded view."
     }
   }
 }
