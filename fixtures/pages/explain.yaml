@@ -58,6 +58,7 @@ blocks:
 
   - type: diagram-panel
     title: Trust boundary
+    motion: edge-trace
     spec:
       schema_version: 1
       diagram_type: architecture

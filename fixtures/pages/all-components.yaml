@@ -413,6 +413,7 @@ blocks:
           url: https://media.example.com/intro
       - type: diagram-panel
         title: Compiler pipeline
+        motion: signal-relay
         spec:
           schema_version: 1
           diagram_type: architecture

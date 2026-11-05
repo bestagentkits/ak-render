@@ -229,8 +229,20 @@ describe('motion in contracts and runtime', () => {
     const second = compile(fixture, { source: 'motion-recipes.yaml' });
     expect(first.hash).toBe(second.hash);
     expect(first.features).toContain('motion');
+    // Diagram recipes ride on the diagram panels of the real fixture pages.
+    const diagrams = ['all-components', 'brainstorm', 'explain', 'plan']
+      .map(
+        (name) =>
+          compile(
+            readFileSync(
+              fileURLToPath(new URL(`../../fixtures/pages/${name}.yaml`, import.meta.url)),
+              'utf8',
+            ),
+          ).html,
+      )
+      .join('');
     for (const recipe of MOTION_RECIPES)
-      expect(first.html).toContain(`data-ak-motion="${recipe.id}"`);
+      expect(`${first.html}${diagrams}`).toContain(`data-ak-motion="${recipe.id}"`);
   });
 
   it('keeps recipes off under a still theme policy', () => {
