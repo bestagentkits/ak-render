@@ -1,0 +1,199 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`diagram golden cases > bidirectional > matches its golden digest 1`] = `
+{
+  "canvas": "53ce8d544d1d1b35",
+  "edges": 2,
+  "groups": 0,
+  "nodes": 2,
+}
+`;
+
+exports[`diagram golden cases > branch > matches its golden digest 1`] = `
+{
+  "canvas": "053ef4cea4189aab",
+  "edges": 4,
+  "groups": 0,
+  "nodes": 5,
+}
+`;
+
+exports[`diagram golden cases > chain > matches its golden digest 1`] = `
+{
+  "canvas": "c5124999b7a3a0db",
+  "edges": 2,
+  "groups": 0,
+  "nodes": 3,
+}
+`;
+
+exports[`diagram golden cases > cycle > matches its golden digest 1`] = `
+{
+  "canvas": "13e9185fb2e859cd",
+  "edges": 3,
+  "groups": 0,
+  "nodes": 3,
+}
+`;
+
+exports[`diagram golden cases > dataflow-stages > matches its golden digest 1`] = `
+{
+  "canvas": "791289ea8fb41f2a",
+  "edges": 2,
+  "groups": 2,
+  "nodes": 3,
+}
+`;
+
+exports[`diagram golden cases > deep-chain > matches its golden digest 1`] = `
+{
+  "canvas": "92d97a1efeb435a0",
+  "edges": 11,
+  "groups": 0,
+  "nodes": 12,
+}
+`;
+
+exports[`diagram golden cases > dense > matches its golden digest 1`] = `
+{
+  "canvas": "947fe0307289e8cd",
+  "edges": 18,
+  "groups": 0,
+  "nodes": 8,
+}
+`;
+
+exports[`diagram golden cases > diamond > matches its golden digest 1`] = `
+{
+  "canvas": "c070997e9408ac15",
+  "edges": 4,
+  "groups": 0,
+  "nodes": 4,
+}
+`;
+
+exports[`diagram golden cases > disconnected > matches its golden digest 1`] = `
+{
+  "canvas": "d30f91059eacb3d6",
+  "edges": 2,
+  "groups": 0,
+  "nodes": 5,
+}
+`;
+
+exports[`diagram golden cases > empty-labels > matches its golden digest 1`] = `
+{
+  "canvas": "a764ad62470d46f5",
+  "edges": 1,
+  "groups": 0,
+  "nodes": 2,
+}
+`;
+
+exports[`diagram golden cases > fan-in > matches its golden digest 1`] = `
+{
+  "canvas": "a5574dacb3bbca8c",
+  "edges": 6,
+  "groups": 0,
+  "nodes": 7,
+}
+`;
+
+exports[`diagram golden cases > fan-out > matches its golden digest 1`] = `
+{
+  "canvas": "12cd44a2dfa82408",
+  "edges": 15,
+  "groups": 0,
+  "nodes": 16,
+}
+`;
+
+exports[`diagram golden cases > large > matches its golden digest 1`] = `
+{
+  "canvas": "22c31b2739dc1d52",
+  "edges": 59,
+  "groups": 0,
+  "nodes": 60,
+}
+`;
+
+exports[`diagram golden cases > lifecycle-states > matches its golden digest 1`] = `
+{
+  "canvas": "265019e08d2173df",
+  "edges": 3,
+  "groups": 0,
+  "nodes": 3,
+}
+`;
+
+exports[`diagram golden cases > long-vietnamese-labels > matches its golden digest 1`] = `
+{
+  "canvas": "bbdc0653976a8a5f",
+  "edges": 2,
+  "groups": 0,
+  "nodes": 3,
+}
+`;
+
+exports[`diagram golden cases > markup-like-labels > matches its golden digest 1`] = `
+{
+  "canvas": "e6afc6ca41f6f99c",
+  "edges": 1,
+  "groups": 0,
+  "nodes": 2,
+}
+`;
+
+exports[`diagram golden cases > nested-boundaries > matches its golden digest 1`] = `
+{
+  "canvas": "f89f8fec674fac4a",
+  "edges": 4,
+  "groups": 2,
+  "nodes": 5,
+}
+`;
+
+exports[`diagram golden cases > parallel-edges > matches its golden digest 1`] = `
+{
+  "canvas": "be34eb59ddbd1930",
+  "edges": 3,
+  "groups": 0,
+  "nodes": 2,
+}
+`;
+
+exports[`diagram golden cases > sequence-messages > matches its golden digest 1`] = `
+{
+  "canvas": "be6448b4b0bd076f",
+  "edges": 4,
+  "groups": 0,
+  "nodes": 3,
+}
+`;
+
+exports[`diagram golden cases > single-node > matches its golden digest 1`] = `
+{
+  "canvas": "23e4ab7490f093b1",
+  "edges": 0,
+  "groups": 0,
+  "nodes": 1,
+}
+`;
+
+exports[`diagram golden cases > two-level-tree > matches its golden digest 1`] = `
+{
+  "canvas": "aa1da28c7c1643fc",
+  "edges": 12,
+  "groups": 0,
+  "nodes": 13,
+}
+`;
+
+exports[`diagram golden cases > workflow-lanes > matches its golden digest 1`] = `
+{
+  "canvas": "eba8ef0a92b1a99b",
+  "edges": 3,
+  "groups": 2,
+  "nodes": 4,
+}
+`;

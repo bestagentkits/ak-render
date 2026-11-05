@@ -259,3 +259,25 @@ A contract 2 result that declares capabilities gets a viewer. It reads only the 
 | `zoom` | Zoom out, zoom in, Fit and 1:1 buttons, `+`, `-`, `0` and `f` on the focused scroller, Ctrl+wheel, and drag to pan when the drawing is wider than the panel. |
 
 Escape or Clear resets the view. The selection or route is kept in the link as `#<panel>:node:<id>` or `#<panel>:route:<from>:<to>`, so a shared link opens on it. The controls ship hidden and the runtime reveals them, so without script the drawing and its text description read as before; print drops the controls and the dimming. The only transition, the dimming, sits behind the motion guard.
+
+## Golden cases and baseline
+
+`tests/unit/support/diagram-golden.ts` holds 22 diagram shapes: one node, chains, branches, fan-out and fan-in, a diamond, cycles, bidirectional and parallel relationships, a dense graph, disconnected parts, long Vietnamese labels, markup-like labels, empty labels, nested boundaries, a 60-node drawing, and the workflow, sequence, dataflow and lifecycle archetypes. They are drawn with the reference grid adapter.
+
+- `tests/unit/diagram-golden.test.ts` checks each case:
+  - it compiles to the same bytes every time;
+  - every declared node is drawn exactly once;
+  - exactly the declared relationships appear, in spec order, so nothing is fabricated;
+  - ids are unique and labels stay inert;
+  - its canvas digest matches the snapshot.
+
+  It also checks that every built-in preset leaves the drawing unchanged.
+- `tests/browser/diagram-golden.spec.ts` opens each case at 1440 and 375. It checks:
+  - no console errors and no network requests;
+  - no sideways page scroll;
+  - no node outside its drawing and no overlapping nodes;
+  - an accessible name on every node;
+  - node geometry against `tests/browser/diagram-golden.geometry.json`.
+
+  It also covers print, no script, every preset in light and dark, and motion under full, reduced and `none`.
+- `AK_RECORD_DIAGRAM_BASELINE=1 npx playwright test tests/browser/diagram-golden.spec.ts` records the geometry and [docs/artifacts/diagram-baseline.json](./artifacts/diagram-baseline.json). That file holds compile time, HTML bytes, DOM size and JS heap for small to 60-node drawings. It is a baseline for later thresholds, not a threshold.
