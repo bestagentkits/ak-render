@@ -26,6 +26,8 @@ const LABEL_GAP = 6;
 /** Share of the stage width the chart spans once framed, and the most of its height. */
 const FILL_X = 0.84;
 const FILL_Y = 0.78;
+/** Least share of the stage height a framed chart should span before the view tilts down. */
+const MIN_HEIGHT = 0.68;
 
 function readColor(el, name, fallback) {
   const color = new Color(fallback);
@@ -59,18 +61,26 @@ const ease = (k) => 1 - (1 - k) ** 3;
  * which its projection fills the stage, then slide the target so it sits centred.
  */
 function fitBox(camera, target, base, corners, aspect, pad) {
+  // A shallow chart framed by its width leaves the stage half empty; look down more
+  // steeply, a step at a time, until the depth axis fills the height.
+  const flat = Math.hypot(base.x, base.z) || 1;
+  const start = Math.atan2(base.y, flat);
+  let fit = null;
+  for (let tilt = 0; tilt <= 0.4 + 1e-9; tilt += 0.05) {
+    const elevation = Math.min(1.05, start + tilt);
+    const scale = Math.cos(elevation) / flat;
+    const dir = new Vector3(base.x * scale, Math.sin(elevation), base.z * scale).normalize();
+    fit = fitFrom(camera, target, dir, corners, aspect, pad);
+    if (fit.height >= MIN_HEIGHT || elevation >= 1.05) break;
+  }
+  return { position: fit.position, target: fit.target };
+}
+
+function fitFrom(camera, target, dir, corners, aspect, pad) {
   const probe = camera.clone();
   probe.aspect = aspect;
   probe.updateProjectionMatrix();
   const aim = target.clone();
-  const dir = base.clone();
-  const tilt = Math.min(0.26, Math.max(0, (1.7 - aspect) * 0.4));
-  if (tilt) {
-    const flat = Math.hypot(dir.x, dir.z);
-    const elevation = Math.min(1.2, Math.atan2(dir.y, flat) + tilt);
-    const scale = Math.cos(elevation) / (flat || 1);
-    dir.set(dir.x * scale, Math.sin(elevation), dir.z * scale).normalize();
-  }
   const point = new Vector3();
   const bounds = (distance) => {
     probe.position.copy(aim).addScaledVector(dir, distance);
@@ -105,8 +115,9 @@ function fitBox(camera, target, base, corners, aspect, pad) {
     aim.addScaledVector(right, ((x0 + x1) / 2 - pad) * halfH * aspect);
     aim.addScaledVector(up, ((y0 + y1) / 2) * halfH);
   }
+  const [, y0, , y1] = bounds(distance);
   const position = aim.clone().addScaledVector(dir, distance);
-  return { position: position.toArray(), target: aim.toArray() };
+  return { position: position.toArray(), target: aim.toArray(), height: (y1 - y0) / 2 };
 }
 
 export function barsWidget(ctx) {
@@ -181,7 +192,13 @@ export function barsWidget(ctx) {
   };
   for (const [y, value] of ticks)
     addLabel(value, new Vector3(left, y, z1 + 0.3), Math.abs(y) < 1e-6 ? 'zero' : 'tick');
-  for (const [x, name] of bars.categories) addLabel(name, new Vector3(x, floor, z1 + 0.5), 'cat');
+  // Each category label hangs just under its own column, not the chart's lowest bar.
+  const per = bars.series.length;
+  bars.categories.forEach(([x, name], c) => {
+    const column = bars.layouts[''].slice(c * per, (c + 1) * per);
+    const bottom = Math.min(0, ...column.map((pair) => pair[0]));
+    addLabel(name, new Vector3(x, bottom, z1 + 0.35), 'cat');
+  });
   for (const [z, name] of bars.rows) addLabel(name, new Vector3(x1 + 0.5, 0, z), 'row');
   const groups = ['tick', 'cat', 'row'].map((kind) =>
     labels.filter((label) =>
