@@ -202,3 +202,73 @@ describe('diagram adapter v2: manifest', () => {
     );
   });
 });
+
+describe('diagram adapter v2: QA edge cases', () => {
+  const PARALLEL = {
+    components: [{ id: 'a' }, { id: 'b' }],
+    connections: [
+      { from: 'a', to: 'b', label: 'reads' },
+      { from: 'a', to: 'b', label: 'writes' },
+    ],
+  };
+  const TWO = '<svg><path id="p1" d="M0 0"/><path id="p2" d="M0 0"/></svg>';
+
+  it('labels parallel relationships by their spec index', () => {
+    const result = run(
+      v2(() => ({
+        svg: TWO,
+        manifest: {
+          version: 2,
+          nodes: [],
+          edges: [
+            { from: 'a', to: 'b', element: 'p1', index: 1 },
+            { from: 'a', to: 'b', element: 'p2' },
+          ],
+        },
+      })),
+      PARALLEL,
+    );
+    expect(result?.markup).toContain(
+      'data-ak-edge="0" data-ak-from="a" data-ak-to="b" data-ak-label="writes"',
+    );
+    expect(result?.markup).toContain('data-ak-label="reads"');
+  });
+
+  it('rejects an index that names a different relationship', () => {
+    const result = run(
+      v2(() => ({
+        svg: TWO,
+        manifest: {
+          version: 2,
+          nodes: [],
+          edges: [{ from: 'b', to: 'a', element: 'p1', index: 0 }],
+        },
+      })),
+      PARALLEL,
+    );
+    expect(result?.rejected).toContain('index 0');
+  });
+
+  it('rejects a drawn id that is not a plain token', () => {
+    const result = run(
+      v2(() => ({ svg: '<svg><g id="gräd"/></svg>', manifest: { version: 2, nodes: [] } })),
+    );
+    expect(result?.rejected).toContain('is not a plain token');
+  });
+
+  it('says so when two entries name the same element', () => {
+    const result = run(
+      v2(() => ({
+        svg: SVG,
+        manifest: {
+          version: 2,
+          nodes: [
+            { id: 'a', element: 'na' },
+            { id: 'b', element: 'na' },
+          ],
+        },
+      })),
+    );
+    expect(result?.rejected).toContain('more than once');
+  });
+});

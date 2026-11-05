@@ -79,6 +79,7 @@ const akDiagram: DiagramAdapter = {
 | --- | --- |
 | `nodes[].id` | A node id the spec declares. |
 | `edges[].from`, `to` | A relationship the spec declares. Two declared relationships between the same pair may be drawn twice; a third may not. |
+| `edges[].index` | Optional position of the relationship in the spec's list. Use it when the spec declares several relationships between the same pair with different labels; otherwise they are matched in declaration order. |
 | `groups[].id` | A boundary, lane or stage id the spec declares. |
 | `element` | The drawn element's `id`. Without it, a node binds the element whose `data-node-id` is its id, a relationship the element whose `data-edge-id` is its `id`, a group the element whose `data-group-id` is its id. |
 | `capabilities` | Any of `focus`, `trace`, `zoom`, `search` set to `true`. Other keys are ignored. |
@@ -100,8 +101,9 @@ Then it writes its own hooks onto the bound elements: `data-ak-node`,
 `data-ak-members`, and a `data-ak-label` taken from the spec, never from the
 adapter. Every `id` in the drawing, and every `href="#…"`, `url(#…)` and
 `aria-labelledby`/`aria-describedby` reference to one, is prefixed with the
-panel scope, so two diagrams on a page never share an id. Style a contract 2
-drawing by class, not by `#id` selector. The canvas carries
+panel scope, so two diagrams on a page never share an id. Drawn ids must be
+plain tokens (`[A-Za-z][A-Za-z0-9_.:-]*`). Style a contract 2 drawing by class,
+not by `#id` selector: id selectors no longer match once ids are scoped. The canvas carries
 `data-ak-diagram-contract="2"` and the declared capabilities, which the
 compiler-owned viewer and diagram motion read. A manifest may list only part
 of the drawing; what it leaves out stays static.

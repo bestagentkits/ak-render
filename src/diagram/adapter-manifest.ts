@@ -39,6 +39,12 @@ export interface DiagramManifestEdge {
   /** Adapter edge id, matched against `data-edge-id` when `element` is absent. */
   readonly id?: string;
   readonly element?: string;
+  /**
+   * Position of the relationship in the spec's list. Needed only when the spec
+   * declares several relationships between the same pair with different
+   * labels; without it they are matched in declaration order.
+   */
+  readonly index?: number;
 }
 
 export interface DiagramManifestGroup {
@@ -128,6 +134,13 @@ export function readManifest(result: unknown): ManifestRead {
   for (const item of edges) {
     const element = isObject(item) ? optionalElement(item.element) : false;
     const id = isObject(item) ? item.id : undefined;
+    const index = isObject(item) ? item.index : undefined;
+    if (
+      index !== undefined &&
+      !(typeof index === 'number' && Number.isInteger(index) && index >= 0)
+    ) {
+      return { ok: false, reason: 'manifest edge index must be a non-negative integer' };
+    }
     if (
       !isObject(item) ||
       typeof item.from !== 'string' ||
@@ -143,6 +156,7 @@ export function readManifest(result: unknown): ManifestRead {
       to: item.to,
       ...(typeof id === 'string' ? { id } : {}),
       ...(element === undefined ? {} : { element }),
+      ...(typeof index === 'number' ? { index } : {}),
     });
   }
   const readGroups: DiagramManifestGroup[] = [];
@@ -185,7 +199,17 @@ export function checkManifestAgainstGraph(
     const key = `${edge.from}\u0000${edge.to}`;
     available.set(key, (available.get(key) ?? 0) + 1);
   }
+  const usedIndices = new Set<number>();
   for (const edge of manifest.edges ?? []) {
+    if (edge.index !== undefined) {
+      const declared = graph.edges[edge.index];
+      if (declared === undefined || declared.from !== edge.from || declared.to !== edge.to) {
+        return `manifest relationship index ${edge.index} is not "${edge.from}" -> "${edge.to}" in the spec`;
+      }
+      if (usedIndices.has(edge.index))
+        return `manifest relationship index ${edge.index} is listed twice`;
+      usedIndices.add(edge.index);
+    }
     const key = `${edge.from}\u0000${edge.to}`;
     const left = available.get(key) ?? 0;
     if (left === 0) {
@@ -288,28 +312,41 @@ export function bindManifest(
   const prefix = `${scope}-`;
   const nodeLabels = new Map(graph.nodes.map((node) => [node.id, node.label]));
   const groupsById = new Map(graph.groups.map((group) => [group.id, group]));
-  const edgeLabels = new Map<string, string[]>();
-  for (const edge of graph.edges) {
+  // Spec relationship positions per pair; indexed manifest entries claim theirs
+  // first, the rest take the remaining positions in declaration order.
+  const pool = new Map<string, number[]>();
+  graph.edges.forEach((edge, index) => {
     const key = `${edge.from}\u0000${edge.to}`;
-    edgeLabels.set(key, [...(edgeLabels.get(key) ?? []), edge.label]);
+    pool.set(key, [...(pool.get(key) ?? []), index]);
+  });
+  for (const edge of manifest.edges ?? []) {
+    if (edge.index === undefined) continue;
+    const key = `${edge.from}\u0000${edge.to}`;
+    pool.set(
+      key,
+      (pool.get(key) ?? []).filter((index) => index !== edge.index),
+    );
   }
 
   const byElement = new Map<string, Binding>();
   const byAttribute = new Map<string, Binding>();
   const all: Binding[] = [];
+  let listedTwice: string | undefined;
   const add = (key: { element?: string }, fallbackKey: string, attributes: string): void => {
     const binding: Binding = { attributes, bound: false };
     all.push(binding);
-    if (key.element !== undefined) byElement.set(key.element, binding);
-    else byAttribute.set(fallbackKey, binding);
+    const map = key.element === undefined ? byAttribute : byElement;
+    const lookup = key.element ?? fallbackKey;
+    if (map.has(lookup)) listedTwice ??= key.element ?? fallbackKey.replace('\u0000', ' ');
+    map.set(lookup, binding);
   };
   for (const node of manifest.nodes) {
     add(node, `data-node-id\u0000${node.id}`, nodeHook(node.id, nodeLabels.get(node.id) ?? ''));
   }
   (manifest.edges ?? []).forEach((edge, index) => {
     const key = `${edge.from}\u0000${edge.to}`;
-    const labels = edgeLabels.get(key) ?? [];
-    const label = labels.shift() ?? '';
+    const position = edge.index ?? pool.get(key)?.shift();
+    const label = position === undefined ? '' : (graph.edges[position]?.label ?? '');
     add(edge, `data-edge-id\u0000${edge.id ?? ''}`, edgeHook(index, edge.from, edge.to, label));
   });
   for (const group of manifest.groups ?? []) {
@@ -317,6 +354,10 @@ export function bindManifest(
     if (declared !== undefined) add(group, `data-group-id\u0000${group.id}`, groupHook(declared));
   }
 
+  if (listedTwice !== undefined) {
+    return { ok: false, reason: `manifest names element ${listedTwice} more than once` };
+  }
+  let invalidId: string | undefined;
   let duplicate: string | undefined;
   const rewritten = markup.replace(
     START_TAG,
@@ -343,6 +384,7 @@ export function bindManifest(
           const lowered = attrName.toLowerCase();
           const value = decode(unquote(raw));
           if (lowered === 'id') {
+            if (!ELEMENT_ID.test(value)) invalidId ??= value;
             claim(byElement.get(value), `element "${value}"`);
             return `${space}${attrName}${equals ?? '='}"${encode(prefix + value)}"`;
           }
@@ -373,6 +415,12 @@ export function bindManifest(
       return `<${name}${attributes}${hook}${close}`;
     },
   );
+  if (invalidId !== undefined) {
+    return {
+      ok: false,
+      reason: `drawn id "${invalidId.slice(0, 40)}" is not a plain token ([A-Za-z][A-Za-z0-9_.:-]*)`,
+    };
+  }
   if (duplicate !== undefined)
     return { ok: false, reason: `manifest ${duplicate} matches more than one element` };
   const unbound = all.findIndex((binding) => !binding.bound);
