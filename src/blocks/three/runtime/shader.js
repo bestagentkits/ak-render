@@ -200,6 +200,12 @@ export function mountShader(el, kit) {
   composer.addPass(new OutputPass());
 
   let preset = params.preset;
+  let grain = false;
+  // Grain is film texture, so a small stage gets finer, lighter grain rather than the same specks.
+  const grainAmount = () =>
+    grain ? (0.06 * Math.min(1, Math.max(0.4, (stage.clientWidth || 640) / 1100))) / dpr : 0;
+  // A paused or still effect redraws only when something it shows has changed.
+  let dirty = true;
   function applyPreset(next) {
     preset = next;
     material.uniforms.uPreset.value = presetIndex(next);
@@ -213,7 +219,8 @@ export function mountShader(el, kit) {
     bloom.enabled = post.includes('bloom');
     finish.uniforms.uChromatic.value = post.includes('chromatic') ? 1 : 0;
     finish.uniforms.uScanlines.value = post.includes('scanlines') ? 1 : 0;
-    finish.uniforms.uGrain.value = post.includes('grain') ? 1 : 0;
+    grain = post.includes('grain');
+    finish.uniforms.uGrain.value = grainAmount();
     finish.uniforms.uVignette.value = post.includes('vignette') ? 1 : 0;
     el.setAttribute('data-ak-sh-preset', next);
     el.setAttribute('data-ak-sh-post', post.join(' '));
@@ -266,12 +273,16 @@ export function mountShader(el, kit) {
     button.disabled = false;
     button.addEventListener('click', onPresetButton);
   }
+  const motion = kit.motionAllowed();
   for (const input of sliders) {
+    // Without motion the clock never runs, so a speed dial would do nothing.
+    if (!motion && input.getAttribute('data-ak-sh-param') === 'speed') {
+      input.title = 'Speed has no effect while reduced motion is on';
+      continue;
+    }
     input.disabled = false;
     input.addEventListener('input', onSlider);
   }
-
-  const motion = kit.motionAllowed();
   let paused = !motion;
   let clock = POSTER_TIME;
   let last = 0;
@@ -290,6 +301,7 @@ export function mountShader(el, kit) {
     labelPause();
     last = 0;
     record.animating = !paused;
+    dirty = true;
     if (!paused) kit.schedule();
   };
   pause.addEventListener('click', onPause);
@@ -366,6 +378,7 @@ export function mountShader(el, kit) {
     composer.setPixelRatio(renderer.getPixelRatio());
     composer.setSize(width, height);
     finish.uniforms.uResolution.value.set(width, height);
+    finish.uniforms.uGrain.value = grainAmount();
     camera.aspect = width / height;
     // A narrow stage widens the vertical field so the surface keeps its width, as the poster does.
     camera.fov =
@@ -391,6 +404,9 @@ export function mountShader(el, kit) {
     frames: 0,
     renderMs: [],
     tick() {
+      // The shared loop ticks every visible scene while any animates; a paused, unchanged one skips.
+      if (paused && !dirty && record.frames > 0) return;
+      dirty = false;
       const at = performance.now();
       if (!paused) {
         if (last) clock += Math.min((at - last) / 1000, MAX_STEP) * values.speed;
@@ -500,6 +516,7 @@ export function mountShader(el, kit) {
     },
   };
   function requestRender() {
+    dirty = true;
     if (!record.visible || record.lost) return;
     if (record.animating) kit.schedule();
     else record.tick();

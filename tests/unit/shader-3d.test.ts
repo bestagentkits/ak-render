@@ -115,6 +115,15 @@ describe('shader-3d validation', () => {
     expect(errors(spec({ preset: 'noise', post: ['scanlines'] }))).toHaveLength(1);
   });
 
+  it('judges passes against the preset bound state starts the page with', () => {
+    const bound = (look: string) =>
+      errors(
+        spec({ preset: 'fresnel', post: ['scanlines'], bind: { preset: 'state.look' } }, { look }),
+      );
+    expect(bound('hologram')).toEqual([]);
+    expect(bound('noise')).toHaveLength(1);
+  });
+
   it('rejects shader source under any key, and any prop outside the closed set', () => {
     for (const key of ['shader', 'glsl', 'wgsl', 'vertexShader', 'fragmentShader', 'GLSL']) {
       const found = diagnostics(spec({ [key]: 'void main(){gl_FragColor=vec4(1.0);}' }));

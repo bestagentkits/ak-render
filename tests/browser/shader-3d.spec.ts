@@ -105,6 +105,8 @@ test.describe('shader-3d', { tag: '@gl' }, () => {
     const block = page.locator('[data-ak-id="reveal"]');
     const progress = block.locator('[data-ak-sh-param="progress"]');
     await expect(progress).toBeEnabled();
+    // Without motion the clock never runs, so the speed dial stays off.
+    await expect(block.locator('[data-ak-sh-param="speed"]')).toBeDisabled();
     const before = await frame(page, 'reveal');
     // A slider changes the uniform, the readout and the bound state.
     await progress.fill('0.7');
@@ -146,6 +148,31 @@ test.describe('shader-3d', { tag: '@gl' }, () => {
     expect((await stats(page)).frames).toBe(held);
     await pause.click();
     await expect.poll(async () => (await stats(page)).frames).toBeGreaterThan(held);
+  });
+
+  test('a paused effect stops redrawing while another keeps animating', async ({ page }) => {
+    await page.setViewportSize({ width: 1100, height: 4200 });
+    await page.goto(pageUrl('shader-3d-presets'));
+    await allReady(page);
+    for (const id of ['noise', 'fresnel', 'hologram', 'distortion'])
+      await page.locator(`[data-ak-id="${id}"] .ak-sh-pause`).click();
+    const counted = await page.evaluate(async () => {
+      const api = (window as unknown as { akRender3d: Api }).akRender3d;
+      const start = api.stats().frames;
+      let ticks = 0;
+      await new Promise<void>((resolve) => {
+        const step = () => {
+          ticks += 1;
+          if (ticks < 30) requestAnimationFrame(step);
+          else resolve();
+        };
+        requestAnimationFrame(step);
+      });
+      return { drawn: api.stats().frames - start, ticks };
+    });
+    // Only the one running effect draws: at most one frame per animation frame.
+    expect(counted.drawn).toBeGreaterThan(0);
+    expect(counted.drawn).toBeLessThanOrEqual(counted.ticks + 2);
   });
 
   test('unmounting releases every shader resource and a remount works', async ({ page }) => {

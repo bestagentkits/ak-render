@@ -302,8 +302,8 @@ export function shaderPoster(params: ShaderParams, label: string, uid: string): 
       const tone = total > 0 ? shade.b / total : 0;
       // Light past full strength turns toward white, as the live tone mapper does.
       const white = shade.w + Math.max(0, total - 1) * 0.5;
-      const cls = `k${level(tone, 8)} s${level(total, 20)} w${level(white, 4, 0.6)}${
-        additive ? ` o${level(shade.alpha, 5)}` : ''
+      const cls = `k${level(tone, 8)} s${level(total, 40)} w${level(white, 8, 0.6)}${
+        additive ? ` o${level(shade.alpha, 10)}` : ''
       }`;
       const d = `M${corners.map((c) => `${round(c.x)} ${round(c.y)}`).join('L')}Z`;
       facets.push({ depth: dot(sub(centre, eye), forward), d, cls });
@@ -441,8 +441,9 @@ function renderShader(node: IrNode, context: RenderContext): string {
  * Each pass and control once, `none` alone, every pass one the preset
  * supports, and bindings that name state.
  */
-export function checkShader(node: IrNode, { bag }: CheckContext): void {
-  const preset = isOneOf(SHADER_PRESETS, node.props.preset) ? node.props.preset : 'fresnel';
+export function checkShader(node: IrNode, { bag, state }: CheckContext): void {
+  // Passes are judged against the preset the page starts with, which bound state may set.
+  const preset = shaderParams(node, state).preset;
   const repeats = (key: 'post' | 'controls', what: string) => {
     const seen = new Set<string>();
     stringList(node.props[key]).forEach((value, i) => {

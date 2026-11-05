@@ -260,8 +260,11 @@ export function shadeAt(
       const f = fbm(...q);
       const k = smoothstep(-0.3, 0.35, f);
       return {
-        a: (1 - k) * lit,
-        b: k * lit * 0.8 + fres ** 2.5 * I * 0.7 + smoothstep(0.22, 0.5, f) * I * 0.45,
+        a: (1 - k) * lit * 0.7,
+        b:
+          k * lit * 0.55 +
+          fres ** 2.5 * I * 0.6 +
+          (1 - smoothstep(0, 0.045, Math.abs(f - 0.12))) * I * 1.4,
         w: spec * 0.35,
         alpha: 1,
       };
@@ -377,7 +380,7 @@ export function surfaceGrid(shape: ShaderShape, segU: number, segV: number): Sur
         ];
         put(p, unit(sub(p, p1)));
       } else {
-        put([(i / segU - 0.5) * 4.4, (v - 0.5) * 2.6, 0], [0, 0, 1]);
+        put([(i / segU - 0.5) * 3.6, (v - 0.5) * 2.2, 0], [0, 0, 1]);
       }
     }
   }
@@ -394,8 +397,8 @@ export const LIVE_GRID: Record<ShaderShape, [number, number]> = {
 /** Grid resolution of the poster per shape: enough facets to read as smooth at card size. */
 export const POSTER_GRID: Record<ShaderShape, [number, number]> = {
   sphere: [64, 40],
-  torus: [84, 28],
-  'torus-knot': [224, 16],
+  torus: [112, 36],
+  'torus-knot': [300, 20],
   plane: [64, 36],
 };
 
@@ -487,7 +490,7 @@ void main() {
   if (uPreset == 0) {
     float f = fbm(q);
     float m = smoothstep(-0.3, 0.35, f);
-    k = vec4((1.0 - m) * lit, m * lit * 0.8 + pow(fres, 2.5) * I * 0.7 + smoothstep(0.22, 0.5, f) * I * 0.45, spec * 0.35, 1.0);
+    k = vec4((1.0 - m) * lit * 0.7, m * lit * 0.55 + pow(fres, 2.5) * I * 0.6 + (1.0 - smoothstep(0.0, 0.045, abs(f - 0.12))) * I * 1.4, spec * 0.35, 1.0);
   } else if (uPreset == 1) {
     float fr = pow(fres, mix(4.5, 1.3, P));
     float inner = 0.5 + 0.5 * fbm(q);
@@ -524,7 +527,7 @@ uniform vec3 uHalo;
 uniform float uTime;
 uniform float uChromatic;
 uniform float uScanlines;
-uniform float uGrain;
+uniform float uGrain; // amount, 0 when off
 uniform float uVignette;
 varying vec2 vUv;
 float hash(vec2 p) {
@@ -536,14 +539,15 @@ void main() {
   vec4 base = texture2D(tDiffuse, uv);
   vec3 color = base.rgb;
   if (uChromatic > 0.0) {
-    vec2 shift = centered * 0.012;
+    // The split grows toward the rim, as a lens's does, and stays out of the middle.
+    vec2 shift = centered * length(centered) * 0.012;
     color.r = texture2D(tDiffuse, uv + shift).r;
     color.b = texture2D(tDiffuse, uv - shift).b;
   }
   float r = length(centered * vec2(uResolution.x / uResolution.y, 1.0));
   color += uHalo * 0.16 * (1.0 - smoothstep(0.0, 0.75, r));
   if (uScanlines > 0.0) color *= 0.82 + 0.18 * step(0.5, fract(gl_FragCoord.y / 3.0));
-  if (uGrain > 0.0) color += (hash(floor(gl_FragCoord.xy) + floor(uTime * 24.0)) - 0.5) * 0.06;
+  if (uGrain > 0.0) color += (hash(floor(gl_FragCoord.xy) + floor(uTime * 24.0)) - 0.5) * uGrain;
   if (uVignette > 0.0) color *= mix(1.0, 0.45, smoothstep(0.35, 0.95, r));
   gl_FragColor = vec4(color, 1.0);
 }`;
