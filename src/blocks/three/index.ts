@@ -18,6 +18,8 @@ import { SCATTER_CSS } from './scatter-styles.js';
 import { scene3dBlock } from './scene-3d.js';
 import { shader3dBlock } from './shader-3d.js';
 import { SHADER_CSS } from './shader-styles.js';
+import { terrain3dBlock } from './terrain-3d.js';
+import { TERRAIN_CSS } from './terrain-styles.js';
 import { text3dBlock } from './text-3d.js';
 import { TEXT_CSS } from './text-styles.js';
 import { THREE_RUNTIME } from './three-runtime.generated.js';
@@ -55,6 +57,7 @@ export const THREE_GROUP: BlockGroup = {
     globe3dBlock,
     morph3dBlock,
     timeline3dBlock,
+    terrain3dBlock,
   ],
   features: [
     {
@@ -70,7 +73,8 @@ export const THREE_GROUP: BlockGroup = {
         TEXT_CSS +
         GLOBE_CSS +
         MORPH_CSS +
-        TIMELINE_CSS,
+        TIMELINE_CSS +
+        TERRAIN_CSS,
       script: { code: `${THREE_RUNTIME}\n${THREE_BOOT}`, boot: 'wireThree();' },
     },
   ],

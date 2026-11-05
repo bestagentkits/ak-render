@@ -55,6 +55,7 @@ import { liveParticleResources, mountParticles } from './particles.js';
 import { productWidget } from './product.js';
 import { mountScatter } from './scatter.js';
 import { liveShaderResources, mountShader } from './shader.js';
+import { liveTerrainResources, terrainValid, terrainWidget } from './terrain.js';
 import { liveTextResources, mountText } from './text.js';
 import { liveTimelineResources, timelineWidget } from './timeline.js';
 
@@ -64,6 +65,7 @@ const SCENE_WIDGETS = {
   product: productWidget,
   morph: morphWidget,
   timeline: timelineWidget,
+  terrain: terrainWidget,
 };
 
 const TONE_VARS = {
@@ -257,6 +259,11 @@ function mount(el) {
   }
   // A morph whose targets cannot share one surface keeps its drawing and says so.
   if (el.getAttribute('data-ak-3d') === 'morph' && !morphValid(config)) {
+    el.setAttribute('data-ak-3d-state', 'error');
+    return null;
+  }
+  // So does a terrain whose heightmap is malformed.
+  if (el.getAttribute('data-ak-3d') === 'terrain' && !terrainValid(config)) {
     el.setAttribute('data-ak-3d-state', 'error');
     return null;
   }
@@ -868,6 +875,8 @@ function stats() {
     morphResources: liveMorphResources(),
     /** Timeline paths, stems, halos and marker materials still alive; zero once every timeline is unmounted. */
     timelineResources: liveTimelineResources(),
+    /** Terrain geometries and materials still alive; zero once every terrain is unmounted. */
+    terrainResources: liveTerrainResources(),
   };
 }
 

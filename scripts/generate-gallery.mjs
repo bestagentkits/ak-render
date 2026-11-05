@@ -299,6 +299,14 @@ const THREE_D_SHOWCASE = {
     'A hundred sprints',
     'One hundred milestones coiled into a rising spiral, still in order and one keystroke apart.',
   ],
+  'terrain-3d-alpine': [
+    'Alpine flyover',
+    'A 256 x 256 heightmap of twin peaks and a glacial valley, with contours, an elevation legend and a flyover of four places.',
+  ],
+  'terrain-3d-crater': [
+    'Volcanic caldera',
+    'A caldera rim and a young cone in a volcanic colour ramp, with 50 m contours and each place at its elevation.',
+  ],
   'network-3d-stress': [
     'A thousand-node graph',
     'A large force-laid graph that shows the network widget holding up at scale.',

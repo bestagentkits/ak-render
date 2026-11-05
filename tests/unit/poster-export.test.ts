@@ -59,6 +59,18 @@ describe('export3dPosterSvg', () => {
     expect(export3dPosterSvg(fixture('network-3d-basic'))).not.toContain('.ak-mo-surface');
   });
 
+  it('carries a terrain drawing its contour runs, pins and floor shadow', () => {
+    const svg = export3dPosterSvg(fixture('terrain-3d-crater'), { scheme: 'auto' });
+    expect(svg).toContain('class="ak-3d-poster ak-tr-poster"');
+    expect(svg).toContain('.ak-tr-c{fill:none;');
+    expect(svg).toContain('class="ak-3d-mark ak-tr-pin"');
+    expect(svg).toContain('fill="url(#ak-tr-floor-crater)"');
+    // The legend and the place list stay with the page, not the poster.
+    expect(svg).not.toContain('class="ak-tr-ramp"');
+    expect(svg).not.toContain('data-ak-terrain-mark');
+    expect(export3dPosterSvg(fixture('network-3d-basic'))).not.toContain('.ak-tr-c{');
+  }, 20_000);
+
   it('draws a box as shaded faces', () => {
     const svg = export3dPosterSvg(fixture('scene-3d-basic'));
     expect(svg).toContain('class="ak-3d-face"');

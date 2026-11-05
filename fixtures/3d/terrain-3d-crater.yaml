@@ -1,0 +1,25 @@
+version: 1
+meta:
+  title: Volcanic crater
+blocks:
+  - type: terrain-3d
+    id: crater
+    title: Caldera and cone
+    summary: A volcanic caldera with a ragged rim, a young cone rising from its floor and a lava valley breaching the south wall.
+    unit: m
+    ramp: volcanic
+    contours: 50
+    relief:
+      seed: 21
+      resolution: 192
+      roughness: 0.7
+      range: [1180, 2640]
+      features:
+        - { kind: crater, at: [0.5, 0.48], radius: 0.3, height: 1 }
+        - { kind: peak, at: [0.5, 0.48], radius: 0.36, height: 0.45 }
+        - { kind: peak, at: [0.56, 0.44], radius: 0.07, height: 0.55 }
+        - { kind: valley, at: [0.5, 0.62], to: [0.42, 1], radius: 0.07, height: 0.4 }
+    annotations:
+      - { id: rim, label: North rim, at: [0.5, 0.18] }
+      - { id: cone, label: Young cone, at: [0.56, 0.44], tone: danger }
+      - { id: breach, label: South breach, at: [0.46, 0.8], tone: warning }
