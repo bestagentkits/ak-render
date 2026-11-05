@@ -22,7 +22,7 @@ import {
   TubeGeometry,
   Vector3,
 } from 'three';
-import { centerOf, fitDistance, floorY, overviewDir } from '../timeline-layout.ts';
+import { centerOf, floorY, overviewCamera } from '../timeline-layout.ts';
 import { resolvedColor } from './product.js';
 
 /** Path segments per milestone gap, and the path's radius. */
@@ -90,7 +90,11 @@ export function timelineWidget(ctx) {
     swatches.set(tone, color);
     return color;
   }
-  const page = cssColor('var(--ak-color-background)', '', 0xffffff);
+  // Faded milestones lean toward the page but keep some ink, so they still read on a pale stage.
+  const page = cssColor('var(--ak-color-background)', '', 0xffffff).lerp(
+    cssColor('var(--ak-color-text-muted)', '', 0x777777),
+    0.35,
+  );
   const tones = milestones.map((m) => toneOf(m.tone));
   const faded = tones.map((tone) => tone.clone().lerp(page, FADE));
 
@@ -197,17 +201,13 @@ export function timelineWidget(ctx) {
 
   // ---- Camera -----------------------------------------------------------------------------
   const center = centerOf(points);
-  const homeDir = overviewDir(spec.layout);
   const spread = Math.max(
     2,
     ...points.map((p) => Math.hypot(p[0] - center[0], p[1] - center[1], p[2] - center[2])),
   );
   function overview(aspect) {
-    const distance = fitDistance(points, center, homeDir, aspect);
-    return {
-      position: center.map((c, i) => c + homeDir[i] * distance),
-      target: [...center],
-    };
+    const view = overviewCamera(points, spec.layout, aspect);
+    return { position: view.position, target: view.target };
   }
   // The fog falls off behind what the camera looks at, never across it.
   function fitFog(distance) {
@@ -352,25 +352,81 @@ export function timelineWidget(ctx) {
       goTo(next, true);
       listButtons[current]?.focus({ preventScroll: true });
     });
-  /** Step along the path; from the overview the first step flies in to the current milestone. */
+  /** Step along the path; at either end a step from the overview flies in to the end milestone. */
   function step(by) {
-    goTo(inOverview && !flight ? current : Math.min(count - 1, Math.max(0, current + by)), true);
+    goTo(Math.min(count - 1, Math.max(0, current + by)), true);
   }
   for (const button of steps)
     on(button, 'click', () => step(Number(button.getAttribute('data-ak-tl-step'))));
-  if (scrub) on(scrub, 'input', () => goTo(Number(scrub.value) - 1, true));
+  if (scrub) {
+    // While scrubbing the card stays quiet; it is announced once when the scrubber settles.
+    on(scrub, 'input', () => {
+      card?.setAttribute('aria-live', 'off');
+      goTo(Number(scrub.value) - 1, true);
+    });
+    on(scrub, 'change', () => {
+      card?.setAttribute('aria-live', 'polite');
+      annotate();
+    });
+  }
   if (overviewButton) on(overviewButton, 'click', showOverview);
 
   annotate();
   paint();
 
+  // ---- Tags: the first, last and current milestones named on the live view, as on the drawing.
+  const tagLayer = document.createElement('div');
+  tagLayer.className = 'ak-tl-tags';
+  tagLayer.setAttribute('aria-hidden', 'true');
+  stage.appendChild(tagLayer);
+  const tags = new Map();
+  const projected = new Vector3();
+  function tagFor(i) {
+    let tag = tags.get(i);
+    if (!tag) {
+      tag = document.createElement('span');
+      tag.className = 'ak-tl-tag-live';
+      tagLayer.appendChild(tag);
+      tags.set(i, tag);
+    }
+    return tag;
+  }
+  function placeTags() {
+    const wanted = new Set([0, count - 1, current]);
+    for (const [i, tag] of tags)
+      if (!wanted.has(i)) {
+        tag.remove();
+        tags.delete(i);
+      }
+    const width = stage.clientWidth;
+    const height = stage.clientHeight;
+    for (const i of wanted) {
+      const m = milestones[i];
+      const tag = tagFor(i);
+      const isCurrent = i === current;
+      tag.toggleAttribute('data-ak-current', isCurrent);
+      const text = isCurrent && m.date ? `${m.date} · ${m.label}` : m.date || m.label;
+      if (tag.textContent !== text) tag.textContent = text;
+      projected.copy(markers[i].position).project(camera);
+      const visible =
+        projected.z < 1 && Math.abs(projected.x) < 1.05 && Math.abs(projected.y) < 1.05;
+      tag.hidden = !visible;
+      if (!visible) continue;
+      const x = Math.min(width - 8, Math.max(8, ((projected.x + 1) / 2) * width));
+      const y = ((1 - projected.y) / 2) * height;
+      tag.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`;
+    }
+  }
+
   return {
     tick(now) {
+      placeTags();
       if (!flight) return false;
       if (!flight.start) flight.start = now;
       const k = Math.min(1, (now - flight.start) / flight.duration);
       if (k >= 1) {
         finishFlight();
+        placeTags();
         return false;
       }
       const e = ease(k);
@@ -382,6 +438,7 @@ export function timelineWidget(ctx) {
       );
       progress = from.progress + (flight.toProgress - from.progress) * e;
       paint();
+      placeTags();
       return true;
     },
     settle() {
@@ -435,6 +492,7 @@ export function timelineWidget(ctx) {
       for (const control of [...listButtons, ...steps, scrub, overviewButton])
         if (control) control.disabled = true;
       for (const object of owned) scene.remove(object);
+      tagLayer.remove();
       tube.dispose();
       pathMaterial.dispose();
       stemGeometry.dispose();

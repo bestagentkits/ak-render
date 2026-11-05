@@ -35,12 +35,12 @@ test.describe('timeline-3d', { tag: '@gl' }, () => {
     await ready(page);
     await expect(page.locator('[data-ak-tl-milestone]')).toHaveCount(100);
     await expect(current(page)).toHaveAttribute('data-ak-tl-current', 's050');
-    // From the overview the first step flies in; the next moves on by one.
+    // Every step moves on by one, from the overview too, and the live view names it.
     await page.locator('[data-ak-tl-step="1"]').click();
     await expect(page.locator('[data-ak-tl-overview]')).toHaveAttribute('aria-pressed', 'false');
-    await page.locator('[data-ak-tl-step="1"]').click();
     await expect(current(page)).toHaveAttribute('data-ak-tl-current', 's051');
     await expect(page.locator('.ak-tl-card')).toContainText('051 / 100');
+    await expect(page.locator('.ak-tl-tag-live[data-ak-current]')).toContainText('Sprint 51');
     // Canvas keys.
     await page.locator('.ak-3d-canvas').focus();
     await page.keyboard.press('End');
@@ -75,5 +75,21 @@ test.describe('timeline-3d', { tag: '@gl' }, () => {
     await page.locator('select').selectOption('hubble');
     await expect(current(page)).toHaveAttribute('data-ak-tl-current', 'hubble');
     await expect(page.locator('.ak-tl-card')).toContainText('Hubble');
+    // A reader's choice flies there (with motion) and writes the id back to page state.
+    await page.locator('[data-ak-tl-milestone="jwst"]').click();
+    await expect(page.locator('select')).toHaveValue('jwst');
+    await page.locator('.ak-3d-canvas').focus();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('[data-ak-tl-overview]')).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('without JS the drawing, card and ordered list carry the timeline', async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    await page.goto(pageUrl('timeline-3d-space'));
+    await expect(page.locator('.ak-tl-poster')).toBeVisible();
+    await expect(page.locator('.ak-tl-card')).toContainText('Apollo 11');
+    await expect(page.locator('.ak-tl-list li')).toHaveCount(12);
+    await context.close();
   });
 });

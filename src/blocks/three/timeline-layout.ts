@@ -97,7 +97,7 @@ export function fitDistance(
   center: Vec3,
   dir: Vec3,
   aspect: number,
-  margin = 0.86,
+  margin = 0.92,
 ): number {
   const forward: Vec3 = [-dir[0], -dir[1], -dir[2]];
   const right = norm(cross(forward, [0, 1, 0]));
@@ -128,7 +128,10 @@ export interface Camera {
 export function overviewCamera(points: readonly Vec3[], layout: Layout, aspect: number): Camera {
   const center = centerOf(points);
   const dir = overviewDir(layout);
-  const distance = fitDistance(points, center, dir, aspect);
+  // The stems' feet frame too, so no stem runs off the stage.
+  const ground = Math.min(...points.map((p) => p[1])) - MARKER / 2;
+  const feet = points.map(([x, , z]): Vec3 => [x, ground, z]);
+  const distance = fitDistance([...points, ...feet], center, dir, aspect);
   return {
     position: center.map((c, i) => round(c + (dir[i] as number) * distance)) as Vec3,
     target: center,

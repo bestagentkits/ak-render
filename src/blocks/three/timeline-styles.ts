@@ -22,7 +22,13 @@ export const TIMELINE_CSS = `
 .ak-tl-card .ak-tl-date{font-weight:650;color:var(--ak-color-accent);font-variant-numeric:tabular-nums}
 .ak-tl-title{font:650 1.125em/1.25 var(--ak-font-heading,var(--ak-font-body,inherit));color:var(--ak-color-text);text-wrap:balance}
 .ak-tl-text{color:var(--ak-color-text-muted);font-size:.9375em;line-height:1.45}
-@media (min-width:720px){.ak-tl-card{position:absolute;left:calc(var(--ak-space-unit)*2);bottom:calc(var(--ak-space-unit)*2);z-index:2;max-width:min(22rem,46%);background:color-mix(in oklab,var(--ak-color-surface) 82%,transparent);backdrop-filter:blur(10px) saturate(1.2)}}
+.ak-tl-card{border-left:3px solid var(--ak-color-accent)}
+@media (min-width:720px){.ak-tl-card{grid-template-columns:minmax(7.5rem,auto) 1fr;column-gap:calc(var(--ak-space-unit)*3)}.ak-tl-card .ak-tl-step,.ak-tl-card .ak-tl-date{grid-column:1}.ak-tl-card .ak-tl-title,.ak-tl-card .ak-tl-text{grid-column:2}.ak-tl-card .ak-tl-title{grid-row:1}.ak-tl-card .ak-tl-text{grid-row:2 / span 2}}
+.ak-tl-tags{position:absolute;inset:0;pointer-events:none;overflow:hidden;visibility:hidden}
+.ak-3d[data-ak-3d-state="ready"] .ak-tl-tags,.ak-3d[data-ak-3d-state="frozen"] .ak-tl-tags{visibility:visible}
+.ak-tl-tag-live{position:absolute;left:0;top:0;margin-top:-30px;white-space:nowrap;translate:-50% 0;font:600 11px/1.2 var(--ak-font-body,inherit);letter-spacing:.04em;color:var(--ak-color-text-muted);font-variant-numeric:tabular-nums;padding:3px 8px;border-radius:999px;background:color-mix(in oklab,var(--ak-color-surface) 80%,transparent);border:1px solid color-mix(in oklab,var(--ak-color-text) 12%,transparent);backdrop-filter:blur(6px)}
+.ak-tl-tag-live[data-ak-current]{margin-top:-38px;color:var(--ak-color-text);border-color:var(--ak-color-accent);font-size:12px;box-shadow:0 6px 18px -10px color-mix(in oklab,var(--ak-color-text) 50%,transparent)}
+.ak-tl-tag-live[hidden]{display:none}
 .ak-tl-nav{flex-wrap:nowrap}
 .ak-tl-nav button{text-transform:none;flex:none}
 .ak-tl-nav button[aria-pressed="true"]{background:var(--ak-color-surface);color:var(--ak-color-text);border-color:var(--ak-color-border)}
