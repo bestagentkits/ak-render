@@ -28,6 +28,8 @@ export interface PlacedObject {
   size: number;
   world: Vec3;
   scale: number;
+  /** Box edge lengths when they differ per axis (a model's bounds); a cube of size otherwise. */
+  extent?: Vec3;
 }
 
 const DEG = Math.PI / 180;
@@ -99,6 +101,7 @@ export function placeObjects(objects: readonly Record<string, JsonValue>[]): Pla
       size: typeof object.size === 'number' ? object.size : 1,
       world: world.p,
       scale: world.s,
+      ...(Array.isArray(object.extent) ? { extent: vec(object.extent, [1, 1, 1]) } : {}),
     };
   });
 }
@@ -151,6 +154,112 @@ function glyph(shape: string, x: number, y: number, r: number): string {
   return `<rect x="${round(x - r)}" y="${round(y - r)}" width="${round(r * 2)}" height="${round(r * 2)}" rx="${round(r / 5)}"/>`;
 }
 
+// A box face: its four corner signs and its outward normal.
+const FACES: readonly { corners: readonly Vec3[]; normal: Vec3 }[] = [
+  {
+    normal: [0, 1, 0],
+    corners: [
+      [-1, 1, -1],
+      [1, 1, -1],
+      [1, 1, 1],
+      [-1, 1, 1],
+    ],
+  },
+  {
+    normal: [0, -1, 0],
+    corners: [
+      [-1, -1, -1],
+      [-1, -1, 1],
+      [1, -1, 1],
+      [1, -1, -1],
+    ],
+  },
+  {
+    normal: [1, 0, 0],
+    corners: [
+      [1, -1, -1],
+      [1, -1, 1],
+      [1, 1, 1],
+      [1, 1, -1],
+    ],
+  },
+  {
+    normal: [-1, 0, 0],
+    corners: [
+      [-1, -1, -1],
+      [-1, 1, -1],
+      [-1, 1, 1],
+      [-1, -1, 1],
+    ],
+  },
+  {
+    normal: [0, 0, 1],
+    corners: [
+      [-1, -1, 1],
+      [-1, 1, 1],
+      [1, 1, 1],
+      [1, -1, 1],
+    ],
+  },
+  {
+    normal: [0, 0, -1],
+    corners: [
+      [-1, -1, -1],
+      [1, -1, -1],
+      [1, 1, -1],
+      [-1, 1, -1],
+    ],
+  },
+];
+// Key light from above and slightly in front, so the top reads brightest.
+const LIGHT = normalize([-0.45, 1, 0.6]);
+
+/**
+ * A box drawn as its camera-facing faces, each shaded by how squarely it
+ * meets the key light and washed by a soft vertical sheen, so it reads as a
+ * solid rather than a flat square. Null when any corner is behind the camera.
+ */
+function boxGlyph(object: PlacedObject, camera: SceneCamera): string | null {
+  const edge = object.size * object.scale;
+  const half: Vec3 = object.extent
+    ? [object.extent[0] / 2, object.extent[1] / 2, object.extent[2] / 2]
+    : [edge / 2, edge / 2, edge / 2];
+  const [x, y, z] = object.world;
+  const faces: string[] = [];
+  for (const face of FACES) {
+    const centre: Vec3 = [
+      x + face.normal[0] * half[0],
+      y + face.normal[1] * half[1],
+      z + face.normal[2] * half[2],
+    ];
+    const toCamera: Vec3 = [
+      camera.position[0] - centre[0],
+      camera.position[1] - centre[1],
+      camera.position[2] - centre[2],
+    ];
+    if (dot(face.normal, toCamera) <= 0) continue;
+    const points = face.corners.map((c) =>
+      project([x + c[0] * half[0], y + c[1] * half[1], z + c[2] * half[2]], camera),
+    );
+    if (points.some((p) => p === null)) return null;
+    const list = points
+      .map((p) => `${round((p as { x: number }).x)},${round((p as { y: number }).y)}`)
+      .join(' ');
+    const light = Math.max(0, dot(face.normal, LIGHT));
+    const shade = round(0.42 * (1 - light));
+    faces.push(
+      `<polygon class="ak-3d-face" points="${list}"/><polygon class="ak-3d-sheen" points="${list}" fill="url(#ak-3d-sheen)"/>` +
+        (shade > 0
+          ? `<polygon class="ak-3d-shade" points="${list}" fill-opacity="${shade}"/>`
+          : ''),
+    );
+  }
+  return faces.join('');
+}
+
+const SHEEN_DEFS =
+  '<defs><linearGradient id="ak-3d-sheen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".28"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>';
+
 /** The labelled SVG plan of the scene. */
 export function scenePoster(
   objects: readonly PlacedObject[],
@@ -169,17 +278,16 @@ export function scenePoster(
       const point = at as { x: number; y: number; depth: number };
       const f = H / 2 / Math.tan((camera.fov * DEG) / 2);
       const r = Math.min(120, Math.max(4, ((object.size * object.scale) / 2 / point.depth) * f));
-      return `<g class="ak-3d-mark" data-tone="${escapeAttribute(object.tone)}">${glyph(
-        object.shape,
-        point.x,
-        point.y,
-        r,
-      )}<text x="${round(point.x)}" y="${round(point.y + r + 14)}">${escapeText(object.label)}</text></g>`;
+      const solid = object.shape === 'box' ? boxGlyph(object, camera) : null;
+      return `<g class="ak-3d-mark" data-tone="${escapeAttribute(object.tone)}">${
+        solid ?? glyph(object.shape, point.x, point.y, r)
+      }<text x="${round(point.x)}" y="${round(point.y + r + 14)}">${escapeText(object.label)}</text></g>`;
     })
     .join('');
+  const defs = marks.includes('url(#ak-3d-sheen)') ? SHEEN_DEFS : '';
   return `<svg class="ak-3d-poster" viewBox="0 0 ${W} ${H}" role="img" aria-label="${escapeAttribute(
     label,
-  )}" preserveAspectRatio="xMidYMid meet">${marks}</svg>`;
+  )}" preserveAspectRatio="xMidYMid meet">${defs}${marks}</svg>`;
 }
 
 /** Bounding radius of a drawn object; a plane is flat, so its corners set the extent. */

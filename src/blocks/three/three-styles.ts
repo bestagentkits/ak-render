@@ -6,6 +6,9 @@ export const THREE_CSS = `
 @media (max-width:480px){.ak-3d-stage{aspect-ratio:4/3}}
 .ak-3d-poster{position:absolute;inset:0;width:100%;height:100%}
 .ak-3d-mark{fill:var(--ak-3d-tone,var(--ak-color-accent));stroke:var(--ak-3d-tone,var(--ak-color-accent));fill-opacity:.82}
+.ak-3d-mark .ak-3d-face{fill-opacity:1;stroke-linejoin:round;stroke-width:1.2;stroke:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 70%,#000)}
+.ak-3d-mark .ak-3d-sheen,.ak-3d-mark .ak-3d-shade{stroke:none}
+.ak-3d-mark .ak-3d-shade{fill:#000}
 .ak-3d-mark text{fill:var(--ak-color-text);stroke:none;fill-opacity:1;font:600 13px var(--ak-font-body,inherit);text-anchor:middle}
 .ak-3d-mark[data-tone="neutral"]{--ak-3d-tone:var(--ak-color-text-muted)}
 .ak-3d-mark[data-tone="success"]{--ak-3d-tone:var(--ak-color-success)}

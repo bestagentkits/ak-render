@@ -40,12 +40,18 @@ const galleryAssetsDir = join(galleryDir, 'assets');
 let compile;
 let VERSION;
 let exportDiagramSvg;
+let export3dPosterSvg;
 let builtinThemeCatalog;
 let themePresetNames;
 try {
-  ({ compile, exportDiagramSvg, VERSION, builtinThemeCatalog, themePresetNames } = await import(
-    new URL('../dist/index.js', import.meta.url)
-  ));
+  ({
+    compile,
+    exportDiagramSvg,
+    export3dPosterSvg,
+    VERSION,
+    builtinThemeCatalog,
+    themePresetNames,
+  } = await import(new URL('../dist/index.js', import.meta.url)));
 } catch {
   console.error('generate-gallery: dist/ is missing; run "pnpm build" first');
   process.exit(1);
@@ -247,53 +253,17 @@ const THREE_D_SHOWCASE = {
   ],
 };
 
-/**
- * Lift the compiled page's static poster SVG into a standalone file for the
- * index card. The poster is styled by the page stylesheet, so the light theme
- * tokens and the rules that target poster classes travel with it; rules nested
- * in @media blocks (dark mode, narrow screens) are left out.
- */
-function posterSvg(html, name) {
-  const svg = /<svg class="ak-3d-poster[^"]*"[\s\S]*?<\/svg>/u.exec(html)?.[0];
-  if (svg === undefined) throw new Error(`generate-gallery: ${name} has no 3D poster`);
-  const tokens = /\{([^{}]*--ak-color-text:[^{}]*)\}/u.exec(html)?.[1];
-  if (tokens === undefined) throw new Error(`generate-gallery: ${name} has no theme tokens`);
-  const style = /<style[^>]*>([\s\S]*?)<\/style>/u.exec(html)?.[1] ?? '';
-  const classes = new Set(
-    [...svg.matchAll(/class="([^"]+)"/gu)].flatMap((match) => match[1].split(/\s+/u)),
-  );
-  const rules = [];
-  let depth = 0;
-  for (const match of style.matchAll(/([^{}]*)([{}])/gu)) {
-    if (match[2] === '}') {
-      depth = Math.max(0, depth - 1);
-      continue;
-    }
-    const selector = match[1].trim();
-    const at = selector.startsWith('@');
-    if (depth === 0 && !at) {
-      const used = [...selector.matchAll(/\.([\w-]+)/gu)].some((c) => classes.has(c[1]));
-      const body = style.slice(match.index + match[0].length).split('}', 1)[0];
-      if (used && /poster|ak-3d-mark/u.test(selector)) rules.push(`${selector}{${body}}`);
-    }
-    depth += 1;
-  }
-  return svg
-    .replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ')
-    .replace(
-      />/u,
-      `><style>svg{${tokens};font-family:system-ui,sans-serif}${rules.join('')}</style>`,
-    );
-}
-
 const threeEntries = Object.entries(THREE_D_SHOWCASE).map(([name, [title, description]]) => {
-  const result = compile(readFileSync(join(threeDir, `${name}.yaml`), 'utf8'), {
-    source: `${name}.yaml`,
-    modelResolver,
-  });
+  const source = readFileSync(join(threeDir, `${name}.yaml`), 'utf8');
+  const result = compile(source, { source: `${name}.yaml`, modelResolver });
   const file = `3d-${name}.html`;
   written.set(file, result.html);
-  written.set(`3d-${name}.svg`, posterSvg(result.html, name));
+  // A label-free thumbnail of the widget's own poster that follows the
+  // reader's colour scheme; tiny text would be unreadable at card size.
+  written.set(
+    `3d-${name}.svg`,
+    export3dPosterSvg(source, { modelResolver, scheme: 'auto', labels: false }),
+  );
   return {
     slug: `3d-${name}`,
     file,

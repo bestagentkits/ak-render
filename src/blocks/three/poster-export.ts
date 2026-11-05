@@ -1,0 +1,71 @@
+/**
+ * Static 3D poster export: one 3D block's compile-time SVG plan as a
+ * standalone file, for previews, cards and docs.
+ *
+ * The poster is the same drawing a reader sees with no JavaScript, no WebGL
+ * or in print. It is cut from the compiled page, so it always agrees with the
+ * page, and it carries its own `<style>`: the 3D poster rules plus the theme's
+ * colour tokens for the chosen `scheme`. `labels: false` hides every text
+ * label, for previews too small to read them. The output is deterministic and
+ * offline.
+ */
+
+import { RenderError } from '../../errors.js';
+import { escapeAttribute } from '../../render/escape.js';
+import { compile, type RenderOptions } from '../../render/render.js';
+import { NETWORK_CSS } from './network-styles.js';
+import { SCATTER_CSS } from './scatter-styles.js';
+import { THREE_CSS } from './three-styles.js';
+
+export interface PosterSvgOptions extends RenderOptions {
+  /** The 3D block's `id`; the first 3D block on the page when omitted. */
+  blockId?: string;
+  /**
+   * Which theme colours the file carries; `auto` carries both and follows the
+   * viewer's `prefers-color-scheme`.
+   */
+  scheme?: 'light' | 'dark' | 'auto';
+  /** Draw the text labels; off for thumbnails too small to read them. */
+  labels?: boolean;
+}
+
+/** Returns the standalone SVG poster of one 3D block on the page. */
+export function export3dPosterSvg(spec: unknown, options: PosterSvgOptions = {}): string {
+  const { blockId, scheme = 'light', labels = true, ...renderOptions } = options;
+  const result = compile(spec, renderOptions);
+  const html = result.html;
+  const blockAt =
+    blockId === undefined
+      ? html.indexOf('class="ak-block ak-3d')
+      : html.indexOf(`data-ak-id="${escapeAttribute(blockId)}"`);
+  const start = blockAt === -1 ? -1 : html.indexOf('<svg class="ak-3d-poster', blockAt);
+  const nextBlock = blockAt === -1 ? -1 : html.indexOf('<figure', blockAt + 1);
+  if (start === -1 || (nextBlock !== -1 && start > nextBlock)) {
+    throw new RenderError(
+      'SPEC_VALIDATION_ERROR',
+      blockId === undefined
+        ? 'the page has no 3D block with a drawn poster to export'
+        : `block "${blockId}" has no drawn 3D poster to export`,
+      { path: blockId === undefined ? '$.blocks' : `$.blocks.${blockId}` },
+    );
+  }
+  // Posters never nest an <svg>, so the first close ends the drawing.
+  const svg = html.slice(start, html.indexOf('</svg>', start) + 6);
+  const palette = (which: 'light' | 'dark'): string => {
+    const tokens = result.theme[which] as Record<string, string | undefined>;
+    const variables = Object.keys(tokens)
+      .filter((name) => name.startsWith('color-'))
+      .sort()
+      .map((name) => `--ak-${name}:${tokens[name]}`);
+    return `svg{--ak-font-body:system-ui,sans-serif;${variables.join(';')};color:${tokens['color-text'] ?? 'inherit'}}`;
+  };
+  const colours =
+    scheme === 'auto'
+      ? `${palette('light')}@media (prefers-color-scheme:dark){${palette('dark')}}`
+      : palette(scheme);
+  const style = `${colours}${THREE_CSS}${NETWORK_CSS}${SCATTER_CSS}${labels ? '' : 'text{display:none}'}`;
+  return `<?xml version="1.0" encoding="UTF-8"?>\n${svg.replace(
+    /^<svg([^>]*)>/u,
+    `<svg xmlns="http://www.w3.org/2000/svg"$1><style>${style}</style>`,
+  )}\n`;
+}
