@@ -357,7 +357,6 @@ function wireDiagramViewers() {
       });
       canvas.addEventListener('keydown', function (event) {
         var node = event.target.closest && event.target.closest('[data-ak-node]');
-        if (event.key === 'Escape') { clear(); return; }
         if (!node || (event.key !== 'Enter' && event.key !== ' ')) return;
         event.preventDefault();
         var id = node.getAttribute('data-ak-node');
@@ -366,6 +365,11 @@ function wireDiagramViewers() {
         else select(id, false);
       });
     }
+    // Escape resets from anywhere in the figure, including the details panel.
+    figure.addEventListener('keydown', function (event) {
+      if (event.key !== 'Escape' || event.target === search) return;
+      clear();
+    });
     var clearButton = q('[data-ak-dv-clear]', figure);
     if (clearButton) clearButton.addEventListener('click', function () { if (search) search.value = ''; clear(); });
     if (search) {
