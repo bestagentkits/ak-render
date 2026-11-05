@@ -43,10 +43,12 @@ export const MAX_HOTSPOTS = 24;
 export const FINISH_TONES = [...TONES, 'dark', 'light'] as const;
 /**
  * Scene shapes a product is built from, plus a rounded box and a capsule (as tall as its size,
- * half as wide). A plane and a torus knot are left out: neither is a product part.
+ * half as wide). Shapes that are never a product part are left out, and so is the invisible
+ * group: every part is drawn, and `parent` can still hang one part off another.
  */
+const NOT_PARTS: ReadonlySet<string> = new Set(['plane', 'torus-knot', 'icosahedron', 'group']);
 export const PRODUCT_SHAPES = [
-  ...SHAPES.filter((shape) => shape !== 'plane' && shape !== 'torus-knot'),
+  ...SHAPES.filter((shape) => !NOT_PARTS.has(shape)),
   'rounded-box',
   'capsule',
 ] as const;
@@ -62,13 +64,14 @@ const finishTone = (description: string) => enumStr(FINISH_TONES, { description 
 /** A scene object plus the offset it moves by in the exploded view. */
 function partSchema(): PropSchema {
   const base = objectSchema() as PropSchema & { fields: Record<string, PropSchema> };
-  // Hotspots carry every reader-facing name and note, so a part has neither of its own.
-  const { description: _description, label: _label, ...fields } = base.fields;
+  // Hotspots carry the reader-facing notes, so a part keeps only an optional name.
+  const { description: _description, ...fields } = base.fields;
   return obj({
     ...fields,
+    label: str({ maxLength: 200, description: 'Part name; the plan shows it as a tooltip.' }),
     shape: enumStr(PRODUCT_SHAPES, {
       default: 'box',
-      description: 'group draws nothing and only transforms its children.',
+      description: 'rounded-box and capsule suit product bodies and cells.',
     }),
     tone: finishTone('Color before any variant applies; `dark` and `light` are neutral finishes.'),
     explode: vec3(
@@ -243,7 +246,7 @@ function outline(shape: JsonValue | undefined): Vec3[] {
     );
   if (shape === 'cylinder') return [...ring(0.5, -0.5), ...ring(0.5, 0.5)];
   if (shape === 'cone') return [...ring(0.5, -0.5), [0, 0.5, 0]];
-  if (shape === 'sphere' || shape === 'icosahedron') return ball(0.5, 0);
+  if (shape === 'sphere') return ball(0.5, 0);
   // A capsule is as tall as its size and half as wide.
   if (shape === 'capsule') return [...ball(0.25, -0.25), ...ball(0.25, 0.25)];
   // A torus lies in its local xy plane: the outer rim and the tube's top and bottom.
@@ -276,21 +279,19 @@ interface PartShape {
   box: [Vec3, Vec3];
 }
 
-/** Each drawn part's outline points and box in world space; groups draw nothing. */
+/** Each part's outline points and box in world space. */
 function partCorners(parts: readonly Row[]): PartShape[] {
   const placed = new Map(placeObjects(parts).map((p) => [p.id, p.world]));
-  return parts
-    .filter((part) => part.shape !== 'group')
-    .map((part) => {
-      const size = typeof part.size === 'number' ? part.size : 1;
-      const s = vec(part.scale, [1, 1, 1]);
-      const rotation = vec(part.rotation, [0, 0, 0]);
-      const center = placed.get(String(part.id)) ?? [0, 0, 0];
-      const corners = outline(part.shape).map(([x, y, z]) =>
-        add(center, rotate([x * size * s[0], y * size * s[1], z * size * s[2]], rotation)),
-      );
-      return { part, center, corners, box: boundsOf(corners) };
-    });
+  return parts.map((part) => {
+    const size = typeof part.size === 'number' ? part.size : 1;
+    const s = vec(part.scale, [1, 1, 1]);
+    const rotation = vec(part.rotation, [0, 0, 0]);
+    const center = placed.get(String(part.id)) ?? [0, 0, 0];
+    const corners = outline(part.shape).map(([x, y, z]) =>
+      add(center, rotate([x * size * s[0], y * size * s[1], z * size * s[2]], rotation)),
+    );
+    return { part, center, corners, box: boundsOf(corners) };
+  });
 }
 
 /** True when box a lies wholly inside box b: a part hidden within another. */
@@ -434,27 +435,98 @@ function hull(points: readonly Point[]): Point[] {
   return [...chain(sorted), ...chain([...sorted].reverse())];
 }
 
+/**
+ * True when box a draws before box b, seen from `eye`. A plane between the boxes settles it: the
+ * box on the eye's side is in front. Boxes that interpenetrate (a dust cap seated in its cone)
+ * use the axis they overlap least on, which is the one they are stacked along. Centre depth
+ * alone gets this wrong: from above, a low woofer is farther than the taller baffle behind it.
+ */
+function drawsBefore(a: [Vec3, Vec3], b: [Vec3, Vec3], eye: Vec3): boolean {
+  let axis: 0 | 1 | 2 = 0;
+  let least = Infinity;
+  for (const i of [0, 1, 2] as const) {
+    const overlap = Math.min(a[1][i], b[1][i]) - Math.max(a[0][i], b[0][i]);
+    if (overlap < least) {
+      least = overlap;
+      axis = i;
+    }
+  }
+  const ca = (a[0][axis] + a[1][axis]) / 2;
+  const cb = (b[0][axis] + b[1][axis]) / 2;
+  if (ca === cb) return false;
+  const up = cb > ca;
+  const plane =
+    least <= 0 ? (up ? a[1][axis] + b[0][axis] : b[1][axis] + a[0][axis]) / 2 : (ca + cb) / 2;
+  return up ? eye[axis] > plane : eye[axis] < plane;
+}
+
+interface Drawn {
+  part: Row;
+  outline: Point[];
+  box: [Vec3, Vec3];
+  depth: number;
+}
+
+/**
+ * Painter's order: a part draws after every overlapping part it is in front of. Ties and the rare
+ * cycle fall back to centre depth, then id, so the plan is the same on every compile.
+ */
+function paintOrder(items: Drawn[], eye: Vec3): Drawn[] {
+  const rect = (d: Drawn) => {
+    const xs = d.outline.map((p) => p.x);
+    const ys = d.outline.map((p) => p.y);
+    return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)] as const;
+  };
+  const rects = items.map(rect);
+  const before = items.map(() => new Set<number>());
+  for (let i = 0; i < items.length; i += 1)
+    for (let j = i + 1; j < items.length; j += 1) {
+      const [a, b] = [rects[i], rects[j]];
+      if (!a || !b || a[2] < b[0] || b[2] < a[0] || a[3] < b[1] || b[3] < a[1]) continue;
+      const [first, then] = drawsBefore((items[i] as Drawn).box, (items[j] as Drawn).box, eye)
+        ? [i, j]
+        : [j, i];
+      before[then]?.add(first);
+    }
+  const rank = (i: number, j: number) => {
+    const [a, b] = [items[i] as Drawn, items[j] as Drawn];
+    return b.depth - a.depth || String(a.part.id).localeCompare(String(b.part.id));
+  };
+  const left = new Set(items.map((_, i) => i));
+  const out: Drawn[] = [];
+  while (left.size > 0) {
+    const pool = [...left];
+    const ready = pool.filter((i) => [...(before[i] ?? [])].every((j) => !left.has(j)));
+    const next = (ready.length > 0 ? ready : pool).sort(rank)[0] as number;
+    left.delete(next);
+    out.push(items[next] as Drawn);
+  }
+  return out;
+}
+
 /** The plan: each visible part's projected silhouette, back to front, under numbered pins. */
 export function productPoster(model: ProductModel, label: string): string {
   const { camera } = model;
   const shapes = partCorners(model.parts);
-  const drawn = shapes
-    // A part wholly inside another (a battery in its cabinet) is not visible from outside.
-    .filter((entry) => !shapes.some((other) => within(entry.box, other.box)))
-    .flatMap(({ part, center, corners }) => {
-      const points = corners.map((c) => project(c, camera)).filter((p) => p !== null);
-      const middle = project(center, camera);
-      if (points.length === 0 || middle === null) return [];
-      return [{ part, outline: hull(points), depth: middle.depth }];
-    })
-    .sort((a, b) => b.depth - a.depth || String(a.part.id).localeCompare(String(b.part.id)));
+  const drawn = paintOrder(
+    shapes
+      // A part wholly inside another (a battery in its cabinet) is not visible from outside.
+      .filter((entry) => !shapes.some((other) => within(entry.box, other.box)))
+      .flatMap(({ part, center, corners, box }) => {
+        const points = corners.map((c) => project(c, camera)).filter((p) => p !== null);
+        const middle = project(center, camera);
+        if (points.length === 0 || middle === null) return [];
+        return [{ part, outline: hull(points), box, depth: middle.depth }];
+      }),
+    camera.position,
+  );
   const marks = drawn
-    .map(
-      ({ part, outline: points }) =>
-        `<polygon class="ak-3d-mark ak-product-part" data-tone="${escapeAttribute(String(part.tone ?? 'accent'))}" points="${points
-          .map((p) => `${r1(p.x)},${r1(p.y)}`)
-          .join(' ')}"/>`,
-    )
+    .map(({ part, outline: points }) => {
+      const name = typeof part.label === 'string' ? `<title>${escapeText(part.label)}</title>` : '';
+      return `<polygon class="ak-3d-mark ak-product-part" data-tone="${escapeAttribute(String(part.tone ?? 'accent'))}" points="${points
+        .map((p) => `${r1(p.x)},${r1(p.y)}`)
+        .join(' ')}">${name}</polygon>`;
+    })
     .join('');
   // A soft contact shadow under the product's footprint.
   const xs = drawn.flatMap((d) => d.outline.map((p) => p.x));
@@ -582,7 +654,7 @@ export const product3dBlock: BlockModule = {
     tags: ['3d', 'webgl', 'product', 'hotspots', 'interactive'],
     useCases: ['showcase a product with finishes', 'explain parts with an exploded view'],
     purpose: 'Studio-lit product from typed parts: finish variants, hotspots and an exploded view.',
-    summary: 'Product 3D: finishes, numbered hotspots, exploded view.',
+    summary: 'Product: finishes, hotspots, exploded view.',
     props: PRODUCT_PROPS,
     runtimeFeatures: ['three'],
     actions: ['set-value'],

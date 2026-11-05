@@ -147,6 +147,25 @@ test.describe('product-3d', { tag: '@gl' }, () => {
     );
     await expect(page.locator('[data-ak-product-explode]')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('.ak-product-detail')).toContainText('20-hour battery');
+    // Still the close-up: the dial on top is out of frame, as it is not in the whole product.
+    await expect(page.locator('[data-ak-3d-pin="battery"]')).toBeVisible();
+    await expect(page.locator('[data-ak-3d-pin="dial"]')).toBeHidden();
+  });
+
+  test('a pick on a part with no hotspot chooses the nearest one', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto(pageUrl());
+    await ready(page);
+    const feature = page.locator('[data-ak-id="feature-pick"] select');
+    await page.locator('.ak-3d-canvas').focus();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('[data-ak-product-hotspot][aria-pressed="true"]')).toHaveCount(0);
+    // The dust cap sits at the woofer's centre: level with the woofer pin, under the tweeter pin.
+    const woofer = await page.locator('[data-ak-3d-pin="woofer"]').boundingBox();
+    const tweeter = await page.locator('[data-ak-3d-pin="tweeter"]').boundingBox();
+    if (woofer === null || tweeter === null) throw new Error('pins not placed');
+    await page.mouse.click(tweeter.x + tweeter.width / 2, woofer.y + woofer.height / 2);
+    await expect(feature).toHaveValue('woofer');
   });
 
   test('with motion allowed, transitions settle and the scene stops rendering', async ({

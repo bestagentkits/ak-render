@@ -19,6 +19,11 @@ const FIT_HOME = [0.84, 0.8];
 /** Share a close-up fills, and how far it sits right and up of centre, clear of the card. */
 const FIT_CLOSE = [0.46, 0.52];
 const CLOSE_BIAS = [0.2, 0.12];
+/** A close-up keeps this share of the product's diagonal around a hotspot, for context. */
+const CLOSE_ROOM = 0.2;
+/** Pin radius, and the closest two pin centres may sit, in CSS pixels. */
+const PIN_RADIUS = 14;
+const PIN_GAP = 30;
 
 /** Surface presets per material name; the compiler's closed vocabulary. */
 const SURFACES = {
@@ -286,7 +291,7 @@ export function productWidget(ctx) {
     const at = new Vector3(...spec.at).addScaledVector(shift, k);
     // Small parts keep some of their surroundings in frame.
     const [lo, hi] = product.bounds;
-    const room = Math.hypot(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]) * 0.3;
+    const room = Math.hypot(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]) * CLOSE_ROOM;
     const corners = [...boxCorners(spec.box, shift, k), at];
     for (const sign of [-1, 1]) corners.push(at.clone().addScalar(sign * room));
     return fitAlong(new Vector3(...spec.dir), corners, camera.aspect, FIT_CLOSE, CLOSE_BIAS);
@@ -458,26 +463,60 @@ export function productWidget(ctx) {
     const height = stage.clientHeight;
     if (!width || !height) return;
     camera.updateMatrixWorld();
+    // A pin shows only whole: one that would cross the stage edge hides instead of clipping.
+    const whole = (h) =>
+      h.x >= PIN_RADIUS &&
+      h.x <= width - PIN_RADIUS &&
+      h.y >= PIN_RADIUS &&
+      h.y <= height - PIN_RADIUS;
+    const shown = [];
     for (const hotspot of hotspots) {
-      const { spec, pin } = hotspot;
+      const { spec } = hotspot;
       world.set(...spec.at).addScaledVector(projected.set(...spec.shift), explodeK);
-      // A pin on the far side of the product dims, so the near ones read first.
+      // A part sealed inside another has no pin while assembled, unless it is the chosen one;
+      // a pin on the far side of the product dims, so the near ones read first.
+      const sealed = spec.inner && explodeK < 0.5;
       toCamera.copy(camera.position).sub(world);
-      const facing =
-        !(spec.inner && explodeK < 0.5) && toCamera.dot(projected.set(...spec.normal)) >= 0;
+      hotspot.facing = !sealed && toCamera.dot(projected.set(...spec.normal)) >= 0;
       projected.copy(world).project(camera);
-      const inside =
-        projected.z < 1 && Math.abs(projected.x) <= 1.02 && Math.abs(projected.y) <= 1.02;
-      pin.hidden = !inside;
-      if (facing) pin.removeAttribute('data-ak-back');
-      else pin.setAttribute('data-ak-back', '');
       hotspot.x = ((projected.x + 1) / 2) * width;
       hotspot.y = ((1 - projected.y) / 2) * height;
-      hotspot.shown = inside;
-      hotspot.facing = facing;
-      if (inside)
+      hotspot.shown = !(sealed && spec.id !== selected) && projected.z < 1 && whole(hotspot);
+      if (hotspot.shown) shown.push(hotspot);
+    }
+    separate(shown);
+    for (const hotspot of hotspots) {
+      const { pin } = hotspot;
+      if (hotspot.shown) hotspot.shown = whole(hotspot);
+      pin.hidden = !hotspot.shown;
+      if (hotspot.facing) pin.removeAttribute('data-ak-back');
+      else pin.setAttribute('data-ak-back', '');
+      if (hotspot.shown)
         pin.style.transform = `translate(${hotspot.x.toFixed(1)}px,${hotspot.y.toFixed(1)}px)`;
     }
+  }
+
+  /**
+   * Pushes apart pins that would overprint, in list order so every frame lands the same. The
+   * chosen pin stays on its point; otherwise both give way equally.
+   */
+  function separate(shown) {
+    for (let pass = 0; pass < 4; pass += 1)
+      for (let i = 0; i < shown.length; i += 1)
+        for (let j = i + 1; j < shown.length; j += 1) {
+          const [a, b] = [shown[i], shown[j]];
+          let dx = b.x - a.x;
+          let dy = b.y - a.y;
+          let d = Math.hypot(dx, dy);
+          if (d >= PIN_GAP) continue;
+          if (d < 1e-3) [dx, dy, d] = [1, 0, 1];
+          const push = PIN_GAP - d;
+          const share = a.spec.id === selected ? 0 : b.spec.id === selected ? 1 : 0.5;
+          a.x -= (dx / d) * push * share;
+          a.y -= (dy / d) * push * share;
+          b.x += (dx / d) * push * (1 - share);
+          b.y += (dy / d) * push * (1 - share);
+        }
   }
 
   /** The frozen frame with the numbered pins painted in, so print and export keep them. */
@@ -637,7 +676,7 @@ export function productWidget(ctx) {
         }
       }
     },
-    /** A pick on the canvas chooses the first hotspot on that part. */
+    /** A pick on the canvas chooses the part's own hotspot, or else the one nearest the part. */
     pick(partId) {
       const own = hotspots.find((h) => h.spec.part === partId);
       if (own) {
@@ -661,7 +700,8 @@ export function productWidget(ctx) {
         }
       }
       if (best) choose(best.spec.id);
-    } /** Canvas keys: Enter, space and n/p cycle hotspots; Home, 0 and Escape reset; e explodes. */,
+    },
+    /** Canvas keys: Enter, space and n/p cycle hotspots; Home, 0 and Escape reset; e explodes. */
     key(event) {
       // Browser and system shortcuts pass through untouched.
       if (event.ctrlKey || event.metaKey || event.altKey) return false;

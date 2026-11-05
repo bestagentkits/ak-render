@@ -173,6 +173,21 @@ describe('product-3d contract', () => {
       ).length,
     ).toBe(1);
     expect(errors(spec({ parts, fragmentShader: 'void main(){}' })).length).toBeGreaterThan(0);
+    // A part name is fine; an invisible group is not a part.
+    expect(errors(spec({ parts: [{ id: 'a', label: 'Lid', shape: 'capsule' }] }))).toEqual([]);
+    expect(errors(spec({ parts: [{ id: 'a', shape: 'group' }] })).length).toBe(1);
+  });
+
+  it('paints the plan so mounted details sit in front of the panel they are on', () => {
+    const html = compile(FIXTURE, { source: 'product' }).html;
+    const at = (name: string) => html.indexOf(`<title>${name}</title>`);
+    expect(at('Cabinet')).toBeGreaterThan(-1);
+    expect(at('Cabinet')).toBeLessThan(at('Front baffle'));
+    expect(at('Front baffle')).toBeLessThan(at('Woofer'));
+    expect(at('Woofer')).toBeLessThan(at('Dust cap'));
+    expect(at('Front baffle')).toBeLessThan(at('Tweeter'));
+    // The sealed battery is not drawn at all.
+    expect(at('Battery')).toBe(-1);
   });
 
   it('draws only parts visible from outside in the plan', () => {
