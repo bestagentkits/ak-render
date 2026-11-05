@@ -211,6 +211,60 @@ const diagramShowcase = {
   });
 }
 
+// 3D showcase: the most striking fixture per 3D widget plus one stress demo.
+// The model fixture references a glTF beside it, so it compiles with a model
+// resolver rooted at fixtures/3d; the model is inlined into the page.
+const threeDir = join(repoRoot, 'fixtures/3d');
+const { createModelResolver } = await import(
+  new URL('../dist/assets/model-assets.js', import.meta.url)
+);
+const modelResolver = createModelResolver(threeDir);
+const THREE_D_SHOWCASE = {
+  'scene-3d-dense':
+    'A lit rack field of forty-eight shaped nodes you can orbit, select and read as a list.',
+  'network-3d-basic':
+    'Eighteen services in four tiers; pick one to light up what it calls and what calls it.',
+  'model-3d-crate':
+    'An inlined glTF crate with animation clips, three finishes and numbered hotspots.',
+  'scatter-3d-basic':
+    'Cities plotted on three metrics, with axis labels, groups and a readable data table.',
+  'bars-3d-dense': 'A dense field of bars by region and week, with the full table beside it.',
+  'network-3d-stress':
+    'A large force-laid graph that shows the network widget holding up at scale.',
+};
+const threeEntries = Object.entries(THREE_D_SHOWCASE).map(([name, description]) => {
+  const result = compile(readFileSync(join(threeDir, `${name}.yaml`), 'utf8'), {
+    source: `${name}.yaml`,
+    modelResolver,
+  });
+  const file = `3d-${name}.html`;
+  written.set(file, result.html);
+  const meta = result.ir.meta;
+  return {
+    slug: `3d-${name}`,
+    file,
+    title: typeof meta.title === 'string' ? meta.title : name,
+    description,
+    bytes: result.bytes,
+    nodes: result.ir.nodes.length,
+  };
+});
+
+/** One linked card per artifact, so the gallery is navigable without a script. */
+const artifactCard = (entry) => ({
+  type: 'card',
+  title: entry.title,
+  text: entry.description === '' ? entry.file : entry.description,
+  blocks: [
+    {
+      type: 'text',
+      variant: 'caption',
+      text: `${entry.nodes} nodes · ${(entry.bytes / 1024).toFixed(1)} kB`,
+    },
+    { type: 'link', label: `Open ${entry.file}`, href: entry.file },
+  ],
+});
+
 // One compiled page per built-in preset, plus the dropdown viewer over them.
 for (const [file, html] of buildThemePreview({
   compile,
@@ -266,6 +320,7 @@ const indexSpec = {
       type: 'stats',
       items: [
         { label: 'Fixtures', value: String(entries.length) },
+        { label: '3D demos', value: String(threeEntries.length) },
         { label: 'Compiler', value: VERSION },
         { label: 'Network', value: 'denied' },
       ],
@@ -279,20 +334,20 @@ const indexSpec = {
         {
           type: 'grid',
           columns: 3,
-          blocks: entries.map((entry) => ({
-            type: 'card',
-            title: entry.title,
-            text: entry.description === '' ? entry.file : entry.description,
-            blocks: [
-              {
-                type: 'text',
-                variant: 'caption',
-                text: `${entry.nodes} nodes · ${(entry.bytes / 1024).toFixed(1)} kB`,
-              },
-              { type: 'link', label: `Open ${entry.file}`, href: entry.file },
-            ],
-          })),
+          blocks: entries.map(artifactCard),
         },
+      ],
+    },
+    {
+      type: 'section',
+      id: 'widgets-3d',
+      title: '3D widgets',
+      blocks: [
+        {
+          type: 'text',
+          text: 'Scenes, networks, models, scatter clouds and bar fields rendered with WebGL from a Page Spec. Each one keeps a readable summary for print, screenshots and no-JS readers.',
+        },
+        { type: 'grid', columns: 3, blocks: threeEntries.map(artifactCard) },
       ],
     },
     {
@@ -374,7 +429,7 @@ if (checkMode) {
   }
   cpSync(assetsDir, galleryAssetsDir, { recursive: true });
   console.log(`generate-gallery: wrote ${expected.size} pages to docs/gallery/`);
-  for (const entry of entries) {
+  for (const entry of [...entries, ...threeEntries]) {
     console.log(`  ${entry.file}: ${entry.bytes} bytes, ${entry.nodes} nodes`);
   }
   console.log(`  index.html: ${index.bytes} bytes`);
