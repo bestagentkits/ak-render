@@ -10,6 +10,8 @@
 
 import {
   ACESFilmicToneMapping,
+  BackSide,
+  BufferAttribute,
   Color,
   DirectionalLight,
   ExtrudeGeometry,
@@ -17,12 +19,14 @@ import {
   HemisphereLight,
   MathUtils,
   Mesh,
+  MeshBasicMaterial,
   MeshPhysicalMaterial,
   MeshStandardMaterial,
   PerspectiveCamera,
   PMREMGenerator,
   Scene,
   ShapePath,
+  SphereGeometry,
   Vector3,
   WebGLRenderer,
 } from 'three';
@@ -79,7 +83,7 @@ function finish(kind, tone, dark) {
     ];
   }
   if (kind === 'chrome') {
-    const silver = tone.clone().lerp(new Color(0xf2f4f8), 0.72);
+    const silver = tone.clone().lerp(new Color(0xf2f4f8), 0.85);
     return [
       new MeshStandardMaterial({
         color: silver,
@@ -95,25 +99,24 @@ function finish(kind, tone, dark) {
     ];
   }
   if (kind === 'glass') {
+    // Tinted and writing depth: overlapping back faces never show through as streaks.
     const glass = (color, opacity) =>
       new MeshPhysicalMaterial({
         color,
         metalness: 0,
-        roughness: 0.06,
-        clearcoat: 1,
-        clearcoatRoughness: 0.05,
+        roughness: 0.1,
         transparent: true,
         opacity,
-        envMapIntensity: 1.6,
-        depthWrite: false,
+        envMapIntensity: 1.4,
       });
-    return [glass(tone.clone().lerp(new Color(0xffffff), 0.35), 0.5), glass(tone, 0.32)];
+    const tint = tone.clone().offsetHSL(0, 0.15, dark ? 0.05 : -0.05);
+    return [glass(tint, 0.9), glass(tint.clone().multiplyScalar(0.6), 0.85)];
   }
   if (kind === 'neon') {
     return [
       new MeshStandardMaterial({
         color: tone.clone().multiplyScalar(0.3),
-        emissive: tone.clone().offsetHSL(0, 0.35, -0.08),
+        emissive: tone.clone().offsetHSL(0, 0.25, 0.08),
         emissiveIntensity: 1.9,
         roughness: 0.4,
       }),
@@ -185,6 +188,28 @@ export function mountText(el, kit) {
 
   const tone = kit.toneColor(el, config.tone || 'accent');
   const materials = finish(config.material, tone, dark).map(track);
+  // Polished metal needs a horizon to reflect: a bright sky over a dark floor,
+  // drawn here as a vertex-coloured dome, so chrome reads as chrome with no asset.
+  let horizon = null;
+  if (config.material === 'chrome' || config.material === 'metal') {
+    const dome = new SphereGeometry(10, 8, 48);
+    const position = dome.attributes.position;
+    const colors = new Float32Array(position.count * 3);
+    for (let i = 0; i < position.count; i += 1) {
+      // Height on the dome: 1 at the zenith, -1 at the nadir; a bright sky over a dark floor.
+      const h = position.getY(i) / 10;
+      const level = h > -0.08 ? 0.35 + 0.65 * Math.min(1, (h + 0.08) * 1.6) : 0.03 + 0.1 * -h;
+      colors.set([level, level, level * 1.03], i * 3);
+    }
+    dome.setAttribute('color', new BufferAttribute(colors, 3));
+    const domeMaterial = new MeshBasicMaterial({ vertexColors: true, side: BackSide });
+    const sky = new Scene();
+    sky.add(new Mesh(dome, domeMaterial));
+    horizon = track(pmrem.fromScene(sky, 0.02).texture);
+    dome.dispose();
+    domeMaterial.dispose();
+    for (const material of materials) material.envMap = horizon;
+  }
 
   // One geometry per distinct glyph, built only as the text needs it.
   const depth = MathUtils.clamp(Number(config.depth) || 0.28, 0.05, 1);
@@ -433,6 +458,7 @@ export function mountText(el, kit) {
       for (const geometry of geometries) geometry.dispose();
       for (const material of materials) material.dispose();
       environment.dispose();
+      horizon?.dispose();
       pmrem.dispose();
       renderer.dispose();
       renderer.forceContextLoss();

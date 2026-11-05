@@ -76,6 +76,47 @@ export const fontOf = (id: TextFont): OutlineFont => OUTLINE_FONTS[id];
 export const codePoint = (ch: string) =>
   `U+${(ch.codePointAt(0) ?? 0).toString(16).toUpperCase().padStart(4, '0')}`;
 
+/** Advance width of a line in ems, kerning included. */
+function measure(line: string, font: OutlineFont): number {
+  let width = 0;
+  let previous = '';
+  for (const ch of line) {
+    const glyph = font.glyphs[ch] ?? font.notdef;
+    width +=
+      ((font.kerning[previous + ch] ?? 0) +
+        (isSpace(ch) ? (font.glyphs[' ']?.[0] ?? 0) : glyph[0])) /
+      font.unitsPerEm;
+    previous = ch;
+  }
+  return width;
+}
+
+/** A single line wider than this, in ems, breaks in two so it fills the stage instead of a thin strip. */
+export const BALANCE_WIDTH = 8;
+
+/**
+ * The compiler owns the line breaks of one long line: it breaks at the space
+ * that leaves the two halves closest in width. Explicit breaks are kept.
+ */
+function balance(lines: string[], font: OutlineFont): string[] {
+  const only = lines[0];
+  if (lines.length !== 1 || only === undefined || measure(only, font) <= BALANCE_WIDTH)
+    return lines;
+  let best: string[] = lines;
+  let gap = Number.POSITIVE_INFINITY;
+  only.replace(/ +/gu, (match, at: number) => {
+    const head = only.slice(0, at);
+    const tail = only.slice(at + match.length);
+    const diff = Math.abs(measure(head, font) - measure(tail, font));
+    if (head && tail && diff < gap) {
+      gap = diff;
+      best = [head, tail];
+    }
+    return match;
+  });
+  return best;
+}
+
 /**
  * Lays out `text` centred on the origin. Characters the font lacks draw its
  * missing-glyph box, so the gap stays visible instead of closing silently.
@@ -87,7 +128,7 @@ export function layoutText(
 ): TextLayout {
   const font = fontOf(fontId);
   const em = font.unitsPerEm;
-  const lines = textLines(text).slice(0, MAX_TEXT_LINES);
+  const lines = balance(textLines(text).slice(0, MAX_TEXT_LINES), font);
   const glyphIndex = new Map<string, number>();
   const glyphs: string[] = [];
   const spaceAdvance = (font.glyphs[' ']?.[0] ?? em * 0.25) / em;

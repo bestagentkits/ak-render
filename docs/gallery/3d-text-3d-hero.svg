@@ -203,11 +203,11 @@ img.ak-3d-poster{object-fit:contain}
 .ak-tx[data-tone="warning"],.ak-tx-poster[data-tone="warning"]{--ak-tx-tone:var(--ak-color-warning)}
 .ak-tx[data-tone="danger"],.ak-tx-poster[data-tone="danger"]{--ak-tx-tone:var(--ak-color-danger)}
 .ak-tx[data-tone="info"],.ak-tx-poster[data-tone="info"]{--ak-tx-tone:var(--ak-color-info)}
-.ak-tx-poster[data-material="satin"] .ak-tx-s0{stop-color:color-mix(in oklab,var(--ak-tx-tone) 62%,#fff)}
-.ak-tx-poster[data-material="satin"] .ak-tx-s1{stop-color:color-mix(in oklab,var(--ak-tx-tone) 88%,#fff)}
-.ak-tx-poster[data-material="satin"] .ak-tx-s2{stop-color:var(--ak-tx-tone)}
-.ak-tx-poster[data-material="satin"] .ak-tx-s3{stop-color:color-mix(in oklab,var(--ak-tx-tone) 82%,#000)}
-.ak-tx-poster[data-material="satin"] .ak-tx-side{fill:color-mix(in oklab,var(--ak-tx-tone) 58%,#000)}
+.ak-tx-poster[data-material="satin"] .ak-tx-s0{stop-color:color-mix(in oklab,var(--ak-tx-tone) 45%,#fff)}
+.ak-tx-poster[data-material="satin"] .ak-tx-s1{stop-color:color-mix(in oklab,var(--ak-tx-tone) 62%,#fff)}
+.ak-tx-poster[data-material="satin"] .ak-tx-s2{stop-color:color-mix(in oklab,var(--ak-tx-tone) 78%,#fff)}
+.ak-tx-poster[data-material="satin"] .ak-tx-s3{stop-color:color-mix(in oklab,var(--ak-tx-tone) 92%,#fff)}
+.ak-tx-poster[data-material="satin"] .ak-tx-side{fill:color-mix(in oklab,var(--ak-tx-tone) 72%,#000)}
 .ak-tx-poster[data-material="satin"] .ak-tx-back{fill:color-mix(in oklab,var(--ak-tx-tone) 30%,#000)}
 .ak-tx-poster[data-material="satin"] .ak-tx-edge{stroke:color-mix(in oklab,var(--ak-tx-tone) 30%,#fff);stroke-opacity:0.55}
 .ak-tx-poster[data-material="metal"] .ak-tx-s0{stop-color:color-mix(in oklab,var(--ak-tx-tone) 40%,#fff)}
@@ -217,25 +217,25 @@ img.ak-3d-poster{object-fit:contain}
 .ak-tx-poster[data-material="metal"] .ak-tx-side{fill:color-mix(in oklab,var(--ak-tx-tone) 45%,#000)}
 .ak-tx-poster[data-material="metal"] .ak-tx-back{fill:color-mix(in oklab,var(--ak-tx-tone) 22%,#000)}
 .ak-tx-poster[data-material="metal"] .ak-tx-edge{stroke:color-mix(in oklab,var(--ak-tx-tone) 25%,#fff);stroke-opacity:0.8}
-.ak-tx-poster[data-material="chrome"] .ak-tx-s0{stop-color:#fdfdff}
-.ak-tx-poster[data-material="chrome"] .ak-tx-s1{stop-color:color-mix(in oklab,var(--ak-tx-tone) 30%,#3a3f4a)}
-.ak-tx-poster[data-material="chrome"] .ak-tx-s2{stop-color:color-mix(in oklab,var(--ak-tx-tone) 18%,#f4f6fa)}
-.ak-tx-poster[data-material="chrome"] .ak-tx-s3{stop-color:color-mix(in oklab,var(--ak-tx-tone) 40%,#8a909c)}
+.ak-tx-poster[data-material="chrome"] .ak-tx-s0{stop-color:#fbfcfe}
+.ak-tx-poster[data-material="chrome"] .ak-tx-s1{stop-color:color-mix(in oklab,var(--ak-tx-tone) 12%,#c3c7cf)}
+.ak-tx-poster[data-material="chrome"] .ak-tx-s2{stop-color:color-mix(in oklab,var(--ak-tx-tone) 12%,#30333b)}
+.ak-tx-poster[data-material="chrome"] .ak-tx-s3{stop-color:color-mix(in oklab,var(--ak-tx-tone) 12%,#8d929c)}
 .ak-tx-poster[data-material="chrome"] .ak-tx-side{fill:color-mix(in oklab,var(--ak-tx-tone) 22%,#22252c)}
 .ak-tx-poster[data-material="chrome"] .ak-tx-back{fill:color-mix(in oklab,var(--ak-tx-tone) 12%,#0c0d10)}
 .ak-tx-poster[data-material="chrome"] .ak-tx-edge{stroke:#ffffff;stroke-opacity:0.9}
-.ak-tx-poster[data-material="glass"] .ak-tx-s0{stop-color:color-mix(in oklab,var(--ak-tx-tone) 30%,#fff)}
-.ak-tx-poster[data-material="glass"] .ak-tx-s1{stop-color:color-mix(in oklab,var(--ak-tx-tone) 55%,#fff)}
+.ak-tx-poster[data-material="glass"] .ak-tx-s0{stop-color:color-mix(in oklab,var(--ak-tx-tone) 70%,#fff)}
+.ak-tx-poster[data-material="glass"] .ak-tx-s1{stop-color:color-mix(in oklab,var(--ak-tx-tone) 85%,#fff)}
 .ak-tx-poster[data-material="glass"] .ak-tx-s2{stop-color:var(--ak-tx-tone)}
-.ak-tx-poster[data-material="glass"] .ak-tx-s3{stop-color:color-mix(in oklab,var(--ak-tx-tone) 70%,#fff)}
-.ak-tx-poster[data-material="glass"] .ak-tx-side{fill:var(--ak-tx-tone);fill-opacity:0.16}
+.ak-tx-poster[data-material="glass"] .ak-tx-s3{stop-color:color-mix(in oklab,var(--ak-tx-tone) 85%,#000)}
+.ak-tx-poster[data-material="glass"] .ak-tx-side{fill:var(--ak-tx-tone);fill-opacity:0.8}
 .ak-tx-poster[data-material="glass"] .ak-tx-back{fill:color-mix(in oklab,var(--ak-tx-tone) 70%,#000)}
 .ak-tx-poster[data-material="glass"] .ak-tx-edge{stroke:color-mix(in oklab,var(--ak-tx-tone) 15%,#fff);stroke-opacity:0.95}
-.ak-tx-poster[data-material="glass"] .ak-tx-face{fill-opacity:0.42}
-.ak-tx-poster[data-material="neon"] .ak-tx-s0{stop-color:color-mix(in oklab,var(--ak-tx-tone) 25%,#fff)}
-.ak-tx-poster[data-material="neon"] .ak-tx-s1{stop-color:color-mix(in oklab,var(--ak-tx-tone) 45%,#fff)}
-.ak-tx-poster[data-material="neon"] .ak-tx-s2{stop-color:color-mix(in oklab,var(--ak-tx-tone) 60%,#fff)}
-.ak-tx-poster[data-material="neon"] .ak-tx-s3{stop-color:color-mix(in oklab,var(--ak-tx-tone) 75%,#fff)}
+.ak-tx-poster[data-material="glass"] .ak-tx-face{fill-opacity:0.88}
+.ak-tx-poster[data-material="neon"] .ak-tx-s0{stop-color:color-mix(in oklab,var(--ak-tx-tone) 55%,#fff)}
+.ak-tx-poster[data-material="neon"] .ak-tx-s1{stop-color:color-mix(in oklab,var(--ak-tx-tone) 75%,#fff)}
+.ak-tx-poster[data-material="neon"] .ak-tx-s2{stop-color:color-mix(in oklab,var(--ak-tx-tone) 80%,#fff)}
+.ak-tx-poster[data-material="neon"] .ak-tx-s3{stop-color:color-mix(in oklab,var(--ak-tx-tone) 90%,#fff)}
 .ak-tx-poster[data-material="neon"] .ak-tx-side{fill:color-mix(in oklab,var(--ak-tx-tone) 40%,#05060a)}
 .ak-tx-poster[data-material="neon"] .ak-tx-back{fill:color-mix(in oklab,var(--ak-tx-tone) 20%,#05060a)}
 .ak-tx-poster[data-material="neon"] .ak-tx-edge{stroke:color-mix(in oklab,var(--ak-tx-tone) 60%,#fff);stroke-opacity:1}
@@ -247,6 +247,7 @@ img.ak-3d-poster{object-fit:contain}
 .ak-tx-poster[data-material="neon"]{background:radial-gradient(60% 70% at 50% 45%,color-mix(in oklab,var(--ak-tx-tone,var(--ak-color-accent)) 20%,transparent),transparent 72%),radial-gradient(130% 110% at 50% 0%,color-mix(in oklab,var(--ak-color-info) 22%,#141826),#07080d 66%)}
 .ak-tx[data-material="neon"] .ak-3d-stage{background:radial-gradient(60% 70% at 50% 45%,color-mix(in oklab,var(--ak-tx-tone,var(--ak-color-accent)) 20%,transparent),transparent 72%),radial-gradient(130% 110% at 50% 0%,color-mix(in oklab,var(--ak-color-info) 22%,#141826),#07080d 66%);border-color:#1c2030}
 .ak-tx .ak-3d-canvas{cursor:grab}
+.ak-tx[data-material="neon"] .ak-3d-canvas,.ak-tx[data-material="neon"] .ak-3d-frame{filter:drop-shadow(0 0 6px var(--ak-tx-tone)) drop-shadow(0 0 22px color-mix(in oklab,var(--ak-tx-tone) 70%,transparent))}
 .ak-tx-ground{position:absolute;height:34px;margin-top:-17px;pointer-events:none;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.34),transparent);filter:blur(6px);visibility:hidden}
 .ak-tx[data-material="neon"] .ak-tx-ground{background:radial-gradient(closest-side,color-mix(in oklab,var(--ak-tx-tone) 40%,transparent),transparent)}
 .ak-3d[data-ak-3d-state="ready"] .ak-tx-ground,.ak-3d[data-ak-3d-state="frozen"] .ak-tx-ground{visibility:visible}

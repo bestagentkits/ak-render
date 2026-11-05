@@ -161,13 +161,13 @@ export function textPoster(config: TextConfig, label: string, uid: string): stri
 
 function renderText(node: IrNode): string {
   const config = textConfig(node);
-  const text = config.lines.join('\n');
+  const text = config.lines.join(' ');
   const summary = stringProp(node, 'summary');
   const uid = node.id.replace(/[^A-Za-z0-9_-]/gu, '-');
   // A character the font lacks draws as its box, so the caption spells the text out.
   const copy =
     config.missing.length > 0
-      ? `<span class="ak-tx-copy">${escapeText(config.lines.join(' '))}</span>`
+      ? `<span class="ak-tx-copy" aria-hidden="true">${escapeText(config.lines.join(' '))}</span>`
       : '';
   const caption =
     summary || copy

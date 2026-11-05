@@ -52,6 +52,11 @@ describe('text-3d layout', () => {
     expect(layoutText('Ship it now', 'display', 'word').units).toHaveLength(3);
     const two = layoutText('Open\nlate', 'serif', 'character');
     expect(two.lines).toEqual(['Open', 'late']);
+    // One long line breaks at the space that balances its halves.
+    expect(layoutText('Ship faster with every release', 'display', 'word').lines).toEqual([
+      'Ship faster with',
+      'every release',
+    ]);
     expect(new Set(two.units.map((u) => u.cy)).size).toBe(2);
   });
 
@@ -119,7 +124,7 @@ describe('text-3d render', () => {
 
   it('spells the text out in the caption when a glyph is missing', () => {
     const html = compile(fixture('text-3d-unicode'), { source: 'unicode' }).html;
-    expect(html).toContain('<span class="ak-tx-copy">Hi 世界 ✓</span>');
+    expect(html).toContain('<span class="ak-tx-copy" aria-hidden="true">Hi 世界 ✓</span>');
     expect(html.match(/class="ak-tx-copy"/gu)).toHaveLength(1);
   });
 

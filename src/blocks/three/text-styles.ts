@@ -38,8 +38,8 @@ const FINISHES: Record<
   }
 > = {
   satin: {
-    stops: [mix(T, 62, '#fff'), mix(T, 88, '#fff'), T, mix(T, 82, '#000')],
-    side: mix(T, 58, '#000'),
+    stops: [mix(T, 45, '#fff'), mix(T, 62, '#fff'), mix(T, 78, '#fff'), mix(T, 92, '#fff')],
+    side: mix(T, 72, '#000'),
     back: mix(T, 30, '#000'),
     edge: mix(T, 30, '#fff'),
     edgeOpacity: 0.55,
@@ -52,23 +52,23 @@ const FINISHES: Record<
     edgeOpacity: 0.8,
   },
   chrome: {
-    stops: ['#fdfdff', mix(T, 30, '#3a3f4a'), mix(T, 18, '#f4f6fa'), mix(T, 40, '#8a909c')],
+    stops: ['#fbfcfe', mix(T, 12, '#c3c7cf'), mix(T, 12, '#30333b'), mix(T, 12, '#8d929c')],
     side: mix(T, 22, '#22252c'),
     back: mix(T, 12, '#0c0d10'),
     edge: '#ffffff',
     edgeOpacity: 0.9,
   },
   glass: {
-    stops: [mix(T, 30, '#fff'), mix(T, 55, '#fff'), T, mix(T, 70, '#fff')],
+    stops: [mix(T, 70, '#fff'), mix(T, 85, '#fff'), T, mix(T, 85, '#000')],
     side: T,
     back: mix(T, 70, '#000'),
     edge: mix(T, 15, '#fff'),
     edgeOpacity: 0.95,
-    faceOpacity: 0.42,
-    sideOpacity: 0.16,
+    faceOpacity: 0.88,
+    sideOpacity: 0.8,
   },
   neon: {
-    stops: [mix(T, 25, '#fff'), mix(T, 45, '#fff'), mix(T, 60, '#fff'), mix(T, 75, '#fff')],
+    stops: [mix(T, 55, '#fff'), mix(T, 75, '#fff'), mix(T, 80, '#fff'), mix(T, 90, '#fff')],
     side: mix(T, 40, '#05060a'),
     back: mix(T, 20, '#05060a'),
     edge: mix(T, 60, '#fff'),
@@ -105,6 +105,7 @@ ${finishes}
 .ak-tx-poster[data-material="neon"]{background:${NEON_NIGHT}}
 .ak-tx[data-material="neon"] .ak-3d-stage{background:${NEON_NIGHT};border-color:#1c2030}
 .ak-tx .ak-3d-canvas{cursor:grab}
+.ak-tx[data-material="neon"] .ak-3d-canvas,.ak-tx[data-material="neon"] .ak-3d-frame{filter:drop-shadow(0 0 6px var(--ak-tx-tone)) drop-shadow(0 0 22px color-mix(in oklab,var(--ak-tx-tone) 70%,transparent))}
 .ak-tx-ground{position:absolute;height:34px;margin-top:-17px;pointer-events:none;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.34),transparent);filter:blur(6px);visibility:hidden}
 .ak-tx[data-material="neon"] .ak-tx-ground{background:radial-gradient(closest-side,color-mix(in oklab,var(--ak-tx-tone) 40%,transparent),transparent)}
 .ak-3d[data-ak-3d-state="ready"] .ak-tx-ground,.ak-3d[data-ak-3d-state="frozen"] .ak-tx-ground{visibility:visible}
