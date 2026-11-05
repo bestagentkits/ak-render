@@ -108,7 +108,10 @@ const H = 360;
 const round = (n: number) => Math.round(n * 10) / 10;
 
 /** Perspective projection of a world point; null when behind the camera. */
-function project(p: Vec3, camera: SceneCamera): { x: number; y: number; depth: number } | null {
+export function project(
+  p: Vec3,
+  camera: SceneCamera,
+): { x: number; y: number; depth: number } | null {
   const [cx, cy, cz] = camera.position;
   const forward = normalize([camera.target[0] - cx, camera.target[1] - cy, camera.target[2] - cz]);
   const right = normalize(cross(forward, [0, 1, 0]));
