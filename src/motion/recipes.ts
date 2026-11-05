@@ -514,7 +514,7 @@ export const MOTION_RECIPES: readonly MotionRecipe[] = deepFreeze<MotionRecipe[]
     notes: `${DIAGRAM_NOTES} Never starts by itself. Each step names its relationship in a status line.`,
     example: DIAGRAM_EXAMPLE('sequence-playback'),
     css: {
-      plain: `.ak-dm-bar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ak-space-unit);margin-bottom:calc(var(--ak-space-unit) * 1.5)}.ak-dm-bar[hidden],.ak-dm-bar [hidden]{display:none}.ak-dm-status{flex:1 1 12rem;font-size:.8125rem;color:var(--ak-color-text-muted)}${at('sequence-playback')} [data-ak-dm-seq] :is([data-ak-node],[data-ak-edge],[data-ak-group]):not([data-ak-dm-step]){opacity:.22}${at('sequence-playback')} [data-ak-dm-step]{filter:drop-shadow(0 0 .3rem var(--ak-color-accent))}`,
+      plain: `.ak-dm-bar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ak-space-unit);margin-bottom:calc(var(--ak-space-unit) * 1.5)}.ak-dm-bar[hidden],.ak-dm-bar [hidden]{display:none}.ak-dm-status{flex:1 1 12rem;font-size:.8125rem;color:var(--ak-color-text-muted)}${at('sequence-playback')} [data-ak-dm-seq] :is([data-ak-node],[data-ak-edge],[data-ak-group]):not([data-ak-dm-step]){opacity:.4}${at('sequence-playback')} [data-ak-dm-step]{filter:drop-shadow(0 0 .3rem var(--ak-color-accent))}`,
       guarded: `${at('sequence-playback')} :is([data-ak-node],[data-ak-edge],[data-ak-group]){transition:opacity var(--ak-motion-fast) var(--ak-ease-standard)}`,
       print: `.ak-dm-bar{display:none!important}${at('sequence-playback')} [data-ak-dm-seq] :is([data-ak-node],[data-ak-edge],[data-ak-group]){opacity:1!important;filter:none!important}`,
     },

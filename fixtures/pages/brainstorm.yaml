@@ -33,7 +33,6 @@ blocks:
   - type: diagram-panel
     id: delivery-flow
     title: Delivery flow
-    motion: node-activation
     spec:
       meta:
         title: Delivery flow

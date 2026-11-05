@@ -30,6 +30,9 @@ export const DIAGRAM_MOTION_RECIPES = [
   'sequence-playback',
 ] as const;
 
+/** The marker of a contract 2 drawing: the only thing diagram recipes animate. */
+export const DIAGRAM_CANVAS_V2 = 'data-ak-diagram-contract="2"';
+
 /** The reader's controls for `sequence-playback`, revealed by the runtime. */
 export function diagramSequenceBar(title: string): string {
   return `<div class="ak-dm-bar" data-ak-dm-bar role="group" aria-label="Sequence: ${escapeAttribute(
@@ -160,6 +163,7 @@ function wireDiagramMotion() {
       var from = edge.getAttribute('data-ak-from');
       var to = edge.getAttribute('data-ak-to');
       var text = edge.getAttribute('data-ak-label');
+      if (viewer && viewer.mode !== 'idle') viewer.clear();
       canvas.setAttribute('data-ak-dm-seq', '');
       edge.setAttribute('data-ak-dm-step', '');
       [node(from), node(to)].forEach(function (el) { if (el) el.setAttribute('data-ak-dm-step', ''); });
@@ -169,6 +173,13 @@ function wireDiagramMotion() {
     function pause() { window.clearInterval(timer); timer = 0; sync(); }
     function advance() { if (at >= edges.length - 1) { pause(); return; } show(at + 1); }
     entry.pause = pause;
+    // One dimming at a time: a step clears the viewer's selection, and a
+    // viewer selection ends the walk-through.
+    var viewer = null;
+    if (typeof diagramViewers !== 'undefined') {
+      diagramViewers.forEach(function (item) { if (item.canvas === canvas) viewer = item; });
+    }
+    if (viewer) viewer.listeners.push(function (state) { if (state.mode !== 'idle' && at >= 0) { pause(); show(-1); } });
     playButton.addEventListener('click', function () {
       if (timer) { pause(); return; }
       if (!motionAllowed()) return;

@@ -4,7 +4,7 @@ import type { IconSize } from '../icons/icon-packs.js';
 import { renderIcon } from '../icons/icon-render.js';
 import type { IrNode } from '../ir.js';
 import { isPlainObject, type JsonValue } from '../json.js';
-import { diagramSequenceBar } from '../motion/diagram-motion.js';
+import { DIAGRAM_MOTION_RECIPES, diagramSequenceBar } from '../motion/diagram-motion.js';
 import type { BlockRegistry } from '../registry/block-module.js';
 import { DEFAULT_REGISTRY } from '../registry/registry.js';
 import { EMBED_PROVIDERS } from '../spec/providers.js';
@@ -683,6 +683,18 @@ const RENDERERS: Record<string, Renderer> = {
       adapterResult !== undefined &&
       adapterResult.rejected === undefined &&
       adapterResult.markup !== '';
+    const preset = node.motion?.preset ?? '';
+    if (
+      (DIAGRAM_MOTION_RECIPES as readonly string[]).includes(preset) &&
+      !(accepted && adapterResult.contract === 2)
+    ) {
+      context.warnings?.push({
+        code: 'POLICY_VIOLATION',
+        severity: 'warning',
+        path: `$.blocks.${node.id}.motion`,
+        message: `motion "${preset}" animates a contract 2 diagram drawing; this panel has none (no diagram adapter, or one on contract 1), so nothing moves`,
+      });
+    }
 
     const description = `<p class="ak-diagram-title">${escapeText(diagramTitle)}</p>${fallbackBody}`;
 

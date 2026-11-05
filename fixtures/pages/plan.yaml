@@ -66,7 +66,6 @@ blocks:
 
   - type: diagram-panel
     title: Compiler pipeline
-    motion: sequence-playback
     spec:
       schema_version: 1
       diagram_type: dataflow

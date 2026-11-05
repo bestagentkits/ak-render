@@ -138,6 +138,21 @@ test.describe('diagram motion governor', () => {
     ).toHaveCount(0);
   });
 
+  test('a sequence step and a viewer selection never dim together', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await open(page, spec(panel('one', 'sequence-playback')), 'sequence-viewer');
+    const canvas = page.locator('[data-ak-id="one"] [data-ak-diagram-contract]');
+    await node(page, 'one', 'db').focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('[data-ak-dv-state]')).not.toHaveCount(0);
+    await page.locator('[data-ak-id="one"] [data-ak-dm-next]').click();
+    await expect(page.locator('[data-ak-dv-state]')).toHaveCount(0);
+    await expect(canvas).toHaveAttribute('data-ak-dm-seq', '');
+    await node(page, 'one', 'api').focus();
+    await page.keyboard.press('Enter');
+    await expect(canvas).not.toHaveAttribute('data-ak-dm-seq', /.*/u);
+  });
+
   test('under reduced motion the sequence steps but does not autoplay', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await open(page, spec(panel('one', 'sequence-playback')), 'sequence-reduced');
