@@ -261,20 +261,22 @@ export function barsConfig(node: IrNode): Record<string, JsonValue> {
 const W = 960;
 const H = 540;
 const PAD = { left: 72, right: 24, top: 24, bottom: 56 };
-const PAD_INNER = (W - PAD.left - PAD.right) * 0.78;
 
 /** A flat, labelled bar chart of the same data: the no-JS, no-WebGL and print view. */
 export function barsPoster(model: BarsModel, label: string, unit: string): string {
   const { mode, categories, series, extents, domain, ticks } = model;
-  // Room for the widest axis label at the phone poster size (28 units), so none is clipped.
-  const axis =
-    mode === 'grouped' && PAD_INNER / categories.length / series.length < 3
-      ? series.map((entry) => entry.label)
-      : ticks.map((tick) => formatValue(tick, unit));
-  const padLeft = Math.max(
-    PAD.left,
-    Math.ceil(Math.max(0, ...axis.map((text) => text.length)) * 0.62 * 28 + 16),
-  );
+  // Room for the widest axis label (tick or series name) at the phone poster size (28 units).
+  // Latin glyphs average about 0.62 em; anything wider counts a full em.
+  const em = (text: string) =>
+    [...text].reduce((sum, ch) => sum + (ch.charCodeAt(0) < 0x250 ? 0.62 : 1), 0);
+  const room = (texts: string[]) =>
+    Math.max(PAD.left, Math.ceil(Math.max(0, ...texts.map(em)) * 28 + 16));
+  const tickPad = room(ticks.map((tick) => formatValue(tick, unit)));
+  // A wider pad only thins the bars further, so small multiples stay small multiples.
+  const multiples =
+    mode === 'grouped' &&
+    ((W - tickPad - PAD.right) * 0.78) / categories.length / series.length < 3;
+  const padLeft = multiples ? Math.max(tickPad, room(series.map((entry) => entry.label))) : tickPad;
   const plotW = W - padLeft - PAD.right;
   const plotH = H - PAD.top - PAD.bottom;
   const span = domain[1] - domain[0] || 1;
@@ -284,7 +286,7 @@ export function barsPoster(model: BarsModel, label: string, unit: string): strin
   const slot = mode === 'grouped' ? inner / series.length : inner;
   const parts: string[] = [];
   // Grouped bars too thin to read side by side become one small chart per series instead.
-  if (mode === 'grouped' && slot < 3) {
+  if (multiples) {
     const rowH = plotH / series.length;
     series.forEach((entry, s) => {
       const ry = (v: number) => round(PAD.top + s * rowH + ((domain[1] - v) / span) * (rowH - 4));
@@ -340,7 +342,7 @@ export function barsPoster(model: BarsModel, label: string, unit: string): strin
         );
     });
   }
-  if (mode === 'grouped' && slot < 3) {
+  if (multiples) {
     const every = Math.ceil(categories.length / 12);
     categories.forEach((category, c) => {
       if (c % every === 0)
