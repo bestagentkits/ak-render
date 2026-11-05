@@ -34,7 +34,7 @@ async function posterPoint(page: Page, selector: string) {
   }, selector);
 }
 
-test.describe('scatter-3d', () => {
+test.describe('scatter-3d', { tag: '@gl' }, () => {
   test('draws 20,000 points as one WebGL draw with no network', async ({ page }) => {
     const requests: string[] = [];
     page.on('request', (request) => {
@@ -91,8 +91,6 @@ test.describe('scatter-3d', () => {
   });
 
   test('legend and state filter by group', async ({ page }) => {
-    // Each filter repaints 20,000 points; software GL on CI needs more than the default 30s.
-    test.setTimeout(120_000);
     await page.goto(pageUrl('scatter-3d-20k'));
     await ready(page);
     const control = page.locator('#cluster-input, [data-ak-id="cluster"] select');
@@ -210,8 +208,6 @@ test.describe('scatter-3d', () => {
     }
 
   test('without JavaScript every value is in the table under the poster', async ({ browser }) => {
-    // Laying out 20,000 table rows, then again for print, is slow on CI runners.
-    test.setTimeout(120_000);
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
     await page.goto(pageUrl('scatter-3d-20k'));

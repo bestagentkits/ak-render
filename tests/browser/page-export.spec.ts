@@ -11,7 +11,7 @@ const workspace = browserWorkspace('export');
 const html = compile(readFileSync(fixture, 'utf8'), { source: 'scene-3d-basic' }).html;
 const outDir = workspace.write('placeholder', '').replace(/[^\\/]+$/u, '');
 
-test.describe('local export', () => {
+test.describe('local export', { tag: '@gl' }, () => {
   test.describe.configure({ timeout: 90_000 });
 
   test('PNG captures the live WebGL frame at device scale 2', async () => {
