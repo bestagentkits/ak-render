@@ -15,8 +15,8 @@ export const TERRAIN_CSS = `
 .ak-tr .ak-3d-stage{background:radial-gradient(70% 55% at 50% 38%,color-mix(in oklab,var(--ak-color-accent) 12%,transparent),transparent 72%),radial-gradient(55% 28% at 50% 100%,color-mix(in oklab,var(--ak-color-text) 7%,transparent),transparent 70%),linear-gradient(180deg,color-mix(in oklab,var(--ak-color-surface-raised,var(--ak-color-surface)) 90%,var(--ak-color-info)) 0%,var(--ak-color-surface-raised,var(--ak-color-surface)) 46%,color-mix(in oklab,var(--ak-color-background) 88%,var(--ak-color-text)) 100%)}
 ${toneVars}
 .ak-tr-ground path[stroke]{stroke-width:.8;stroke-linejoin:round}
-.ak-tr-rim{fill:none;stroke:#fff;stroke-opacity:.4;stroke-width:1;stroke-linejoin:round}
-.ak-tr-c{fill:none;stroke:#1b1712;stroke-opacity:.24;stroke-width:.55;stroke-linecap:round}
+.ak-tr-rim{fill:none;stroke:var(--ak-color-surface);stroke-opacity:.4;stroke-width:1;stroke-linejoin:round}
+.ak-tr-c{fill:none;stroke:color-mix(in oklab,var(--ak-color-text) 15%,#000);stroke-opacity:.24;stroke-width:.55;stroke-linecap:round}
 .ak-tr-ci{stroke-opacity:.5;stroke-width:.95}
 .ak-tr-shadow stop{stop-color:color-mix(in oklab,var(--ak-color-background) 25%,#000)}
 .ak-tr-pin path{stroke:var(--ak-color-text);stroke-width:1.5;stroke-opacity:.8}
@@ -36,11 +36,12 @@ ${toneVars}
 .ak-tr-legend{display:grid;gap:2px}
 .ak-tr-ramp{display:block;width:100%;max-width:22rem;height:auto;overflow:visible}
 .ak-tr-ramp line{stroke:var(--ak-color-text-muted);stroke-width:1}
+.ak-tr-ramp rect{stroke:color-mix(in oklab,var(--ak-color-text) 18%,transparent);stroke-width:1}
 .ak-tr-ramp text{fill:var(--ak-color-text-muted);font:12px var(--ak-font-body,inherit);font-variant-numeric:lining-nums tabular-nums}
 .ak-tr-facts{margin:0;color:var(--ak-color-text-muted);font-size:.875em}
 .ak-tr-marks .ak-3d-name{width:100%}
 .ak-tr-elev{margin-left:auto;padding-left:calc(var(--ak-space-unit)*1);font-weight:500;color:var(--ak-color-text-muted);font-variant-numeric:lining-nums tabular-nums;white-space:nowrap}
-.ak-tr-marks button{transition:border-color var(--ak-motion-duration),box-shadow var(--ak-motion-duration),background-color var(--ak-motion-duration)}
+.ak-tr-marks button{align-content:start;justify-content:flex-start;transition:border-color var(--ak-motion-duration),box-shadow var(--ak-motion-duration),background-color var(--ak-motion-duration)}
 .ak-tr-marks button[aria-pressed="true"]{background:color-mix(in oklab,var(--ak-color-accent) 8%,var(--ak-color-surface))}
 .ak-tr-marks button:not([disabled]):hover{border-color:color-mix(in oklab,var(--ak-color-accent) 55%,var(--ak-color-border))}
 .ak-tr-pause{position:absolute;right:10px;bottom:10px;z-index:2;min-height:36px;min-width:44px;padding:0 14px;font:500 13px var(--ak-font-body,inherit);color:var(--ak-color-text);background:color-mix(in oklab,var(--ak-color-surface) 72%,transparent);backdrop-filter:blur(6px);border:1px solid color-mix(in oklab,var(--ak-color-text) 20%,transparent);border-radius:999px;cursor:pointer}
