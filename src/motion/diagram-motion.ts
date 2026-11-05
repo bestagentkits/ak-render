@@ -30,6 +30,17 @@ export const DIAGRAM_MOTION_RECIPES = [
   'sequence-playback',
 ] as const;
 
+/**
+ * Registers `part` with the page's diagram freeze hook, creating it on first
+ * use. `window.akRenderDiagram.freeze()` settles every diagram for a static
+ * capture (export, screenshot, print preview): runs stop, selections clear and
+ * nothing starts again until reload. Both the viewer and the governor register,
+ * whichever of them the page ships.
+ */
+export function diagramFreezeHook(part: string): string {
+  return `(window.akRenderDiagram = window.akRenderDiagram || { parts: [], freeze: function () { this.parts.forEach(function (fn) { fn(); }); return true; } }).parts.push(${part});`;
+}
+
 /** The marker of a contract 2 drawing: the only thing diagram recipes animate. */
 export const DIAGRAM_CANVAS_V2 = 'data-ak-diagram-contract="2"';
 
@@ -64,7 +75,9 @@ function wireDiagramMotion() {
     if (current) { var run = current; current = null; clearRun(run); }
     if (resume) next();
   }
+  var frozen = false;
   function play(entry, items, kind) {
+    if (frozen) return;
     if (current && current.kind === 'focused' && kind === 'ambient') return;
     stop(false);
     if (!motionAllowed() || doc.hidden || !items.length) return;
@@ -171,7 +184,8 @@ function wireDiagramMotion() {
       sync();
     }
     function pause() { window.clearInterval(timer); timer = 0; sync(); }
-    function advance() { if (at >= edges.length - 1) { pause(); return; } show(at + 1); }
+    function advance() {
+      if (frozen) { pause(); return; } if (at >= edges.length - 1) { pause(); return; } show(at + 1); }
     entry.pause = pause;
     // One dimming at a time: a step clears the viewer's selection, and a
     // viewer selection ends the walk-through.
@@ -235,6 +249,7 @@ function wireDiagramMotion() {
     stop(false);
     entries.forEach(function (entry) { if (entry.pause) entry.pause(); });
   }
+  ${diagramFreezeHook('function () { frozen = true; halt(); }')}
   doc.addEventListener('visibilitychange', function () { if (doc.hidden) halt(); }, false);
   window.addEventListener('beforeprint', halt, false);
   // A theme or motion-policy switch settles everything at once: a run never

@@ -16,6 +16,7 @@
 import { createHash } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { type Document, isAlias, isMap, parseAllDocuments, parseDocument, visit } from 'yaml';
+import type { DiagramAdapter } from '../../diagram/adapter.js';
 import { RenderError } from '../../errors.js';
 import type { IrDocument, IrNode } from '../../ir.js';
 import { type CompileResult, compile } from '../../render/render.js';
@@ -75,6 +76,17 @@ export interface StudioInspection {
   timing?: StudioTiming;
   /** The recipe's rules exactly as the compiled page emits them. */
   css: string;
+  /** For a diagram panel: what its drawing holds, or why it has none. */
+  layout?: StudioDiagramLayout;
+}
+
+export interface StudioDiagramLayout {
+  /** False when no contract 2 adapter drew the panel; diagram recipes then do nothing. */
+  drawn: boolean;
+  nodes: number;
+  relationships: number;
+  groups: number;
+  capabilities: string[];
 }
 
 export interface StudioState {
@@ -484,6 +496,8 @@ function patchLines(source: string, baseline: string, edited: string): string | 
 export interface StudioOptions {
   /** Preset catalog, so project and user presets resolve as in the CLI. */
   themeCatalog?: ThemeCatalog;
+  /** Draws diagram panels, so diagram recipes preview on the real drawing. */
+  diagramAdapter?: DiagramAdapter;
 }
 
 export function compileSource(
@@ -494,6 +508,7 @@ export function compileSource(
   return compile(text, {
     source: path,
     ...(options.themeCatalog === undefined ? {} : { themeCatalog: options.themeCatalog }),
+    ...(options.diagramAdapter === undefined ? {} : { diagramAdapter: options.diagramAdapter }),
   });
 }
 
@@ -580,7 +595,8 @@ export function studioState(
 export function inspectBlock(state: StudioState, html: string, id: string): StudioInspection {
   const block = state.blocks.find((entry) => entry.id === id);
   if (block === undefined) throw studioError(`no block has the id "${id}"`, 'id');
-  if (block.motion === null) return { block, css: '' };
+  const layout = block.type === 'diagram-panel' ? diagramLayout(html, id) : undefined;
+  if (block.motion === null) return { block, css: '', ...(layout ? { layout } : {}) };
   const recipe = describeMotion(block.motion) as MotionDescription;
   const baseMs = durationMs(state.tokens['motion-duration']);
   return {
@@ -592,6 +608,26 @@ export function inspectBlock(state: StudioState, html: string, id: string): Stud
       easing: recipe.easing === 'standard' ? state.tokens['motion-easing'] : recipe.easing,
     },
     css: recipeCss(html, recipe.id, recipe.keyframes),
+    ...(layout ? { layout } : {}),
+  };
+}
+
+/** Counts what the compiled drawing of one diagram panel holds. */
+function diagramLayout(html: string, id: string): StudioDiagramLayout {
+  const at = html.indexOf(`data-ak-id="${id}"`);
+  const end = html.indexOf('</figure>', at);
+  const figure = at === -1 ? '' : html.slice(at, end === -1 ? undefined : end);
+  const canvas = figure.indexOf('data-ak-diagram-contract="2"');
+  if (canvas === -1)
+    return { drawn: false, nodes: 0, relationships: 0, groups: 0, capabilities: [] };
+  const count = (pattern: RegExp) => (figure.match(pattern) ?? []).length;
+  const capabilities = /data-ak-diagram-capabilities="([^"]*)"/u.exec(figure)?.[1] ?? '';
+  return {
+    drawn: true,
+    nodes: count(/ data-ak-node="/gu),
+    relationships: count(/ data-ak-edge="/gu),
+    groups: count(/ data-ak-group="/gu),
+    capabilities: capabilities.split(' ').filter((item) => item !== ''),
   };
 }
 

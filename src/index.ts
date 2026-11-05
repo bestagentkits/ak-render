@@ -67,6 +67,8 @@ export type {
   DiagramRenderResult,
 } from './diagram/adapter-manifest.js';
 export { DIAGRAM_CAPABILITIES } from './diagram/adapter-manifest.js';
+export type { DiagramSvgOptions } from './diagram/diagram-export.js';
+export { exportDiagramSvg } from './diagram/diagram-export.js';
 export type { RenderErrorCode, RenderErrorOptions } from './errors.js';
 export { isRenderError, RenderError } from './errors.js';
 export type { IconDescription, IconHit, IconPackSummary } from './icons/icon-catalog.js';

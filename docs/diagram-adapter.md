@@ -281,3 +281,27 @@ Escape or Clear resets the view. The selection or route is kept in the link as `
 
   It also covers print, no script, every preset in light and dark, and motion under full, reduced and `none`.
 - `AK_RECORD_DIAGRAM_BASELINE=1 npx playwright test tests/browser/diagram-golden.spec.ts` records the geometry and [docs/artifacts/diagram-baseline.json](./artifacts/diagram-baseline.json). That file holds compile time, HTML bytes, DOM size and JS heap for small to 60-node drawings. It is a baseline for later thresholds, not a threshold.
+
+## Export and Motion Studio
+
+`exportDiagramSvg(spec, { diagramAdapter, blockId?, scheme? })` returns one
+standalone SVG of a contract 2 drawing: the theme colours are written onto the
+root, scoped styles are unwrapped, nonces, scripts and motion state are
+dropped, and the output is deterministic. A page or block with no contract 2
+drawing fails with `SPEC_VALIDATION_ERROR`; there is no fallback picture to
+fake.
+
+Any capture tool can stop diagram motion first: `window.akRenderDiagram.freeze()`
+halts the governor, ends sequence playback and clears every viewer selection, so
+a screenshot shows the settled drawing. It is a capture-only API: motion stays
+stopped until the page reloads.
+
+PNG export waits on the shared page export (`src/export/page-export.ts`), which
+will call this freeze hook; until it lands, render the SVG with any rasteriser.
+WebM recording was investigated and not built: it needs a browser at export
+time, which breaks the offline compile, so it stays an opt-in idea.
+
+Motion Studio takes the same `diagramAdapter`, offers the diagram recipes on a
+`diagram-panel`, and its inspector reports the drawing it previews (nodes,
+relationships, groups and capabilities) or says that nothing is drawn. Export
+and the adapter are library APIs; the CLI has no adapter to pass.

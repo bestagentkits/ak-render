@@ -162,6 +162,26 @@ test.describe('diagram motion governor', () => {
     await expect(bar.locator('[data-ak-dm-status]')).toContainText('Step 1 of 2');
   });
 
+  test('freeze settles every diagram for a static capture and keeps it still', async ({ page }) => {
+    await open(page, spec(panel('one', 'edge-trace')), 'freeze');
+    const figure = page.locator('[data-ak-id="one"]');
+    await expect(figure).toHaveAttribute('data-ak-dm-play', 'ambient');
+    await node(page, 'one', 'api').focus();
+    await page.keyboard.press('Enter');
+    expect(
+      await page.evaluate(() =>
+        (window as unknown as { akRenderDiagram: { freeze(): boolean } }).akRenderDiagram.freeze(),
+      ),
+    ).toBe(true);
+    await expect(
+      page.locator('[data-ak-dm-play], [data-ak-dm-on], [data-ak-dv-state]'),
+    ).toHaveCount(0);
+    await node(page, 'one', 'db').focus();
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(200);
+    await expect(figure).not.toHaveAttribute('data-ak-dm-play', /.*/u);
+  });
+
   test('without script the sequence controls stay hidden', async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
