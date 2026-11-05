@@ -46,6 +46,7 @@ import {
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { mountModel } from './model.js';
 import { mountNetwork } from './network.js';
+import { mountScatter } from './scatter.js';
 
 const TONE_VARS = {
   accent: '--ak-color-accent',
@@ -718,7 +719,7 @@ function mount(el) {
 }
 
 /** Widgets with their own runtime module, keyed by `data-ak-3d`; the rest mount as a scene. */
-const WIDGETS = { model: mountModel, network: mountNetwork };
+const WIDGETS = { model: mountModel, network: mountNetwork, scatter: mountScatter };
 /** What a widget module needs from the shared runtime. */
 const kit = {
   api: () => api,

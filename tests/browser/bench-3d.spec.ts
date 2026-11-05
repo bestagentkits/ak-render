@@ -17,6 +17,7 @@ const FIXTURES = [
   'scene-3d-dense',
   'network-3d-basic',
   'network-3d-stress',
+  'scatter-3d-20k',
 ] as const;
 const VIEWPORTS = [
   { name: 'mobile', width: 375, height: 812, scale: 1, isMobile: true, hasTouch: true },
