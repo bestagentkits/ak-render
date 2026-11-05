@@ -29,6 +29,12 @@ export interface DocumentInput {
   body: string;
   /** Extra origins a permitted capability needs in the policy, deduplicated. */
   allowedOrigins: string[];
+  /**
+   * Origins the page fetches from (remote glTF/GLB under the `models`
+   * capability). They open `connect-src` and nothing else; absent or empty
+   * keeps it `'none'`.
+   */
+  connectOrigins?: string[];
   themeToggle: boolean;
   /** Resolved theme density, emitted as a document-level attribute. */
   density: string;
@@ -63,6 +69,7 @@ function directives(
   scriptNonce: string,
 ): string {
   const origins = [...new Set(input.allowedOrigins)].sort();
+  const connects = [...new Set(input.connectOrigins ?? [])].sort();
   // `'self'` lets the page's own relative assets load when the file is served
   // over HTTP(S) instead of opened from disk. It adds no fetch path: remote URLs
   // in the spec are still gated by the network policy before they reach markup.
@@ -74,7 +81,7 @@ function directives(
     "form-action 'none'",
     "frame-src 'none'",
     "object-src 'none'",
-    "connect-src 'none'",
+    connects.length === 0 ? "connect-src 'none'" : `connect-src ${connects.join(' ')}`,
     // Only embedded `data:` faces are ever allowed; a page without one keeps fonts closed.
     input.css.includes('@font-face') ? 'font-src data:' : "font-src 'none'",
     `img-src ${imageSources.join(' ')}`,

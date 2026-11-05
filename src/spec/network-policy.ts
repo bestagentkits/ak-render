@@ -10,7 +10,14 @@ import type { NetworkPolicy } from '../ir.js';
 import { hostMatchesAnyProvider, hostMatchesProvider } from './providers.js';
 
 /** The capabilities a remote reference can be gated by. */
-export type MediaCapability = 'images' | 'media';
+export type MediaCapability = 'images' | 'media' | 'models';
+
+/**
+ * Capabilities whose remote references the browser fetches with `fetch`/XHR
+ * (glTF/GLB loaders), so their origins belong in CSP `connect-src` rather than
+ * `img-src`/`media-src`.
+ */
+export const CONNECT_CAPABILITIES: readonly MediaCapability[] = ['models'];
 
 export function isRemote(reference: string): boolean {
   return /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(reference);

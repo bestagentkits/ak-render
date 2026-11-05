@@ -1,0 +1,106 @@
+version: 1
+meta:
+  title: Service mesh
+state:
+  service: gateway
+  tier: ""
+datasets:
+  services:
+    - { id: gateway, name: API gateway, tier: Edge, owner: Platform, p95: 38 }
+    - { id: cdn, name: CDN, tier: Edge, owner: Platform, p95: 12 }
+    - { id: auth, name: Auth, tier: Core, owner: Identity, p95: 54 }
+    - { id: users, name: Users, tier: Core, owner: Identity, p95: 61 }
+    - { id: catalog, name: Catalog, tier: Core, owner: Commerce, p95: 72 }
+    - { id: cart, name: Cart, tier: Core, owner: Commerce, p95: 48 }
+    - { id: orders, name: Orders, tier: Core, owner: Commerce, p95: 95 }
+    - { id: payments, name: Payments, tier: Core, owner: Payments, p95: 140 }
+    - { id: search, name: Search, tier: Core, owner: Discovery, p95: 88 }
+    - { id: recs, name: Recommendations, tier: Core, owner: Discovery, p95: 120 }
+    - { id: notify, name: Notifications, tier: Async, owner: Platform, p95: 30 }
+    - { id: billing, name: Billing, tier: Async, owner: Payments, p95: 210 }
+    - { id: ledger, name: Ledger, tier: Async, owner: Payments, p95: 180 }
+    - { id: events, name: Event bus, tier: Async, owner: Platform, p95: 9 }
+    - { id: pg, name: Postgres, tier: Data, owner: Data, p95: 6 }
+    - { id: redis, name: Redis, tier: Data, owner: Data, p95: 2 }
+    - { id: es, name: Elasticsearch, tier: Data, owner: Discovery, p95: 22 }
+    - { id: s3, name: Object store, tier: Data, owner: Data, p95: 40 }
+blocks:
+  - type: network-3d
+    id: mesh
+    title: Service dependencies
+    summary: Eighteen services in four tiers; pick one to light up what it calls and what calls it.
+    bind: state.service
+    filterBind: state.tier
+    directed: true
+    groups:
+      - { id: edge, label: Edge }
+      - { id: core, label: Core }
+      - { id: async, label: Async }
+      - { id: data, label: Data }
+    nodes:
+      - { id: gateway, label: API gateway, group: edge, weight: 1.6, description: Terminates TLS and routes every request. }
+      - { id: cdn, label: CDN, group: edge }
+      - { id: auth, label: Auth, group: core, weight: 1.3 }
+      - { id: users, label: Users, group: core }
+      - { id: catalog, label: Catalog, group: core }
+      - { id: cart, label: Cart, group: core }
+      - { id: orders, label: Orders, group: core, weight: 1.3 }
+      - { id: payments, label: Payments, group: core, weight: 1.2 }
+      - { id: search, label: Search, group: core }
+      - { id: recs, label: Recommendations, group: core }
+      - { id: notify, label: Notifications, group: async }
+      - { id: billing, label: Billing, group: async }
+      - { id: ledger, label: Ledger, group: async }
+      - { id: events, label: Event bus, group: async, weight: 1.4 }
+      - { id: pg, label: Postgres, group: data, weight: 1.5 }
+      - { id: redis, label: Redis, group: data }
+      - { id: es, label: Elasticsearch, group: data }
+      - { id: s3, label: Object store, group: data }
+    edges:
+      - { from: cdn, to: gateway }
+      - { from: gateway, to: auth }
+      - { from: gateway, to: catalog }
+      - { from: gateway, to: cart }
+      - { from: gateway, to: orders }
+      - { from: gateway, to: search }
+      - { from: auth, to: users }
+      - { from: auth, to: redis }
+      - { from: users, to: pg }
+      - { from: catalog, to: pg }
+      - { from: catalog, to: s3 }
+      - { from: catalog, to: es }
+      - { from: cart, to: redis }
+      - { from: cart, to: catalog }
+      - { from: orders, to: cart }
+      - { from: orders, to: payments }
+      - { from: orders, to: pg }
+      - { from: orders, to: events }
+      - { from: payments, to: ledger }
+      - { from: payments, to: events }
+      - { from: search, to: es }
+      - { from: search, to: recs }
+      - { from: recs, to: catalog }
+      - { from: recs, to: redis }
+      - { from: events, to: notify }
+      - { from: events, to: billing }
+      - { from: billing, to: ledger }
+      - { from: ledger, to: pg }
+      - { from: notify, to: users }
+  - type: filter-bar
+    title: Selected service
+    target: services-table
+    blocks:
+      - type: select
+        label: Service
+        field: id
+        bind: state.service
+        optionsFrom: id
+  - type: data-table
+    id: services-table
+    title: Service detail
+    dataRef: services
+    columns:
+      - { key: name, label: Service }
+      - { key: tier, label: Tier }
+      - { key: owner, label: Owner }
+      - { key: p95, label: p95 ms, format: number }

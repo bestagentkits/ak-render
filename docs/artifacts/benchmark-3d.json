@@ -1,7 +1,7 @@
 {
   "artifact": "benchmark-3d",
   "producer": "tests/browser/bench-3d.spec.ts",
-  "measuredAt": "2026-11-05T12:21:37.554Z",
+  "measuredAt": "2026-11-05T14:27:34.185Z",
   "compiler": {
     "name": "@bestagentkits/render",
     "version": "0.3.0"
@@ -18,7 +18,7 @@
   "fixtures": [
     {
       "fixture": "scene-3d-basic",
-      "htmlBytes": 650659,
+      "htmlBytes": 681066,
       "agent": {
         "specBytes": 1276,
         "specTokensEstimate": 319,
@@ -33,7 +33,7 @@
           "profile": "low@1",
           "frameMs": {
             "p50": 16.7,
-            "p95": 16.8
+            "p95": 16.7
           },
           "renderMs": {
             "p50": 0.2,
@@ -58,11 +58,11 @@
           "profile": "low@1",
           "frameMs": {
             "p50": 16.7,
-            "p95": 16.8
+            "p95": 16.7
           },
           "renderMs": {
-            "p50": 0.3,
-            "p95": 0.4
+            "p50": 0.2,
+            "p95": 0.3
           },
           "calls": 5,
           "triangles": 2434,
@@ -107,8 +107,8 @@
           "dpr": 2,
           "profile": "high@2",
           "frameMs": {
-            "p50": 50.1,
-            "p95": 66.7
+            "p50": 66.6,
+            "p95": 83.3
           },
           "renderMs": {
             "p50": 0.3,
@@ -133,15 +133,15 @@
         "runs": 5,
         "ok": 5,
         "ms": {
-          "p50": 1443.6,
-          "max": 1505.4
+          "p50": 1324.1,
+          "max": 1334
         },
         "errors": []
       }
     },
     {
       "fixture": "scene-3d-dense",
-      "htmlBytes": 667967,
+      "htmlBytes": 698374,
       "agent": {
         "specBytes": 5409,
         "specTokensEstimate": 1352,
@@ -156,10 +156,10 @@
           "profile": "low@1",
           "frameMs": {
             "p50": 16.7,
-            "p95": 33.3
+            "p95": 16.7
           },
           "renderMs": {
-            "p50": 0.4,
+            "p50": 0.3,
             "p95": 0.6
           },
           "calls": 49,
@@ -184,8 +184,8 @@
             "p95": 33.4
           },
           "renderMs": {
-            "p50": 0.4,
-            "p95": 0.6
+            "p50": 0.3,
+            "p95": 0.5
           },
           "calls": 49,
           "triangles": 44802,
@@ -205,12 +205,12 @@
           "dpr": 1,
           "profile": "high@1",
           "frameMs": {
-            "p50": 49.9,
+            "p50": 33.4,
             "p95": 50.1
           },
           "renderMs": {
-            "p50": 0.5,
-            "p95": 0.8
+            "p50": 0.6,
+            "p95": 0.9
           },
           "calls": 49,
           "triangles": 44802,
@@ -230,8 +230,8 @@
           "dpr": 2,
           "profile": "high@2",
           "frameMs": {
-            "p50": 100,
-            "p95": 116.7
+            "p50": 100.1,
+            "p95": 150
           },
           "renderMs": {
             "p50": 0.6,
@@ -256,18 +256,18 @@
         "runs": 5,
         "ok": 5,
         "ms": {
-          "p50": 1805.6,
-          "max": 2334.9
+          "p50": 1316.1,
+          "max": 1367.3
         },
         "errors": []
       }
     },
     {
-      "fixture": "bars-3d-dense",
-      "htmlBytes": 916911,
+      "fixture": "network-3d-basic",
+      "htmlBytes": 716859,
       "agent": {
-        "specBytes": 6080,
-        "specTokensEstimate": 1520,
+        "specBytes": 4416,
+        "specTokensEstimate": 1104,
         "roundTrips": 2,
         "source": "assumed"
       },
@@ -282,11 +282,134 @@
             "p95": 16.7
           },
           "renderMs": {
-            "p50": 2.7,
-            "p95": 4.5
+            "p50": 0,
+            "p95": 0
           },
-          "calls": 519,
-          "triangles": 5994,
+          "calls": 4,
+          "triangles": 3242,
+          "contextLoss": {
+            "lostState": "lost",
+            "restoredState": "ready"
+          },
+          "disposal": {
+            "cyclesLeak": false,
+            "emptyAfterUnmount": true,
+            "remountState": "ready"
+          }
+        },
+        {
+          "viewport": "tablet",
+          "width": 768,
+          "dpr": 1,
+          "profile": "low@1",
+          "frameMs": {
+            "p50": 16.7,
+            "p95": 16.7
+          },
+          "renderMs": {
+            "p50": 0,
+            "p95": 0
+          },
+          "calls": 4,
+          "triangles": 3242,
+          "contextLoss": {
+            "lostState": "lost",
+            "restoredState": "ready"
+          },
+          "disposal": {
+            "cyclesLeak": false,
+            "emptyAfterUnmount": true,
+            "remountState": "ready"
+          }
+        },
+        {
+          "viewport": "desktop",
+          "width": 1440,
+          "dpr": 1,
+          "profile": "high@1",
+          "frameMs": {
+            "p50": 16.7,
+            "p95": 16.8
+          },
+          "renderMs": {
+            "p50": 0,
+            "p95": 0
+          },
+          "calls": 4,
+          "triangles": 5762,
+          "contextLoss": {
+            "lostState": "lost",
+            "restoredState": "ready"
+          },
+          "disposal": {
+            "cyclesLeak": false,
+            "emptyAfterUnmount": true,
+            "remountState": "ready"
+          }
+        },
+        {
+          "viewport": "desktop-2x",
+          "width": 1440,
+          "dpr": 2,
+          "profile": "high@2",
+          "frameMs": {
+            "p50": 16.7,
+            "p95": 16.8
+          },
+          "renderMs": {
+            "p50": 0,
+            "p95": 0
+          },
+          "calls": 4,
+          "triangles": 5762,
+          "contextLoss": {
+            "lostState": "lost",
+            "restoredState": "ready"
+          },
+          "disposal": {
+            "cyclesLeak": false,
+            "emptyAfterUnmount": true,
+            "remountState": "ready"
+          }
+        }
+      ],
+      "export": {
+        "format": "png",
+        "browser": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+        "runs": 5,
+        "ok": 5,
+        "ms": {
+          "p50": 1599.5,
+          "max": 1791.7
+        },
+        "errors": []
+      }
+    },
+    {
+      "fixture": "network-3d-stress",
+      "htmlBytes": 1204171,
+      "agent": {
+        "specBytes": 37484,
+        "specTokensEstimate": 9371,
+        "roundTrips": 2,
+        "source": "assumed"
+      },
+      "viewports": [
+        {
+          "viewport": "mobile",
+          "width": 375,
+          "dpr": 1,
+          "profile": "low@1",
+          "frameMs": {
+            "p50": 16.7,
+            "p95": 16.7
+          },
+          "renderMs": {
+            "p50": 0,
+            "p95": 0
+          },
+          "calls": 3,
+          "triangles": 180000,
           "contextLoss": {
             "lostState": "lost",
             "restoredState": "ready"
@@ -307,11 +430,11 @@
             "p95": 16.8
           },
           "renderMs": {
-            "p50": 1.9,
-            "p95": 2.8
+            "p50": 0,
+            "p95": 0
           },
-          "calls": 519,
-          "triangles": 5994,
+          "calls": 3,
+          "triangles": 180000,
           "contextLoss": {
             "lostState": "lost",
             "restoredState": "ready"
@@ -335,8 +458,131 @@
             "p50": 0,
             "p95": 0
           },
-          "calls": 519,
-          "triangles": 5994,
+          "calls": 3,
+          "triangles": 320000,
+          "contextLoss": {
+            "lostState": "lost",
+            "restoredState": "ready"
+          },
+          "disposal": {
+            "cyclesLeak": false,
+            "emptyAfterUnmount": true,
+            "remountState": "ready"
+          }
+        },
+        {
+          "viewport": "desktop-2x",
+          "width": 1440,
+          "dpr": 2,
+          "profile": "high@2",
+          "frameMs": {
+            "p50": 16.7,
+            "p95": 16.8
+          },
+          "renderMs": {
+            "p50": 0,
+            "p95": 0
+          },
+          "calls": 3,
+          "triangles": 320000,
+          "contextLoss": {
+            "lostState": "lost",
+            "restoredState": "ready"
+          },
+          "disposal": {
+            "cyclesLeak": false,
+            "emptyAfterUnmount": true,
+            "remountState": "ready"
+          }
+        }
+      ],
+      "export": {
+        "format": "png",
+        "browser": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+        "runs": 5,
+        "ok": 5,
+        "ms": {
+          "p50": 1887.8,
+          "max": 2225.4
+        },
+        "errors": []
+      }
+    },
+    {
+      "fixture": "bars-3d-dense",
+      "htmlBytes": 952938,
+      "agent": {
+        "specBytes": 6080,
+        "specTokensEstimate": 1520,
+        "roundTrips": 2,
+        "source": "assumed"
+      },
+      "viewports": [
+        {
+          "viewport": "mobile",
+          "width": 375,
+          "dpr": 1,
+          "profile": "low@1",
+          "frameMs": {
+            "p50": 16.7,
+            "p95": 16.8
+          },
+          "renderMs": {
+            "p50": 1.8,
+            "p95": 3.7
+          },
+          "calls": 501,
+          "triangles": 5958,
+          "contextLoss": {
+            "lostState": "lost",
+            "restoredState": "ready"
+          },
+          "disposal": {
+            "cyclesLeak": false,
+            "emptyAfterUnmount": true,
+            "remountState": "ready"
+          }
+        },
+        {
+          "viewport": "tablet",
+          "width": 768,
+          "dpr": 1,
+          "profile": "low@1",
+          "frameMs": {
+            "p50": 16.7,
+            "p95": 16.8
+          },
+          "renderMs": {
+            "p50": 1.7,
+            "p95": 4
+          },
+          "calls": 501,
+          "triangles": 5958,
+          "contextLoss": {
+            "lostState": "lost",
+            "restoredState": "ready"
+          },
+          "disposal": {
+            "cyclesLeak": false,
+            "emptyAfterUnmount": true,
+            "remountState": "ready"
+          }
+        },
+        {
+          "viewport": "desktop",
+          "width": 1440,
+          "dpr": 1,
+          "profile": "high@1",
+          "frameMs": {
+            "p50": 16.7,
+            "p95": 16.8
+          },
+          "renderMs": {
+            "p50": 0,
+            "p95": 0
+          },
+          "calls": 501,
+          "triangles": 5958,
           "contextLoss": {
             "lostState": "lost",
             "restoredState": "ready"
@@ -360,8 +606,8 @@
             "p50": 0,
             "p95": 0
           },
-          "calls": 519,
-          "triangles": 5994,
+          "calls": 501,
+          "triangles": 5958,
           "contextLoss": {
             "lostState": "lost",
             "restoredState": "ready"
@@ -379,8 +625,8 @@
         "runs": 5,
         "ok": 5,
         "ms": {
-          "p50": 1386.9,
-          "max": 1481.8
+          "p50": 1840.6,
+          "max": 2126.7
         },
         "errors": []
       }

@@ -46,8 +46,10 @@ import {
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { barsWidget } from './bars.js';
 
+import { mountNetwork } from './network.js';
+
 /** Data widgets that add marks and transitions on top of the shared scene, by `data-ak-3d` kind. */
-const WIDGETS = { bars: barsWidget };
+const SCENE_WIDGETS = { bars: barsWidget };
 
 const TONE_VARS = {
   accent: '--ak-color-accent',
@@ -414,7 +416,7 @@ function mount(el) {
     })
     .filter(Boolean);
   const widget =
-    WIDGETS[el.getAttribute('data-ak-3d')]?.({
+    SCENE_WIDGETS[el.getAttribute('data-ak-3d')]?.({
       el,
       config,
       scene,
@@ -755,11 +757,29 @@ function mount(el) {
   return record;
 }
 
+/** Widgets with their own runtime module, keyed by `data-ak-3d`; the rest mount as a scene. */
+const WIDGETS = { network: mountNetwork };
+/** What a widget module needs from the shared runtime. */
+const kit = {
+  api: () => api,
+  motionAllowed: () => api.motionAllowed(),
+  mounts,
+  schedule,
+  toneColor,
+  cssColor,
+  isDark,
+  qualityProfile,
+  webgl2Available,
+  RENDER_SAMPLES,
+};
+
 function mountAll() {
   for (const el of document.querySelectorAll('[data-ak-3d]')) {
     if ([...mounts].some((m) => m.el === el)) continue;
     try {
-      mount(el);
+      const widget = WIDGETS[el.getAttribute('data-ak-3d')];
+      if (widget) widget(el, kit);
+      else mount(el);
     } catch (_error) {
       // A scene that cannot be built reports it; the page and its other scenes keep working.
       el.setAttribute('data-ak-3d-state', 'error');

@@ -314,7 +314,7 @@ export function buildPageSpecJsonSchema(): Record<string, unknown> {
                     type: 'array',
                     minItems: 1,
                     maxItems: 8,
-                    items: { enum: ['media', 'fonts', 'images'] },
+                    items: { enum: ['media', 'fonts', 'images', 'models'] },
                   },
                 },
               },
