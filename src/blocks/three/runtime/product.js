@@ -376,6 +376,8 @@ export function productWidget(ctx) {
       api.fire(el, 'select', { value: id });
       if (product.bind) api.setPath(product.bind, id);
     }
+    // A part sealed inside another cannot be seen assembled, so choosing it opens the product.
+    if (byId.get(id).spec.inner && !exploded) setExplode(true, true);
     flyTo(viewOf(id));
   }
   function reset() {

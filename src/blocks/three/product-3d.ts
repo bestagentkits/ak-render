@@ -490,7 +490,9 @@ function paintOrder(items: Drawn[], eye: Vec3): Drawn[] {
     }
   const rank = (i: number, j: number) => {
     const [a, b] = [items[i] as Drawn, items[j] as Drawn];
-    return b.depth - a.depth || String(a.part.id).localeCompare(String(b.part.id));
+    // Code-unit order, not locale order, so every host sorts ids the same way.
+    const [x, y] = [String(a.part.id), String(b.part.id)];
+    return b.depth - a.depth || (x < y ? -1 : x > y ? 1 : 0);
   };
   const left = new Set(items.map((_, i) => i));
   const out: Drawn[] = [];
@@ -508,10 +510,15 @@ function paintOrder(items: Drawn[], eye: Vec3): Drawn[] {
 export function productPoster(model: ProductModel, label: string): string {
   const { camera } = model;
   const shapes = partCorners(model.parts);
+  // A part wholly inside another (a battery in its cabinet) is not visible from outside.
+  const sealed = new Set(
+    shapes
+      .filter((entry) => shapes.some((other) => within(entry.box, other.box)))
+      .map((entry) => String(entry.part.id)),
+  );
   const drawn = paintOrder(
     shapes
-      // A part wholly inside another (a battery in its cabinet) is not visible from outside.
-      .filter((entry) => !shapes.some((other) => within(entry.box, other.box)))
+      .filter((entry) => !sealed.has(String(entry.part.id)))
       .flatMap(({ part, center, corners, box }) => {
         const points = corners.map((c) => project(c, camera)).filter((p) => p !== null);
         const middle = project(center, camera);
@@ -539,7 +546,9 @@ export function productPoster(model: ProductModel, label: string): string {
     .map((hotspot, i) => {
       const at = project(hotspot.at, camera);
       if (at === null) return '';
-      return `<g class="ak-product-pin"><circle cx="${r1(at.x)}" cy="${r1(at.y)}" r="11"/><text x="${r1(at.x)}" y="${r1(at.y + 4)}">${i + 1}</text></g>`;
+      // A sealed part's pin is hollow: it marks where the part sits, not a surface you can see.
+      const inner = sealed.has(hotspot.part) ? ' data-ak-inner' : '';
+      return `<g class="ak-product-pin"${inner}><circle cx="${r1(at.x)}" cy="${r1(at.y)}" r="11"/><text x="${r1(at.x)}" y="${r1(at.y + 4)}">${i + 1}</text></g>`;
     })
     .join('');
   return `<svg class="ak-3d-poster ak-product-poster" viewBox="0 0 ${W} ${H}" role="img" aria-label="${escapeAttribute(

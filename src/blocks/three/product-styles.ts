@@ -13,6 +13,8 @@ ${NEUTRALS}
 .ak-product-shadow{fill:var(--ak-color-text);opacity:.1}
 .ak-product-pin circle{fill:var(--ak-color-accent);stroke:var(--ak-color-surface);stroke-width:2}
 .ak-product-pin text{fill:var(--ak-color-accent-contrast);font:700 11px var(--ak-font-body,inherit);text-anchor:middle}
+.ak-product-pin[data-ak-inner] circle{fill:var(--ak-color-surface);stroke:var(--ak-color-accent);stroke-dasharray:3 2}
+.ak-product-pin[data-ak-inner] text{fill:var(--ak-color-accent)}
 .ak-product .ak-3d-pin[data-ak-back]{opacity:.4}
 .ak-product .ak-3d-pin[aria-pressed="true"]{z-index:2;opacity:1}
 .ak-product .ak-3d-pin:hover,.ak-product .ak-3d-pin:focus-visible{z-index:3}

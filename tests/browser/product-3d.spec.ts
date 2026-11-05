@@ -137,8 +137,9 @@ test.describe('product-3d', { tag: '@gl' }, () => {
     await page.goto(pageUrl());
     await ready(page);
     const feature = page.locator('[data-ak-id="feature-pick"] select');
+    // The battery is sealed in the cabinet, so choosing it opens the product.
     await page.locator('[data-ak-product-hotspot="battery"]').click();
-    await page.locator('[data-ak-product-explode]').click();
+    await expect(page.locator('[data-ak-id="view-pick"] select')).toHaveValue('exploded');
     await page.setViewportSize({ width: 760, height: 900 });
     await expect(feature).toHaveValue('battery');
     await expect(page.locator('[data-ak-product-hotspot="battery"]')).toHaveAttribute(
