@@ -7,12 +7,14 @@
  *
  * - ambient playback, which runs once when a diagram scrolls into view, one
  *   diagram at a time, the rest waiting their turn;
+ * - edge flow, the page's one ambient loop: at most one diagram flows at a
+ *   time, only while it is in view, until the reader pauses it or selects;
  * - focused playback, which follows the viewer's selection or route and
  *   pre-empts any ambient run;
  * - visibility, a theme or motion-policy switch and print, each of which stops
  *   what is playing at once and leaves the drawing as authored.
  *
- * Every run is time-bounded: it ends with its last animation, and a timer
+ * Every run except edge flow is time-bounded: it ends with its last animation, and a timer
  * clears it if `animationend` never arrives. Sequence playback never starts by
  * itself; the reader steps or plays it. Nothing here runs under reduced motion,
  * the `reduced` or `none` motion policy, in print or without script, and the
@@ -28,6 +30,7 @@ export const DIAGRAM_MOTION_RECIPES = [
   'signal-relay',
   'node-activation',
   'sequence-playback',
+  'edge-flow',
 ] as const;
 
 /**
@@ -51,9 +54,16 @@ export function diagramSequenceBar(title: string): string {
   )}" hidden><button type="button" class="ak-dv-btn" data-ak-dm-play aria-pressed="false">Play sequence</button><button type="button" class="ak-dv-btn" data-ak-dm-next>Next step</button><button type="button" class="ak-dv-btn" data-ak-dm-reset>Reset</button><span class="ak-dm-status" role="status" data-ak-dm-status></span></div>`;
 }
 
+/** The reader's pause control for `edge-flow` (WCAG 2.2.2), revealed by the runtime. */
+export function diagramFlowBar(title: string): string {
+  return `<div class="ak-dm-bar" data-ak-dm-bar role="group" aria-label="Flow: ${escapeAttribute(
+    title,
+  )}" hidden><button type="button" class="ak-dv-btn" data-ak-dm-pause aria-pressed="false">Pause flow</button></div>`;
+}
+
 /** The governor, ES5 like the rest of the runtime. */
 export const DIAGRAM_MOTION_RUNTIME = `
-var DIAGRAM_MOTION = ['edge-trace', 'signal-relay', 'node-activation', 'sequence-playback'];
+var DIAGRAM_MOTION = ['edge-trace', 'signal-relay', 'node-activation', 'sequence-playback', 'edge-flow'];
 function wireDiagramMotion() {
   var entries = [];
   var current = null;
@@ -88,15 +98,7 @@ function wireDiagramMotion() {
       if (entry.recipe === 'signal-relay') {
         var path = paths(el)[0];
         if (!path || !path.parentNode) return;
-        // A copy of the line carries the pulse, so the line itself never changes.
-        var pulse = path.cloneNode(false);
-        ['id', 'class', 'style', 'marker-start', 'marker-mid', 'marker-end'].forEach(function (name) { pulse.removeAttribute(name); });
-        pulse.setAttribute('pathLength', '1');
-        pulse.setAttribute('data-ak-dm-pulse', '');
-        pulse.setAttribute('aria-hidden', 'true');
-        pulse.style.setProperty('--ak-dm-i', step);
-        path.parentNode.insertBefore(pulse, path.nextSibling);
-        run.marked.push(pulse);
+        run.marked.push(pulseOf(path, step));
         return;
       }
       el.setAttribute('data-ak-dm-on', '');
@@ -116,6 +118,58 @@ function wireDiagramMotion() {
     if (ms === 0) { stop(true); return; }
     run.timer = window.setTimeout(function () { if (current === run) stop(true); }, ms + 150);
   }
+  function pulseOf(path, step) {
+    // A copy of the line carries the pulse, so the line itself never changes.
+    var pulse = path.cloneNode(false);
+    ['id', 'class', 'style', 'marker-start', 'marker-mid', 'marker-end'].forEach(function (name) { pulse.removeAttribute(name); });
+    pulse.setAttribute('pathLength', '1');
+    pulse.setAttribute('data-ak-dm-pulse', '');
+    pulse.setAttribute('aria-hidden', 'true');
+    pulse.style.setProperty('--ak-dm-i', step);
+    path.parentNode.insertBefore(pulse, path.nextSibling);
+    return pulse;
+  }
+  var flowing = null;
+  function endFlow() {
+    if (!flowing) return;
+    flowing.figure.removeAttribute('data-ak-dm-flow');
+    flowing.pulses.forEach(function (pulse) { if (pulse.parentNode) pulse.parentNode.removeChild(pulse); });
+    flowing.pulses = [];
+    flowing = null;
+  }
+  // The one ambient loop: the first visible, unpaused, unselected flow diagram.
+  function flow() {
+    var pick = null;
+    if (!frozen && motionAllowed() && !doc.hidden) {
+      for (var i = 0; i < entries.length && !pick; i += 1) {
+        var entry = entries[i];
+        if (entry.recipe === 'edge-flow' && entry.visible && !entry.paused && !entry.selected) pick = entry;
+      }
+    }
+    if (pick === flowing) return;
+    endFlow();
+    if (!pick) return;
+    pick.edges.slice(0, 40).forEach(function (edge, index) {
+      var path = paths(edge)[0];
+      if (path && path.parentNode) pick.pulses.push(pulseOf(path, String(index % 4)));
+    });
+    pick.figure.setAttribute('data-ak-dm-flow', '');
+    flowing = pick;
+  }
+  function wireFlow(entry) {
+    entry.pulses = [];
+    var bar = q('[data-ak-dm-bar]', entry.figure);
+    var button = bar && q('[data-ak-dm-pause]', bar);
+    function sync() {
+      if (!button) return;
+      bar.hidden = !motionAllowed();
+      button.textContent = entry.paused ? 'Play flow' : 'Pause flow';
+      button.setAttribute('aria-pressed', entry.paused ? 'true' : 'false');
+    }
+    entry.sync = sync;
+    if (button) button.addEventListener('click', function () { entry.paused = !entry.paused; sync(); flow(); });
+    sync();
+  }
   function ambientItems(entry) {
     return entry.recipe === 'node-activation' ? entry.nodes : entry.edges;
   }
@@ -123,7 +177,7 @@ function wireDiagramMotion() {
     if (current) return;
     for (var i = 0; i < entries.length; i += 1) {
       var entry = entries[i];
-      if (entry.visible && !entry.played && entry.recipe !== 'sequence-playback') {
+      if (entry.visible && !entry.played && entry.recipe !== 'sequence-playback' && entry.recipe !== 'edge-flow') {
         entry.played = true;
         play(entry, ambientItems(entry), 'ambient');
         if (current) return;
@@ -225,6 +279,15 @@ function wireDiagramMotion() {
     };
     entries.push(entry);
     if (recipe === 'sequence-playback') { wireSequence(entry); return; }
+    if (recipe === 'edge-flow') {
+      wireFlow(entry);
+      if (typeof diagramViewers !== 'undefined') {
+        diagramViewers.forEach(function (viewer) {
+          if (viewer.canvas === canvas) viewer.listeners.push(function (state) { entry.selected = state.mode !== 'idle'; flow(); });
+        });
+      }
+      return;
+    }
     if (typeof diagramViewers !== 'undefined') {
       diagramViewers.forEach(function (viewer) {
         if (viewer.canvas === canvas) viewer.listeners.push(function (state) { focused(entry, state); });
@@ -242,24 +305,33 @@ function wireDiagramMotion() {
         });
       });
       next();
+      flow();
     }, { threshold: [0, 0.35, 0.7] });
     entries.forEach(function (entry) { seen.observe(entry.figure); });
   }
   function halt() {
     stop(false);
+    endFlow();
     entries.forEach(function (entry) { if (entry.pause) entry.pause(); });
   }
+  // After a pause from outside (tab hidden, print, a policy switch) the loop
+  // resumes where motion may still play; flow() checks every condition.
+  function resume() {
+    entries.forEach(function (entry) { if (entry.sync) entry.sync(); });
+    flow();
+  }
   ${diagramFreezeHook('function () { frozen = true; halt(); }')}
-  doc.addEventListener('visibilitychange', function () { if (doc.hidden) halt(); }, false);
+  doc.addEventListener('visibilitychange', function () { if (doc.hidden) halt(); else resume(); }, false);
   window.addEventListener('beforeprint', halt, false);
+  window.addEventListener('afterprint', resume, false);
   // A theme or motion-policy switch settles everything at once: a run never
   // carries colours or timings from the previous theme.
   if (typeof window.MutationObserver === 'function') {
-    new window.MutationObserver(halt).observe(root, { attributes: true, attributeFilter: ['data-theme', 'data-motion'] });
+    new window.MutationObserver(function () { halt(); resume(); }).observe(root, { attributes: true, attributeFilter: ['data-theme', 'data-motion'] });
   }
   if (window.matchMedia) {
     var query = window.matchMedia('(prefers-reduced-motion: reduce)');
-    var onChange = function () { if (query.matches) halt(); };
+    var onChange = function () { halt(); resume(); };
     if (query.addEventListener) query.addEventListener('change', onChange);
     else if (query.addListener) query.addListener(onChange);
   }

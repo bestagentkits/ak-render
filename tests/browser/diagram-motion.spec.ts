@@ -38,6 +38,61 @@ const node = (page: Page, panelId: string, id: string) =>
   page.locator(`[data-ak-id="${panelId}"] [data-ak-node="${id}"]`);
 
 test.describe('diagram motion governor', () => {
+  test('edge-flow loops while in view, pauses on request and on selection, and leaves the lines solid', async ({
+    page,
+  }) => {
+    const errors = await open(page, spec(panel('one', 'edge-flow')), 'edge-flow');
+    const figure = page.locator('[data-ak-id="one"]');
+    const pulses = page.locator('[data-ak-id="one"] [data-ak-dm-pulse]');
+    const pause = page.locator('[data-ak-id="one"] [data-ak-dm-pause]');
+    await expect(figure).toHaveAttribute('data-ak-dm-flow', '');
+    await expect(pulses).toHaveCount(2);
+    await expect(pulses.first()).toHaveAttribute('aria-hidden', 'true');
+    // Still looping well past any one-shot run: it is the ambient loop.
+    await page.waitForTimeout(1500);
+    await expect(figure).toHaveAttribute('data-ak-dm-flow', '');
+    await pause.click();
+    await expect(pause).toHaveAttribute('aria-pressed', 'true');
+    await expect(figure).not.toHaveAttribute('data-ak-dm-flow', /.*/u);
+    await expect(pulses).toHaveCount(0);
+    const dash = await page
+      .locator('[data-ak-id="one"] [data-ak-edge] path')
+      .first()
+      .evaluate((path) => getComputedStyle(path).strokeDasharray);
+    expect(dash).toBe('none');
+    await pause.click();
+    await expect(figure).toHaveAttribute('data-ak-dm-flow', '');
+    await node(page, 'one', 'api').focus();
+    await page.keyboard.press('Enter');
+    await expect(figure).not.toHaveAttribute('data-ak-dm-flow', /.*/u);
+    await page.keyboard.press('Escape');
+    await expect(figure).toHaveAttribute('data-ak-dm-flow', '');
+    expect(errors).toEqual([]);
+  });
+
+  test('edge-flow: only one diagram flows; none under reduced motion, in print or after freeze', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 2400 });
+    await open(page, spec(panel('one', 'edge-flow'), panel('two', 'edge-flow')), 'flow-two');
+    await expect(page.locator('[data-ak-dm-flow]')).toHaveCount(1);
+    await page.emulateMedia({ media: 'print' });
+    await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+    await expect(page.locator('[data-ak-dm-flow]')).toHaveCount(0);
+    await page.emulateMedia({ media: 'screen' });
+    await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+    await expect(page.locator('[data-ak-dm-flow]')).toHaveCount(1);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect(page.locator('[data-ak-dm-flow]')).toHaveCount(0);
+    await expect(page.locator('[data-ak-dm-pause]').first()).toBeHidden();
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await expect(page.locator('[data-ak-dm-flow]')).toHaveCount(1);
+    await page.evaluate(() =>
+      (window as unknown as { akRenderDiagram: { freeze(): void } }).akRenderDiagram.freeze(),
+    );
+    await expect(page.locator('[data-ak-dm-flow], [data-ak-dm-pulse]')).toHaveCount(0);
+  });
+
   test('edge-trace plays once on arrival and ends with the drawing as authored', async ({
     page,
   }) => {

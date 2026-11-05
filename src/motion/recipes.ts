@@ -134,6 +134,9 @@ export const MOTION_KEYFRAMES: Readonly<Record<string, string>> = {
   'ak-m-relay':
     '@keyframes ak-m-relay{from{stroke-dashoffset:.14;opacity:1}80%{opacity:1}to{stroke-dashoffset:-.86;opacity:0}}',
   'ak-m-activate': '@keyframes ak-m-activate{from{opacity:.25;scale:.92}}',
+  'ak-m-march': '@keyframes ak-m-march{to{stroke-dashoffset:-10}}',
+  'ak-m-stream':
+    '@keyframes ak-m-stream{from{stroke-dashoffset:.07;opacity:0}12%{opacity:1}88%{opacity:1}to{stroke-dashoffset:-.93;opacity:0}}',
 };
 
 const at = (id: string) => `[data-ak-motion="${id}"]`;
@@ -157,6 +160,13 @@ const TAB_LIST = `${at('tabs-slide')}>[role="tablist"]`;
 /** A run step's delay: one step of the scale per item, capped by the governor. */
 const DM_DELAY = (step: string) =>
   `animation-delay:calc(var(--ak-motion-${step}) * var(--ak-dm-i,0))`;
+
+/** The reader's control bar shared by sequence playback and edge flow. */
+const DM_BAR_CSS =
+  '.ak-dm-bar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ak-space-unit);margin-bottom:calc(var(--ak-space-unit) * 1.5)}.ak-dm-bar[hidden],.ak-dm-bar [hidden]{display:none}.ak-dm-status{flex:1 1 12rem;font-size:.8125rem;color:var(--ak-color-text-muted)}';
+
+/** A flowing diagram: the figure carries `data-ak-dm-flow` only while it loops. */
+const FLOW = `${at('edge-flow')}[data-ak-dm-flow]`;
 
 const DIAGRAM_EXAMPLE = (motion: string) => ({
   type: 'diagram-panel',
@@ -465,6 +475,39 @@ export const MOTION_RECIPES: readonly MotionRecipe[] = deepFreeze<MotionRecipe[]
     },
   },
   {
+    id: 'edge-flow',
+    version: 1,
+    states: ['full'],
+    role: 'decoration',
+    purpose:
+      'The relationships keep flowing while the diagram is in view: the lines march and glowing pulses stream along them, like live traffic through a system.',
+    aliases: [
+      'flowing edges',
+      'animated edges',
+      'live flow',
+      'streaming',
+      'traffic',
+      'marching ants',
+      'data pipeline',
+    ],
+    targets: ['diagram-panel'],
+    triggers: ['on-enter'],
+    phases: ['enter'],
+    duration: 'emphasis',
+    easing: 'standard',
+    properties: ['stroke-dashoffset', 'opacity'],
+    runtime: 'lifecycle',
+    keyframes: ['ak-m-march', 'ak-m-stream'],
+    reduced: 'No flow; the relationships are drawn solid and unchanged.',
+    notes: `${DIAGRAM_NOTES} The page's one ambient loop: only one diagram flows at a time, only while at least a third of it is in view and the tab is visible. A Pause flow button stops it (WCAG 2.2.2), and a viewer selection pauses it until cleared. Pulses ride on copies of the lines.`,
+    example: DIAGRAM_EXAMPLE('edge-flow'),
+    css: {
+      plain: `${DM_BAR_CSS}[data-ak-dm-pulse]{pointer-events:none}`,
+      guarded: `${FLOW} [data-ak-edge] path:not([data-ak-dm-pulse]){stroke-dasharray:4 6;animation:ak-m-march calc(var(--ak-motion-emphasis) * 2) linear infinite}${FLOW} [data-ak-dm-pulse]{fill:none;stroke:var(--ak-color-accent);stroke-width:3.5;stroke-linecap:round;stroke-dasharray:.08 .92;filter:drop-shadow(0 0 3px var(--ak-color-accent)) drop-shadow(0 0 8px var(--ak-color-accent));animation:ak-m-stream calc(var(--ak-motion-emphasis) * 6) linear infinite;animation-delay:calc(var(--ak-motion-emphasis) * var(--ak-dm-i,0) * -1.5)}`,
+      print: '.ak-dm-bar{display:none!important}[data-ak-dm-pulse]{display:none}',
+    },
+  },
+  {
     id: 'node-activation',
     version: 1,
     states: ['full'],
@@ -514,7 +557,7 @@ export const MOTION_RECIPES: readonly MotionRecipe[] = deepFreeze<MotionRecipe[]
     notes: `${DIAGRAM_NOTES} Never starts by itself. Each step names its relationship in a status line.`,
     example: DIAGRAM_EXAMPLE('sequence-playback'),
     css: {
-      plain: `.ak-dm-bar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ak-space-unit);margin-bottom:calc(var(--ak-space-unit) * 1.5)}.ak-dm-bar[hidden],.ak-dm-bar [hidden]{display:none}.ak-dm-status{flex:1 1 12rem;font-size:.8125rem;color:var(--ak-color-text-muted)}${at('sequence-playback')} [data-ak-dm-seq] :is([data-ak-node],[data-ak-edge],[data-ak-group]):not([data-ak-dm-step]){opacity:.4}${at('sequence-playback')} [data-ak-dm-step]{filter:drop-shadow(0 0 .3rem var(--ak-color-accent))}`,
+      plain: `${DM_BAR_CSS}${at('sequence-playback')} [data-ak-dm-seq] :is([data-ak-node],[data-ak-edge],[data-ak-group]):not([data-ak-dm-step]){opacity:.4}${at('sequence-playback')} [data-ak-dm-step]{filter:drop-shadow(0 0 .3rem var(--ak-color-accent))}`,
       guarded: `${at('sequence-playback')} :is([data-ak-node],[data-ak-edge],[data-ak-group]){transition:opacity var(--ak-motion-fast) var(--ak-ease-standard)}`,
       print: `.ak-dm-bar{display:none!important}${at('sequence-playback')} [data-ak-dm-seq] :is([data-ak-node],[data-ak-edge],[data-ak-group]){opacity:1!important;filter:none!important}`,
     },

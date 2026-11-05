@@ -2,7 +2,7 @@
 
 exports[`diagram golden cases > bidirectional > matches its golden digest 1`] = `
 {
-  "canvas": "53ce8d544d1d1b35",
+  "canvas": "553798add48a6dd8",
   "edges": 2,
   "groups": 0,
   "nodes": 2,
@@ -11,7 +11,7 @@ exports[`diagram golden cases > bidirectional > matches its golden digest 1`] = 
 
 exports[`diagram golden cases > branch > matches its golden digest 1`] = `
 {
-  "canvas": "053ef4cea4189aab",
+  "canvas": "e8515a017f230ccf",
   "edges": 4,
   "groups": 0,
   "nodes": 5,
@@ -20,7 +20,7 @@ exports[`diagram golden cases > branch > matches its golden digest 1`] = `
 
 exports[`diagram golden cases > chain > matches its golden digest 1`] = `
 {
-  "canvas": "c5124999b7a3a0db",
+  "canvas": "7a7aff9568911085",
   "edges": 2,
   "groups": 0,
   "nodes": 3,
@@ -29,7 +29,7 @@ exports[`diagram golden cases > chain > matches its golden digest 1`] = `
 
 exports[`diagram golden cases > cycle > matches its golden digest 1`] = `
 {
-  "canvas": "13e9185fb2e859cd",
+  "canvas": "900fe92cd0fdef02",
   "edges": 3,
   "groups": 0,
   "nodes": 3,
@@ -38,7 +38,7 @@ exports[`diagram golden cases > cycle > matches its golden digest 1`] = `
 
 exports[`diagram golden cases > dataflow-stages > matches its golden digest 1`] = `
 {
-  "canvas": "791289ea8fb41f2a",
+  "canvas": "4ccd2f8e31044746",
   "edges": 2,
   "groups": 2,
   "nodes": 3,
@@ -47,7 +47,7 @@ exports[`diagram golden cases > dataflow-stages > matches its golden digest 1`] 
 
 exports[`diagram golden cases > deep-chain > matches its golden digest 1`] = `
 {
-  "canvas": "92d97a1efeb435a0",
+  "canvas": "7f07dc3634479c68",
   "edges": 11,
   "groups": 0,
   "nodes": 12,
@@ -56,7 +56,7 @@ exports[`diagram golden cases > deep-chain > matches its golden digest 1`] = `
 
 exports[`diagram golden cases > dense > matches its golden digest 1`] = `
 {
-  "canvas": "947fe0307289e8cd",
+  "canvas": "e6d26f2dcba29464",
   "edges": 18,
   "groups": 0,
   "nodes": 8,
@@ -65,7 +65,7 @@ exports[`diagram golden cases > dense > matches its golden digest 1`] = `
 
 exports[`diagram golden cases > diamond > matches its golden digest 1`] = `
 {
-  "canvas": "c070997e9408ac15",
+  "canvas": "3efa8264db26e179",
   "edges": 4,
   "groups": 0,
   "nodes": 4,
@@ -74,7 +74,7 @@ exports[`diagram golden cases > diamond > matches its golden digest 1`] = `
 
 exports[`diagram golden cases > disconnected > matches its golden digest 1`] = `
 {
-  "canvas": "d30f91059eacb3d6",
+  "canvas": "099aa0280c60f46f",
   "edges": 2,
   "groups": 0,
   "nodes": 5,
@@ -83,7 +83,7 @@ exports[`diagram golden cases > disconnected > matches its golden digest 1`] = `
 
 exports[`diagram golden cases > empty-labels > matches its golden digest 1`] = `
 {
-  "canvas": "a764ad62470d46f5",
+  "canvas": "a4cc9f28e196ca8f",
   "edges": 1,
   "groups": 0,
   "nodes": 2,
@@ -92,7 +92,7 @@ exports[`diagram golden cases > empty-labels > matches its golden digest 1`] = `
 
 exports[`diagram golden cases > fan-in > matches its golden digest 1`] = `
 {
-  "canvas": "a5574dacb3bbca8c",
+  "canvas": "4fee7541d6693661",
   "edges": 6,
   "groups": 0,
   "nodes": 7,
@@ -101,7 +101,7 @@ exports[`diagram golden cases > fan-in > matches its golden digest 1`] = `
 
 exports[`diagram golden cases > fan-out > matches its golden digest 1`] = `
 {
-  "canvas": "12cd44a2dfa82408",
+  "canvas": "18af199d89dc37d9",
   "edges": 15,
   "groups": 0,
   "nodes": 16,
@@ -110,7 +110,7 @@ exports[`diagram golden cases > fan-out > matches its golden digest 1`] = `
 
 exports[`diagram golden cases > large > matches its golden digest 1`] = `
 {
-  "canvas": "22c31b2739dc1d52",
+  "canvas": "b4452367ea96a713",
   "edges": 59,
   "groups": 0,
   "nodes": 60,
@@ -119,7 +119,7 @@ exports[`diagram golden cases > large > matches its golden digest 1`] = `
 
 exports[`diagram golden cases > lifecycle-states > matches its golden digest 1`] = `
 {
-  "canvas": "265019e08d2173df",
+  "canvas": "48059b1927932f3a",
   "edges": 3,
   "groups": 0,
   "nodes": 3,
@@ -128,7 +128,7 @@ exports[`diagram golden cases > lifecycle-states > matches its golden digest 1`]
 
 exports[`diagram golden cases > long-vietnamese-labels > matches its golden digest 1`] = `
 {
-  "canvas": "bbdc0653976a8a5f",
+  "canvas": "f5378e116b8cea12",
   "edges": 2,
   "groups": 0,
   "nodes": 3,
@@ -137,7 +137,7 @@ exports[`diagram golden cases > long-vietnamese-labels > matches its golden dige
 
 exports[`diagram golden cases > markup-like-labels > matches its golden digest 1`] = `
 {
-  "canvas": "e6afc6ca41f6f99c",
+  "canvas": "c3d6d046a7df1925",
   "edges": 1,
   "groups": 0,
   "nodes": 2,
@@ -146,7 +146,7 @@ exports[`diagram golden cases > markup-like-labels > matches its golden digest 1
 
 exports[`diagram golden cases > nested-boundaries > matches its golden digest 1`] = `
 {
-  "canvas": "f89f8fec674fac4a",
+  "canvas": "bf96aa7e631c0a02",
   "edges": 4,
   "groups": 2,
   "nodes": 5,
@@ -155,7 +155,7 @@ exports[`diagram golden cases > nested-boundaries > matches its golden digest 1`
 
 exports[`diagram golden cases > parallel-edges > matches its golden digest 1`] = `
 {
-  "canvas": "be34eb59ddbd1930",
+  "canvas": "096c9f0ed296b924",
   "edges": 3,
   "groups": 0,
   "nodes": 2,
@@ -164,7 +164,7 @@ exports[`diagram golden cases > parallel-edges > matches its golden digest 1`] =
 
 exports[`diagram golden cases > sequence-messages > matches its golden digest 1`] = `
 {
-  "canvas": "be6448b4b0bd076f",
+  "canvas": "41e4528c2d118906",
   "edges": 4,
   "groups": 0,
   "nodes": 3,
@@ -173,7 +173,7 @@ exports[`diagram golden cases > sequence-messages > matches its golden digest 1`
 
 exports[`diagram golden cases > single-node > matches its golden digest 1`] = `
 {
-  "canvas": "23e4ab7490f093b1",
+  "canvas": "c4d3dcb45e49f800",
   "edges": 0,
   "groups": 0,
   "nodes": 1,
@@ -182,7 +182,7 @@ exports[`diagram golden cases > single-node > matches its golden digest 1`] = `
 
 exports[`diagram golden cases > two-level-tree > matches its golden digest 1`] = `
 {
-  "canvas": "aa1da28c7c1643fc",
+  "canvas": "9bcae8912af6d303",
   "edges": 12,
   "groups": 0,
   "nodes": 13,
@@ -191,7 +191,7 @@ exports[`diagram golden cases > two-level-tree > matches its golden digest 1`] =
 
 exports[`diagram golden cases > workflow-lanes > matches its golden digest 1`] = `
 {
-  "canvas": "eba8ef0a92b1a99b",
+  "canvas": "9989ddc2ef4a2528",
   "edges": 3,
   "groups": 2,
   "nodes": 4,
