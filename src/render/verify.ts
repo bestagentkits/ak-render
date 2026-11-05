@@ -42,6 +42,7 @@ const FEATURE_MARKERS: Readonly<Partial<Record<RuntimeFeature, string>>> = {
   theme: '.ak-theme-toggle',
   chart: '.ak-chart',
   diagram: '.ak-diagram',
+  'diagram-viewer': '.ak-dv-bar',
   media: '.ak-media-fallback',
   outline: '.ak-toc',
   bento: '.ak-bento',
@@ -69,6 +70,7 @@ const SCRIPTED_FEATURES: readonly RuntimeFeature[] = [
   'outline',
   'before-after',
   'state',
+  'diagram-viewer',
 ];
 
 function countMatches(text: string, pattern: RegExp): number {

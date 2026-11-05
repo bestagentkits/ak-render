@@ -14,6 +14,7 @@ import { CHART_CSS } from '../blocks/chart/chart-styles.js';
 import { ACCORDION_CSS, CAROUSEL_CSS, TABS_CSS } from '../blocks/composition/composition-styles.js';
 import type { RuntimeFeature } from '../registry/roster.js';
 import { scrollEdges } from './derived-variables.js';
+import { DIAGRAM_VIEWER_CSS } from './diagram-viewer.js';
 import { SHOWCASE_CSS } from './showcase-styles.js';
 import { disclosureSummary, TRANSITION } from './style-units.js';
 
@@ -110,6 +111,7 @@ ${whenGapTargets('.ak-block')}{margin-top:var(--ak-gap)}
 ${whenGapTargets('.ak-block:has(> .ak-section-head)', '.ak-section > ')}{margin-top:calc(var(--ak-gap) * 1.75)}
 ${whenGapTargets('.ak-block:is(.ak-section,:has(> .ak-section-head))', '.ak-main > ')}{margin-top:calc(var(--ak-gap) * 2.5)}
 :where(.ak-stack,.ak-grid,.ak-split) > .ak-when > .ak-block{margin-top:0}`,
+  'diagram-viewer': DIAGRAM_VIEWER_CSS,
   diagram: `.ak-diagram{min-width:0}
 .ak-diagram-rendered{overflow-x:auto;overscroll-behavior-x:contain;contain:paint;padding:calc(var(--ak-space-unit) * 2);background:var(--ak-fill);border:var(--ak-border-width) solid var(--ak-color-border);border-radius:var(--ak-radius-medium);box-shadow:var(--ak-elevation-card)}
 ${scrollEdges('.ak-diagram-rendered')}

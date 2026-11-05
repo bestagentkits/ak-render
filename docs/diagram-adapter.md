@@ -246,3 +246,16 @@ typed compiler, embedding only that compiler's output. Core and Marketing
 installs have no adapter and therefore keep the semantic fallback. No paid
 diagram compiler is copied into this package; the dependency direction is that
 AK Render defines the boundary and the host supplies the implementation.
+
+## The viewer
+
+A contract 2 result that declares capabilities gets a viewer. It reads only the hooks the compiler wrote while binding the manifest, never adapter selectors.
+
+| Capability | What the reader gets |
+| --- | --- |
+| `focus` | Select a node (click, Enter or Space) to highlight its neighbours and dim the rest; a details panel lists the connections as buttons and offers everything downstream. Clicking a relationship inspects it. |
+| `trace` | Shift+select a second node to highlight the shortest directed route, or a note that none exists. |
+| `search` | A find box that matches labels and ids, ignoring case and diacritics; Enter selects the first match. |
+| `zoom` | Zoom out, zoom in, Fit and 1:1 buttons, `+`, `-`, `0` and `f` on the focused scroller, Ctrl+wheel, and drag to pan when the drawing is wider than the panel. |
+
+Escape or Clear resets the view. The selection or route is kept in the link as `#<panel>:node:<id>` or `#<panel>:route:<from>:<to>`, so a shared link opens on it. The controls ship hidden and the runtime reveals them, so without script the drawing and its text description read as before; print drops the controls and the dimming. The only transition, the dimming, sits behind the motion guard.

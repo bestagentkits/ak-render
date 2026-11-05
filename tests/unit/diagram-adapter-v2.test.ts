@@ -272,3 +272,34 @@ describe('diagram adapter v2: QA edge cases', () => {
     expect(result?.rejected).toContain('more than once');
   });
 });
+
+describe('diagram viewer: emitted surface', () => {
+  it('ships controls, details and the runtime only for a contract 2 drawing', () => {
+    const result = compile(SPEC, { diagramAdapter: gridDiagramAdapter() });
+    expect(result.html).toContain('data-ak-dv-bar');
+    expect(result.html).toContain('data-ak-dv-search');
+    expect(result.html).toContain('data-ak-dv-zoom="fit"');
+    expect(result.html).toContain('data-ak-dv-details');
+    expect(result.html).toContain('wireDiagramViewers();');
+    expect(result.html).toContain('.ak-dv-bar');
+  });
+
+  it('leaves out what the adapter did not declare', () => {
+    const result = compile(SPEC, {
+      diagramAdapter: gridDiagramAdapter({ capabilities: { focus: true } }),
+    });
+    expect(result.html).toContain('data-ak-dv-bar');
+    expect(result.html).not.toContain('class="ak-dv-search"');
+    expect(result.html).not.toContain('class="ak-dv-zoom"');
+  });
+
+  it('ships nothing for a drawing without capabilities or on contract 1', () => {
+    const none = compile(SPEC, { diagramAdapter: gridDiagramAdapter({ capabilities: {} }) });
+    expect(none.html).not.toContain('data-ak-dv-');
+    expect(none.html).not.toContain('wireDiagramViewers');
+    const v1 = compile(SPEC, {
+      diagramAdapter: { name: 'v1', version: '1', render: () => '<svg viewBox="0 0 1 1"></svg>' },
+    });
+    expect(v1.html).not.toContain('.ak-dv-bar');
+  });
+});

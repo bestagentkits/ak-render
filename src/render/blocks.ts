@@ -24,6 +24,7 @@ import {
   titleHeader,
 } from './block-helpers.js';
 import { renderDiagramFallback } from './diagram-fallback.js';
+import { DIAGRAM_VIEWER_DETAILS, diagramViewerBar } from './diagram-viewer.js';
 import {
   type AttributeValue,
   escapeAttribute,
@@ -693,6 +694,9 @@ const RENDERERS: Record<string, Renderer> = {
       // repeat the drawing; it stays in the document, prints open, and the
       // static SVG reads without script and in print. The inner canvas is the
       // root the adapter's stylesheets are scoped to.
+      accepted && adapterResult.contract === 2
+        ? diagramViewerBar(adapterResult.capabilities ?? [], diagramTitle)
+        : '',
       accepted
         ? `<div class="ak-diagram-rendered" data-ak-diagram-adapter="${escapeAttribute(
             adapterResult.adapter,
@@ -704,7 +708,11 @@ const RENDERERS: Record<string, Renderer> = {
                   (adapterResult.capabilities ?? []).join(' '),
                 )}"`
               : ''
-          }>${adapterResult.markup}</div></div><details class="ak-diagram-details" data-ak-diagram-fallback><summary>Text description</summary><div class="ak-diagram-fallback">${description}</div></details>`
+          }>${adapterResult.markup}</div></div>${
+            adapterResult.contract === 2 && (adapterResult.capabilities ?? []).length > 0
+              ? DIAGRAM_VIEWER_DETAILS
+              : ''
+          }<details class="ak-diagram-details" data-ak-diagram-fallback><summary>Text description</summary><div class="ak-diagram-fallback">${description}</div></details>`
         : `<div class="ak-diagram-fallback" data-ak-diagram-fallback>${description}<p class="ak-caption">Rendered as a structured fallback because no diagram adapter is configured.</p></div>`,
       figureCaption(caption),
       '</figure>',

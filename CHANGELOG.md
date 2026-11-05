@@ -11,6 +11,8 @@ Release mechanics and the compatibility contract live in
 
 ### Added
 
+- Diagram viewer for adapter contract 2 drawings: select a node to see its connections, Shift+select to trace a directed route, show everything downstream, inspect a relationship, find a node (diacritic-insensitive), zoom, fit and pan, with the selection kept in the link. Controls appear only for the capabilities the adapter declares, ship hidden without script and drop out of print.
+
 - Diagram adapter contract 2. An adapter that declares `contract: 2` may
   return `{ svg, manifest, capabilities }`: the manifest names which drawn
   element is which node, relationship and group of the spec, and the
