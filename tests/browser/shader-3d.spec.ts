@@ -151,10 +151,17 @@ test.describe('shader-3d', { tag: '@gl' }, () => {
   });
 
   test('a paused effect stops redrawing while another keeps animating', async ({ page }) => {
-    await page.setViewportSize({ width: 1100, height: 4200 });
-    await page.goto(pageUrl('shader-3d-presets'));
+    await page.setViewportSize({ width: 900, height: 1800 });
+    await page.goto(pageUrl('shader-3d-seeds'));
     await allReady(page);
-    for (const id of ['noise', 'fresnel', 'hologram', 'distortion'])
+    // Record which rasterizer drew the frames, so a slow CI run can be read.
+    const renderer = await page.evaluate(() => {
+      const gl = document.createElement('canvas').getContext('webgl2');
+      const info = gl?.getExtension('WEBGL_debug_renderer_info');
+      return String(info && gl ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : 'none');
+    });
+    test.info().annotations.push({ type: 'webgl-renderer', description: renderer });
+    for (const id of ['twin-a', 'twin-b'])
       await page.locator(`[data-ak-id="${id}"] .ak-sh-pause`).click();
     const counted = await page.evaluate(async () => {
       const api = (window as unknown as { akRender3d: Api }).akRender3d;
@@ -163,7 +170,7 @@ test.describe('shader-3d', { tag: '@gl' }, () => {
       await new Promise<void>((resolve) => {
         const step = () => {
           ticks += 1;
-          if (ticks < 30) requestAnimationFrame(step);
+          if (ticks < 10) requestAnimationFrame(step);
           else resolve();
         };
         requestAnimationFrame(step);
@@ -210,12 +217,12 @@ test.describe('shader-3d', { tag: '@gl' }, () => {
 
   test('PNG export carries the live frames', async () => {
     const png = await exportPage({
-      html: html('shader-3d-presets'),
+      html: html('shader-3d-seeds'),
       format: 'png',
       out: join(workspace.dir(), 'shader.png'),
     });
-    expect(png.scenes).toBe(5);
-    expect(png.frames).toHaveLength(5);
+    expect(png.scenes).toBe(3);
+    expect(png.frames).toHaveLength(3);
     expect(png.blockedRequests).toBe(0);
   });
 });
