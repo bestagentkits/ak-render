@@ -100,7 +100,9 @@ test.describe('scatter-3d', () => {
     await legacy.click();
     await expect(control).toHaveValue('legacy');
     await expect(core).toHaveAttribute('aria-pressed', 'false');
-    await expect(page.locator('.ak-sc-status')).toContainText('in "legacy" shown');
+    await expect(page.locator('.ak-sc-status')).toContainText(
+      /[\d,]+ Legacy points shown of 19,9\d\d plotted\./u,
+    );
 
     await control.selectOption('core');
     await expect(core).toHaveAttribute('aria-pressed', 'true');
@@ -125,6 +127,31 @@ test.describe('scatter-3d', () => {
     await page.locator('.ak-3d-canvas').press('Escape');
     await expect(page.locator('.ak-sc-status')).toContainText('of 20,000 points plotted');
   });
+
+  for (const width of [375, 768, 1440]) {
+    test(`axis labels never overlap at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(pageUrl('scatter-3d-basic'));
+      await ready(page);
+      await page.waitForTimeout(200);
+      const clashes = await page.locator('.ak-sc-labels').evaluate((overlay) => {
+        const boxes = [...overlay.querySelectorAll('span')]
+          .filter((s) => getComputedStyle(s).visibility !== 'hidden')
+          .map((s) => s.getBoundingClientRect());
+        let count = 0;
+        for (let i = 0; i < boxes.length; i += 1)
+          for (let j = i + 1; j < boxes.length; j += 1) {
+            const a = boxes[i] as DOMRect;
+            const b = boxes[j] as DOMRect;
+            if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top)
+              count += 1;
+          }
+        return { count, shown: boxes.length };
+      });
+      expect(clashes.count).toBe(0);
+      expect(clashes.shown).toBeGreaterThan(6);
+    });
+  }
 
   test('without JavaScript every value is in the table under the poster', async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });

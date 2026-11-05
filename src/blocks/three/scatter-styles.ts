@@ -11,7 +11,7 @@ const TONE_VARS: Record<string, string> = {
   info: 'var(--ak-color-info)',
 };
 
-/** The sequential ramp: info through accent to warning, mixed in oklab from theme tokens. */
+/** The sequential ramp: info through accent to danger, mixed in oklab from theme tokens. */
 export function rampColor(step: number): string {
   const t = step / (COLOR_STEPS - 1);
   if (t <= 0.5) {
@@ -19,11 +19,14 @@ export function rampColor(step: number): string {
     return `color-mix(in oklab,var(--ak-color-accent) ${k}%,var(--ak-color-info))`;
   }
   const k = Math.round(((t - 0.5) / 0.5) * 100);
-  return `color-mix(in oklab,var(--ak-color-warning) ${k}%,var(--ak-color-accent))`;
+  return `color-mix(in oklab,var(--ak-color-danger) ${k}%,var(--ak-color-accent))`;
 }
 
 const tones = Object.entries(TONE_VARS)
-  .map(([tone, color]) => `.ak-sc .t-${tone}{--ak-sc-c:${color}}`)
+  .map(
+    ([tone, color]) =>
+      `.ak-sc .t-${tone}{--ak-sc-c:${color}}.ak-sc .t-${tone}-deep{--ak-sc-c:color-mix(in oklab,${color} 55%,var(--ak-color-text))}`,
+  )
   .join('\n');
 const ramp = Array.from(
   { length: COLOR_STEPS },
@@ -80,7 +83,8 @@ ${sizes}
 .ak-sc-table:focus-visible{outline:2px solid var(--ak-color-accent);outline-offset:2px}
 .ak-sc-table table{width:100%;border-collapse:collapse;font-size:.85em;font-variant-numeric:tabular-nums}
 .ak-sc-table th,.ak-sc-table td{padding:4px 10px;text-align:right;border-bottom:var(--ak-border-width) solid color-mix(in oklab,var(--ak-color-border) 60%,transparent)}
-.ak-sc-table th[scope="row"],.ak-sc-table thead th:first-child{text-align:left;font-weight:600}
+.ak-sc-table th[scope="row"],.ak-sc-table thead th:first-child{text-align:left;font-weight:600;white-space:nowrap}
+.ak-sc-clip{margin-left:6px;padding:0 6px;border-radius:999px;font-size:.8em;font-weight:500;color:var(--ak-color-danger);background:color-mix(in oklab,var(--ak-color-danger) 12%,transparent)}
 .ak-sc-table thead th{position:sticky;top:0;background:var(--ak-color-surface);z-index:1}
 .ak-sc-table tr[aria-selected="true"]{background:color-mix(in oklab,var(--ak-color-accent) 16%,transparent)}
 [data-ak-3d-state="frozen"] .ak-sc-tools,[data-ak-3d-state="frozen"] .ak-sc-tip{display:none}

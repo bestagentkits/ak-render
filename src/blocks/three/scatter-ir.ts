@@ -15,9 +15,15 @@ import type { PropSchema } from '../../registry/prop-schema.js';
 import { TONES } from './scene-ir.js';
 
 export const MAX_POINTS = 20000;
-export const MAX_GROUPS = 12;
-/** Categorical tones in legend order, when a group names none. */
-export const GROUP_TONES = ['accent', 'info', 'success', 'danger', 'warning', 'neutral'] as const;
+export const MAX_GROUPS = 10;
+/** Default group tones. `warning` is left out because several themes share it with `accent`. */
+export const GROUP_TONES = ['accent', 'info', 'success', 'danger', 'neutral'] as const;
+
+/** Default tone of the i-th group: the five base tones, then a deeper shade of each. */
+export function groupTone(i: number): string {
+  const base = GROUP_TONES[i % GROUP_TONES.length] ?? 'accent';
+  return i < GROUP_TONES.length ? base : `${base}-deep`;
+}
 /** Sequential color buckets of the `value` column, shared by the poster, legend and runtime. */
 export const COLOR_STEPS = 8;
 export const SIZE_RANGE: readonly [number, number] = [0.6, 1.8];
@@ -223,7 +229,7 @@ export function scatterLayout(node: IrNode): ScatterLayout {
   const groups: ScatterGroup[] = declared.map((g, i) => ({
     value: String(g.value),
     label: typeof g.label === 'string' ? g.label : String(g.value),
-    tone: typeof g.tone === 'string' ? g.tone : (GROUP_TONES[i % GROUP_TONES.length] ?? 'accent'),
+    tone: typeof g.tone === 'string' ? g.tone : groupTone(i),
   }));
   let group: number[] | null = null;
   if (rawGroups) {
@@ -233,7 +239,7 @@ export function scatterLayout(node: IrNode): ScatterLayout {
       if (at === undefined) {
         at = groups.length;
         index.set(v, at);
-        groups.push({ value: v, label: v, tone: GROUP_TONES[at % GROUP_TONES.length] ?? 'accent' });
+        groups.push({ value: v, label: v, tone: groupTone(at) });
       }
       return at;
     });

@@ -8514,7 +8514,7 @@
               "value"
             ]
           },
-          "maxItems": 12
+          "maxItems": 10
         },
         "bind": {
           "type": "string",

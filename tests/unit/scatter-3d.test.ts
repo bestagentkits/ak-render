@@ -1,6 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { axisScale, niceStep, niceTicks, unit } from '../../src/blocks/three/scatter-ir.js';
+import {
+  axisScale,
+  groupTone,
+  MAX_GROUPS,
+  niceStep,
+  niceTicks,
+  unit,
+} from '../../src/blocks/three/scatter-ir.js';
+import { rampColor } from '../../src/blocks/three/scatter-styles.js';
 import { compile } from '../../src/render/render.js';
 import { normalizeSpec } from '../../src/spec/normalize.js';
 
@@ -62,6 +70,20 @@ describe('scatter-3d scales', () => {
   });
 });
 
+describe('scatter-3d colour', () => {
+  it('gives every default group its own colour and keeps warning out of the defaults', () => {
+    const tones = Array.from({ length: MAX_GROUPS }, (_, i) => groupTone(i));
+    expect(new Set(tones).size).toBe(MAX_GROUPS);
+    expect(tones.some((t) => t.startsWith('warning'))).toBe(false);
+  });
+
+  it('ramps from info through accent to danger, never through warning', () => {
+    expect(rampColor(0)).toContain('--ak-color-info');
+    expect(rampColor(7)).toContain('--ak-color-danger');
+    expect(Array.from({ length: 8 }, (_, i) => rampColor(i)).join()).not.toContain('warning');
+  });
+});
+
 describe('scatter-3d contract', () => {
   it('accepts both fixtures and compiles byte-identically', () => {
     for (const name of ['scatter-3d-basic', 'scatter-3d-20k']) {
@@ -89,7 +111,7 @@ describe('scatter-3d contract', () => {
       '100',
     ]);
     expect(scene.clipped.length).toBeGreaterThan(0);
-    expect(html.match(/<td>Clipped<\/td>/gu)).toHaveLength(scene.clipped.length);
+    expect(html.match(/class="ak-sc-clip"/gu)).toHaveLength(scene.clipped.length);
     expect(html.match(/<circle /gu)).toHaveLength(20000 - scene.clipped.length);
     expect(html).toContain(`${(20000 - scene.clipped.length).toLocaleString('en-US')} of 20,000`);
   });

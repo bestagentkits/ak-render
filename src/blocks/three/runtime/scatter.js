@@ -112,17 +112,21 @@ export function mountScatter(el, kit) {
   const clipped = new Set(config.clipped || []);
   const groupOf = config.groups ? config.colors || [] : null;
 
-  // Colors from the theme: group tones, or the sequential ramp info -> accent -> warning.
+  // Colors from the theme: group tones, or the sequential ramp info -> accent -> danger.
   const dark = kit.isDark(el);
   const background = kit.cssColor(el, '--ak-color-background', '#ffffff');
   const ink = kit.cssColor(el, '--ak-color-text', '#222222');
   let palette;
   if (Array.isArray(config.palette))
-    palette = config.palette.map((tone) => kit.toneColor(el, tone));
+    palette = config.palette.map((tone) =>
+      tone.endsWith('-deep')
+        ? kit.toneColor(el, tone.slice(0, -5)).lerp(ink, 0.45)
+        : kit.toneColor(el, tone),
+    );
   else if (config.palette === 'sequential') {
     const low = kit.toneColor(el, 'info');
     const mid = kit.toneColor(el, 'accent');
-    const high = kit.toneColor(el, 'warning');
+    const high = kit.toneColor(el, 'danger');
     palette = Array.from({ length: 8 }, (_, i) => {
       const t = i / 7;
       return t <= 0.5 ? low.clone().lerp(mid, t / 0.5) : mid.clone().lerp(high, (t - 0.5) / 0.5);
@@ -238,6 +242,9 @@ export function mountScatter(el, kit) {
     // The vertical axis is titled at its top; the floor axes beside their middle.
     labels.push({ axis, at: axis === 'y' ? 1.2 : 0, span: title, title: axis !== 'y' });
   }
+  const titlesFirst = [...labels].sort(
+    (a, b) => Number(b.span.className === 't') - Number(a.span.className === 't'),
+  );
   const tip = document.createElement('div');
   tip.className = 'ak-sc-tip';
   tip.hidden = true;
@@ -290,7 +297,11 @@ export function mountScatter(el, kit) {
           'en-US',
         )} visible points brushed. Press Escape or click an empty spot to clear.`;
       } else if (filter) {
-        status.textContent = `${shown.toLocaleString('en-US')} points in "${filter}" shown; ${initialStatus}`;
+        const label =
+          groupButtons
+            .find((button) => button.getAttribute('data-ak-sc-group') === filter)
+            ?.childNodes[1]?.textContent?.trim() || filter;
+        status.textContent = `${shown.toLocaleString('en-US')} ${label} points shown of ${(count - clipped.size).toLocaleString('en-US')} plotted.`;
       } else status.textContent = initialStatus;
     }
     for (const button of groupButtons) {
@@ -633,11 +644,27 @@ export function mountScatter(el, kit) {
       y: (t, k) => v.set(sx * (1 + 0.12 * k), t, -sz * (1 + 0.12 * k)),
       z: (t, k) => v.set(sx * (1 + 0.12 * k), -sy * (1 + 0.12 * k), t),
     };
-    for (const label of labels) {
-      edge[label.axis](label.at, label.title ? 2.6 : 1).project(camera);
-      const hidden = v.z > 1;
+    // Titles claim space first, then ticks in order; a label that would overlap one already placed is hidden.
+    const placed = [];
+    for (const label of titlesFirst) {
+      edge[label.axis](label.at, label.title ? 2.2 : 1).project(camera);
+      const x = ((v.x + 1) / 2) * width;
+      const y = ((1 - v.y) / 2) * height;
+      label.w = label.w || label.span.offsetWidth;
+      label.h = label.h || label.span.offsetHeight;
+      const box = {
+        x0: x - label.w / 2 - 2,
+        x1: x + label.w / 2 + 2,
+        y0: y - label.h / 2,
+        y1: y + label.h / 2,
+      };
+      const clash = placed.some(
+        (b) => box.x0 < b.x1 && box.x1 > b.x0 && box.y0 < b.y1 && box.y1 > b.y0,
+      );
+      const hidden = v.z > 1 || clash;
+      if (!hidden) placed.push(box);
       label.span.style.visibility = hidden ? 'hidden' : '';
-      label.span.style.transform = `translate(${((v.x + 1) / 2) * width}px, ${((1 - v.y) / 2) * height}px) translate(-50%, -50%)`;
+      label.span.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
     }
   }
 

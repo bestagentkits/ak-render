@@ -53,9 +53,9 @@ export const SCATTER_PROPS = {
 };
 
 /** The orbit camera the runtime starts from and the poster projects through. */
-export const SCATTER_CAMERA = { theta: 0.72, phi: 1.2, radius: 6.5, fov: 30 } as const;
+export const SCATTER_CAMERA = { theta: 0.72, phi: 1.2, radius: 5.8, fov: 30 } as const;
 /** Aimed a little below the cube's centre, so the tick labels under the floor stay in frame. */
-export const SCATTER_TARGET: Vec3 = [0, -0.2, 0];
+export const SCATTER_TARGET: Vec3 = [0, -0.32, 0];
 
 export function cameraPosition(): Vec3 {
   const { theta, phi, radius } = SCATTER_CAMERA;
@@ -232,7 +232,7 @@ function posterLabels(layout: ScatterLayout, at: ReturnType<typeof projector>): 
       );
     }
     const [x, y, z] = axis === 'y' ? EDGE.y(1.2) : EDGE[axis](0);
-    const k = axis === 'y' ? 1 : 2.6;
+    const k = axis === 'y' ? 1 : 2.2;
     const p = at([x + ox * k, y + oy * k, z + oz * k]);
     out.push(
       `<text class="t" x="${r1(p.x)}" y="${r1(p.y + 4)}">${escapeText(axisTitle(scale))}</text>`,
@@ -340,19 +340,19 @@ function table(layout: ScatterLayout, selected: string): string {
   if (layout.size && layout.sizeScale) head.push(axisTitle(layout.sizeScale));
   if (layout.value && layout.colorScale) head.push(axisTitle(layout.colorScale));
   if (layout.group) head.push('Group');
-  if (layout.clippedCount > 0) head.push('Note');
   const rows: string[] = [];
   for (let i = 0; i < layout.count; i += 1) {
     const id = layout.ids[i] ?? '';
     const cells = [
-      `<th scope="row">${escapeText(id)}</th>`,
+      `<th scope="row">${escapeText(id)}${
+        layout.clipped[i] ? ' <small class="ak-sc-clip">clipped</small>' : ''
+      }</th>`,
       `<td>${layout.x[i]}</td><td>${layout.y[i]}</td><td>${layout.z[i]}</td>`,
     ];
     if (layout.size && layout.sizeScale) cells.push(`<td>${layout.size[i]}</td>`);
     if (layout.value && layout.colorScale) cells.push(`<td>${layout.value[i]}</td>`);
     if (layout.group)
       cells.push(`<td>${escapeText(layout.groups[layout.group[i] ?? 0]?.label ?? '')}</td>`);
-    if (layout.clippedCount > 0) cells.push(`<td>${layout.clipped[i] ? 'Clipped' : ''}</td>`);
     const mark = id === selected ? ' aria-selected="true"' : '';
     rows.push(`<tr data-ak-sc-point="${escapeAttribute(id)}"${mark}>${cells.join('')}</tr>`);
   }

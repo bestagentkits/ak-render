@@ -122,16 +122,23 @@ describe('bounds', () => {
     expect(error?.code).toBe('SPEC_BOUNDS_ERROR');
   });
 
-  it('lets a flat scalar column reach the column limit, and no further', () => {
+  it('lets a block data column reach the column limit, and no other list', () => {
+    const column = (values: unknown[]) => ({
+      blocks: [{ type: 'scatter-3d', data: { x: values } }],
+    });
     const ok = bag();
-    checkBounds({ x: new Array(LIMITS.maxColumnValues).fill(1) }, ok);
+    checkBounds(column(new Array(LIMITS.maxColumnValues).fill(1)), ok);
     expect(ok.errors()).toEqual([]);
     const over = bag();
-    checkBounds({ x: new Array(LIMITS.maxColumnValues + 1).fill('a') }, over);
+    checkBounds(column(new Array(LIMITS.maxColumnValues + 1).fill('a')), over);
     expect(over.errors()[0]?.message).toContain(`limit is ${LIMITS.maxColumnValues}`);
     const mixed = bag();
-    checkBounds({ x: [...new Array(LIMITS.maxListItems).fill(1), {}] }, mixed);
+    checkBounds(column([...new Array(LIMITS.maxListItems).fill(1), {}]), mixed);
     expect(mixed.errors()[0]?.message).toContain(`limit is ${LIMITS.maxListItems}`);
+    const row = bag();
+    const cells = new Array(LIMITS.maxListItems + 1).fill('cell');
+    checkBounds({ blocks: [{ type: 'table', rows: [cells] }] }, row);
+    expect(row.errors()[0]?.message).toContain(`limit is ${LIMITS.maxListItems}`);
   });
 
   it('rejects a document larger than the serialized byte limit', () => {
