@@ -93,6 +93,8 @@ describe('bars-3d layout math', () => {
     expect(niceTicks([-52, 38])).toEqual([-60, -40, -20, 0, 20, 40]);
     expect(niceTicks([0, 1])).toEqual([0, 0.2, 0.4, 0.6, 0.8, 1]);
     expect(niceTicks([0, 0])).toEqual([0]);
+    // A step just under the raw one keeps the axis close to the data.
+    expect(niceTicks([-10.9, 14.4])).toEqual([-15, -10, -5, 0, 5, 10, 15]);
   });
 });
 

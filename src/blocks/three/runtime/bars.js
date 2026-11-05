@@ -47,7 +47,8 @@ function resolvedColor(css, probe) {
   probe.fillStyle = '#000';
   probe.fillStyle = css;
   probe.fillRect(0, 0, 1, 1);
-  const [r, g, b] = probe.getImageData(0, 0, 1, 1).data;
+  const [r, g, b, a] = probe.getImageData(0, 0, 1, 1).data;
+  if (!a) return null;
   return new Color().setRGB(r / 255, g / 255, b / 255, 'srgb');
 }
 
@@ -57,7 +58,7 @@ const ease = (k) => 1 - (1 - k) ** 3;
  * Frame the box from the camera's current direction for one aspect: search the distance at
  * which its projection fills the stage, then slide the target so it sits centred.
  */
-function fitBox(camera, target, corners, aspect) {
+function fitBox(camera, target, corners, aspect, pad) {
   const probe = camera.clone();
   probe.aspect = aspect;
   probe.updateProjectionMatrix();
@@ -85,7 +86,7 @@ function fitBox(camera, target, corners, aspect) {
     for (let i = 0; i < 32; i += 1) {
       const mid = (lo + hi) / 2;
       const [x0, y0, x1, y1] = bounds(mid);
-      if ((x1 - x0) / 2 > FILL_X || (y1 - y0) / 2 > FILL_Y) lo = mid;
+      if ((x1 - x0) / 2 > FILL_X - pad || (y1 - y0) / 2 > FILL_Y) lo = mid;
       else hi = mid;
     }
     distance = hi;
@@ -94,7 +95,7 @@ function fitBox(camera, target, corners, aspect) {
     const right = new Vector3().setFromMatrixColumn(probe.matrixWorld, 0);
     const up = new Vector3().setFromMatrixColumn(probe.matrixWorld, 1);
     const halfH = Math.tan((probe.fov * Math.PI) / 360) * distance;
-    aim.addScaledVector(right, ((x0 + x1) / 2) * halfH * aspect);
+    aim.addScaledVector(right, ((x0 + x1) / 2 - pad) * halfH * aspect);
     aim.addScaledVector(up, ((y0 + y1) / 2) * halfH);
   }
   const position = aim.clone().addScaledVector(dir, distance);
@@ -196,17 +197,19 @@ export function barsWidget(ctx) {
       corners.push(new Vector3(x, y, z));
   const projected = new Vector3();
   let measured = false;
+  function measure() {
+    if (measured || !stage.clientWidth) return;
+    for (const label of labels) {
+      label.w = label.node.offsetWidth;
+      label.h = label.node.offsetHeight;
+    }
+    measured = true;
+  }
   function placeLabels() {
     const width = stage.clientWidth;
     const height = stage.clientHeight;
     if (!width || !height) return;
-    if (!measured) {
-      for (const label of labels) {
-        label.w = label.node.offsetWidth;
-        label.h = label.node.offsetHeight;
-      }
-      measured = true;
-    }
+    measure();
     // Each group keeps every nth label, with the smallest n at which none crowds another.
     const kept = [];
     const overlaps = (rect, other) =>
@@ -236,16 +239,23 @@ export function barsWidget(ctx) {
           projected.z < 1 && rect[0] >= 0 && rect[1] >= 0 && rect[2] <= width && rect[3] <= height;
         return { label, rect, inside };
       });
+      // Only labels on stage and clear of earlier groups compete; ticks stride from zero.
+      const open = placed.filter(
+        (item) => item.inside && kept.every((other) => !overlaps(item.rect, other)),
+      );
+      const anchor = Math.max(
+        0,
+        open.findIndex((item) => item.label.kind === 'zero'),
+      );
       let chosen = [];
-      for (let stride = 1; stride <= placed.length; stride += 1) {
-        chosen = placed.filter((item, i) => i % stride === 0 && item.inside);
-        const clear = chosen.every(
-          (item, a) =>
-            kept.every((other) => !overlaps(item.rect, other)) &&
+      for (let stride = 1; stride <= open.length; stride += 1) {
+        chosen = open.filter((_, i) => (((i - anchor) % stride) + stride) % stride === 0);
+        if (
+          chosen.every((item, a) =>
             chosen.every((other, b) => a === b || !overlaps(item.rect, other.rect)),
-        );
-        if (clear) break;
-        chosen = [];
+          )
+        )
+          break;
       }
       for (const item of placed) {
         const show = chosen.includes(item);
@@ -405,7 +415,15 @@ export function barsWidget(ctx) {
     annotate,
     /** Camera position and target that frame the chart at this stage aspect. */
     frame(aspect) {
-      return fitBox(camera, ctx.target, corners, aspect);
+      // Room on the left for the widest tick label, as a share of the stage's half-width.
+      const width = stage.clientWidth;
+      measure();
+      const widest = Math.max(
+        0,
+        ...labels.filter((l) => l.kind !== 'cat' && l.kind !== 'row').map((l) => l.w),
+      );
+      const pad = width ? Math.min(0.3, (widest + 12) / width) : 0;
+      return fitBox(camera, ctx.target, corners, aspect, pad);
     },
     sync() {
       if (bars.filterBind) applyFilter(ctx.api.readPath(bars.filterBind));

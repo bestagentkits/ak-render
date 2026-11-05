@@ -56,7 +56,10 @@ export function niceTicks(domain: Extent, count = 5): number[] {
   if (span <= 0) return [0];
   const raw = span / count;
   const power = 10 ** Math.floor(Math.log10(raw));
-  const step = [1, 2, 2.5, 5, 10].map((m) => m * power).find((s) => s >= raw) ?? 10 * power;
+  // A step a little under the raw one hugs the data better, as long as the ticks stay few.
+  const steps = [1, 2, 2.5, 5, 10, 20].map((m) => m * power).filter((s) => s >= raw * 0.9);
+  const fits = (s: number) => Math.ceil(hi / s - 1e-9) - Math.floor(lo / s + 1e-9) <= count + 2;
+  const step = steps.find(fits) ?? steps[steps.length - 1] ?? raw;
   const ticks: number[] = [];
   const first = Math.floor(lo / step + 1e-9);
   const last = Math.ceil(hi / step - 1e-9);
