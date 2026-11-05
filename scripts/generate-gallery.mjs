@@ -283,6 +283,14 @@ const THREE_D_SHOWCASE = {
     'Five hundred sites',
     'Five hundred observation sites and two hundred links, clustered into counts until you zoom in.',
   ],
+  'morph-3d-shapes': [
+    'Morphing form',
+    'One glossy surface springs from a sphere to a rounded cube to a twelve-point star, or to the shape you pick.',
+  ],
+  'morph-3d-rings': [
+    'Ring to knot',
+    'A ring ties itself into a trefoil knot, then twists into a square band, all on one wrapped surface.',
+  ],
   'network-3d-stress': [
     'A thousand-node graph',
     'A large force-laid graph that shows the network widget holding up at scale.',

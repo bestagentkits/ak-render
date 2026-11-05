@@ -509,6 +509,9 @@
         },
         {
           "$ref": "#/$defs/block-globe-3d"
+        },
+        {
+          "$ref": "#/$defs/block-morph-3d"
         }
       ]
     },
@@ -9877,6 +9880,130 @@
         }
       },
       "description": "Globe 3D: lat/lon markers, arcs, layers, clustering, time filter; pick flies the camera."
+    },
+    "block-morph-3d": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "summary",
+        "targets"
+      ],
+      "properties": {
+        "type": {
+          "const": "morph-3d"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 600,
+          "description": "What the morph shows, in words; the caption and the text alternative."
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 2000,
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "shape": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "sphere",
+                  "cube",
+                  "capsule",
+                  "cylinder",
+                  "cone",
+                  "gem",
+                  "blob",
+                  "star",
+                  "torus",
+                  "knot",
+                  "twist"
+                ]
+              },
+              "tone": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "accent",
+                  "neutral",
+                  "success",
+                  "warning",
+                  "danger",
+                  "info"
+                ]
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 200
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "shape"
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 6
+        },
+        "easing": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "smooth",
+            "spring",
+            "snap",
+            "linear"
+          ]
+        },
+        "duration": {
+          "type": "integer",
+          "minimum": 200,
+          "maximum": 6000
+        },
+        "timeline": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "loop",
+            "once",
+            "manual"
+          ]
+        },
+        "bind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "on": {
+          "description": "Bindings fired with `{ value }` (the target id) when the reader chooses a target.",
+          "$ref": "#/$defs/actionMap"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
+        }
+      },
+      "description": "Morph: shape targets, easing, timeline, state."
     }
   }
 }

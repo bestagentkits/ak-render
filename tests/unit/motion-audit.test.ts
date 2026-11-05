@@ -521,7 +521,8 @@ describe('compiled HTML audit: clean baseline', () => {
         expect(finding.severity, `${file} ${finding.rule}`).toBe('info');
       }
     }
-  });
+    // Every gallery page inlines the 3D runtime or more; a loaded CI host needs the room.
+  }, 30_000);
 });
 
 describe('compiled HTML audit: provenance', () => {
