@@ -247,6 +247,14 @@ const THREE_D_SHOWCASE = {
     'Weekly margin by region',
     'A dense field of bars by region and week, with the full table beside it.',
   ],
+  'particles-3d-galaxy': [
+    'Particle galaxy',
+    'Nine thousand seeded stars wind into spiral arms; the same seed always draws the same sky.',
+  ],
+  'particles-3d-presets': [
+    'Particle presets',
+    'Nebula, fountain, snow, fireflies, vortex and a custom mix, each from a seed and a few typed fields.',
+  ],
   'network-3d-stress': [
     'A thousand-node graph',
     'A large force-laid graph that shows the network widget holding up at scale.',
@@ -370,7 +378,7 @@ const indexSpec = {
       blocks: [
         {
           type: 'text',
-          text: 'Scenes, networks, models, scatter clouds and bar fields rendered with WebGL from a Page Spec. Each one keeps a readable summary for print, screenshots and no-JS readers.',
+          text: 'Scenes, networks, models, scatter clouds, bar fields and particle effects rendered with WebGL from a Page Spec. Each one keeps a readable summary for print, screenshots and no-JS readers.',
         },
         { type: 'grid', columns: 3, blocks: threeEntries.map(threeCard) },
       ],

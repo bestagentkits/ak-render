@@ -25,6 +25,16 @@ describe('export3dPosterSvg', () => {
     expect(svg).toContain('@media (prefers-color-scheme:dark){svg{');
   });
 
+  it('carries a particle poster its own night sky in both schemes', () => {
+    const svg = export3dPosterSvg(fixture('particles-3d-galaxy'), { scheme: 'auto' });
+    expect(svg).toContain('class="ak-3d-poster ak-pt-poster"');
+    expect(svg).toContain('.ak-pt-poster{background:');
+    expect(svg.match(/--ak-pt-night:/gu)?.length).toBeGreaterThanOrEqual(2);
+    expect(svg).toContain('--ak-pt-ink:var(--ak-color-text)');
+    // Other widgets' exports stay free of the particle rules.
+    expect(export3dPosterSvg(fixture('network-3d-basic'))).not.toContain('--ak-pt-night');
+  });
+
   it('draws a box as shaded faces', () => {
     const svg = export3dPosterSvg(fixture('scene-3d-basic'));
     expect(svg).toContain('class="ak-3d-face"');
