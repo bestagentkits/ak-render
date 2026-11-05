@@ -15,7 +15,8 @@ import type { PropSchema } from '../../registry/prop-schema.js';
 import { TONES } from './scene-ir.js';
 
 export const MAX_POINTS = 20000;
-export const MAX_GROUPS = 10;
+/** Five base tones plus deep accent, info, success and danger: every pair stays distinct in both schemes. */
+export const MAX_GROUPS = 9;
 /** Default group tones. `warning` is left out because several themes share it with `accent`. */
 export const GROUP_TONES = ['accent', 'info', 'success', 'danger', 'neutral'] as const;
 

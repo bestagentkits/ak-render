@@ -166,6 +166,45 @@ test.describe('scatter-3d', () => {
       });
     }
 
+  for (const name of ['scatter-3d-basic', 'scatter-3d-20k'])
+    for (const width of [375, 768, 1440]) {
+      test(`${name} poster labels fit without overlap at ${width}px with no JavaScript`, async ({
+        browser,
+      }) => {
+        const context = await browser.newContext({
+          javaScriptEnabled: false,
+          viewport: { width, height: 900 },
+        });
+        const page = await context.newPage();
+        await page.goto(pageUrl(name));
+        const result = await page.locator('svg.ak-sc-poster').evaluate((svg) => {
+          const frame = svg.getBoundingClientRect();
+          const scale = frame.width / 640;
+          const boxes = [...svg.querySelectorAll('text')].map((t) => t.getBoundingClientRect());
+          let clashes = 0;
+          for (let i = 0; i < boxes.length; i += 1)
+            for (let j = i + 1; j < boxes.length; j += 1) {
+              const a = boxes[i] as DOMRect;
+              const b = boxes[j] as DOMRect;
+              if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top)
+                clashes += 1;
+            }
+          const top = frame.top + (frame.height - 360 * scale) / 2;
+          const inset = 3.5 * scale;
+          const outside = boxes.filter(
+            (r) =>
+              r.left < frame.left + inset ||
+              r.right > frame.right - inset ||
+              r.top < top + inset ||
+              r.bottom > top + 360 * scale - inset,
+          ).length;
+          return { clashes, outside, titles: svg.querySelectorAll('text.t').length };
+        });
+        expect(result).toEqual({ clashes: 0, outside: 0, titles: 3 });
+        await context.close();
+      });
+    }
+
   test('without JavaScript every value is in the table under the poster', async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();

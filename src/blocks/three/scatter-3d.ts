@@ -219,26 +219,55 @@ function posterGrid(layout: ScatterLayout, at: ReturnType<typeof projector>): st
   return out.join('');
 }
 
+type PosterLabel = { x: number; y: number; text: string; title: boolean };
+
+/** Same rule as the live overlay: titles are pulled inside the frame first, then ticks that
+ * would leave it or overlap a placed label are dropped. Widths are estimated from the font size. */
+function placeLabels(labels: PosterLabel[]): PosterLabel[] {
+  const inset = 4;
+  const placed: { x0: number; x1: number; y0: number; y1: number }[] = [];
+  const kept: PosterLabel[] = [];
+  for (const label of [...labels.filter((l) => l.title), ...labels.filter((l) => !l.title)]) {
+    const size = label.title ? 10 : 9;
+    const w = label.text.length * size * 0.6;
+    const h = size * 1.2;
+    let { x, y } = label;
+    const outside =
+      x - w / 2 < inset || x + w / 2 > 640 - inset || y - h / 2 < inset || y + h / 2 > 360 - inset;
+    if (label.title) {
+      x = Math.min(Math.max(x, w / 2 + inset), 640 - w / 2 - inset);
+      y = Math.min(Math.max(y, h / 2 + inset), 360 - h / 2 - inset);
+    } else if (outside) continue;
+    const box = { x0: x - w / 2 - 2, x1: x + w / 2 + 2, y0: y - h / 2, y1: y + h / 2 };
+    if (placed.some((b) => box.x0 < b.x1 && box.x1 > b.x0 && box.y0 < b.y1 && box.y1 > b.y0))
+      continue;
+    placed.push(box);
+    kept.push({ ...label, x, y });
+  }
+  return kept;
+}
+
 function posterLabels(layout: ScatterLayout, at: ReturnType<typeof projector>): string {
-  const out: string[] = [];
+  const labels: PosterLabel[] = [];
   for (const axis of AXES) {
     const scale = layout.scales[axis];
     const [ox, oy, oz] = OUTWARD[axis];
     for (const t of scale.ticks) {
       const [x, y, z] = EDGE[axis](cube(t, scale));
       const p = at([x + ox, y + oy, z + oz]);
-      out.push(
-        `<text x="${r1(p.x)}" y="${r1(p.y + 3)}">${escapeText(formatTick(t, scale))}</text>`,
-      );
+      labels.push({ x: p.x, y: p.y, text: formatTick(t, scale), title: false });
     }
     const [x, y, z] = axis === 'y' ? EDGE.y(1.2) : EDGE[axis](0);
     const k = axis === 'y' ? 1 : 2.2;
     const p = at([x + ox * k, y + oy * k, z + oz * k]);
-    out.push(
-      `<text class="t" x="${r1(p.x)}" y="${r1(p.y + 4)}">${escapeText(axisTitle(scale))}</text>`,
-    );
+    labels.push({ x: p.x, y: p.y, text: axisTitle(scale), title: true });
   }
-  return out.join('');
+  return placeLabels(labels)
+    .map(
+      (l) =>
+        `<text${l.title ? ' class="t"' : ''} x="${r1(l.x)}" y="${r1(l.y + (l.title ? 4 : 3))}">${escapeText(l.text)}</text>`,
+    )
+    .join('');
 }
 
 function dotClass(layout: ScatterLayout, i: number): string {
