@@ -92,7 +92,7 @@ function measure(line: string, font: OutlineFont): number {
 }
 
 /** A single line wider than this, in ems, breaks in two so it fills the stage instead of a thin strip. */
-export const BALANCE_WIDTH = 8;
+export const BALANCE_WIDTH = 5.5;
 
 /**
  * The compiler owns the line breaks of one long line: it breaks at the space

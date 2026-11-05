@@ -218,11 +218,11 @@ img.ak-3d-poster{object-fit:contain}
 .ak-tx-poster[data-material="metal"] .ak-tx-back{fill:color-mix(in oklab,var(--ak-tx-tone) 22%,#000)}
 .ak-tx-poster[data-material="metal"] .ak-tx-edge{stroke:color-mix(in oklab,var(--ak-tx-tone) 25%,#fff);stroke-opacity:0.8}
 .ak-tx-poster[data-material="chrome"] .ak-tx-s0{stop-color:#fbfcfe}
-.ak-tx-poster[data-material="chrome"] .ak-tx-s1{stop-color:color-mix(in oklab,var(--ak-tx-tone) 12%,#c3c7cf)}
-.ak-tx-poster[data-material="chrome"] .ak-tx-s2{stop-color:color-mix(in oklab,var(--ak-tx-tone) 12%,#30333b)}
-.ak-tx-poster[data-material="chrome"] .ak-tx-s3{stop-color:color-mix(in oklab,var(--ak-tx-tone) 12%,#8d929c)}
-.ak-tx-poster[data-material="chrome"] .ak-tx-side{fill:color-mix(in oklab,var(--ak-tx-tone) 22%,#22252c)}
-.ak-tx-poster[data-material="chrome"] .ak-tx-back{fill:color-mix(in oklab,var(--ak-tx-tone) 12%,#0c0d10)}
+.ak-tx-poster[data-material="chrome"] .ak-tx-s1{stop-color:color-mix(in oklab,var(--ak-tx-tone) 4%,#d4d7dd)}
+.ak-tx-poster[data-material="chrome"] .ak-tx-s2{stop-color:color-mix(in oklab,var(--ak-tx-tone) 4%,#5a5f68)}
+.ak-tx-poster[data-material="chrome"] .ak-tx-s3{stop-color:color-mix(in oklab,var(--ak-tx-tone) 4%,#b4b8c0)}
+.ak-tx-poster[data-material="chrome"] .ak-tx-side{fill:color-mix(in oklab,var(--ak-tx-tone) 4%,#5a5f68)}
+.ak-tx-poster[data-material="chrome"] .ak-tx-back{fill:color-mix(in oklab,var(--ak-tx-tone) 4%,#2a2d33)}
 .ak-tx-poster[data-material="chrome"] .ak-tx-edge{stroke:#ffffff;stroke-opacity:0.9}
 .ak-tx-poster[data-material="glass"] .ak-tx-s0{stop-color:color-mix(in oklab,var(--ak-tx-tone) 70%,#fff)}
 .ak-tx-poster[data-material="glass"] .ak-tx-s1{stop-color:color-mix(in oklab,var(--ak-tx-tone) 85%,#fff)}

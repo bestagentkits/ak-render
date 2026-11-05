@@ -52,9 +52,9 @@ const FINISHES: Record<
     edgeOpacity: 0.8,
   },
   chrome: {
-    stops: ['#fbfcfe', mix(T, 12, '#c3c7cf'), mix(T, 12, '#30333b'), mix(T, 12, '#8d929c')],
-    side: mix(T, 22, '#22252c'),
-    back: mix(T, 12, '#0c0d10'),
+    stops: ['#fbfcfe', mix(T, 4, '#d4d7dd'), mix(T, 4, '#5a5f68'), mix(T, 4, '#b4b8c0')],
+    side: mix(T, 4, '#5a5f68'),
+    back: mix(T, 4, '#2a2d33'),
     edge: '#ffffff',
     edgeOpacity: 0.9,
   },
