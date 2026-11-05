@@ -90,6 +90,10 @@ describe('point cloud text', () => {
     expect(parsePointCloudText('x y\n1 2')).toMatchObject({
       error: 'the header has no "z" column',
     });
+    // An empty cell or a non-decimal value is an error, never a silent zero.
+    expect(parsePointCloudText('x,y,z,intensity\n1,2,3,\n')).toMatchObject({ line: 2 });
+    expect(parsePointCloudText(',1,2,3')).toMatchObject({ line: 1 });
+    expect(parsePointCloudText('1 2 3 0x10')).toMatchObject({ line: 1 });
     expect(parsePointCloudText('# only a comment\n')).toMatchObject({
       error: 'the file has no points',
     });

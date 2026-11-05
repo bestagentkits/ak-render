@@ -18,7 +18,7 @@
  * Worker or the browser runtime.
  */
 
-import { closeSync, fstatSync, openSync, readSync, realpathSync } from 'node:fs';
+import { closeSync, fstatSync, openSync, readSync, realpathSync, statSync } from 'node:fs';
 import { extname, isAbsolute, resolve } from 'node:path';
 import type { Diagnostic } from '../diagnostics.js';
 import { isRemote } from '../spec/network-policy.js';
@@ -68,6 +68,9 @@ const COLUMN_NAMES: Readonly<Record<string, keyof PointCloudColumns>> = {
   intensity: 'intensity',
   i: 'intensity',
 };
+
+/** A plain decimal number: no hex, no empty cell, no `Infinity`. */
+const DECIMAL = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/u;
 
 const count = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/gu, ',');
 
@@ -170,6 +173,20 @@ function readPointCloud(
       'copy the file into the spec directory instead of linking to it',
     );
 
+  try {
+    if (!statSync(real).isFile())
+      return fail(
+        'SPEC_VALIDATION_ERROR',
+        `point cloud path "${reference}" is not a file`,
+        'point at a file, not a directory',
+      );
+  } catch {
+    return fail(
+      'SPEC_VALIDATION_ERROR',
+      `point cloud file "${reference}" could not be read`,
+      'check the file exists and is readable',
+    );
+  }
   const cap = limits.perFileBytes;
   let data: Buffer;
   let fd: number | undefined;
@@ -257,8 +274,14 @@ export function parsePointCloudText(text: string): ParseResult {
     const line = (lines[n] ?? '').trim();
     if (line === '' || line.startsWith('#') || line.startsWith('//')) continue;
     const cells = split(line);
+    if (cells.includes(''))
+      return {
+        error: `line ${n + 1} has an empty value`,
+        fix: 'give every point a value in every column, with no leading or trailing separator',
+        line: n + 1,
+      };
     if (slots === null) {
-      const numeric = cells.every((cell) => cell !== '' && Number.isFinite(Number(cell)));
+      const numeric = cells.every((cell) => DECIMAL.test(cell));
       if (!numeric) {
         slots = cells.map(
           (cell) => COLUMN_NAMES[cell.toLowerCase().replace(/^"|"$/gu, '')] ?? null,
@@ -309,7 +332,7 @@ export function parsePointCloudText(text: string): ParseResult {
       const slot = slots[i];
       if (!slot) continue;
       const value = Number(cells[i]);
-      if (!Number.isFinite(value) || Math.abs(value) > MAX_ABS)
+      if (!DECIMAL.test(cells[i] ?? '') || !Number.isFinite(value) || Math.abs(value) > MAX_ABS)
         return {
           error: `line ${n + 1} has "${cells[i]}" for ${slot}, which is not a finite number within ±1e12`,
           fix: 'remove or repair the row',

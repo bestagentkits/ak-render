@@ -84,6 +84,9 @@ test.describe('point-cloud-3d', { tag: '@gl' }, () => {
     await page.locator('.ak-3d-canvas').focus();
     await page.keyboard.press('n');
     await expect(selectedId(page)).not.toHaveText(picked);
+    const stepped = (await selectedId(page).textContent()) ?? '';
+    await page.keyboard.press('Shift+N');
+    await expect(selectedId(page)).not.toHaveText(stepped);
 
     const cut = page.locator('.ak-pc-tools input[type="range"]');
     await cut.evaluate((input: HTMLInputElement) => {
@@ -98,6 +101,9 @@ test.describe('point-cloud-3d', { tag: '@gl' }, () => {
   test('unmounting frees the scene and restores the static status', async ({ page }) => {
     await page.goto(pageUrl('point-cloud-3d-basic'));
     await ready(page);
+    await page.locator('.ak-3d-canvas').focus();
+    await page.keyboard.press('n');
+    await expect(selectedId(page)).not.toHaveText('p420');
     const after = await page.evaluate(() => {
       const api = (
         window as unknown as { akRender3d: { unmountAll(): void; stats(): { mounts: number } } }
@@ -111,6 +117,9 @@ test.describe('point-cloud-3d', { tag: '@gl' }, () => {
       '900 points; 114 outside the clip box are hidden.',
     );
     await expect(page.locator('.ak-pc-tools')).toHaveCount(0);
+    // The compiled selection comes back with the static page.
+    await expect(selectedId(page)).toHaveText('p420');
+    await expect(page.locator('.ak-pc-table tr[aria-selected="true"]')).toHaveCount(1);
   });
 
   test('without JavaScript the sample, statistics and table read in print', async ({ browser }) => {

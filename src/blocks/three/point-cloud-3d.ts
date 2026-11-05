@@ -83,13 +83,37 @@ export function halfExtents(layout: CloudLayout): Vec3 {
 }
 
 /** The orbit camera, framed on the box's bounding sphere so a flat survey fills the stage. */
+/** Share of the stage width and height the box's corners may fill at home; the rest holds labels and tools. */
+export const FIT: readonly [number, number] = [0.8, 0.66];
+const THETA = 0.68;
+const PHI = 1.08;
+
+/** The home orbit camera: the nearest radius whose view holds every box corner inside `FIT`. */
 export function cloudCamera(half: Vec3): { orbit: OrbitCamera; target: Vec3 } {
-  const sphere = Math.hypot(...half);
-  const radius = r4((sphere / Math.tan((FOV * Math.PI) / 360)) * 0.9);
-  return {
-    orbit: { theta: 0.68, phi: 1.08, radius, fov: FOV },
-    target: [0, r4(-0.1 * sphere), 0],
+  const target: Vec3 = [0, r4(-0.06 * Math.hypot(...half)), 0];
+  const corners: Vec3[] = [];
+  for (const x of [-1, 1])
+    for (const y of [-1, 1])
+      for (const z of [-1, 1]) corners.push([x * half[0], y * half[1], z * half[2]]);
+  const fits = (radius: number) => {
+    const at = orbitProjector({ theta: THETA, phi: PHI, radius, fov: FOV }, target);
+    return corners.every((c) => {
+      const p = at(c);
+      return (
+        p.depth > 0 &&
+        Math.abs(p.x - POSTER_W / 2) <= (FIT[0] * POSTER_W) / 2 &&
+        Math.abs(p.y - POSTER_H / 2) <= (FIT[1] * POSTER_H) / 2
+      );
+    });
   };
+  let lo = 0.2;
+  let hi = 40;
+  for (let k = 0; k < 40; k += 1) {
+    const mid = (lo + hi) / 2;
+    if (fits(mid)) hi = mid;
+    else lo = mid;
+  }
+  return { orbit: { theta: THETA, phi: PHI, radius: r4(hi), fov: FOV }, target };
 }
 
 const worldOf = (layout: CloudLayout, i: number): Vec3 =>
@@ -151,7 +175,7 @@ export function pointCloudConfig(node: IrNode, layout: CloudLayout): Record<stri
       domain: color.scale.domain,
       title: axisTitle(color.scale),
     },
-    camera: { position: orbitPosition(orbit, target), target, fov: orbit.fov },
+    camera: { position: orbitPosition(orbit, target), target, fov: orbit.fov, fit: [...FIT] },
   };
   if (layout.intensity) config.intensity = layout.intensity;
   if (layout.ids) config.ids = layout.ids;
@@ -243,7 +267,7 @@ function posterLabels(layout: CloudLayout, half: Vec3, at: ReturnType<typeof orb
     const p = at(edgePoint(w, w === 1 ? half[1] + 0.14 : 0, half, w === 1 ? 1 : 2.9));
     labels.push({ x: p.x, y: p.y, text: axisTitle(scale), title: true });
   }
-  return placeLabels(labels)
+  return placeLabels(labels, 6)
     .map(
       (l) =>
         `<text${l.title ? ' class="t"' : ''} x="${r1(l.x)}" y="${r1(l.y + (l.title ? 4 : 3))}">${escapeText(l.text)}</text>`,

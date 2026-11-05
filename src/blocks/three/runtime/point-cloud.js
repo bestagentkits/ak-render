@@ -23,7 +23,6 @@ import {
   Vector3,
   WebGLRenderer,
 } from 'three';
-import { mixOklab } from './scatter.js';
 
 /** Most points a low quality profile draws; the status line says so when it applies. */
 const LOW_PROFILE_POINTS = 50000;
@@ -57,8 +56,8 @@ void main() {
   vec2 p = gl_PointCoord * 2.0 - 1.0;
   float r2 = dot(p, p);
   if (r2 > 1.0) discard;
-  vec3 c = vColor * (0.82 + 0.26 * (1.0 - r2));
-  c = mix(c, uBg, vFade * 0.5);
+  vec3 c = vColor * (0.96 + 0.06 * (1.0 - r2));
+  c = mix(c, uBg, vFade * 0.42);
   gl_FragColor = vec4(c, 1.0);
   #include <colorspace_fragment>
 }`;
@@ -87,6 +86,50 @@ void main() {
 }`;
 
 const fmt = (n) => n.toLocaleString('en-US');
+
+/** Linear sRGB to oklab, for mixing theme tones in oklch like the CSS legend does. */
+function toLab(c) {
+  const l = Math.cbrt(0.4122214708 * c.r + 0.5363325363 * c.g + 0.0514459929 * c.b);
+  const m = Math.cbrt(0.2119034982 * c.r + 0.6806995451 * c.g + 0.1073969566 * c.b);
+  const s = Math.cbrt(0.0883024619 * c.r + 0.2817188376 * c.g + 0.6299787005 * c.b);
+  return [
+    0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
+    1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+    0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s,
+  ];
+}
+
+/** Mix two colours in oklch along the shorter hue arc, as `color-mix(in oklch, ...)` does. */
+function mixOklch(a, b, t) {
+  const [la, aa, ba] = toLab(a);
+  const [lb, ab, bb] = toLab(b);
+  const ca = Math.hypot(aa, ba);
+  const cb = Math.hypot(ab, bb);
+  let ha = Math.atan2(ba, aa);
+  let hb = Math.atan2(bb, ab);
+  // An achromatic end takes the other end's hue, so the mix never swings through an arbitrary one.
+  if (ca < 1e-4) ha = hb;
+  if (cb < 1e-4) hb = ha;
+  let dh = hb - ha;
+  if (dh > Math.PI) dh -= 2 * Math.PI;
+  if (dh < -Math.PI) dh += 2 * Math.PI;
+  const L = la + (lb - la) * t;
+  const C = ca + (cb - ca) * t;
+  const H = ha + dh * t;
+  const A = C * Math.cos(H);
+  const B = C * Math.sin(H);
+  const l = (L + 0.3963377774 * A + 0.2158037573 * B) ** 3;
+  const m = (L - 0.1055613458 * A - 0.0638541728 * B) ** 3;
+  const s = (L - 0.0894841775 * A - 1.291485548 * B) ** 3;
+  const clamp = (v) => Math.min(1, Math.max(0, v));
+  return a
+    .clone()
+    .setRGB(
+      clamp(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s),
+      clamp(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s),
+      clamp(-0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s),
+    );
+}
 
 export function mountPointCloud(el, kit) {
   const api = kit.api();
@@ -164,7 +207,7 @@ export function mountPointCloud(el, kit) {
   const high = kit.toneColor(el, 'danger');
   const ramp = Array.from({ length: RAMP_STEPS }, (_, k) => {
     const t = k / (RAMP_STEPS - 1);
-    return t <= 0.5 ? mixOklab(low, mid, t / 0.5) : mixOklab(mid, high, (t - 0.5) / 0.5);
+    return t <= 0.5 ? mixOklch(low, mid, t / 0.5) : mixOklch(mid, high, (t - 0.5) / 0.5);
   });
   const [lo, hi] = config.color?.domain || [0, 1];
   const colorValue = (i) => (intensity ? intensity[i] : zUp ? zs[i] : ys[i]);
@@ -176,7 +219,8 @@ export function mountPointCloud(el, kit) {
   // The draw: every in-box point in level-of-detail order, the first `drawn` of them shown.
   const order = config.order || [];
   const limit = quality === 'low' ? LOW_PROFILE_POINTS : Number.POSITIVE_INFINITY;
-  const drawn = Math.min(order.length, config.budget || order.length, limit);
+  const budget = Math.min(order.length, config.budget || order.length);
+  const drawn = Math.min(budget, limit);
   const positions = new Float32Array(order.length * 3);
   const colors = new Float32Array(order.length * 3);
   const v = new Vector3();
@@ -199,7 +243,7 @@ export function mountPointCloud(el, kit) {
   geometry.setAttribute('aColor', new BufferAttribute(colors, 3));
   geometry.setDrawRange(0, drawn);
   // About one point spacing wide: a sparse cloud gets marks, a dense one reads as surfaces.
-  const base = MathUtils.clamp(3.2 / Math.sqrt(Math.max(drawn, 1)), 0.008, 0.08);
+  const base = MathUtils.clamp(4 / Math.sqrt(Math.max(drawn, 1)), 0.009, 0.09);
   const material = new ShaderMaterial({
     vertexShader: VERTEX,
     fragmentShader: FRAGMENT,
@@ -384,7 +428,7 @@ export function mountPointCloud(el, kit) {
     else
       parts.push(
         `Drawing an even ${fmt(drawn)} of the ${fmt(inBox)} points in the clip box (level of detail${
-          drawn === limit ? ' for this device' : ''
+          limit < budget ? ' for this device' : ''
         })`,
       );
     if (clippedCount > 0) parts.push(`${fmt(clippedCount)} outside the box are hidden`);
@@ -415,6 +459,8 @@ export function mountPointCloud(el, kit) {
   const table = el.querySelector('.ak-pc-table');
   const titles = ['x', 'y', 'z'].map((axis) => axes[axis]?.title || axis);
   if (intensity) titles.push(config.color?.title || 'Intensity');
+  const initialPick = pick?.innerHTML ?? '';
+  const initialRow = table?.querySelector('tr[aria-selected="true"]') || null;
   const valuesOf = (i) => [xs[i], ys[i], zs[i], ...(intensity ? [intensity[i]] : [])];
   let selected = -1;
   let selectedRow = null;
@@ -490,8 +536,8 @@ export function mountPointCloud(el, kit) {
     const width = stage.clientWidth;
     const height = stage.clientHeight;
     const radius = 10;
-    let best = -1;
-    let bestScore = Number.POSITIVE_INFINITY;
+    const near = [];
+    let closest = Number.POSITIVE_INFINITY;
     for (let k = 0; k < drawn; k += 1) {
       const y = positions[k * 3 + 1];
       if (y > cut) continue;
@@ -506,11 +552,18 @@ export function mountPointCloud(el, kit) {
         ((1 - (m[1] * positions[k * 3] + m[5] * y + m[9] * positions[k * 3 + 2] + m[13]) / w) / 2) *
         height;
       const d = Math.hypot(dx, sy - py);
-      // Nearer to the cursor wins; at equal distance the point in front.
-      const score = d + w * 0.05;
-      if (d <= radius && score < bestScore) {
-        best = order[k];
-        bestScore = score;
+      if (d > radius) continue;
+      near.push(k, d, w);
+      if (d < closest) closest = d;
+    }
+    // Of the points within 2 px of the closest one under the cursor, the front one wins:
+    // a click on a surface never selects a point hidden behind it.
+    let best = -1;
+    let front = Number.POSITIVE_INFINITY;
+    for (let n = 0; n < near.length; n += 3) {
+      if (near[n + 1] <= closest + 2 && near[n + 2] < front) {
+        front = near[n + 2];
+        best = order[near[n]];
       }
     }
     return best;
@@ -660,7 +713,7 @@ export function mountPointCloud(el, kit) {
     }
   }
   const onKey = (event) => {
-    const key = event.key;
+    const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
     if (key === 'ArrowLeft') spherical.theta -= 0.15;
     else if (key === 'ArrowRight') spherical.theta += 0.15;
     else if (key === 'ArrowUp') spherical.phi -= 0.15;
@@ -726,10 +779,10 @@ export function mountPointCloud(el, kit) {
         y = MathUtils.clamp(y, label.height / 2 + inset, height - label.height / 2 - inset);
       }
       const boxed = {
-        x0: x - label.width / 2 - 2,
-        x1: x + label.width / 2 + 2,
-        y0: y - label.height / 2 - 2,
-        y1: y + label.height / 2 + 2,
+        x0: x - label.width / 2 - 3,
+        x1: x + label.width / 2 + 3,
+        y0: y - label.height / 2 - 3,
+        y1: y + label.height / 2 + 3,
       };
       const clash = placed.some(
         (b) => boxed.x0 < b.x1 && boxed.x1 > b.x0 && boxed.y0 < b.y1 && boxed.y1 > b.y0,
@@ -742,12 +795,36 @@ export function mountPointCloud(el, kit) {
   }
 
   // Until the reader orbits, a stage narrower than 16:9 backs the camera off so the box still fits.
+  const fit = camConfig.fit || [0.8, 0.66];
+  const corners = [];
+  for (const a of [-1, 1])
+    for (const b of [-1, 1])
+      for (const c of [-1, 1]) corners.push(new Vector3(a * hx, b * hy, c * hz));
+  /** At 16:9 the compiler's camera, so the poster and the live view agree; otherwise refit the box. */
   function fitHome() {
-    const offset = home
-      .clone()
-      .sub(target)
-      .multiplyScalar(Math.max(1, 1.62 / camera.aspect));
-    camera.position.copy(target).add(offset);
+    const direction = home.clone().sub(target);
+    let distance = direction.length();
+    direction.normalize();
+    if (Math.abs(camera.aspect - 16 / 9) > 0.01) {
+      const fits = (r) => {
+        camera.position.copy(target).addScaledVector(direction, r);
+        camera.lookAt(target);
+        camera.updateMatrixWorld();
+        return corners.every((corner) => {
+          v.copy(corner).project(camera);
+          return v.z < 1 && Math.abs(v.x) <= fit[0] && Math.abs(v.y) <= fit[1];
+        });
+      };
+      let lo = 0.2;
+      let hi = 40;
+      for (let k = 0; k < 32; k += 1) {
+        const mid = (lo + hi) / 2;
+        if (fits(mid)) hi = mid;
+        else lo = mid;
+      }
+      distance = hi;
+    }
+    camera.position.copy(target).addScaledVector(direction, distance);
     camera.lookAt(target);
     readSpherical();
   }
@@ -853,6 +930,9 @@ export function mountPointCloud(el, kit) {
       tools.remove();
       canvas.remove();
       if (status) status.textContent = initialStatus;
+      if (pick) pick.innerHTML = initialPick;
+      selectedRow?.removeAttribute('aria-selected');
+      initialRow?.setAttribute('aria-selected', 'true');
       kit.mounts.delete(record);
       el.setAttribute('data-ak-3d-state', 'static');
     },

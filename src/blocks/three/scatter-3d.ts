@@ -237,7 +237,7 @@ export type PosterLabel = { x: number; y: number; text: string; title: boolean }
 
 /** Same rule as the live overlay: titles are pulled inside the frame first, then ticks that
  * would leave it or overlap a placed label are dropped. Widths are estimated generously from the font size, since the fallback font varies. */
-export function placeLabels(labels: PosterLabel[]): PosterLabel[] {
+export function placeLabels(labels: PosterLabel[], gap = 2): PosterLabel[] {
   const inset = 6;
   const placed: { x0: number; x1: number; y0: number; y1: number }[] = [];
   const kept: PosterLabel[] = [];
@@ -252,7 +252,7 @@ export function placeLabels(labels: PosterLabel[]): PosterLabel[] {
       x = Math.min(Math.max(x, w / 2 + inset), W - w / 2 - inset);
       y = Math.min(Math.max(y, h / 2 + inset), H - h / 2 - inset);
     } else if (outside) continue;
-    const box = { x0: x - w / 2 - 2, x1: x + w / 2 + 2, y0: y - h / 2, y1: y + h / 2 };
+    const box = { x0: x - w / 2 - gap, x1: x + w / 2 + gap, y0: y - h / 2, y1: y + h / 2 };
     if (placed.some((b) => box.x0 < b.x1 && box.x1 > b.x0 && box.y0 < b.y1 && box.y1 > b.y0))
       continue;
     placed.push(box);

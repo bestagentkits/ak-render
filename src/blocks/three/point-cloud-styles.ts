@@ -1,11 +1,24 @@
 /** Token-driven CSS for `point-cloud-3d`: poster, legend ramp, overlay labels, selection and tables. */
 
 import { COLOR_STEPS } from './scatter-ir.js';
-import { rampColor } from './scatter-styles.js';
+
+/**
+ * The cloud's ramp: info through accent to danger, mixed in oklch so the hue
+ * turns instead of passing through grey. The runtime mixes the same way.
+ */
+export function cloudRampColor(step: number): string {
+  const t = step / (COLOR_STEPS - 1);
+  if (t <= 0.5) {
+    const k = Math.round((t / 0.5) * 100);
+    return `color-mix(in oklch,var(--ak-color-accent) ${k}%,var(--ak-color-info))`;
+  }
+  const k = Math.round(((t - 0.5) / 0.5) * 100);
+  return `color-mix(in oklch,var(--ak-color-danger) ${k}%,var(--ak-color-accent))`;
+}
 
 const ramp = Array.from(
   { length: COLOR_STEPS },
-  (_, i) => `.ak-pc .q${i}{--ak-pc-c:${rampColor(i)}}`,
+  (_, i) => `.ak-pc .q${i}{--ak-pc-c:${cloudRampColor(i)}}`,
 ).join('\n');
 
 export const POINT_CLOUD_CSS = `
@@ -17,6 +30,7 @@ ${ramp}
 .ak-pc-poster .ak-pc-mark .s{fill:var(--ak-pc-c);stroke:var(--ak-color-background);stroke-width:1.5}
 .ak-pc-poster text{fill:var(--ak-color-text-muted);font:500 9px var(--ak-font-body,inherit);text-anchor:middle}
 .ak-pc-poster text.t{fill:var(--ak-color-text);font-weight:650;font-size:10px}
+@media (max-width:480px){.ak-pc-poster text{display:none}.ak-pc-poster text.t{display:inline;font-size:15px}}
 .ak-pc-labels{position:absolute;inset:0;pointer-events:none;z-index:1;font:500 11px/1 var(--ak-font-body,inherit);color:var(--ak-color-text-muted);font-variant-numeric:tabular-nums}
 .ak-pc-labels span{position:absolute;left:0;top:0;white-space:nowrap;transform:translate(-50%,-50%)}
 .ak-pc-labels .t{color:var(--ak-color-text);font-weight:650;font-size:12px;letter-spacing:.01em}

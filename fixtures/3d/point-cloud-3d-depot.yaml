@@ -8,7 +8,6 @@ state:
 blocks:
   - type: point-cloud-3d
     id: depot
-    title: Depot survey scan
     summary: Thirty thousand laser returns over an 80 by 60 metre depot, coloured by return intensity. Painted road lines, the shed roof, the water tank and the parked cars return brightest; tree crowns and asphalt return weakest.
     src: point-cloud/depot-30k.xyz
     bind: state.point
