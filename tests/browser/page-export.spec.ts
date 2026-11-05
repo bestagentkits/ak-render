@@ -50,12 +50,12 @@ test.describe('local export', () => {
     expect(receipt.bytes).toBe(statSync(out).size);
   });
 
-  test('the format flag decides the bytes, whatever the extension', async () => {
-    for (const [format, name, magic] of [
-      ['png', 'a.jpg', '89504e470d0a1a0a'],
-      ['png', 'noext', '89504e470d0a1a0a'],
-      ['pdf', 'a.png', Buffer.from('%PDF-').toString('hex')],
-    ] as const) {
+  for (const [format, name, magic] of [
+    ['png', 'a.jpg', '89504e470d0a1a0a'],
+    ['png', 'noext', '89504e470d0a1a0a'],
+    ['pdf', 'a.png', Buffer.from('%PDF-').toString('hex')],
+  ] as const) {
+    test(`--format ${format} writes ${format} bytes to ${name}`, async () => {
       const out = join(outDir, name);
       const receipt = await exportPage({ html, format, out, scale: 1 });
       expect(receipt.format).toBe(format);
@@ -65,10 +65,16 @@ test.describe('local export', () => {
           .toString('hex'),
       ).toBe(magic);
       expect(existsSync(`${out}.partial`)).toBe(false);
-    }
-  });
+    });
+  }
 
-  test('a failed export removes the older file at --out', async () => {
+  test('--out that is a directory fails as write-failed', async () => {
+    const error = await exportPage({ html, format: 'png', out: outDir }).catch(
+      (caught: unknown) => caught,
+    );
+    expect((error as ExportError).code).toBe('write-failed');
+  });
+  test('a failed export leaves the older file at --out untouched', async () => {
     const out = workspace.write('stale.png', 'old');
     const error = await exportPage({
       html,
@@ -77,7 +83,8 @@ test.describe('local export', () => {
       launchArgs: ['--disable-webgl', '--disable-webgl2'],
     }).catch((caught: unknown) => caught);
     expect((error as ExportError).code).toBe('webgl-unavailable');
-    expect(existsSync(out)).toBe(false);
+    expect(readFileSync(out, 'utf8')).toBe('old');
+    expect(existsSync(`${out}.partial`)).toBe(false);
   });
 
   test('a missing local asset is counted, not silently passed', async () => {

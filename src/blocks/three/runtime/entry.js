@@ -240,6 +240,8 @@ function mount(el) {
   renderer.shadowMap.enabled = quality === 'high';
   renderer.shadowMap.type = PCFSoftShadowMap;
   renderer.toneMapping = ACESFilmicToneMapping;
+  // Dark themes carry pastel tones; less exposure keeps their faces apart instead of washing out.
+  renderer.toneMappingExposure = isDark(el) ? 0.8 : 1;
 
   const scene = new Scene();
   // A generated studio environment: metal and glass reflect something, with no asset to load.

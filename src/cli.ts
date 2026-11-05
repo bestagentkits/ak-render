@@ -693,12 +693,22 @@ async function auditUiCommand(args: string[], io: CliIo, flags: Flags): Promise<
 }
 
 async function exportCommand(args: string[], io: CliIo, flags: Flags): Promise<number> {
+  const fail = (code: string, message: string, extraFields: Record<string, unknown> = {}) => {
+    if (flags.json)
+      io.stdout(`${JSON.stringify({ ok: false, code, message, ...extraFields }, null, 2)}\n`);
+    else io.stderr(`ak-render: export failed (${code}): ${message}\n`);
+  };
+  /** A usage problem: exit 2, and JSON on stdout when --json asked for it. */
+  const bad = (message: string): number => {
+    if (flags.json) fail('usage', message);
+    else io.stderr(`ak-render: ${message}\n`);
+    return 2;
+  };
   const timeoutMs = flags.timeout === undefined ? DEFAULT_EXPORT_TIMEOUT_MS : Number(flags.timeout);
   if (!Number.isInteger(timeoutMs) || timeoutMs <= 0 || timeoutMs > MAX_EXPORT_TIMEOUT_MS) {
-    io.stderr(
-      `ak-render: --timeout must be a whole number of milliseconds from 1 to ${MAX_EXPORT_TIMEOUT_MS}\n`,
+    return bad(
+      `--timeout must be a whole number of milliseconds from 1 to ${MAX_EXPORT_TIMEOUT_MS}`,
     );
-    return 2;
   }
   if (args[0] === 'doctor' && args.length === 1) {
     const report = await exportDoctor(flags.chromium, timeoutMs);
@@ -720,38 +730,38 @@ async function exportCommand(args: string[], io: CliIo, flags: Flags): Promise<n
   const [file, ...extra] = args;
   const format = flags.format;
   if (file === undefined || extra.length > 0 || flags.out === undefined || format === undefined) {
-    io.stderr(`ak-render: usage: ${COMMANDS.export?.usage ?? 'ak-render export <spec>'}\n`);
-    return 2;
+    return bad(`usage: ${COMMANDS.export?.usage ?? 'ak-render export <spec>'}`);
   }
   if (!(EXPORT_FORMATS as readonly string[]).includes(format)) {
-    io.stderr(`ak-render: --format must be one of ${EXPORT_FORMATS.join(', ')}\n`);
-    return 2;
+    return bad(`--format must be one of ${EXPORT_FORMATS.join(', ')}`);
   }
   if (flags.scheme !== undefined && flags.scheme !== 'light' && flags.scheme !== 'dark') {
-    io.stderr('ak-render: --scheme must be light or dark\n');
-    return 2;
+    return bad('--scheme must be light or dark');
   }
   const width = flags.width === undefined ? 1440 : Number(flags.width);
   if (!Number.isInteger(width) || width < 320 || width > 3840) {
-    io.stderr('ak-render: --width must be a whole number of pixels from 320 to 3840\n');
-    return 2;
+    return bad('--width must be a whole number of pixels from 320 to 3840');
   }
   const scale = flags.scale === undefined ? 2 : Number(flags.scale);
   if (!Number.isFinite(scale) || scale < 1 || scale > 3) {
-    io.stderr('ak-render: --scale must be a number from 1 to 3\n');
-    return 2;
+    return bad('--scale must be a number from 1 to 3');
   }
   if (HTML_INPUT.test(file)) {
-    io.stderr('ak-render: export takes a spec; only compiler output runs in the export browser\n');
+    return bad('export takes a spec; only compiler output runs in the export browser');
+  }
+  const unread: string[] = [];
+  const text = readSpecFile(file, flags.json ? { ...io, stderr: (line) => unread.push(line) } : io);
+  if (text === undefined) {
+    if (!flags.json) return 2;
+    fail(
+      'invalid-input',
+      unread
+        .join('')
+        .replace(/^ak-render: /u, '')
+        .trim(),
+    );
     return 2;
   }
-  const text = readSpecFile(file, io);
-  if (text === undefined) return 2;
-  const fail = (code: string, message: string, extraFields: Record<string, unknown> = {}) => {
-    if (flags.json)
-      io.stdout(`${JSON.stringify({ ok: false, code, message, ...extraFields }, null, 2)}\n`);
-    else io.stderr(`ak-render: export failed (${code}): ${message}\n`);
-  };
   let html: string;
   try {
     const result = compile(text, {
@@ -806,7 +816,7 @@ async function exportCommand(args: string[], io: CliIo, flags: Flags): Promise<n
   } catch (error) {
     if (!(error instanceof ExportError)) throw error;
     fail(error.code, error.message);
-    return error.code === 'write-failed' ? 2 : 1;
+    return 1;
   }
 }
 /**

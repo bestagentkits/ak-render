@@ -256,8 +256,14 @@ export async function exportPage(options: ExportOptions): Promise<ExportReceipt>
     new ExportError('timeout', `${step} did not finish within the ${timeoutMs}ms budget`);
   const choice = await pickBrowser(options.executablePath);
   if (!(await driverAvailable())) throw new ExportError('driver-unavailable', DRIVER_MISSING);
-  // A failed export never leaves an older file behind as if it were this one.
-  rmSync(options.out, { force: true });
+  // Bytes land through a sibling .partial, so a failed export leaves --out as it was.
+  let outIsDir = false;
+  try {
+    outIsDir = statSync(options.out).isDirectory();
+  } catch {
+    // Nothing there yet.
+  }
+  if (outIsDir) throw new ExportError('write-failed', ` is a directory, not a file`);
   let browser: ExportBrowser & { version(): string };
   try {
     browser = (await launchPlaywrightChromium(choice.path, remaining(), [

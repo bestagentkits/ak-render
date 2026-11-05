@@ -136,7 +136,7 @@ test.describe('scene-3d', () => {
     await expect(page.locator('.ak-3d-poster')).toBeVisible();
     await expect(page.locator('.ak-3d-poster text')).toHaveCount(5);
     await expect(page.locator('.ak-3d-objects')).toContainText('Core router');
-    await expect(page.locator('.ak-3d-caption')).toContainText('core router linked');
+    await expect(page.locator('.ak-3d-caption')).toContainText('core router with three edge nodes');
     await context.close();
   });
 

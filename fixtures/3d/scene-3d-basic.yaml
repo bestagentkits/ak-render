@@ -7,7 +7,7 @@ blocks:
   - type: scene-3d
     id: cluster
     title: Topology
-    summary: A core router linked to three edge nodes on a shared base plate.
+    summary: A core router with three edge nodes around it; pick one to read its role.
     bind: state.part
     objects:
       - { id: base, label: Base plate, shape: plane, size: 6, rotation: [-90, 0, 0], tone: neutral, material: matte }
