@@ -89,10 +89,13 @@ try {
             }
           }
         }
-        if (x1 < 0) return { fill: 0, offsetX: 0, offsetY: 0 };
+        if (x1 < 0) return { fill: 0, fillY: 0, marginY: 0, offsetX: 0, offsetY: 0 };
         const round = (n) => Math.round(n * 100) / 100;
         return {
           fill: round((x1 - x0) / width),
+          // Height share and the tighter of the top and bottom gaps: a wide stage fills by height.
+          fillY: round((y1 - y0) / height),
+          marginY: round(Math.min(y0, height - 1 - y1) / height),
           offsetX: round((x0 + x1) / 2 / width - 0.5),
           offsetY: round((y0 + y1) / 2 / height - 0.5),
         };

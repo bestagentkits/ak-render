@@ -1,0 +1,340 @@
+{
+  "asset": {
+    "version": "2.0",
+    "generator": "ak-render fixtures"
+  },
+  "extensionsUsed": [
+    "KHR_materials_variants"
+  ],
+  "extensions": {
+    "KHR_materials_variants": {
+      "variants": [
+        {
+          "name": "oak"
+        },
+        {
+          "name": "graphite"
+        },
+        {
+          "name": "coral"
+        }
+      ]
+    }
+  },
+  "scene": 0,
+  "scenes": [
+    {
+      "name": "Crate",
+      "nodes": [
+        0,
+        1
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "Base",
+      "mesh": 0,
+      "scale": [
+        1.6,
+        0.5,
+        1.6
+      ]
+    },
+    {
+      "name": "Lid",
+      "mesh": 1,
+      "translation": [
+        0,
+        0.5,
+        0
+      ],
+      "scale": [
+        0.9,
+        0.5,
+        0.9
+      ]
+    }
+  ],
+  "meshes": [
+    {
+      "name": "Base",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0,
+            "NORMAL": 1,
+            "TEXCOORD_0": 2
+          },
+          "indices": 3,
+          "material": 0,
+          "extensions": {
+            "KHR_materials_variants": {
+              "mappings": [
+                {
+                  "material": 0,
+                  "variants": [
+                    0
+                  ]
+                },
+                {
+                  "material": 1,
+                  "variants": [
+                    1
+                  ]
+                },
+                {
+                  "material": 2,
+                  "variants": [
+                    2
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lid",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0,
+            "NORMAL": 1,
+            "TEXCOORD_0": 2
+          },
+          "indices": 3,
+          "material": 0,
+          "extensions": {
+            "KHR_materials_variants": {
+              "mappings": [
+                {
+                  "material": 0,
+                  "variants": [
+                    0
+                  ]
+                },
+                {
+                  "material": 1,
+                  "variants": [
+                    1
+                  ]
+                },
+                {
+                  "material": 2,
+                  "variants": [
+                    2
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "name": "Oak",
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 0
+        },
+        "metallicFactor": 0,
+        "roughnessFactor": 0.7
+      }
+    },
+    {
+      "name": "Graphite",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.16,
+          0.17,
+          0.2,
+          1
+        ],
+        "metallicFactor": 0.85,
+        "roughnessFactor": 0.3
+      }
+    },
+    {
+      "name": "Coral",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.95,
+          0.42,
+          0.36,
+          1
+        ],
+        "metallicFactor": 0,
+        "roughnessFactor": 0.45
+      }
+    }
+  ],
+  "textures": [
+    {
+      "source": 0,
+      "sampler": 0
+    }
+  ],
+  "samplers": [
+    {
+      "magFilter": 9729,
+      "minFilter": 9987
+    }
+  ],
+  "images": [
+    {
+      "uri": "crate-oak.png",
+      "mimeType": "image/png"
+    }
+  ],
+  "accessors": [
+    {
+      "bufferView": 0,
+      "componentType": 5126,
+      "count": 24,
+      "type": "VEC3",
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 24,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "componentType": 5126,
+      "count": 24,
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 3,
+      "componentType": 5123,
+      "count": 36,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 4,
+      "componentType": 5126,
+      "count": 3,
+      "type": "SCALAR",
+      "min": [
+        0
+      ],
+      "max": [
+        2
+      ]
+    },
+    {
+      "bufferView": 5,
+      "componentType": 5126,
+      "count": 3,
+      "type": "VEC4"
+    },
+    {
+      "bufferView": 6,
+      "componentType": 5126,
+      "count": 3,
+      "type": "VEC3"
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 288,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 288,
+      "byteLength": 288,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 576,
+      "byteLength": 192,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 768,
+      "byteLength": 72,
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 840,
+      "byteLength": 12
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 852,
+      "byteLength": 48
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 900,
+      "byteLength": 36
+    }
+  ],
+  "buffers": [
+    {
+      "byteLength": 936,
+      "uri": "crate.bin"
+    }
+  ],
+  "animations": [
+    {
+      "name": "Spin",
+      "samplers": [
+        {
+          "input": 4,
+          "output": 5,
+          "interpolation": "LINEAR"
+        }
+      ],
+      "channels": [
+        {
+          "sampler": 0,
+          "target": {
+            "node": 1,
+            "path": "rotation"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lift",
+      "samplers": [
+        {
+          "input": 4,
+          "output": 6,
+          "interpolation": "LINEAR"
+        }
+      ],
+      "channels": [
+        {
+          "sampler": 0,
+          "target": {
+            "node": 1,
+            "path": "translation"
+          }
+        }
+      ]
+    }
+  ]
+}
