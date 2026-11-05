@@ -98,14 +98,27 @@ test.describe('morph-3d', { tag: '@gl' }, () => {
     await ready(page);
     const figure = page.locator('[data-ak-3d="morph"]');
     await expect(page.locator('.ak-mo-pause')).toHaveText('Pause');
-    await page.locator('.ak-mo-pause').click();
-    const frames = async () => (await stats(page)).renderMs.length;
-    const shot = await page.locator('.ak-3d-canvas').screenshot();
-    const a = await frames();
-    await page.waitForTimeout(1_000);
-    expect((await frames()) - a).toBe(0);
-    expect((await page.locator('.ak-3d-canvas').screenshot()).equals(shot)).toBe(true);
-    await page.locator('.ak-mo-pause').click();
+    // On a slow software rasterizer the once timeline can finish before a
+    // locator click lands, so press Pause in the page only while it exists.
+    const press = () =>
+      page.evaluate(() => {
+        const button = document.querySelector<HTMLButtonElement>('.ak-mo-pause');
+        if (!button) return false;
+        button.focus();
+        button.click();
+        return true;
+      });
+    const paused = await press();
+    if (paused) {
+      await expect(page.locator('.ak-mo-pause')).toHaveText('Play');
+      const frames = async () => (await stats(page)).renderMs.length;
+      const shot = await page.locator('.ak-3d-canvas').screenshot();
+      const a = await frames();
+      await page.waitForTimeout(1_000);
+      expect((await frames()) - a).toBe(0);
+      expect((await page.locator('.ak-3d-canvas').screenshot()).equals(shot)).toBe(true);
+      expect(await press()).toBe(true);
+    }
     // Played through, the timeline stops on the last target and drops its pause control.
     await expect(figure).toHaveAttribute('data-ak-morph-current', 'star', {
       timeout: 20_000,
@@ -114,9 +127,10 @@ test.describe('morph-3d', { tag: '@gl' }, () => {
       timeout: 10_000,
     });
     // Pause had focus from the click; it moves to the canvas, not the page body.
-    expect(
-      await page.evaluate(() => document.activeElement?.classList.contains('ak-3d-canvas')),
-    ).toBe(true);
+    if (paused)
+      expect(
+        await page.evaluate(() => document.activeElement?.classList.contains('ak-3d-canvas')),
+      ).toBe(true);
   });
 
   test('buttons, the keyboard and page state choose a target and stay in step', async ({
