@@ -57,13 +57,25 @@ export const SCATTER_CAMERA = { theta: 0.72, phi: 1.2, radius: 5.8, fov: 30 } as
 /** Aimed a little below the cube's centre, so the tick labels under the floor stay in frame. */
 export const SCATTER_TARGET: Vec3 = [0, -0.32, 0];
 
-export function cameraPosition(): Vec3 {
-  const { theta, phi, radius } = SCATTER_CAMERA;
+export interface OrbitCamera {
+  theta: number;
+  phi: number;
+  radius: number;
+  fov: number;
+}
+
+/** Eye position of an orbit camera around `target`, rounded so the bytes stay stable. */
+export function orbitPosition(camera: OrbitCamera, target: Vec3): Vec3 {
+  const { theta, phi, radius } = camera;
   return [
-    radius * Math.sin(phi) * Math.sin(theta),
-    SCATTER_TARGET[1] + radius * Math.cos(phi),
-    radius * Math.sin(phi) * Math.cos(theta),
+    target[0] + radius * Math.sin(phi) * Math.sin(theta),
+    target[1] + radius * Math.cos(phi),
+    target[2] + radius * Math.sin(phi) * Math.cos(theta),
   ].map((n) => Math.round(n * 1e4) / 1e4) as Vec3;
+}
+
+export function cameraPosition(): Vec3 {
+  return orbitPosition(SCATTER_CAMERA, SCATTER_TARGET);
 }
 
 /** Domain to the [-1, 1] cube the runtime draws in. */
@@ -119,16 +131,18 @@ export function scatterConfig(node: IrNode, layout: ScatterLayout): Record<strin
 
 /* ---------- static poster: the same camera, projected at compile time ---------- */
 
-const W = 640;
-const H = 360;
+export const POSTER_W = 640;
+export const POSTER_H = 360;
+const W = POSTER_W;
+const H = POSTER_H;
 
-function projector() {
-  const eye = cameraPosition();
-  const look: Vec3 = [
-    SCATTER_TARGET[0] - eye[0],
-    SCATTER_TARGET[1] - eye[1],
-    SCATTER_TARGET[2] - eye[2],
-  ];
+/** Projects a cube point to the 640x360 poster through an orbit camera, like the live view. */
+export function orbitProjector(
+  camera: OrbitCamera = SCATTER_CAMERA,
+  target: Vec3 = SCATTER_TARGET,
+) {
+  const eye = orbitPosition(camera, target);
+  const look: Vec3 = [target[0] - eye[0], target[1] - eye[1], target[2] - eye[2]];
   const length = Math.hypot(...look);
   const forward: Vec3 = [look[0] / length, look[1] / length, look[2] / length];
   const rl = Math.hypot(forward[2], forward[0]);
@@ -138,7 +152,7 @@ function projector() {
     right[2] * forward[0] - right[0] * forward[2],
     right[0] * forward[1] - right[1] * forward[0],
   ];
-  const f = H / 2 / Math.tan((SCATTER_CAMERA.fov * Math.PI) / 360);
+  const f = H / 2 / Math.tan((camera.fov * Math.PI) / 360);
   return (p: Vec3) => {
     const d: Vec3 = [p[0] - eye[0], p[1] - eye[1], p[2] - eye[2]];
     const depth = d[0] * forward[0] + d[1] * forward[1] + d[2] * forward[2];
@@ -160,7 +174,7 @@ const OUTWARD: Record<Axis, Vec3> = {
   z: [0.16, -0.16, 0],
 };
 
-function posterGrid(layout: ScatterLayout, at: ReturnType<typeof projector>): string {
+function posterGrid(layout: ScatterLayout, at: ReturnType<typeof orbitProjector>): string {
   const line = (a: Vec3, b: Vec3, cls: string) => {
     const p = at(a);
     const q = at(b);
@@ -219,11 +233,11 @@ function posterGrid(layout: ScatterLayout, at: ReturnType<typeof projector>): st
   return out.join('');
 }
 
-type PosterLabel = { x: number; y: number; text: string; title: boolean };
+export type PosterLabel = { x: number; y: number; text: string; title: boolean };
 
 /** Same rule as the live overlay: titles are pulled inside the frame first, then ticks that
  * would leave it or overlap a placed label are dropped. Widths are estimated generously from the font size, since the fallback font varies. */
-function placeLabels(labels: PosterLabel[]): PosterLabel[] {
+export function placeLabels(labels: PosterLabel[]): PosterLabel[] {
   const inset = 6;
   const placed: { x0: number; x1: number; y0: number; y1: number }[] = [];
   const kept: PosterLabel[] = [];
@@ -247,7 +261,7 @@ function placeLabels(labels: PosterLabel[]): PosterLabel[] {
   return kept;
 }
 
-function posterLabels(layout: ScatterLayout, at: ReturnType<typeof projector>): string {
+function posterLabels(layout: ScatterLayout, at: ReturnType<typeof orbitProjector>): string {
   const labels: PosterLabel[] = [];
   for (const axis of AXES) {
     const scale = layout.scales[axis];
@@ -278,7 +292,7 @@ function dotClass(layout: ScatterLayout, i: number): string {
 }
 
 export function scatterPoster(layout: ScatterLayout, label: string, selected: string): string {
-  const at = projector();
+  const at = orbitProjector();
   const dots: { depth: number; svg: string }[] = [];
   for (let i = 0; i < layout.count; i += 1) {
     if (layout.clipped[i]) continue;

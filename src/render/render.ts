@@ -10,6 +10,7 @@
  */
 
 import type { ModelAssetResult, ResolvedModelAsset } from '../assets/model-assets.js';
+import type { PointCloudColumns, PointCloudResolver } from '../assets/point-cloud-assets.js';
 import { type Diagnostic, DiagnosticBag, pathKey } from '../diagnostics.js';
 import type { DiagramAdapter } from '../diagram/adapter.js';
 import { RenderError } from '../errors.js';
@@ -73,6 +74,12 @@ export interface RenderOptions {
    * local one fails with a diagnostic: this module never touches the disk.
    */
   modelResolver?: ModelResolver;
+  /**
+   * Reads a `point-cloud-3d` block's `src` file. The CLI and the local MCP
+   * server pass `createPointCloudResolver(baseDir)`; without it a `src` cloud
+   * fails with a diagnostic, since this module never touches the disk.
+   */
+  pointCloudResolver?: PointCloudResolver;
 }
 
 /** Resolve one model reference at a JSON path; see `createModelResolver`. */
@@ -277,6 +284,7 @@ function renderBody(
     diagramAdapter?: DiagramAdapter;
     warnings: Diagnostic[];
     models: ReadonlyMap<string, ResolvedModelAsset>;
+    pointClouds: ReadonlyMap<string, PointCloudColumns>;
   },
 ): { body: string; usesIcons: boolean } {
   const byId = nodeIndex(ir);
@@ -301,6 +309,7 @@ function renderBody(
     renderSlot: (node, key) => renderList(node.slots?.[key] ?? []),
     byId: (id) => byId.get(id),
     models: renderOptions.models,
+    pointClouds: renderOptions.pointClouds,
   };
   const root = byId.get(ir.rootId);
   if (root === undefined) {
@@ -366,6 +375,49 @@ function resolveModels(
   return models;
 }
 
+/** Read every `point-cloud-3d` block's `src` file; warnings go to the compile result. */
+function resolvePointClouds(
+  ir: IrDocument,
+  resolver: PointCloudResolver | undefined,
+  warnings: Diagnostic[],
+): Map<string, PointCloudColumns> {
+  const clouds = new Map<string, PointCloudColumns>();
+  const errors: Diagnostic[] = [];
+  for (const node of ir.nodes) {
+    if (node.type !== 'point-cloud-3d' || typeof node.props.src !== 'string') continue;
+    const path = pathKey(node.path, 'src');
+    if (resolver === undefined) {
+      errors.push({
+        code: 'SPEC_VALIDATION_ERROR',
+        severity: 'error',
+        path,
+        nodeId: node.id,
+        message: `point cloud "${node.props.src}" needs a compile from a spec file, which can read it`,
+        details: {
+          fix: 'compile the spec file with the CLI or the local MCP server, or put the points in data columns',
+        },
+      });
+      continue;
+    }
+    const result = resolver(node.props.src, path);
+    for (const diagnostic of result.diagnostics)
+      (diagnostic.severity === 'error' ? errors : warnings).push({
+        ...diagnostic,
+        nodeId: node.id,
+      });
+    if (result.cloud !== undefined) clouds.set(node.id, result.cloud);
+  }
+  const first = errors[0];
+  if (first !== undefined) {
+    throw new RenderError(first.code, first.message, {
+      path: first.path,
+      ...(first.nodeId === undefined ? {} : { nodeId: first.nodeId }),
+      details: { ...(first.details ?? {}), diagnostics: errors },
+    });
+  }
+  return clouds;
+}
+
 /** Run the full pipeline and return everything it produced. */
 export function compile(spec: unknown, options: RenderOptions = {}): CompileResult {
   const registry = options.registry ?? DEFAULT_REGISTRY;
@@ -416,10 +468,12 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
 
   const models = resolveModels(ir, registry, options.modelResolver);
   const renderWarnings: Diagnostic[] = [];
+  const pointClouds = resolvePointClouds(ir, options.pointCloudResolver, renderWarnings);
   const { body, usesIcons } = renderBody(ir, resolved, features, {
     registry,
     warnings: renderWarnings,
     models,
+    pointClouds,
     ...(options.diagramAdapter === undefined ? {} : { diagramAdapter: options.diagramAdapter }),
   });
   // Code panels live in several blocks and nested props, and only some

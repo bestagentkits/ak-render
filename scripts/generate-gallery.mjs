@@ -225,6 +225,9 @@ const { createModelResolver } = await import(
   new URL('../dist/assets/model-assets.js', import.meta.url)
 );
 const modelResolver = createModelResolver(threeDir);
+const { createPointCloudResolver } = await import(
+  new URL('../dist/assets/point-cloud-assets.js', import.meta.url)
+);
 // Showcase title and blurb per fixture; the fixtures keep their test titles.
 const THREE_D_SHOWCASE = {
   'scene-3d-dense': [
@@ -283,6 +286,10 @@ const THREE_D_SHOWCASE = {
     'Ring to knot',
     'A ring ties itself into a trefoil knot, then twists into a square band, all on one wrapped surface.',
   ],
+  'point-cloud-3d-depot': [
+    'Depot survey scan',
+    'Thirty thousand laser returns read from a local scan file, at true proportions; pick a point for its exact coordinates or cut the roofs away.',
+  ],
   'network-3d-stress': [
     'A thousand-node graph',
     'A large force-laid graph that shows the network widget holding up at scale.',
@@ -291,14 +298,23 @@ const THREE_D_SHOWCASE = {
 
 const threeEntries = Object.entries(THREE_D_SHOWCASE).map(([name, [title, description]]) => {
   const source = readFileSync(join(threeDir, `${name}.yaml`), 'utf8');
-  const result = compile(source, { source: `${name}.yaml`, modelResolver });
+  const result = compile(source, {
+    source: `${name}.yaml`,
+    modelResolver,
+    pointCloudResolver: createPointCloudResolver(threeDir),
+  });
   const file = `3d-${name}.html`;
   written.set(file, result.html);
   // A label-free thumbnail of the widget's own poster that follows the
   // reader's colour scheme; tiny text would be unreadable at card size.
   written.set(
     `3d-${name}.svg`,
-    export3dPosterSvg(source, { modelResolver, scheme: 'auto', labels: false }),
+    export3dPosterSvg(source, {
+      modelResolver,
+      pointCloudResolver: createPointCloudResolver(threeDir),
+      scheme: 'auto',
+      labels: false,
+    }),
   );
   return {
     slug: `3d-${name}`,
@@ -406,7 +422,7 @@ const indexSpec = {
       blocks: [
         {
           type: 'text',
-          text: 'Scenes, networks, models, scatter clouds, bar fields and particle effects rendered with WebGL from a Page Spec. Each one keeps a readable summary for print, screenshots and no-JS readers.',
+          text: 'Scenes, networks, models, scatter plots, point clouds, bar fields and particle effects rendered with WebGL from a Page Spec. Each one keeps a readable summary for print, screenshots and no-JS readers.',
         },
         { type: 'grid', columns: 3, blocks: threeEntries.map(threeCard) },
       ],

@@ -17,6 +17,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { stringify } from 'yaml';
 import { createModelResolver } from './assets/model-assets.js';
+import { createPointCloudResolver } from './assets/point-cloud-assets.js';
 import { auditUi, type UiAuditOptions } from './audit/ui-audit.js';
 import { type UiAuditReport, type UiFinding, uiAuditFails } from './audit/ui-audit-report.js';
 import { UI_AUDIT_PRESETS, UI_SEVERITIES, type UiAuditPreset } from './audit/ui-audit-rules.js';
@@ -247,6 +248,7 @@ function compileCommand(args: string[], io: CliIo, flags: Flags): number {
     const result = compile(text, {
       source: sourceLabel(file),
       modelResolver: createModelResolver(specDir(file)),
+      pointCloudResolver: createPointCloudResolver(specDir(file)),
       themeCatalog: themeCatalogFor(flags, io),
       ...(flags.theme === undefined ? {} : { theme: flags.theme }),
     });
@@ -778,6 +780,7 @@ async function exportCommand(args: string[], io: CliIo, flags: Flags): Promise<n
     const result = compile(text, {
       source: sourceLabel(file),
       modelResolver: createModelResolver(specDir(file)),
+      pointCloudResolver: createPointCloudResolver(specDir(file)),
       ...(flags.theme === undefined ? {} : { theme: flags.theme }),
       themeCatalog: themeCatalogFor(flags, io),
     });

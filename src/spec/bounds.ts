@@ -12,7 +12,7 @@ import { type DiagnosticBag, pathIndex, pathKey } from '../diagnostics.js';
 import { isPlainObject } from '../json.js';
 
 /** Paths of the scalar columns that may use `maxColumnValues`: a block's `data.<column>`. */
-const COLUMN_PATH = /\]\.data\.(?:x|y|z|size|value|group|id)$/u;
+const COLUMN_PATH = /\]\.data\.(?:x|y|z|size|value|intensity|group|id)$/u;
 
 export const LIMITS = {
   /** Nesting depth of the raw document, root included. */

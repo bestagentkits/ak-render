@@ -108,6 +108,15 @@ metal metalness 0.85 roughness 0.32.
   iridescence and sheen under the studio environment make a plain primitive
   look designed; blend the target tones with the shape so colour tells the
   reader which state is arriving.
+- **Point clouds: one spacing wide.** Size points to about the cloud's own
+  spacing (world diameter near 3.2 / sqrt(drawn points)) so surfaces read as
+  surfaces, not sprinkles; fade far points toward the background for depth
+  instead of lighting them. Keep one uniform scale on all axes, frame the
+  camera on the box's bounding sphere, and sit ticks close to the box edges
+  (about 0.07 of the half extent) or a flat survey's labels drift off it.
+- **Point clouds: the static sample is dense enough to read.** About 5,000
+  points in level-of-detail order at radius 0.0085 x focal / depth draws
+  roofs, crowns and lane lines; fewer reads as noise.
 
 ## Done means
 

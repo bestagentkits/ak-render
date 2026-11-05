@@ -304,7 +304,7 @@ function gateRemote(ctx: Context, uri: string, site: Site | undefined): boolean 
 }
 
 /** Any `..` segment, with either separator, raw or percent-encoded. */
-function hasParentSegment(path: string): boolean {
+export function hasParentSegment(path: string): boolean {
   let decoded = path;
   try {
     decoded = decodeURIComponent(path);
@@ -383,7 +383,7 @@ function confine(
   return real;
 }
 
-function inside(root: string, candidate: string): boolean {
+export function inside(root: string, candidate: string): boolean {
   const rel = relative(root, candidate);
   return rel === '' || (rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel));
 }
