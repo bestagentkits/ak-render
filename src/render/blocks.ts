@@ -4,6 +4,7 @@ import type { IconSize } from '../icons/icon-packs.js';
 import { renderIcon } from '../icons/icon-render.js';
 import type { IrNode } from '../ir.js';
 import { isPlainObject, type JsonValue } from '../json.js';
+import { DIAGRAM_MOTION_RECIPES, diagramSequenceBar } from '../motion/diagram-motion.js';
 import type { BlockRegistry } from '../registry/block-module.js';
 import { DEFAULT_REGISTRY } from '../registry/registry.js';
 import { EMBED_PROVIDERS } from '../spec/providers.js';
@@ -24,6 +25,7 @@ import {
   titleHeader,
 } from './block-helpers.js';
 import { renderDiagramFallback } from './diagram-fallback.js';
+import { DIAGRAM_VIEWER_DETAILS, diagramViewerBar } from './diagram-viewer.js';
 import {
   type AttributeValue,
   escapeAttribute,
@@ -681,6 +683,18 @@ const RENDERERS: Record<string, Renderer> = {
       adapterResult !== undefined &&
       adapterResult.rejected === undefined &&
       adapterResult.markup !== '';
+    const preset = node.motion?.preset ?? '';
+    if (
+      (DIAGRAM_MOTION_RECIPES as readonly string[]).includes(preset) &&
+      !(accepted && adapterResult.contract === 2)
+    ) {
+      context.warnings?.push({
+        code: 'POLICY_VIOLATION',
+        severity: 'warning',
+        path: `$.blocks.${node.id}.motion`,
+        message: `motion "${preset}" animates a contract 2 diagram drawing; this panel has none (no diagram adapter, or one on contract 1), so nothing moves`,
+      });
+    }
 
     const description = `<p class="ak-diagram-title">${escapeText(diagramTitle)}</p>${fallbackBody}`;
 
@@ -693,12 +707,28 @@ const RENDERERS: Record<string, Renderer> = {
       // repeat the drawing; it stays in the document, prints open, and the
       // static SVG reads without script and in print. The inner canvas is the
       // root the adapter's stylesheets are scoped to.
+      accepted && adapterResult.contract === 2 && node.motion?.preset === 'sequence-playback'
+        ? diagramSequenceBar(diagramTitle)
+        : '',
+      accepted && adapterResult.contract === 2
+        ? diagramViewerBar(adapterResult.capabilities ?? [], diagramTitle)
+        : '',
       accepted
         ? `<div class="ak-diagram-rendered" data-ak-diagram-adapter="${escapeAttribute(
             adapterResult.adapter,
           )}" role="region" aria-label="${escapeAttribute(diagramTitle)}" tabindex="0"><div class="ak-diagram-canvas" data-ak-diagram-scope="${escapeAttribute(
             adapterResult.scope ?? '',
-          )}">${adapterResult.markup}</div></div><details class="ak-diagram-details" data-ak-diagram-fallback><summary>Text description</summary><div class="ak-diagram-fallback">${description}</div></details>`
+          )}"${
+            adapterResult.contract === 2
+              ? ` data-ak-diagram-contract="2" data-ak-diagram-capabilities="${escapeAttribute(
+                  (adapterResult.capabilities ?? []).join(' '),
+                )}"`
+              : ''
+          }>${adapterResult.markup}</div></div>${
+            adapterResult.contract === 2 && (adapterResult.capabilities ?? []).length > 0
+              ? DIAGRAM_VIEWER_DETAILS
+              : ''
+          }<details class="ak-diagram-details" data-ak-diagram-fallback><summary>Text description</summary><div class="ak-diagram-fallback">${description}</div></details>`
         : `<div class="ak-diagram-fallback" data-ak-diagram-fallback>${description}<p class="ak-caption">Rendered as a structured fallback because no diagram adapter is configured.</p></div>`,
       figureCaption(caption),
       '</figure>',

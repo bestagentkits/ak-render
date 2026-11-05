@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { DIAGRAM_MOTION_RECIPES } from '../../src/motion/diagram-motion.js';
 import {
   getMotionRecipe,
   MOTION_KEYFRAMES,
@@ -16,6 +17,7 @@ import { MOTION_ALLOWED, motionDiagnostics } from '../../src/render/motion.js';
 import { compile } from '../../src/render/render.js';
 import { buildRuntime } from '../../src/render/runtime.js';
 import { validate } from '../../src/spec/validate.js';
+import { gridDiagramAdapter } from './support/grid-diagram-adapter.js';
 
 const fixture = readFileSync(
   fileURLToPath(new URL('../../fixtures/pages/motion-recipes.yaml', import.meta.url)),
@@ -64,7 +66,8 @@ describe('motion recipe registry', () => {
   it('compiles every example into a page that passes the motion checks', () => {
     for (const recipe of MOTION_RECIPES) {
       const extra = recipe.requires?.visibleWhen === true ? { state: { plan: 'annual' } } : {};
-      const result = compile(page(recipe.example, extra));
+      // Diagram examples need a contract 2 drawing to carry their motion.
+      const result = compile(page(recipe.example, extra), { diagramAdapter: gridDiagramAdapter() });
       expect(result.html).toContain(`data-ak-motion="${recipe.id}"`);
     }
   });
@@ -229,8 +232,32 @@ describe('motion in contracts and runtime', () => {
     const second = compile(fixture, { source: 'motion-recipes.yaml' });
     expect(first.hash).toBe(second.hash);
     expect(first.features).toContain('motion');
-    for (const recipe of MOTION_RECIPES)
+    // Diagram recipes need a contract 2 drawing, which fixtures cannot carry
+    // without an adapter; tests/browser/diagram-motion.spec.ts plays them.
+    for (const recipe of MOTION_RECIPES) {
+      if ((DIAGRAM_MOTION_RECIPES as readonly string[]).includes(recipe.id)) continue;
       expect(first.html).toContain(`data-ak-motion="${recipe.id}"`);
+    }
+  });
+
+  it('warns and ships nothing when a diagram recipe has no drawing to move', () => {
+    const result = compile({
+      version: 1,
+      meta: { title: 'No adapter' },
+      blocks: [
+        {
+          type: 'diagram-panel',
+          title: 'Flow',
+          motion: 'edge-trace',
+          spec: { components: [{ id: 'a' }, { id: 'b' }], connections: [{ from: 'a', to: 'b' }] },
+        },
+      ],
+    });
+    expect(result.warnings.map((warning) => warning.message).join(' ')).toContain(
+      'motion "edge-trace" animates a contract 2 diagram drawing',
+    );
+    expect(result.html).not.toContain('wireDiagramMotion');
+    expect(result.html).not.toContain('ak-m-draw');
   });
 
   it('keeps recipes off under a still theme policy', () => {
