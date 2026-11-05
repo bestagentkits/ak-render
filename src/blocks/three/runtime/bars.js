@@ -58,12 +58,19 @@ const ease = (k) => 1 - (1 - k) ** 3;
  * Frame the box from the camera's current direction for one aspect: search the distance at
  * which its projection fills the stage, then slide the target so it sits centred.
  */
-function fitBox(camera, target, corners, aspect, pad) {
+function fitBox(camera, target, base, corners, aspect, pad) {
   const probe = camera.clone();
   probe.aspect = aspect;
   probe.updateProjectionMatrix();
   const aim = target.clone();
-  const dir = camera.position.clone().sub(target).normalize();
+  const dir = base.clone();
+  const tilt = Math.min(0.26, Math.max(0, (1.7 - aspect) * 0.4));
+  if (tilt) {
+    const flat = Math.hypot(dir.x, dir.z);
+    const elevation = Math.min(1.2, Math.atan2(dir.y, flat) + tilt);
+    const scale = Math.cos(elevation) / (flat || 1);
+    dir.set(dir.x * scale, Math.sin(elevation), dir.z * scale).normalize();
+  }
   const point = new Vector3();
   const bounds = (distance) => {
     probe.position.copy(aim).addScaledVector(dir, distance);
@@ -184,6 +191,8 @@ export function barsWidget(ctx) {
   // What framing fits: the bars and zero plane, the back wall's gridlines and the left wall's.
   // Labels use the margin left over.
   const top = Math.max(0, ...bars.layouts[''].map((pair) => pair[1]));
+  // The compiled view direction; each aspect tilts from it, never from a previous fit.
+  const baseDir = camera.position.clone().sub(ctx.target).normalize();
   const corners = [];
   for (const x of [left, x1 + 0.3])
     for (const y of [floor, top])
@@ -220,7 +229,7 @@ export function barsWidget(ctx) {
         other[3] + LABEL_GAP / 2 <= rect[1]
       );
     for (const group of groups) {
-      const placed = group.map((label) => {
+      const placed = group.map((label, index) => {
         projected.copy(label.at).project(camera);
         const px = ((projected.x + 1) / 2) * width;
         const py = ((1 - projected.y) / 2) * height;
@@ -234,10 +243,11 @@ export function barsWidget(ctx) {
         const y = label.kind === 'cat' ? py + 4 : py - label.h / 2;
         label.x = Math.round(x);
         label.y = Math.round(y);
-        const rect = [x, y, x + label.w, y + label.h];
+        const inset = label.kind === 'cat' ? 0 : label.h * 0.2;
+        const rect = [x, y + inset, x + label.w, y + label.h - inset];
         const inside =
           projected.z < 1 && rect[0] >= 0 && rect[1] >= 0 && rect[2] <= width && rect[3] <= height;
-        return { label, rect, inside };
+        return { label, rect, inside, index };
       });
       // Only labels on stage and clear of earlier groups compete; ticks stride from zero.
       const open = placed.filter(
@@ -245,11 +255,11 @@ export function barsWidget(ctx) {
       );
       const anchor = Math.max(
         0,
-        open.findIndex((item) => item.label.kind === 'zero'),
+        placed.findIndex((item) => item.label.kind === 'zero'),
       );
       let chosen = [];
       for (let stride = 1; stride <= open.length; stride += 1) {
-        chosen = open.filter((_, i) => (((i - anchor) % stride) + stride) % stride === 0);
+        chosen = open.filter((item) => (((item.index - anchor) % stride) + stride) % stride === 0);
         if (
           chosen.every((item, a) =>
             chosen.every((other, b) => a === b || !overlaps(item.rect, other.rect)),
@@ -257,6 +267,8 @@ export function barsWidget(ctx) {
         )
           break;
       }
+      // A lone series label names one row of many; show rows only in pairs or more.
+      if (group[0]?.kind === 'row' && chosen.length < 2) chosen = [];
       for (const item of placed) {
         const show = chosen.includes(item);
         item.label.node.style.transform = `translate(${item.label.x}px, ${item.label.y}px)`;
@@ -423,7 +435,7 @@ export function barsWidget(ctx) {
         ...labels.filter((l) => l.kind !== 'cat' && l.kind !== 'row').map((l) => l.w),
       );
       const pad = width ? Math.min(0.3, (widest + 12) / width) : 0;
-      return fitBox(camera, ctx.target, corners, aspect, pad);
+      return fitBox(camera, ctx.target, baseDir, corners, aspect, pad);
     },
     sync() {
       if (bars.filterBind) applyFilter(ctx.api.readPath(bars.filterBind));
