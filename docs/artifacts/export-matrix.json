@@ -1,0 +1,1113 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-05T21:04:50.910Z",
+  "compilerVersion": "0.3.0",
+  "commit": "22a4c7883ac5b59ce22df1e1ec4d5ec39f1621e4",
+  "environment": {
+    "os": "win32 10.0.26200 x64",
+    "cpu": "Intel(R) Core(TM) i7-14700K x28",
+    "node": "v24.11.0",
+    "localBrowser": "157.0.8103.38",
+    "localBrowserSource": "installed",
+    "localRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "softwareGpu": false,
+    "cloud": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+  },
+  "thresholds": {
+    "minFrameColors": 6,
+    "minFrameLit": 0.02
+  },
+  "summary": {
+    "local": {
+      "passed": 28,
+      "failed": 0,
+      "blocked": 0,
+      "total": 28
+    },
+    "cloud": {
+      "passed": 0,
+      "failed": 0,
+      "blocked": 28,
+      "total": 28
+    },
+    "repeats": [
+      {
+        "backend": "local",
+        "fixture": "scene-3d-basic",
+        "passed": 20,
+        "runs": 20,
+        "status": "pass"
+      },
+      {
+        "backend": "local",
+        "fixture": "product-3d-speaker",
+        "passed": 20,
+        "runs": 20,
+        "status": "pass"
+      },
+      {
+        "backend": "local",
+        "fixture": "globe-3d-routes",
+        "passed": 20,
+        "runs": 20,
+        "status": "pass"
+      },
+      {
+        "backend": "cloud",
+        "fixture": "scene-3d-basic",
+        "passed": 0,
+        "runs": 20,
+        "status": "blocked"
+      },
+      {
+        "backend": "cloud",
+        "fixture": "product-3d-speaker",
+        "passed": 0,
+        "runs": 20,
+        "status": "blocked"
+      },
+      {
+        "backend": "cloud",
+        "fixture": "globe-3d-routes",
+        "passed": 0,
+        "runs": 20,
+        "status": "blocked"
+      }
+    ]
+  },
+  "combos": [
+    {
+      "widget": "scene-3d",
+      "fixture": "scene-3d-basic",
+      "format": "png",
+      "backend": "local",
+      "status": "pass",
+      "ms": 1345,
+      "bytes": 1341543,
+      "sha256": "886cbdb462a765815e403b6da20ce2420a92d298eb9591f81ac77b7758206105",
+      "image": {
+        "width": 2880,
+        "height": 2554
+      },
+      "scenes": 1,
+      "frames": [
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 267,
+          "lit": 0.248
+        }
+      ],
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "browser": "157.0.8103.38"
+    },
+    {
+      "widget": "scene-3d",
+      "fixture": "scene-3d-basic",
+      "format": "png",
+      "backend": "cloud",
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "widget": "scene-3d",
+      "fixture": "scene-3d-basic",
+      "format": "pdf",
+      "backend": "local",
+      "status": "pass",
+      "ms": 873,
+      "bytes": 255719,
+      "scenes": 1,
+      "frames": [
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 267,
+          "lit": 0.248
+        }
+      ],
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "browser": "157.0.8103.38"
+    },
+    {
+      "widget": "scene-3d",
+      "fixture": "scene-3d-basic",
+      "format": "pdf",
+      "backend": "cloud",
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "widget": "model-3d",
+      "fixture": "model-3d-crate",
+      "format": "png",
+      "backend": "local",
+      "status": "pass",
+      "ms": 1246,
+      "bytes": 1923444,
+      "sha256": "68dfb1f4d5c4910991538fdd1a770d7246ea784751165e39ac8e04b3189f71c8",
+      "image": {
+        "width": 2880,
+        "height": 2674
+      },
+      "scenes": 1,
+      "frames": [
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 156,
+          "lit": 0.321
+        }
+      ],
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "browser": "157.0.8103.38"
+    },
+    {
+      "widget": "model-3d",
+      "fixture": "model-3d-crate",
+      "format": "png",
+      "backend": "cloud",
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "widget": "model-3d",
+      "fixture": "model-3d-crate",
+      "format": "pdf",
+      "backend": "local",
+      "status": "pass",
+      "ms": 950,
+      "bytes": 850917,
+      "scenes": 1,
+      "frames": [
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 156,
+          "lit": 0.321
+        }
+      ],
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "browser": "157.0.8103.38"
+    },
+    {
+      "widget": "model-3d",
+      "fixture": "model-3d-crate",
+      "format": "pdf",
+      "backend": "cloud",
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "widget": "product-3d",
+      "fixture": "product-3d-speaker",
+      "format": "png",
+      "backend": "local",
+      "status": "pass",
+      "ms": 1398,
+      "bytes": 1749606,
+      "sha256": "52f234f2a14978b13bbca1fc25456417363385f5968c11ebb1486bb3db27dc89",
+      "image": {
+        "width": 2880,
+        "height": 3338
+      },
+      "scenes": 1,
+      "frames": [
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 121,
+          "lit": 0.334
+        }
+      ],
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "browser": "157.0.8103.38"
+    },
+    {
+      "widget": "product-3d",
+      "fixture": "product-3d-speaker",
+      "format": "png",
+      "backend": "cloud",
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "widget": "product-3d",
+      "fixture": "product-3d-speaker",
+      "format": "pdf",
+      "backend": "local",
+      "status": "pass",
+      "ms": 1047,
+      "bytes": 309583,
+      "scenes": 1,
+      "frames": [
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 121,
+          "lit": 0.334
+        }
+      ],
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "browser": "157.0.8103.38"
+    },
+    {
+      "widget": "product-3d",
+      "fixture": "product-3d-speaker",
+      "format": "pdf",
+      "backend": "cloud",
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "widget": "particles-3d",
+      "fixture": "particles-3d-galaxy",
+      "format": "png",
+      "backend": "local",
+      "status": "pass",
+      "ms": 1174,
+      "bytes": 2348357,
+      "sha256": "b8d4d2b88fefbfe6221dc2e644d84a359f3ae4080b9d3ddddc3a389e695ff4aa",
+      "image": {
+        "width": 2880,
+        "height": 2232
+      },
+      "scenes": 1,
+      "frames": [
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 49,
+          "lit": 0.416
+        }
+      ],
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "browser": "157.0.8103.38"
+    },
+    {
+      "widget": "particles-3d",
+      "fixture": "particles-3d-galaxy",
+      "format": "png",
+      "backend": "cloud",
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "widget": "particles-3d",
+      "fixture": "particles-3d-galaxy",
+      "format": "pdf",
+      "backend": "local",
+      "status": "pass",
+      "ms": 858,
+      "bytes": 933651,
+      "scenes": 1,
+      "frames": [
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 49,
+          "lit": 0.416
+        }
+      ],
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "browser": "157.0.8103.38"
+    },
+    {
+      "widget": "particles-3d",
+      "fixture": "particles-3d-galaxy",
+      "format": "pdf",
+      "backend": "cloud",
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "widget": "text-3d",
+      "fixture": "text-3d-hero",
+      "format": "png",
+      "backend": "local",
+      "status": "pass",
+      "ms": 1381,
+      "bytes": 1258274,
+      "sha256": "2d7056bc54e5e9a9eb3f306bf6c9d1df936dfc65140762e7b9092c16404660de",
+      "image": {
+        "width": 2880,
+        "height": 2046
+      },
+      "scenes": 1,
+      "frames": [
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 304,
+          "lit": 0.263
+        }
+      ],
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "browser": "157.0.8103.38"
+    },
+    {
+      "widget": "text-3d",
+      "fixture": "text-3d-hero",
+      "format": "png",
+      "backend": "cloud",
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "widget": "text-3d",
+      "fixture": "text-3d-hero",
+      "format": "pdf",
+      "backend": "local",
+      "status": "pass",
+      "ms": 1086,
+      "bytes": 324355,
+      "scenes": 1,
+      "frames": [
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 304,
+          "lit": 0.263
+        }
+      ],
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "browser": "157.0.8103.38"
+    },
+    {
+      "widget": "text-3d",
+      "fixture": "text-3d-hero",
+      "format": "pdf",
+      "backend": "cloud",
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "widget": "shader-3d",
+      "fixture": "shader-3d-presets",
+      "format": "png",
+      "backend": "local",
+      "status": "pass",
+      "ms": 4061,
+      "bytes": 9573931,
+      "sha256": "3a5ab0d22ba60e13a608ef5c32bf87b4680d63cbfba10dae7e26eedc899d2fd9",
+      "image": {
+        "width": 2880,
+        "height": 8570
+      },
+      "scenes": 5,
+      "frames": [
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 68,
+          "lit": 0.392
+        },
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 38,
+          "lit": 0.333
+        },
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 40,
+          "lit": 0.434
+        },
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 69,
+          "lit": 0.471
+        },
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 75,
+          "lit": 0.48
+        }
+      ],
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "browser": "157.0.8103.38"
+    },
+    {
+      "widget": "shader-3d",
+      "fixture": "shader-3d-presets",
+      "format": "png",
+      "backend": "cloud",
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "widget": "shader-3d",
+      "fixture": "shader-3d-presets",
+      "format": "pdf",
+      "backend": "local",
+      "status": "pass",
+      "ms": 3902,
+      "bytes": 12784852,
+      "scenes": 5,
+      "frames": [
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 68,
+          "lit": 0.392
+        },
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 38,
+          "lit": 0.333
+        },
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 40,
+          "lit": 0.434
+        },
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 69,
+          "lit": 0.471
+        },
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 75,
+          "lit": 0.48
+        }
+      ],
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "browser": "157.0.8103.38"
+    },
+    {
+      "widget": "shader-3d",
+      "fixture": "shader-3d-presets",
+      "format": "pdf",
+      "backend": "cloud",
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "widget": "morph-3d",
+      "fixture": "morph-3d-shapes",
+      "format": "png",
+      "backend": "local",
+      "status": "pass",
+      "ms": 1479,
+      "bytes": 1584393,
+      "sha256": "409cfbd797974c80f88a36eb756b413de9b7df4e0e3758c10212a502976780ba",
+      "image": {
+        "width": 2880,
+        "height": 2608
+      },
+      "scenes": 1,
+      "frames": [
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 197,
+          "lit": 0.338
+        }
+      ],
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "browser": "157.0.8103.38"
+    },
+    {
+      "widget": "morph-3d",
+      "fixture": "morph-3d-shapes",
+      "format": "png",
+      "backend": "cloud",
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "widget": "morph-3d",
+      "fixture": "morph-3d-shapes",
+      "format": "pdf",
+      "backend": "local",
+      "status": "pass",
+      "ms": 1209,
+      "bytes": 587286,
+      "scenes": 1,
+      "frames": [
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 197,
+          "lit": 0.338
+        }
+      ],
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "browser": "157.0.8103.38"
+    },
+    {
+      "widget": "morph-3d",
+      "fixture": "morph-3d-shapes",
+      "format": "pdf",
+      "backend": "cloud",
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "widget": "network-3d",
+      "fixture": "network-3d-basic",
+      "format": "png",
+      "backend": "local",
+      "status": "pass",
+      "ms": 1414,
+      "bytes": 2215523,
+      "sha256": "2a7f590b2ac76f59646876330662a9b06bc57c0b331eb77ff08798689ff32438",
+      "image": {
+        "width": 2880,
+        "height": 4164
+      },
+      "scenes": 1,
+      "frames": [
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 268,
+          "lit": 0.143
+        }
+      ],
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "browser": "157.0.8103.38"
+    },
+    {
+      "widget": "network-3d",
+      "fixture": "network-3d-basic",
+      "format": "png",
+      "backend": "cloud",
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "widget": "network-3d",
+      "fixture": "network-3d-basic",
+      "format": "pdf",
+      "backend": "local",
+      "status": "pass",
+      "ms": 937,
+      "bytes": 458665,
+      "scenes": 1,
+      "frames": [
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 268,
+          "lit": 0.143
+        }
+      ],
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "browser": "157.0.8103.38"
+    },
+    {
+      "widget": "network-3d",
+      "fixture": "network-3d-basic",
+      "format": "pdf",
+      "backend": "cloud",
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "widget": "scatter-3d",
+      "fixture": "scatter-3d-basic",
+      "format": "png",
+      "backend": "local",
+      "status": "pass",
+      "ms": 1113,
+      "bytes": 1845656,
+      "sha256": "316814850c04eb7d1f70c0070c23fa37a01caba07b3d3a38ce0d4b052033f20c",
+      "image": {
+        "width": 2880,
+        "height": 3286
+      },
+      "scenes": 1,
+      "frames": [
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 223,
+          "lit": 0.372
+        }
+      ],
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "browser": "157.0.8103.38"
+    },
+    {
+      "widget": "scatter-3d",
+      "fixture": "scatter-3d-basic",
+      "format": "png",
+      "backend": "cloud",
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "widget": "scatter-3d",
+      "fixture": "scatter-3d-basic",
+      "format": "pdf",
+      "backend": "local",
+      "status": "pass",
+      "ms": 953,
+      "bytes": 348870,
+      "scenes": 1,
+      "frames": [
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 223,
+          "lit": 0.372
+        }
+      ],
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "browser": "157.0.8103.38"
+    },
+    {
+      "widget": "scatter-3d",
+      "fixture": "scatter-3d-basic",
+      "format": "pdf",
+      "backend": "cloud",
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "widget": "bars-3d",
+      "fixture": "bars-3d-stacked",
+      "format": "png",
+      "backend": "local",
+      "status": "pass",
+      "ms": 1274,
+      "bytes": 1664805,
+      "sha256": "dc784635ca42123383ad9a33bc7b84597d221b7bf960e7f3abd71e721def8dab",
+      "image": {
+        "width": 2880,
+        "height": 3426
+      },
+      "scenes": 1,
+      "frames": [
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 456,
+          "lit": 0.394
+        }
+      ],
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "browser": "157.0.8103.38"
+    },
+    {
+      "widget": "bars-3d",
+      "fixture": "bars-3d-stacked",
+      "format": "png",
+      "backend": "cloud",
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "widget": "bars-3d",
+      "fixture": "bars-3d-stacked",
+      "format": "pdf",
+      "backend": "local",
+      "status": "pass",
+      "ms": 945,
+      "bytes": 272609,
+      "scenes": 1,
+      "frames": [
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 456,
+          "lit": 0.394
+        }
+      ],
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "browser": "157.0.8103.38"
+    },
+    {
+      "widget": "bars-3d",
+      "fixture": "bars-3d-stacked",
+      "format": "pdf",
+      "backend": "cloud",
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "widget": "globe-3d",
+      "fixture": "globe-3d-routes",
+      "format": "png",
+      "backend": "local",
+      "status": "pass",
+      "ms": 1450,
+      "bytes": 2671301,
+      "sha256": "4c384312807ecbbaf73e86e3ffa2bb6a68841129d7d30ec03cadb78c979232ab",
+      "image": {
+        "width": 2880,
+        "height": 5056
+      },
+      "scenes": 1,
+      "frames": [
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 149,
+          "lit": 0.371
+        }
+      ],
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "browser": "157.0.8103.38"
+    },
+    {
+      "widget": "globe-3d",
+      "fixture": "globe-3d-routes",
+      "format": "png",
+      "backend": "cloud",
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "widget": "globe-3d",
+      "fixture": "globe-3d-routes",
+      "format": "pdf",
+      "backend": "local",
+      "status": "pass",
+      "ms": 920,
+      "bytes": 612705,
+      "scenes": 1,
+      "frames": [
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 149,
+          "lit": 0.371
+        }
+      ],
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "browser": "157.0.8103.38"
+    },
+    {
+      "widget": "globe-3d",
+      "fixture": "globe-3d-routes",
+      "format": "pdf",
+      "backend": "cloud",
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "widget": "point-cloud-3d",
+      "fixture": "point-cloud-3d-basic",
+      "format": "png",
+      "backend": "local",
+      "status": "pass",
+      "ms": 1149,
+      "bytes": 1915477,
+      "sha256": "fdb9eb9ada132778d60d23cab6b9955155affcfcedad6fa8d5985bc911996855",
+      "image": {
+        "width": 2880,
+        "height": 3554
+      },
+      "scenes": 1,
+      "frames": [
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 188,
+          "lit": 0.214
+        }
+      ],
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "browser": "157.0.8103.38"
+    },
+    {
+      "widget": "point-cloud-3d",
+      "fixture": "point-cloud-3d-basic",
+      "format": "png",
+      "backend": "cloud",
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "widget": "point-cloud-3d",
+      "fixture": "point-cloud-3d-basic",
+      "format": "pdf",
+      "backend": "local",
+      "status": "pass",
+      "ms": 827,
+      "bytes": 345641,
+      "scenes": 1,
+      "frames": [
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 188,
+          "lit": 0.214
+        }
+      ],
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "browser": "157.0.8103.38"
+    },
+    {
+      "widget": "point-cloud-3d",
+      "fixture": "point-cloud-3d-basic",
+      "format": "pdf",
+      "backend": "cloud",
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "widget": "terrain-3d",
+      "fixture": "terrain-3d-alpine",
+      "format": "png",
+      "backend": "local",
+      "status": "pass",
+      "ms": 1343,
+      "bytes": 1821139,
+      "sha256": "063210f78ffca33df6a06760d205ad341b118f5009d2d76275d066b83c5157f3",
+      "image": {
+        "width": 2880,
+        "height": 2788
+      },
+      "scenes": 1,
+      "frames": [
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 217,
+          "lit": 0.35
+        }
+      ],
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "browser": "157.0.8103.38"
+    },
+    {
+      "widget": "terrain-3d",
+      "fixture": "terrain-3d-alpine",
+      "format": "png",
+      "backend": "cloud",
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "widget": "terrain-3d",
+      "fixture": "terrain-3d-alpine",
+      "format": "pdf",
+      "backend": "local",
+      "status": "pass",
+      "ms": 1047,
+      "bytes": 741275,
+      "scenes": 1,
+      "frames": [
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 217,
+          "lit": 0.35
+        }
+      ],
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "browser": "157.0.8103.38"
+    },
+    {
+      "widget": "terrain-3d",
+      "fixture": "terrain-3d-alpine",
+      "format": "pdf",
+      "backend": "cloud",
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "widget": "timeline-3d",
+      "fixture": "timeline-3d-space",
+      "format": "png",
+      "backend": "local",
+      "status": "pass",
+      "ms": 1379,
+      "bytes": 1797426,
+      "sha256": "2951ff56716215b2e3c6d649d90ba1047d10cbb8f38f2745da49415dfc29ad7b",
+      "image": {
+        "width": 2880,
+        "height": 2900
+      },
+      "scenes": 1,
+      "frames": [
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 175,
+          "lit": 0.094
+        }
+      ],
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "browser": "157.0.8103.38"
+    },
+    {
+      "widget": "timeline-3d",
+      "fixture": "timeline-3d-space",
+      "format": "png",
+      "backend": "cloud",
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "widget": "timeline-3d",
+      "fixture": "timeline-3d-space",
+      "format": "pdf",
+      "backend": "local",
+      "status": "pass",
+      "ms": 1063,
+      "bytes": 355857,
+      "scenes": 1,
+      "frames": [
+        {
+          "width": 2108,
+          "height": 1184,
+          "colors": 175,
+          "lit": 0.094
+        }
+      ],
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "browser": "157.0.8103.38"
+    },
+    {
+      "widget": "timeline-3d",
+      "fixture": "timeline-3d-space",
+      "format": "pdf",
+      "backend": "cloud",
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    }
+  ],
+  "repeats": [
+    {
+      "backend": "local",
+      "fixture": "scene-3d-basic",
+      "runs": 20,
+      "passed": 20,
+      "status": "pass",
+      "msP50": 1109,
+      "msP95": 1149,
+      "distinctPng": 1
+    },
+    {
+      "backend": "local",
+      "fixture": "product-3d-speaker",
+      "runs": 20,
+      "passed": 20,
+      "status": "pass",
+      "msP50": 1419,
+      "msP95": 1485,
+      "distinctPng": 2
+    },
+    {
+      "backend": "local",
+      "fixture": "globe-3d-routes",
+      "runs": 20,
+      "passed": 20,
+      "status": "pass",
+      "msP50": 1484,
+      "msP95": 1576,
+      "distinctPng": 11
+    },
+    {
+      "backend": "cloud",
+      "fixture": "scene-3d-basic",
+      "runs": 20,
+      "passed": 0,
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "backend": "cloud",
+      "fixture": "product-3d-speaker",
+      "runs": 20,
+      "passed": 0,
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    },
+    {
+      "backend": "cloud",
+      "fixture": "globe-3d-routes",
+      "runs": 20,
+      "passed": 0,
+      "status": "blocked",
+      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    }
+  ],
+  "cases": [
+    {
+      "id": "no-webgl",
+      "backend": "local",
+      "expected": [
+        "webgl-unavailable"
+      ],
+      "code": "webgl-unavailable",
+      "status": "pass",
+      "detail": "1 of 1 3D scene(s) did not draw a live frame (unsupported); the static plan is not exported as success"
+    },
+    {
+      "id": "exhausted-budget",
+      "backend": "local",
+      "expected": [
+        "timeout"
+      ],
+      "code": "timeout",
+      "status": "pass",
+      "detail": "loading the page did not finish within the 300ms budget"
+    },
+    {
+      "id": "blocked-network",
+      "backend": "local",
+      "expected": [
+        "scene-error",
+        "timeout",
+        "load-failed"
+      ],
+      "code": "scene-error",
+      "status": "pass",
+      "detail": "1 of 1 3D scene(s) did not draw a live frame (error); the static plan is not exported as success"
+    },
+    {
+      "id": "invalid-spec",
+      "backend": "local",
+      "expected": [
+        "invalid-spec"
+      ],
+      "code": "invalid-spec",
+      "status": "pass",
+      "detail": "expected a meta object"
+    },
+    {
+      "id": "consent-missing",
+      "backend": "cloud",
+      "expected": [
+        "consent-required"
+      ],
+      "code": "consent-required",
+      "status": "pass",
+      "detail": "cloud export sends 1040838 bytes (sha256 f6bdce2b4cba794fe42d6f81a51d07cfd3ace55cbc4b8bb78f8b165bd51b96f7) to Cloudflare Browser Run; approve that manifest first"
+    },
+    {
+      "id": "consent-mismatch",
+      "backend": "cloud",
+      "expected": [
+        "consent-required"
+      ],
+      "code": "consent-required",
+      "status": "pass",
+      "detail": "the approved manifest does not match this page; nothing was sent"
+    },
+    {
+      "id": "rejected-token",
+      "backend": "cloud",
+      "expected": [
+        "cloud-unauthorized"
+      ],
+      "code": "cloud-unauthorized",
+      "status": "pass",
+      "detail": "Browser Run answered 401; 10000: Authentication error; the token needs the account permission \"Browser Rendering - Edit\""
+    }
+  ],
+  "approvals": []
+}

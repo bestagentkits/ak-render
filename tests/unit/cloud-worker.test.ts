@@ -10,6 +10,7 @@ import {
 import { handleRequest } from '../../apps/cloud/src/index.js';
 import { cachedDigests } from '../../apps/cloud/src/principal-cache.js';
 import { purgeExpiredShares } from '../../apps/cloud/src/share.js';
+import { browserRunBody } from '../../src/export/cloud-export.js';
 import { compile, VERSION } from '../../src/index.js';
 import {
   activeEntitlements,
@@ -361,7 +362,9 @@ describe('cloud renderer: export', () => {
     expect(response.headers.get('content-type')).toBe('image/png');
     const [call] = browserCalls;
     expect(call?.action).toBe('screenshot');
-    expect(call?.options['html']).toBe(compile(SPEC).html);
+    // The compiled page itself, pinned to high quality (and ready-gated when it has scenes).
+    expect(call?.options['html']).toBe(browserRunBody(compile(SPEC).html, 'png')['html']);
+    expect(String(call?.options['html'])).toContain(compile(SPEC).html.slice(-200));
     expect(call?.options['url']).toBeUndefined();
   });
 

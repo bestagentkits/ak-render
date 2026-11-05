@@ -17,35 +17,23 @@ import {
   type RouteLike,
   serveVirtualPage,
 } from '../audit/ui-audit-browser.js';
+import { ExportError, type ExportFormat } from './export-errors.js';
+import {
+  measureFrameSignal,
+  probeScenes,
+  unsignalledFrames,
+  withHighQuality,
+} from './export-ready.js';
 
-export const EXPORT_FORMATS = ['png', 'pdf'] as const;
-export type ExportFormat = (typeof EXPORT_FORMATS)[number];
+export {
+  EXPORT_FORMATS,
+  ExportError,
+  type ExportErrorCode,
+  type ExportFormat,
+} from './export-errors.js';
 
 export const DEFAULT_EXPORT_TIMEOUT_MS = 60_000;
 export const MAX_EXPORT_TIMEOUT_MS = 300_000;
-
-/** Why an export failed, stable for agents and scripts to branch on. */
-export type ExportErrorCode =
-  | 'usage'
-  | 'invalid-input'
-  | 'invalid-spec'
-  | 'browser-unavailable'
-  | 'driver-unavailable'
-  | 'load-failed'
-  | 'timeout'
-  | 'webgl-unavailable'
-  | 'scene-error'
-  | 'capture-failed'
-  | 'write-failed';
-
-export class ExportError extends Error {
-  constructor(
-    readonly code: ExportErrorCode,
-    message: string,
-  ) {
-    super(message);
-  }
-}
 
 export interface BrowserCandidate {
   source: 'flag' | 'env' | 'installed' | 'playwright';
@@ -190,33 +178,10 @@ export interface ExportReceipt {
   renderer: string;
   quality: 'high';
   scenes: number;
-  /** Pixel size of each frozen 3D frame. */
-  frames: { width: number; height: number }[];
+  /** Pixel size and sampled pixel signal of each frozen 3D frame. */
+  frames: { width: number; height: number; colors: number; lit: number }[];
   blockedRequests: number;
   missingAssets: number;
-}
-
-/** Scene states the page reports once every 3D block has settled. */
-interface SceneProbe {
-  states: string[];
-  renderer: string;
-}
-
-function probeScenes(): SceneProbe {
-  const states = [...document.querySelectorAll('[data-ak-3d]')].map(
-    (el) => el.getAttribute('data-ak-3d-state') ?? 'static',
-  );
-  let renderer = '';
-  const gl = document.createElement('canvas').getContext('webgl2');
-  if (gl !== null) {
-    const debug = gl.getExtension('WEBGL_debug_renderer_info');
-    renderer = String(
-      gl.getParameter(debug === null ? gl.RENDERER : debug.UNMASKED_RENDERER_WEBGL),
-    );
-    // Give the probe context back; a page with many scenes needs every slot.
-    gl.getExtension('WEBGL_lose_context')?.loseContext();
-  }
-  return { states, renderer };
 }
 
 /** Load a Playwright driver; Chrome alone is not enough to drive a capture. */
@@ -234,14 +199,6 @@ export async function driverAvailable(): Promise<boolean> {
 
 const DRIVER_MISSING =
   'no Playwright driver; install playwright-core (npm i playwright-core). It downloads no browser.';
-
-/** Pin the high-quality profile so the frame does not depend on the exporting machine's cores. */
-function withHighQuality(html: string): string {
-  return html.replace(/<html\b([^>]*)>/iu, (_match, attrs: string) => {
-    const kept = attrs.replace(/\sdata-ak-3d-quality="[^"]*"/giu, '');
-    return `<html${kept} data-ak-3d-quality="high">`;
-  });
-}
 
 const firstLine = (error: unknown): string =>
   (error instanceof Error ? error.message : String(error)).split('\n')[0] ?? 'unknown error';
@@ -345,10 +302,10 @@ export async function exportPage(options: ExportOptions): Promise<ExportReceipt>
         `${failed.length} of ${probe.states.length} 3D scene(s) did not draw a live frame (${[...new Set(failed)].join(', ')}); the static plan is not exported as success`,
       );
     }
-    let frames: { width: number; height: number }[] = [];
+    let frames: ExportReceipt['frames'] = [];
     if (probe.states.length > 0) {
       step = 'freezing the 3D frames';
-      frames = await page.evaluate(async () => {
+      const pinned = await page.evaluate(async () => {
         const api = (
           window as unknown as {
             akRender3d: { freeze(): { width: number; height: number }[] };
@@ -362,12 +319,24 @@ export async function exportPage(options: ExportOptions): Promise<ExportReceipt>
         );
         return pinned;
       });
-      if (frames.length !== probe.states.length) {
+      if (pinned.length !== probe.states.length) {
         throw new ExportError(
           'capture-failed',
-          `froze ${frames.length} of ${probe.states.length} 3D scene(s)`,
+          `froze ${pinned.length} of ${probe.states.length} 3D scene(s)`,
         );
       }
+      const signals = await page.evaluate(measureFrameSignal);
+      const blank = unsignalledFrames(signals);
+      if (signals.length !== pinned.length || blank.length > 0) {
+        throw new ExportError(
+          'capture-failed',
+          `${blank.length || pinned.length - signals.length} frozen 3D frame(s) carry no drawn pixels; a blank frame is not exported as success`,
+        );
+      }
+      frames = pinned.map((size, index) => ({
+        ...size,
+        ...(signals[index] ?? { colors: 0, lit: 0 }),
+      }));
     }
     step = 'capturing';
     let bytes: Buffer;

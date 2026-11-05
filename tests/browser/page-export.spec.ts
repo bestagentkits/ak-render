@@ -2,6 +2,12 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
+import {
+  MIN_FRAME_COLORS,
+  MIN_FRAME_LIT,
+  readExportOutcome,
+  withExportReadyScript,
+} from '../../src/export/export-ready.js';
 import { ExportError, exportDoctor, exportPage } from '../../src/export/page-export.js';
 import { compile } from '../../src/render/render.js';
 import { browserWorkspace } from './browser-workspace.js';
@@ -27,6 +33,9 @@ test.describe('local export', { tag: '@gl' }, () => {
     const [frame] = receipt.frames;
     expect(frame?.width).toBeGreaterThanOrEqual(2000);
     expect(Math.abs((frame?.width ?? 0) / (frame?.height ?? 1) - 16 / 9)).toBeLessThan(0.02);
+    // The frozen frame carries drawn pixels, not a cleared canvas.
+    expect(frame?.colors).toBeGreaterThanOrEqual(MIN_FRAME_COLORS);
+    expect(frame?.lit).toBeGreaterThanOrEqual(MIN_FRAME_LIT);
     const bytes = readFileSync(out);
     expect(bytes.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
     expect(bytes.readUInt32BE(16)).toBe(2880);
@@ -128,6 +137,21 @@ test.describe('local export', { tag: '@gl' }, () => {
     expect(error).toBeInstanceOf(ExportError);
     expect((error as ExportError).code).toBe('webgl-unavailable');
     expect(existsSync(out)).toBe(false);
+  });
+  test('the cloud settle script freezes a measured live frame under the page CSP', async ({
+    page,
+  }) => {
+    // Browser Run has no evaluate; the same check runs as an inline nonce script.
+    const url = `file://${workspace.write('scene-export-ready', withExportReadyScript(html, 30_000))}`;
+    await page.goto(url);
+    await expect(page.locator('html')).toHaveAttribute('data-ak-export', 'ready', {
+      timeout: 30_000,
+    });
+    const outcome = readExportOutcome(await page.content());
+    expect(outcome?.detail.states).toEqual(['ready']);
+    expect(outcome?.detail.renderer).not.toBe('');
+    expect(outcome?.detail.signals?.[0]?.colors).toBeGreaterThanOrEqual(MIN_FRAME_COLORS);
+    await expect(page.locator('.ak-3d-frame')).toHaveCount(1);
   });
   test('doctor names the browser and its WebGL 2 renderer', async () => {
     const report = await exportDoctor();
