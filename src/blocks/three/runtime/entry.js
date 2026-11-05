@@ -44,6 +44,7 @@ import {
   WebGLRenderer,
 } from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { mountScatter } from './scatter.js';
 
 const TONE_VARS = {
   accent: '--ak-color-accent',
@@ -715,11 +716,32 @@ function mount(el) {
   return record;
 }
 
+/**
+ * Widgets with their own mount, keyed by `data-ak-3d`; anything else is a scene.
+ * Each gets the shared kit and returns a record the shared loop drives.
+ */
+const WIDGETS = { scatter: mountScatter };
+function widgetKit() {
+  return {
+    api,
+    mounts,
+    schedule,
+    RENDER_SAMPLES,
+    cssColor,
+    toneColor,
+    isDark,
+    qualityProfile,
+    webgl2Available,
+  };
+}
+
 function mountAll() {
   for (const el of document.querySelectorAll('[data-ak-3d]')) {
     if ([...mounts].some((m) => m.el === el)) continue;
     try {
-      mount(el);
+      const widget = WIDGETS[el.getAttribute('data-ak-3d')];
+      if (widget) widget(el, widgetKit());
+      else mount(el);
     } catch (_error) {
       // A scene that cannot be built reports it; the page and its other scenes keep working.
       el.setAttribute('data-ak-3d-state', 'error');

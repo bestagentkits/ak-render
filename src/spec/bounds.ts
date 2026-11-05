@@ -22,6 +22,11 @@ export const LIMITS = {
   maxSerializedBytes: 1_000_000,
   /** Items in any single list. */
   maxListItems: 200,
+  /**
+   * Items in a flat column: a list of only numbers and strings, such as a
+   * `scatter-3d` data column. Each block's schema still sets its own maximum.
+   */
+  maxColumnValues: 20_000,
   /** Keys in an open-keyed map such as `state`. */
   maxMapKeys: 200,
   /** Length of a single-line string. */
@@ -70,11 +75,15 @@ function walk(value: unknown, path: string, depth: number, state: WalkState): vo
 
   if (Array.isArray(value)) {
     if (value.length > state.largestList) state.largestList = value.length;
-    if (value.length > LIMITS.maxListItems) {
+    const column =
+      value.length > LIMITS.maxListItems &&
+      value.every((item) => typeof item === 'number' || typeof item === 'string');
+    const limit = column ? LIMITS.maxColumnValues : LIMITS.maxListItems;
+    if (value.length > limit) {
       state.bag.add({
         code: 'SPEC_BOUNDS_ERROR',
         path,
-        message: `list has ${value.length} items, limit is ${LIMITS.maxListItems}`,
+        message: `list has ${value.length} items, limit is ${limit}`,
       });
     }
     for (let index = 0; index < value.length; index += 1) {
