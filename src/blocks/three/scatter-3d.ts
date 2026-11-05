@@ -222,14 +222,14 @@ function posterGrid(layout: ScatterLayout, at: ReturnType<typeof projector>): st
 type PosterLabel = { x: number; y: number; text: string; title: boolean };
 
 /** Same rule as the live overlay: titles are pulled inside the frame first, then ticks that
- * would leave it or overlap a placed label are dropped. Widths are estimated from the font size. */
+ * would leave it or overlap a placed label are dropped. Widths are estimated generously from the font size, since the fallback font varies. */
 function placeLabels(labels: PosterLabel[]): PosterLabel[] {
-  const inset = 4;
+  const inset = 6;
   const placed: { x0: number; x1: number; y0: number; y1: number }[] = [];
   const kept: PosterLabel[] = [];
   for (const label of [...labels.filter((l) => l.title), ...labels.filter((l) => !l.title)]) {
     const size = label.title ? 10 : 9;
-    const w = label.text.length * size * 0.6;
+    const w = label.text.length * size * 0.68;
     const h = size * 1.2;
     let { x, y } = label;
     const outside =

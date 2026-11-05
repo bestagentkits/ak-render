@@ -90,7 +90,7 @@ test.describe('scatter-3d', () => {
     await expect(control).toHaveValue('city-04');
   });
 
-  test('legend and state filter by group; brushing reports a count', async ({ page }) => {
+  test('legend and state filter by group', async ({ page }) => {
     await page.goto(pageUrl('scatter-3d-20k'));
     await ready(page);
     const control = page.locator('#cluster-input, [data-ak-id="cluster"] select');
@@ -110,7 +110,11 @@ test.describe('scatter-3d', () => {
 
     await control.selectOption('all');
     await expect(legacy).toHaveAttribute('aria-pressed', 'true');
+  });
 
+  test('brushing a region reports a count and Escape clears it', async ({ page }) => {
+    await page.goto(pageUrl('scatter-3d-basic'));
+    await ready(page);
     const brush = page.locator('.ak-sc-tools button', { hasText: 'Brush' });
     await brush.click();
     await expect(brush).toHaveAttribute('aria-pressed', 'true');
@@ -121,11 +125,9 @@ test.describe('scatter-3d', () => {
     await page.mouse.down();
     await page.mouse.move(box.x + box.width * 0.62, box.y + box.height * 0.62, { steps: 8 });
     await page.mouse.up();
-    await expect(page.locator('.ak-sc-status')).toContainText(
-      /[\d,]+ of 19,9\d\d visible points brushed/u,
-    );
+    await expect(page.locator('.ak-sc-status')).toContainText(/\d+ of 47 visible points brushed/u);
     await page.locator('.ak-3d-canvas').press('Escape');
-    await expect(page.locator('.ak-sc-status')).toContainText('of 20,000 points plotted');
+    await expect(page.locator('.ak-sc-status')).toContainText('of 48 points plotted');
   });
 
   for (const name of ['scatter-3d-basic', 'scatter-3d-20k'])
