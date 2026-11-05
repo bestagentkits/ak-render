@@ -13,6 +13,8 @@ import { isPlainObject } from '../json.js';
 
 /** Paths of the scalar columns that may use `maxColumnValues`: a block's `data.<column>`. */
 const COLUMN_PATH = /\]\.data\.(?:x|y|z|size|value|intensity|group|id)$/u;
+/** Paths of a block's `heights` grid and its rows, which may use `maxGridSide`. */
+const GRID_PATH = /\]\.heights(?:\[\d+\])?$/u;
 
 export const LIMITS = {
   /** Nesting depth of the raw document, root included. */
@@ -31,6 +33,11 @@ export const LIMITS = {
    * still sets its own maximum; every other list keeps `maxListItems`.
    */
   maxColumnValues: 20_000,
+  /**
+   * Rows in a block's `heights` grid, and numbers in each row: a `terrain-3d`
+   * heightmap up to 256 x 256. The block's schema still sets its own maximum.
+   */
+  maxGridSide: 256,
   /** Keys in an open-keyed map such as `state`. */
   maxMapKeys: 200,
   /** Length of a single-line string. */
@@ -83,7 +90,12 @@ function walk(value: unknown, path: string, depth: number, state: WalkState): vo
       value.length > LIMITS.maxListItems &&
       COLUMN_PATH.test(path) &&
       value.every((item) => typeof item === 'number' || typeof item === 'string');
-    const limit = column ? LIMITS.maxColumnValues : LIMITS.maxListItems;
+    const grid =
+      !column &&
+      value.length > LIMITS.maxListItems &&
+      GRID_PATH.test(path) &&
+      value.every((item) => typeof item === 'number' || Array.isArray(item));
+    const limit = column ? LIMITS.maxColumnValues : grid ? LIMITS.maxGridSide : LIMITS.maxListItems;
     if (value.length > limit) {
       state.bag.add({
         code: 'SPEC_BOUNDS_ERROR',

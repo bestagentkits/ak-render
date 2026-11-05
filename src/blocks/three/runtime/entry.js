@@ -56,10 +56,18 @@ import { mountPointCloud } from './point-cloud.js';
 import { productWidget } from './product.js';
 import { mountScatter } from './scatter.js';
 import { liveShaderResources, mountShader } from './shader.js';
+import { liveTerrainResources, terrainValid, terrainWidget } from './terrain.js';
 import { liveTextResources, mountText } from './text.js';
+import { liveTimelineResources, timelineWidget } from './timeline.js';
 
 /** Data widgets that add marks and transitions on top of the shared scene, by `data-ak-3d` kind. */
-const SCENE_WIDGETS = { bars: barsWidget, product: productWidget, morph: morphWidget };
+const SCENE_WIDGETS = {
+  bars: barsWidget,
+  product: productWidget,
+  morph: morphWidget,
+  timeline: timelineWidget,
+  terrain: terrainWidget,
+};
 
 const TONE_VARS = {
   accent: '--ak-color-accent',
@@ -252,6 +260,11 @@ function mount(el) {
   }
   // A morph whose targets cannot share one surface keeps its drawing and says so.
   if (el.getAttribute('data-ak-3d') === 'morph' && !morphValid(config)) {
+    el.setAttribute('data-ak-3d-state', 'error');
+    return null;
+  }
+  // So does a terrain whose heightmap is malformed.
+  if (el.getAttribute('data-ak-3d') === 'terrain' && !terrainValid(config)) {
     el.setAttribute('data-ak-3d-state', 'error');
     return null;
   }
@@ -862,6 +875,10 @@ function stats() {
     textResources: liveTextResources(),
     /** Morph geometries and materials still alive; zero once every morph is unmounted. */
     morphResources: liveMorphResources(),
+    /** Timeline paths, stems, halos and marker materials still alive; zero once every timeline is unmounted. */
+    timelineResources: liveTimelineResources(),
+    /** Terrain geometries and materials still alive; zero once every terrain is unmounted. */
+    terrainResources: liveTerrainResources(),
   };
 }
 

@@ -53,12 +53,17 @@ test.describe('text-3d', { tag: '@gl' }, () => {
     page.on('request', (request) => {
       if (!request.url().startsWith('file:')) requests.push(request.url());
     });
-    await page.setViewportSize({ width: 1200, height: 3600 });
+    // One material in view at a time: offscreen scenes park, so a software
+    // rasterizer draws a single scene instead of five at once.
+    await page.setViewportSize({ width: 1200, height: 800 });
     await page.goto(pageUrl('text-3d-materials'));
-    await allReady(page);
-    expect((await stats(page)).mounts).toBe(5);
-    for (const id of ['satin', 'metal', 'chrome', 'glass', 'neon'])
+    for (const id of ['satin', 'metal', 'chrome', 'glass', 'neon']) {
+      const scene = page.locator(`[data-ak-id="${id}"]`);
+      await scene.scrollIntoViewIfNeeded();
+      await expect(scene).toHaveAttribute('data-ak-3d-state', 'ready');
       expect(await colorCount(page, `[data-ak-id="${id}"] .ak-3d-canvas`)).toBeGreaterThan(40);
+    }
+    expect((await stats(page)).mounts).toBe(5);
     await expect(page.locator('[data-ak-id="metal"] .ak-tx-poster')).toBeHidden();
     await expect(page.locator('[data-ak-id="satin"] .ak-tx-pause')).toHaveCount(0);
     await expect(page.locator('[data-ak-id="metal"] .ak-tx-pause')).toHaveText('Pause');

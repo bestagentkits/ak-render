@@ -298,6 +298,22 @@ const THREE_D_SHOWCASE = {
     'Depot survey scan',
     'Thirty thousand laser returns read from a local scan file, at true proportions; pick a point for its exact coordinates or cut the roofs away.',
   ],
+  'timeline-3d-space': [
+    'Road to orbit',
+    'Twelve spaceflight milestones on a path in space; step, scrub or click and the camera flies to each one.',
+  ],
+  'timeline-3d-hundred': [
+    'A hundred sprints',
+    'One hundred milestones coiled into a rising spiral, still in order and one keystroke apart.',
+  ],
+  'terrain-3d-alpine': [
+    'Alpine flyover',
+    'A 256 x 256 heightmap of twin peaks and a glacial valley, with contours, an elevation legend and a flyover of four places.',
+  ],
+  'terrain-3d-crater': [
+    'Volcanic caldera',
+    'A caldera rim and a young cone in a volcanic colour ramp, with 50 m contours and each place at its elevation.',
+  ],
   'network-3d-stress': [
     'A thousand-node graph',
     'A large force-laid graph that shows the network widget holding up at scale.',
