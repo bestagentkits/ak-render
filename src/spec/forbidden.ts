@@ -40,6 +40,16 @@ export const FORBIDDEN_KEYS: readonly string[] = [
   'formaction',
   'dangerouslysetinnerhtml',
   'template',
+  // A 3D scene picks closed presets; it never carries shader or program source.
+  'shader',
+  'glsl',
+  'wgsl',
+  'vertexshader',
+  'fragmentshader',
+  // Prototype keys would rewrite an object's prototype instead of naming data.
+  '__proto__',
+  'prototype',
+  'constructor',
 ];
 
 /** Snake-case and kebab-case event-handler attributes. */

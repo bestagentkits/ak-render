@@ -12,6 +12,10 @@ Release mechanics and the compatibility contract live in
 ### Added
 - `edge-flow` diagram motion recipe: dashed relationships march and a glowing pulse travels each one while the diagram is in view, with a Pause flow control; the governor keeps it to one flowing diagram per page and stops it on selection, reduced motion, print and hidden tabs. The diagram showcase opens with a deploy pipeline drawn as dark cards with a mono subtitle, a glowing hub and a status pill.
 
+- `scene-3d` block: a nested 3D scene as typed data (primitive shapes, material
+  and lighting presets, camera, timeline, views) drawn live by a shared, inlined
+  three.js runtime and backed by a compiler-projected SVG plan for no-JS, print
+  and reduced motion. Picking an object writes page state. See [docs/3d.md](./docs/3d.md).
 - `exportDiagramSvg` writes a standalone, deterministic SVG of a contract 2 drawing; `window.akRenderDiagram.freeze()` settles diagram motion for capture; Motion Studio accepts a diagram adapter and inspects the drawing. See [docs/diagram-adapter.md](./docs/diagram-adapter.md#export-and-motion-studio).
 - 22 golden diagram cases with determinism, zero-fabrication, geometry, accessibility, offline, print, no-JS, preset and motion checks, and a recorded compile time, DOM size and memory baseline. See [docs/diagram-adapter.md](./docs/diagram-adapter.md#golden-cases-and-baseline).
 

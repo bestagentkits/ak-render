@@ -17,6 +17,16 @@ uses, as same-document SVG symbols.
 | Pixelarticons | `@iconify-json/pixelarticons` | 1.2.10 | MIT | Gerrit Halfmann |
 | Codicons | `@iconify-json/codicon` | 1.2.74 | CC BY 4.0 | Microsoft Corporation |
 
+## Three.js
+
+Pages that use a 3D block (`scene-3d` and the other `*-3d` blocks) inline the
+shared 3D runtime, which bundles [three.js](https://threejs.org) 0.170.0 (MIT,
+© 2010-2024 three.js authors). `scripts/generate-three-runtime.mjs`
+(`pnpm three:generate`) builds it from the pinned devDependency into
+`src/blocks/three/three-runtime.generated.ts`; each emitted page keeps the
+license line. A page without a 3D block ships none of it. License:
+https://github.com/mrdoob/three.js/blob/dev/LICENSE
+
 ## Attribution
 
 Codicons Â© Microsoft Corporation, licensed under
