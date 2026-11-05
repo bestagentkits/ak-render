@@ -158,6 +158,18 @@ describe('network-3d contract', () => {
     ]);
   });
 
+  it('gives each of eight cycled groups its own tone and shade', () => {
+    const html = compile(read('network-3d-stress'), { source: 'stress' }).html;
+    const swatches = [
+      ...html.matchAll(
+        /<li><span><span class="ak-net-swatch"( data-tone="[a-z]+"(?: data-ak-net-shade="\d")?)>/g,
+      ),
+    ].map((m) => m[1]);
+    expect(swatches).toHaveLength(8);
+    expect(new Set(swatches).size).toBe(8);
+    expect(swatches.join(' ')).not.toContain('warning');
+  });
+
   it('checks groups and the root', () => {
     expect(
       errors(graph([{ id: 'a', group: 'x' }], [], { groups: [{ id: 'y' }, { id: 'y' }] })),

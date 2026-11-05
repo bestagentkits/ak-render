@@ -11,6 +11,7 @@ import {
   AdditiveBlending,
   BufferAttribute,
   BufferGeometry,
+  CanvasTexture,
   Color,
   DirectionalLight,
   Fog,
@@ -21,15 +22,15 @@ import {
   LineSegments,
   MathUtils,
   Matrix4,
-  Mesh,
-  MeshBasicMaterial,
   MeshStandardMaterial,
+  NormalBlending,
   PerspectiveCamera,
   PMREMGenerator,
   Quaternion,
   Raycaster,
   Scene,
-  SphereGeometry,
+  Sprite,
+  SpriteMaterial,
   Vector2,
   Vector3,
   WebGLRenderer,
@@ -119,20 +120,27 @@ export function mountNetwork(el, kit) {
   scene.add(rim);
 
   // Nodes: one instanced icosphere, colored per group.
-  const toneColors = groups.map((g) => kit.toneColor(el, g.tone || 'accent'));
+  // Shades past the first round mix toward text or background, as the poster CSS does.
+  const textTone = kit.cssColor(el, '--ak-color-text', '#222222');
+  const SHADES = [null, [textTone, 0.4], [background, 0.45], [textTone, 0.62], [background, 0.62]];
+  const toneColors = groups.map((g) => {
+    const c = kit.toneColor(el, g.tone || 'accent');
+    const mix = SHADES[g.shade || 0];
+    return mix ? c.clone().lerp(mix[0], mix[1]) : c;
+  });
   const baseColor = ids.map((_, i) => toneColors[groupOf[i]] || toneColors[0] || new Color());
   const mutedTone = kit.cssColor(el, '--ak-color-text-muted', '#888888');
   const dimColor = baseColor.map((c) =>
     c
       .clone()
-      .lerp(mutedTone, 0.25)
-      .lerp(background, dark ? 0.5 : 0.42),
+      .lerp(mutedTone, dark ? 0.25 : 0.15)
+      .lerp(background, dark ? 0.5 : 0.34),
   );
   const nodeGeometry = new IcosahedronGeometry(1, quality === 'high' ? 3 : 2);
   const nodeMaterial = new MeshStandardMaterial({
     roughness: 0.32,
     metalness: 0.08,
-    envMapIntensity: 1.1,
+    envMapIntensity: dark ? 0.6 : 1.1,
   });
   const nodes = new InstancedMesh(nodeGeometry, nodeMaterial, Math.max(1, count));
   nodes.count = count;
@@ -174,15 +182,16 @@ export function mountNetwork(el, kit) {
   scene.add(links, hot, nodes);
 
   // A soft additive halo marks the selection beyond color alone.
-  const haloGeometry = new SphereGeometry(1, 32, 16);
-  const haloMaterial = new MeshBasicMaterial({
+  const haloGeometry = haloTexture();
+  const haloMaterial = new SpriteMaterial({
+    map: haloGeometry,
     color: accent,
     transparent: true,
-    opacity: dark ? 0.28 : 0.2,
-    blending: AdditiveBlending,
+    opacity: dark ? 0.55 : 0.45,
+    blending: dark ? AdditiveBlending : NormalBlending,
     depthWrite: false,
   });
-  const halo = new Mesh(haloGeometry, haloMaterial);
+  const halo = new Sprite(haloMaterial);
   halo.visible = false;
   scene.add(halo);
 
@@ -241,7 +250,7 @@ export function mountNetwork(el, kit) {
     if (selected >= 0 && visible(selected)) {
       halo.visible = true;
       halo.position.copy(point(selected));
-      halo.scale.setScalar((radius[selected] || 0.1) * 2.6);
+      halo.scale.setScalar((radius[selected] || 0.1) * 5);
     } else halo.visible = false;
     for (const [id, button] of pickButtons)
       button.setAttribute('aria-pressed', index.get(id) === selected ? 'true' : 'false');
@@ -309,8 +318,23 @@ export function mountNetwork(el, kit) {
     flyTo(point(i), Math.max(reach * 0.45, (radius[i] || 0.1) * 30));
   }
 
+  /** Drop the selection; a user action also clears the bound state. */
+  function clear(fromState) {
+    if (selected < 0) return;
+    selected = -1;
+    paint();
+    if (fromState) return;
+    api.fire(el, 'select', { value: '' });
+    if (config.bind) api.setPath(config.bind, '');
+  }
+
   function select(i, fromState) {
-    if (i < 0 || i >= count || i === selected) return;
+    if (i < 0 || i >= count) return;
+    if (i === selected) {
+      // A second pick on the selected node from the user lets go of it.
+      if (!fromState) clear(false);
+      return;
+    }
     selected = i;
     paint();
     focus(i);
@@ -436,6 +460,7 @@ export function mountNetwork(el, kit) {
     else if (k === '+' || k === '=') spherical.r *= 0.9;
     else if (k === '-') spherical.r *= 1.1;
     else if (k === 'Escape') {
+      clear(false);
       flyTo(home.target, home.position.distanceTo(home.target));
       event.preventDefault();
       return;
@@ -492,8 +517,15 @@ export function mountNetwork(el, kit) {
     const small = document.createElement('small');
     small.textContent = `${groups[groupOf[i]]?.label || ''} · ${neighbours[i].length} links`;
     tag.appendChild(small);
-    tag.style.left = `${((projected.x + 1) / 2) * width}px`;
-    tag.style.top = `${((1 - projected.y) / 2) * height}px`;
+    // Sit the tag above the sphere's projected rim, clamped inside the stage.
+    const r = (radius[i] || 0.1) * (i === selected ? 1.45 : 1);
+    const lift =
+      (r / (camera.position.distanceTo(point(i)) * Math.tan((camera.fov * Math.PI) / 360))) *
+      (height / 2);
+    const x = ((projected.x + 1) / 2) * width;
+    const half = tag.offsetWidth / 2;
+    tag.style.left = `${Math.min(width - half - 4, Math.max(half + 4, x))}px`;
+    tag.style.top = `${Math.max(tag.offsetHeight + 16, ((1 - projected.y) / 2) * height - lift)}px`;
   }
 
   const record = {
@@ -565,6 +597,7 @@ export function mountNetwork(el, kit) {
       if (config.bind) {
         const value = api.readPath(config.bind);
         if (typeof value === 'string' && index.has(value)) select(index.get(value), true);
+        else clear(true);
       }
       if (config.filterBind) {
         const value = api.readPath(config.filterBind);
@@ -655,4 +688,20 @@ export function mountNetwork(el, kit) {
   }
   record.tick(performance.now());
   return record;
+}
+
+/** A radial falloff that fades to zero at the edge, so the halo has no rim. */
+function haloTexture() {
+  const size = 128;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const g = canvas.getContext('2d');
+  const gradient = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  gradient.addColorStop(0, 'rgba(255,255,255,0.9)');
+  gradient.addColorStop(0.35, 'rgba(255,255,255,0.45)');
+  gradient.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gradient;
+  g.fillRect(0, 0, size, size);
+  return new CanvasTexture(canvas);
 }

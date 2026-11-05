@@ -34,8 +34,12 @@ import { TONES } from './scene-ir.js';
 export const MAX_NODES = 2000;
 export const MAX_EDGES = 4000;
 const MAX_GROUPS = 24;
-/** Groups without a tone take these in order, so neighbouring clusters contrast. */
-const TONE_CYCLE = ['accent', 'info', 'success', 'danger', 'neutral', 'warning'] as const;
+/**
+ * Groups without a tone take these in order, so neighbouring clusters contrast.
+ * Warning is left out: it sits too close to accent in most themes. Past one
+ * round, a shade (1-4) mixes the tone toward the text or the background color.
+ */
+const TONE_CYCLE = ['accent', 'info', 'success', 'danger', 'neutral'] as const;
 const FOV = 30;
 /** Poster nodes that carry a text label: the best connected, so the plan stays legible. */
 const POSTER_LABELS = 14;
@@ -106,7 +110,7 @@ interface Prepared {
   labels: string[];
   descriptions: string[];
   groupOf: number[];
-  groups: { id: string; label: string; tone: string }[];
+  groups: { id: string; label: string; tone: string; shade: number }[];
   edges: [number, number][];
   degree: number[];
   radius: number[];
@@ -171,10 +175,12 @@ function prepare(node: IrNode): Prepared {
   const addGroup = (id: string, label: string, tone?: string) => {
     if (groupIndex.has(id)) return;
     groupIndex.set(id, groups.length);
+    const k = groups.length;
     groups.push({
       id,
       label,
-      tone: tone ?? (TONE_CYCLE[groups.length % TONE_CYCLE.length] as string),
+      tone: tone ?? (TONE_CYCLE[k % TONE_CYCLE.length] as string),
+      shade: tone ? 0 : Math.floor(k / TONE_CYCLE.length) % 5,
     });
   };
   for (const g of declared) {
@@ -204,12 +210,17 @@ function prepare(node: IrNode): Prepared {
   const layout = (LAYOUTS as readonly string[]).includes(String(node.props.layout))
     ? (node.props.layout as Layout)
     : 'force';
-  const positions = layoutGraph(
+  const laid = layoutGraph(
     ids.map((id, i) => ({ id, group: groups[groupOf[i] ?? 0]?.id ?? '' })),
     edges.map(([a, b]) => ({ from: ids[a] as string, to: ids[b] as string })),
     layout,
     typeof node.props.root === 'string' ? node.props.root : undefined,
   );
+  // A force layout is a ball; widen it on the floor plane so it fills a 16:9 stage.
+  const positions: Vec3[] =
+    layout === 'force'
+      ? laid.map(([x, y, z]) => [Math.round(x * 140) / 100, y, Math.round(z * 140) / 100])
+      : laid;
   // Smaller graphs get larger nodes, so twelve nodes do not float as specks.
   const base = Math.min(0.45, Math.max(0.08, 1.1 / Math.cbrt(ids.length)));
   const radius = nodeRows.map((n, i) => {
@@ -267,7 +278,7 @@ export function networkConfig(node: IrNode): Record<string, JsonValue> {
     ids: p.ids,
     labels: p.labels,
     group: p.groupOf,
-    groups: p.groups.map((g) => ({ id: g.id, label: g.label, tone: g.tone })),
+    groups: p.groups.map((g) => ({ id: g.id, label: g.label, tone: g.tone, shade: g.shade })),
     radius: p.radius,
     position: p.positions.flat(),
     edges: p.edges.flat(),
@@ -303,8 +314,7 @@ function networkPoster(p: Prepared, label: string): string {
     .map((i) => {
       const point = at[i] as { x: number; y: number; depth: number };
       const r = Math.max(1.2, ((p.radius[i] ?? 0.1) / point.depth) * f);
-      const tone = p.groups[p.groupOf[i] ?? 0]?.tone ?? 'accent';
-      return `<circle class="ak-3d-mark ak-net-dot" data-tone="${tone}" cx="${r1(point.x)}" cy="${r1(point.y)}" r="${r1(r)}"/>`;
+      return `<circle class="ak-3d-mark ak-net-dot"${toneAttrs(p.groups[p.groupOf[i] ?? 0])} cx="${r1(point.x)}" cy="${r1(point.y)}" r="${r1(r)}"/>`;
     })
     .join('');
   const hubs = p.ids
@@ -323,12 +333,19 @@ function networkPoster(p: Prepared, label: string): string {
   )}" preserveAspectRatio="xMidYMid meet"><path class="ak-net-links${dense ? ' ak-net-dense' : ''}" d="${path}"/>${dots}<g class="ak-net-labels">${hubs}</g></svg>`;
 }
 
+function toneAttrs(group: { tone: string; shade: number } | undefined): string {
+  const tone = group?.tone ?? 'accent';
+  return group?.shade
+    ? ` data-tone="${tone}" data-ak-net-shade="${group.shade}"`
+    : ` data-tone="${tone}"`;
+}
+
 function legend(p: Prepared, filterable: boolean): string {
   if (p.groups.length < 2 && !filterable) return '';
   const counts = p.groups.map(() => 0);
   for (const g of p.groupOf) counts[g] = (counts[g] ?? 0) + 1;
-  const chip = (inner: string, value: string | null, tone?: string) => {
-    const swatch = tone ? `<span class="ak-net-swatch" data-tone="${tone}"></span>` : '';
+  const chip = (inner: string, value: string | null, group?: Prepared['groups'][number]) => {
+    const swatch = group ? `<span class="ak-net-swatch"${toneAttrs(group)}></span>` : '';
     return filterable
       ? `<li><button type="button" disabled data-ak-net-filter="${escapeAttribute(value ?? '')}" aria-pressed="false">${swatch}${inner}</button></li>`
       : `<li><span>${swatch}${inner}</span></li>`;
@@ -337,7 +354,7 @@ function legend(p: Prepared, filterable: boolean): string {
     chip(
       `<span>${escapeText(g.label)}</span><span class="ak-net-count">${counts[i] ?? 0}</span>`,
       g.id,
-      g.tone,
+      g,
     ),
   );
   if (filterable)
@@ -371,7 +388,7 @@ function nodeTable(p: Prepared, directed: boolean, selected: string): string {
         : `<td>${names(outs[i] ?? [])}</td>`;
       return `<tr data-ak-net-row="${escapeAttribute(id)}" data-ak-net-group="${escapeAttribute(group?.id ?? '')}"><th scope="row"><button type="button" disabled data-ak-3d-pick="${escapeAttribute(id)}" aria-pressed="${
         id === selected ? 'true' : 'false'
-      }"><span class="ak-3d-name">${escapeText(p.labels[i] ?? id)}</span>${description}</button></th><td><span class="ak-net-swatch" data-tone="${group?.tone ?? 'accent'}"></span>${escapeText(group?.label ?? '')}</td><td>${p.degree[i] ?? 0}</td>${links}</tr>`;
+      }"><span class="ak-3d-name">${escapeText(p.labels[i] ?? id)}</span>${description}</button></th><td><span class="ak-net-swatch"${toneAttrs(group)}></span>${escapeText(group?.label ?? '')}</td><td>${p.degree[i] ?? 0}</td>${links}</tr>`;
     })
     .join('');
   return `<div class="ak-net-table" tabindex="0" role="region" aria-label="Nodes and links"><table><caption>${p.ids.length} nodes, ${p.edges.length} links</caption><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;

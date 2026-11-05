@@ -12,12 +12,22 @@ export const NETWORK_CSS = `
 .ak-net-swatch[data-tone="warning"]{--ak-3d-tone:var(--ak-color-warning)}
 .ak-net-swatch[data-tone="danger"]{--ak-3d-tone:var(--ak-color-danger)}
 .ak-net-swatch[data-tone="info"]{--ak-3d-tone:var(--ak-color-info)}
+.ak-net-dot[data-ak-net-shade="1"]{fill:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 60%,var(--ak-color-text))}
+.ak-net-swatch[data-ak-net-shade="1"]{background:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 60%,var(--ak-color-text))}
+.ak-net-dot[data-ak-net-shade="2"]{fill:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 55%,var(--ak-color-background))}
+.ak-net-swatch[data-ak-net-shade="2"]{background:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 55%,var(--ak-color-background))}
+.ak-net-dot[data-ak-net-shade="3"]{fill:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 38%,var(--ak-color-text))}
+.ak-net-swatch[data-ak-net-shade="3"]{background:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 38%,var(--ak-color-text))}
+.ak-net-dot[data-ak-net-shade="4"]{fill:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 38%,var(--ak-color-background))}
+.ak-net-swatch[data-ak-net-shade="4"]{background:color-mix(in oklab,var(--ak-3d-tone,var(--ak-color-accent)) 38%,var(--ak-color-background))}
 .ak-net-legend{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:var(--ak-space-unit)}
 .ak-net-legend li>*{display:inline-flex;align-items:center;gap:.5em;font:inherit;font-size:.9em;color:var(--ak-color-text);background:var(--ak-color-surface);border:var(--ak-border-width) solid var(--ak-color-border);border-radius:999px;padding:.35em .9em;min-height:36px}
+.ak-net-legend li>span{border-color:transparent;background:none;min-height:0;padding:.2em .4em}
 .ak-net-legend button:not([disabled]){cursor:pointer}
 .ak-net-legend button[aria-pressed="true"]{border-color:var(--ak-color-accent);background:color-mix(in oklab,var(--ak-color-accent) 12%,var(--ak-color-surface));box-shadow:inset 0 0 0 1px var(--ak-color-accent)}
 .ak-net-legend button:focus-visible{outline:2px solid var(--ak-color-accent);outline-offset:2px}
 .ak-net-legend .ak-net-swatch{margin:0}
+.ak-net-table td:nth-child(2){white-space:nowrap}
 .ak-net-count{color:var(--ak-color-text-muted);font-variant-numeric:tabular-nums}
 .ak-net-table{max-height:26rem;overflow:auto;border:var(--ak-border-width) solid var(--ak-color-border);border-radius:var(--ak-radius-medium);background:var(--ak-color-surface)}
 .ak-net-table:focus-visible{outline:2px solid var(--ak-color-accent);outline-offset:2px}

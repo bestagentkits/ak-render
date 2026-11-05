@@ -88,6 +88,21 @@ test.describe('network-3d', () => {
     await expect(page.locator('.ak-net-tag')).toContainText('Orders');
   });
 
+  test('Escape and an empty state clear the selection', async ({ page }) => {
+    await page.goto(basic);
+    await ready(page);
+    const net = page.locator('[data-ak-3d="network"]');
+    await expect(net).toHaveAttribute('data-ak-net-selected', 'gateway');
+    await page.locator('.ak-3d-canvas').focus();
+    await page.keyboard.press('Escape');
+    await expect(net).toHaveAttribute('data-ak-net-selected', '');
+    await expect(page.locator('[data-ak-net-row][data-ak-net-near]')).toHaveCount(0);
+    await page.locator('[data-ak-3d-pick="cart"]').click();
+    await expect(net).toHaveAttribute('data-ak-net-selected', 'cart');
+    await page.locator('[data-ak-3d-pick="cart"]').click();
+    await expect(net).toHaveAttribute('data-ak-net-selected', '');
+  });
+
   test('a pointer pick on the canvas selects the node under it', async ({ page }) => {
     await page.goto(basic);
     await ready(page);
