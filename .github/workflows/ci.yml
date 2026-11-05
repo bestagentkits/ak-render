@@ -110,6 +110,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:browser
+      - name: Playwright timings
+        if: always()
+        run: node scripts/playwright-timings.mjs --top 25
 
   package:
     name: Build and package smoke
