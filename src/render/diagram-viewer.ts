@@ -13,6 +13,7 @@
  * animates by itself; the only transition (dimming) sits behind the motion guard.
  */
 
+import { diagramFreezeHook } from '../motion/diagram-motion.js';
 import { escapeAttribute } from './escape.js';
 import { MOTION_ALLOWED } from './motion.js';
 
@@ -478,4 +479,5 @@ function wireDiagramViewers() {
       } catch (error) {}
     }
   });
+  if (diagramViewers.length) ${diagramFreezeHook('function () { diagramViewers.forEach(function (viewer) { viewer.clear(); }); }')}
 }`;

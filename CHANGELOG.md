@@ -11,6 +11,7 @@ Release mechanics and the compatibility contract live in
 
 ### Added
 
+- `exportDiagramSvg` writes a standalone, deterministic SVG of a contract 2 drawing; `window.akRenderDiagram.freeze()` settles diagram motion for capture; Motion Studio accepts a diagram adapter and inspects the drawing. See [docs/diagram-adapter.md](./docs/diagram-adapter.md#export-and-motion-studio).
 - 22 golden diagram cases with determinism, zero-fabrication, geometry, accessibility, offline, print, no-JS, preset and motion checks, and a recorded compile time, DOM size and memory baseline. See [docs/diagram-adapter.md](./docs/diagram-adapter.md#golden-cases-and-baseline).
 
 - Diagram motion recipes for contract 2 drawings: `edge-trace`, `signal-relay`, `node-activation` and `sequence-playback`. One governor per page plays one diagram at a time, follows the viewer's selection, and stops on hide, theme switch, reduced motion and print; sequence playback never starts itself and names each step in a status line. See [docs/motion.md](./docs/motion.md#diagram-motion-governor).
