@@ -25,6 +25,7 @@ import { type NormalizeResult, normalizeSpec } from '../spec/normalize.js';
 import { loadTheme, type ResolvedTheme, resolveTheme } from '../theme/load-theme.js';
 import { builtinThemeCatalog, type ThemeCatalog } from '../theme/theme-catalog.js';
 import { type RenderContext, renderNode } from './blocks.js';
+import { DIAGRAM_VIEWER_MARKUP } from './diagram-viewer.js';
 import { assembleDocument } from './document.js';
 import { renderAttributes } from './escape.js';
 import { embeddedFontCss } from './font-faces.js';
@@ -85,6 +86,7 @@ const FEATURE_ORDER: readonly RuntimeFeature[] = [
   'theme',
   'chart',
   'diagram',
+  'diagram-viewer',
   'media',
   'outline',
   'frame',
@@ -327,6 +329,8 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
   // Code panels live in several blocks and nested props, and only some
   // languages are highlighted, so the emitted tokens decide this sheet.
   if (body.includes(SYNTAX_TOKEN_MARKUP)) features.add('syntax');
+  // Only a contract 2 drawing with declared capabilities gets viewer controls.
+  if (body.includes(DIAGRAM_VIEWER_MARKUP)) features.add('diagram-viewer');
   // Faces come first and need the rendered text, which decides their subsets.
   const fonts = embeddedFontCss(resolved, `${ir.meta.title}\n${body}`);
   const css = [fonts, buildCss(features, moduleFeatures, resolved, ir, usesIcons)]
