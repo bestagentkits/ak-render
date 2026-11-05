@@ -95,7 +95,7 @@ export const SUPPORTED_GLTF_EXTENSIONS: readonly string[] = [
 
 /** What the compiler learns from a local model: names for its controls, bounds for its plan. */
 export interface ModelInfo {
-  /** Animation clip names, in file order; unnamed clips are `clip-<n>`. */
+  /** Animation clip names, in file order; unnamed clips are `animation_<i>`, as GLTFLoader names them. */
   clips: string[];
   /** KHR_materials_variants names, in file order. */
   variants: string[];
@@ -713,12 +713,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function names(list: unknown, prefix: string): string[] {
+function names(list: unknown, fallback: (index: number) => string): string[] {
   if (!Array.isArray(list)) return [];
   return list.map((item, index) =>
     isRecord(item) && typeof item.name === 'string' && item.name !== ''
       ? item.name.slice(0, 64)
-      : `${prefix}-${index + 1}`,
+      : fallback(index),
   );
 }
 
@@ -766,8 +766,8 @@ function localMatrix(node: Record<string, unknown>): Matrix {
 export function describeGltf(json: Record<string, unknown>): ModelInfo {
   const variants = isRecord(json.extensions) ? json.extensions.KHR_materials_variants : undefined;
   const info: ModelInfo = {
-    clips: names(json.animations, 'clip'),
-    variants: isRecord(variants) ? names(variants.variants, 'variant') : [],
+    clips: names(json.animations, (i) => `animation_${i}`),
+    variants: isRecord(variants) ? names(variants.variants, (i) => `variant-${i + 1}`) : [],
   };
   const nodes = Array.isArray(json.nodes) ? json.nodes : [];
   const meshes = Array.isArray(json.meshes) ? json.meshes : [];

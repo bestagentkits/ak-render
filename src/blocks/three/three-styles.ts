@@ -40,6 +40,7 @@ export const THREE_CSS = `
 .ak-3d-control button:not([disabled]){cursor:pointer}
 .ak-3d-control button[aria-pressed="true"]{background:var(--ak-color-accent);border-color:var(--ak-color-accent);color:var(--ak-color-accent-contrast)}
 .ak-3d-control button:focus-visible{outline:2px solid var(--ak-color-accent);outline-offset:2px}
+.ak-3d-hotspots{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
 .ak-3d-hotspots .ak-3d-name{display:flex;align-items:center;gap:calc(var(--ak-space-unit)*.75)}
 .ak-3d-num{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--ak-color-accent);color:var(--ak-color-accent-contrast);font-size:.75em;font-weight:700;flex:none}
 .ak-3d-error{position:absolute;left:50%;bottom:calc(var(--ak-space-unit)*2);transform:translateX(-50%);margin:0;padding:calc(var(--ak-space-unit)*.75) calc(var(--ak-space-unit)*1.5);border-radius:var(--ak-radius-small);background:var(--ak-color-surface);border:var(--ak-border-width) solid var(--ak-color-danger);color:var(--ak-color-text);font-size:.875em}

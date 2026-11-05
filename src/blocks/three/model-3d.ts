@@ -141,6 +141,30 @@ function framingObjects(node: IrNode, info: ModelInfo | undefined): Record<strin
   return [...corners, ...points];
 }
 
+/**
+ * Point-framing leaves headroom the box-framed scene does not; move in so a
+ * model fills the stage like a scene does. An authored position is kept.
+ */
+const MODEL_DOLLY = 0.88;
+function tighten(camera: ReturnType<typeof frameCamera>, authored: JsonValue | undefined) {
+  if (
+    authored !== null &&
+    typeof authored === 'object' &&
+    !Array.isArray(authored) &&
+    Array.isArray(authored.position)
+  )
+    return camera;
+  const position = [0, 1, 2].map(
+    (axis) =>
+      Math.round(
+        ((camera.target[axis] ?? 0) +
+          ((camera.position[axis] ?? 0) - (camera.target[axis] ?? 0)) * MODEL_DOLLY) *
+          1000,
+      ) / 1000,
+  ) as Vec3;
+  return { ...camera, position };
+}
+
 function controls(kind: 'clip' | 'variant', names: readonly string[], current: string): string {
   if (names.length === 0) return '';
   const heading = kind === 'clip' ? 'Animation' : 'Finish';
@@ -177,7 +201,10 @@ export function renderModel(node: IrNode, context: RenderContext): string {
   const asset: ResolvedModelAsset | undefined = context.models?.get(node.id);
   const info = asset?.kind === 'inline' ? asset.info : undefined;
   const placed = placeObjects(planObjects(node, info));
-  const camera = frameCamera(placeObjects(framingObjects(node, info)), node.props.camera);
+  const camera = tighten(
+    frameCamera(placeObjects(framingObjects(node, info)), node.props.camera),
+    node.props.camera,
+  );
   const summary = stringProp(node, 'summary');
   const state = context.ir.state;
   const clips = info?.clips ?? [];

@@ -93,4 +93,10 @@ describe('describeGltf', () => {
     expect(info.bounds?.min).toEqual([-0.8, -0.25, -0.8]);
     expect(info.bounds?.max[1]).toBeCloseTo(0.75);
   });
+
+  it('names unnamed clips as GLTFLoader does', () => {
+    const json = JSON.parse(readFileSync(join(fixtures, 'models/crate.gltf'), 'utf8'));
+    for (const clip of json.animations) delete clip.name;
+    expect(describeGltf(json).clips).toEqual(['animation_0', 'animation_1']);
+  });
 });

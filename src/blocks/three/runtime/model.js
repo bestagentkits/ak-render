@@ -192,17 +192,24 @@ export function mountModel(el, kit) {
     if (!gltf || name === variant) return;
     const index = (config.variants || []).indexOf(name);
     if (index < 0) return;
+    const previous = variant;
     variant = name;
     const request = ++variantRequest;
     const parser = gltf.parser;
-    const materials = await Promise.all(
-      variantMeshes.map(({ mappings, base }) => {
-        const mapping = mappings.find(
-          (m) => Array.isArray(m.variants) && m.variants.includes(index),
-        );
-        return mapping ? parser.getDependency('material', mapping.material) : base;
-      }),
-    );
+    let materials;
+    try {
+      materials = await Promise.all(
+        variantMeshes.map(({ mappings, base }) => {
+          const mapping = mappings.find(
+            (m) => Array.isArray(m.variants) && m.variants.includes(index),
+          );
+          return mapping ? parser.getDependency('material', mapping.material) : base;
+        }),
+      );
+    } catch {
+      if (request === variantRequest) variant = previous;
+      return;
+    }
     if (request !== variantRequest) return;
     variantMeshes.forEach((entry, i) => {
       entry.mesh.material = materials[i];
@@ -261,7 +268,15 @@ export function mountModel(el, kit) {
   const pointers = new Map();
   let pinch = 0;
   let panning = false;
+  let engaged = false;
+  canvas.addEventListener('focus', () => {
+    engaged = true;
+  });
+  canvas.addEventListener('blur', () => {
+    engaged = false;
+  });
   const onPointerDown = (event) => {
+    engaged = true;
     canvas.setPointerCapture?.(event.pointerId);
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     panning = event.button === 2 || event.shiftKey;
@@ -298,7 +313,9 @@ export function mountModel(el, kit) {
     if (pointers.size < 2) pinch = 0;
     panning = false;
   };
+  // The wheel zooms only once the reader has engaged the stage, so page scroll never sticks.
   const onWheel = (event) => {
+    if (!engaged && !event.ctrlKey) return;
     event.preventDefault();
     spherical.r *= event.deltaY > 0 ? 1.1 : 0.9;
     applySpherical();
