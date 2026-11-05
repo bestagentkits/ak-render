@@ -29,6 +29,8 @@ export const MAX_SERIES = 12;
 export const MAX_BARS = 1000;
 /** Series take theme tones in this order unless they name one. */
 const SERIES_TONES = ['accent', 'info', 'success', 'warning', 'danger', 'neutral'] as const;
+/** Distinct hues the stylesheet derives from the accent for series without a tone. */
+const SERIES_HUES = 12;
 /** Bar footprint inside its unit cell, and the tallest stack in scene units relative to width. */
 const BAR_WIDTH = 0.62;
 const STACK_DEPTH = 0.9;
@@ -82,6 +84,8 @@ interface Entry {
   id: string;
   label: string;
   tone: string;
+  /** Set when the series names no tone: its position on the theme's categorical hue wheel. */
+  hue?: number;
 }
 
 function entries(node: IrNode, key: string): Entry[] {
@@ -92,6 +96,7 @@ function entries(node: IrNode, key: string): Entry[] {
     label: typeof item.label === 'string' ? item.label : String(item.id),
     tone:
       typeof item.tone === 'string' ? item.tone : (SERIES_TONES[i % SERIES_TONES.length] as string),
+    ...(typeof item.tone === 'string' ? {} : { hue: i % SERIES_HUES }),
   }));
 }
 
@@ -246,7 +251,6 @@ export function barsConfig(node: IrNode): Record<string, JsonValue> {
       categories: categories.map((category, c) => [round(x0 + c), category.label]),
       rows: mode === 'grouped' ? series.map((entry, s) => [round(z0 + s), entry.label]) : [],
       extent: [round(-halfX), round(halfX), round(-halfZ), round(halfZ)],
-      shades: series.map((_, s) => Math.floor(s / SERIES_TONES.length)),
       ...(typeof node.props.filterBind === 'string' ? { filterBind: node.props.filterBind } : {}),
     },
   };
@@ -269,37 +273,77 @@ export function barsPoster(model: BarsModel, label: string, unit: string): strin
   const inner = band * 0.78;
   const slot = mode === 'grouped' ? inner / series.length : inner;
   const parts: string[] = [];
-  for (const tick of ticks) {
-    parts.push(
-      `<line class="ak-bars-grid${tick === 0 ? ' ak-bars-zero' : ''}" x1="${PAD.left}" x2="${
-        W - PAD.right
-      }" y1="${y(tick)}" y2="${y(tick)}"/><text class="ak-bars-tick" x="${PAD.left - 8}" y="${
-        y(tick) + 4
-      }">${escapeText(formatValue(tick, unit))}</text>`,
-    );
-  }
-  const every = Math.ceil(categories.length / 12);
-  categories.forEach((category, c) => {
-    const left = PAD.left + c * band + (band - inner) / 2;
+  // Grouped bars too thin to read side by side become one small chart per series instead.
+  if (mode === 'grouped' && slot < 3) {
+    const rowH = plotH / series.length;
     series.forEach((entry, s) => {
-      const [bottom, top] = extents[c]?.[s] ?? [0, 0];
-      if (top === bottom) return;
-      const x = mode === 'grouped' ? left + s * slot : left;
+      const ry = (v: number) => round(PAD.top + s * rowH + ((domain[1] - v) / span) * (rowH - 4));
       parts.push(
-        `<rect class="ak-3d-mark" data-tone="${escapeAttribute(entry.tone)}"${shadeOf(s)} x="${round(
-          x,
-        )}" y="${y(top)}" width="${round(Math.max(slot - 1, 0.5))}" height="${round(
-          y(bottom) - y(top),
-        )}"/>`,
+        `<text class="ak-bars-tick" x="${PAD.left - 8}" y="${round(ry(0) + 4)}">${escapeText(
+          entry.label,
+        )}</text><line class="ak-bars-grid" x1="${PAD.left}" x2="${W - PAD.right}" y1="${ry(
+          0,
+        )}" y2="${ry(0)}"/>`,
       );
+      categories.forEach((_, c) => {
+        const [bottom, top] = extents[c]?.[s] ?? [0, 0];
+        if (top === bottom) return;
+        parts.push(
+          `<rect class="ak-3d-mark" data-tone="${escapeAttribute(entry.tone)}"${hueOf(entry)} x="${round(
+            PAD.left + c * band + (band - inner) / 2,
+          )}" y="${ry(top)}" width="${round(Math.max(inner, 2))}" height="${round(
+            Math.max(ry(bottom) - ry(top), 1),
+          )}"/>`,
+        );
+      });
     });
-    if (c % every === 0)
+  } else {
+    for (const tick of ticks) {
       parts.push(
-        `<text class="ak-bars-cat" x="${round(PAD.left + (c + 0.5) * band)}" y="${
-          H - PAD.bottom + 22
-        }">${escapeText(category.label)}</text>`,
+        `<line class="ak-bars-grid${tick === 0 ? ' ak-bars-zero' : ''}" x1="${PAD.left}" x2="${
+          W - PAD.right
+        }" y1="${y(tick)}" y2="${y(tick)}"/><text class="ak-bars-tick" x="${PAD.left - 8}" y="${
+          y(tick) + 4
+        }">${escapeText(formatValue(tick, unit))}</text>`,
       );
-  });
+    }
+    const every = Math.ceil(categories.length / 12);
+    categories.forEach((category, c) => {
+      const left = PAD.left + c * band + (band - inner) / 2;
+      series.forEach((entry, s) => {
+        const [bottom, top] = extents[c]?.[s] ?? [0, 0];
+        if (top === bottom) return;
+        const x = mode === 'grouped' ? left + s * slot : left;
+        parts.push(
+          `<rect class="ak-3d-mark" data-tone="${escapeAttribute(entry.tone)}"${hueOf(entry)} x="${round(
+            x,
+          )}" y="${y(top)}" width="${round(Math.max(slot - 1, 0.5))}" height="${round(
+            y(bottom) - y(top),
+          )}"/>`,
+        );
+      });
+      if (c % every === 0)
+        parts.push(
+          `<text class="ak-bars-cat" x="${round(PAD.left + (c + 0.5) * band)}" y="${
+            H - PAD.bottom + 22
+          }">${escapeText(category.label)}</text>`,
+        );
+    });
+  }
+  if (mode === 'grouped' && slot < 3) {
+    const every = Math.ceil(categories.length / 12);
+    categories.forEach((category, c) => {
+      if (c % every === 0)
+        parts.push(
+          `<text class="ak-bars-cat" x="${round(PAD.left + (c + 0.5) * band)}" y="${
+            H - PAD.bottom + 22
+          }">${escapeText(category.label)}</text>`,
+        );
+    });
+    return `<svg class="ak-3d-poster ak-bars-poster" viewBox="0 0 ${W} ${H}" role="img" aria-label="${escapeAttribute(
+      label,
+    )}" preserveAspectRatio="xMidYMid meet">${parts.join('')}</svg>`;
+  }
   parts.push(
     `<line class="ak-bars-zero" x1="${PAD.left}" x2="${W - PAD.right}" y1="${y(0)}" y2="${y(0)}"/>`,
   );
@@ -350,19 +394,18 @@ export function barsTable(
   )}</tr></thead><tbody>${body}</tbody></table></div>`;
 }
 
-/** Series past the sixth reuse a tone, so they take a deeper shade of it. */
-const shadeOf = (s: number) =>
-  s >= SERIES_TONES.length ? ` data-shade="${Math.floor(s / SERIES_TONES.length)}"` : '';
+/** A series without a tone takes its hue slot, so a dozen series stay apart in color. */
+const hueOf = (entry: Entry) => (entry.hue === undefined ? '' : ` data-series="${entry.hue}"`);
 
 function legend(series: Entry[]): string {
   const items = series
     .map(
-      (entry, s) =>
+      (entry) =>
         `<button type="button" disabled data-ak-bars-filter="${escapeAttribute(
           entry.id,
         )}" aria-pressed="false"><span class="ak-3d-mark ak-bars-swatch" data-tone="${escapeAttribute(
           entry.tone,
-        )}"${shadeOf(s)}></span>${escapeText(entry.label)}</button>`,
+        )}"${hueOf(entry)}></span>${escapeText(entry.label)}</button>`,
     )
     .join('');
   return `<div class="ak-bars-legend" role="group" aria-label="Series"><button type="button" disabled data-ak-bars-filter="" aria-pressed="true">All</button>${items}</div>`;

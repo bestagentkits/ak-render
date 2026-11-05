@@ -539,7 +539,7 @@ function mount(el) {
         -((event.clientY - rect.top) / rect.height) * 2 + 1,
       );
       raycaster.setFromCamera(pointer, camera);
-      const hit = raycaster.intersectObjects(pickable, false)[0];
+      const hit = raycaster.intersectObjects(pickable, false).find((h) => h.object.visible);
       if (hit) select(hit.object.userData.id);
     }
     downAt = null;
@@ -581,7 +581,21 @@ function mount(el) {
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
+    frameWidget();
     requestRender();
+  }
+  // A data widget reframes for each stage aspect until the reader moves the camera.
+  let framedAt = null;
+  function frameWidget() {
+    const fit = widget?.frame?.(camera.aspect);
+    if (!fit || (framedAt && camera.position.distanceToSquared(framedAt) > 1e-6)) return;
+    camera.position.set(...fit.position);
+    target.set(...fit.target);
+    camera.lookAt(target);
+    home.position.copy(camera.position);
+    home.target.copy(target);
+    readSpherical();
+    framedAt = camera.position.clone();
   }
   const resizeObserver = window.ResizeObserver ? new ResizeObserver(resize) : null;
   resizeObserver?.observe(stage);
