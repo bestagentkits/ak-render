@@ -210,6 +210,8 @@ test.describe('scatter-3d', () => {
     }
 
   test('without JavaScript every value is in the table under the poster', async ({ browser }) => {
+    // Laying out 20,000 table rows, then again for print, is slow on CI runners.
+    test.setTimeout(120_000);
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
     await page.goto(pageUrl('scatter-3d-20k'));
