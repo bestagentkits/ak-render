@@ -35,6 +35,18 @@ describe('export3dPosterSvg', () => {
     expect(export3dPosterSvg(fixture('network-3d-basic'))).not.toContain('--ak-pt-night');
   });
 
+  it('carries a product plan its finishes, pins and shadow', () => {
+    const svg = export3dPosterSvg(fixture('product-3d-speaker'), { scheme: 'auto' });
+    expect(svg).toContain('class="ak-3d-poster ak-product-poster"');
+    expect(svg).toContain('.ak-product-pin circle{');
+    expect(svg).toContain('.ak-3d-mark[data-tone="dark"]{--ak-3d-tone:');
+    expect(svg).toContain('.ak-product-poster .ak-3d-mark[data-tone="neutral"]');
+    expect(svg.match(/class="ak-product-pin"/gu)?.length).toBe(6);
+    // Standalone SVG is XML: every attribute carries a value.
+    expect(svg).not.toMatch(/<[a-z]+(?:\s+[a-z-]+="[^"]*")*\s+[a-z-]+[\s/>]/u);
+    expect(export3dPosterSvg(fixture('network-3d-basic'))).not.toContain('.ak-product-pin');
+  });
+
   it('draws a box as shaded faces', () => {
     const svg = export3dPosterSvg(fixture('scene-3d-basic'));
     expect(svg).toContain('class="ak-3d-face"');

@@ -255,6 +255,10 @@ const THREE_D_SHOWCASE = {
     'Particle presets',
     'Nebula, fountain, snow, fireflies, vortex and a custom mix, each from a seed and a few typed fields.',
   ],
+  'product-3d-speaker': [
+    'Studio speaker',
+    'A studio-lit speaker in four finishes, with numbered hotspots and an exploded view.',
+  ],
   'network-3d-stress': [
     'A thousand-node graph',
     'A large force-laid graph that shows the network widget holding up at scale.',

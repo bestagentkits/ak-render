@@ -108,8 +108,8 @@ export function isPickable(object: Record<string, JsonValue>): boolean {
   return object.shape !== 'plane' && object.shape !== 'group';
 }
 
-export function objectsOf(node: IrNode): Record<string, JsonValue>[] {
-  const raw = node.props.objects;
+export function objectsOf(node: IrNode, key = 'objects'): Record<string, JsonValue>[] {
+  const raw = node.props[key];
   return Array.isArray(raw) ? (raw.filter(isPlainObject) as Record<string, JsonValue>[]) : [];
 }
 
@@ -119,9 +119,9 @@ function listOf(node: IrNode, key: string): Record<string, JsonValue>[] {
 }
 
 /** Duplicate ids, unknown parents, parent cycles and depth, unknown timeline and view targets. */
-export function checkScene(node: IrNode, { bag }: CheckContext): void {
-  const objects = objectsOf(node);
-  const objectsPath = pathKey(node.path, 'objects');
+export function checkScene(node: IrNode, { bag }: CheckContext, key = 'objects'): void {
+  const objects = objectsOf(node, key);
+  const objectsPath = pathKey(node.path, key);
   const index = new Map<string, number>();
   const report = (path: string, message: string) =>
     bag.add({ code: 'SPEC_VALIDATION_ERROR', path, nodeId: node.id, message });

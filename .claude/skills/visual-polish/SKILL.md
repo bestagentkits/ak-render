@@ -90,6 +90,15 @@ metal metalness 0.85 roughness 0.32.
   neighbouring clusters never share a warm hue (accent, info, success,
   danger, neutral, warning). Fit the camera to projected node bounds, not to
   the layout extent.
+- **Products: details stand proud.** A driver, dial or port must sit in front
+  of the panel it is mounted on, or the beauty shot shows a blank box. Check
+  the plan for internal parts too: skip a part wholly inside another.
+- **Products: neutral finishes are mixes, not tokens.** A graphite or chalk
+  finish mixes the muted ink toward black or the surface toward white, so it
+  reads as a material in both schemes instead of flipping with the theme.
+- **Products: close-ups keep context.** A hotspot camera stands about three
+  quarters of the home distance away, turned partly toward the hotspot's side;
+  any closer and an exploded part fills the frame.
 
 ## Done means
 
