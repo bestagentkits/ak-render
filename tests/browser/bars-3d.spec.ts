@@ -129,6 +129,8 @@ test.describe('bars-3d', () => {
   });
 
   test('PNG and PDF export carry the live frame', async () => {
+    // Two full exports on CI software GL take longer than the default 30s.
+    test.setTimeout(120_000);
     const page = html('bars-3d-stacked');
     const outDir = workspace.dir();
     const png = await exportPage({ html: page, format: 'png', out: join(outDir, 'bars.png') });
