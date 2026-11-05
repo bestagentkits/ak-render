@@ -67,6 +67,33 @@ const DIM = 1;
 const PICKED = 2;
 const HIDDEN = 3;
 
+/** Mix two linear-sRGB colours in oklab, matching the CSS `color-mix(in oklab, ...)` legend swatches. */
+function mixOklab(a, b, t) {
+  const lab = (c) => {
+    const l = Math.cbrt(0.4122214708 * c.r + 0.5363325363 * c.g + 0.0514459929 * c.b);
+    const m = Math.cbrt(0.2119034982 * c.r + 0.6806995451 * c.g + 0.1073969566 * c.b);
+    const s = Math.cbrt(0.0883024619 * c.r + 0.2817188376 * c.g + 0.6299787005 * c.b);
+    return [
+      0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
+      1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+      0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s,
+    ];
+  };
+  const p = lab(a);
+  const q = lab(b);
+  const [L, A, B] = p.map((v, i) => v + (q[i] - v) * t);
+  const l = (L + 0.3963377774 * A + 0.2158037573 * B) ** 3;
+  const m = (L - 0.1055613458 * A - 0.0638541728 * B) ** 3;
+  const s = (L - 0.0894841775 * A - 1.291485548 * B) ** 3;
+  return a
+    .clone()
+    .setRGB(
+      4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+      -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+      -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
+    );
+}
+
 export function mountScatter(el, kit) {
   const { api } = kit;
   let config;
@@ -120,7 +147,7 @@ export function mountScatter(el, kit) {
   if (Array.isArray(config.palette))
     palette = config.palette.map((tone) =>
       tone.endsWith('-deep')
-        ? kit.toneColor(el, tone.slice(0, -5)).lerp(ink, 0.45)
+        ? mixOklab(kit.toneColor(el, tone.slice(0, -5)), ink, 0.6)
         : kit.toneColor(el, tone),
     );
   else if (config.palette === 'sequential') {
@@ -129,7 +156,7 @@ export function mountScatter(el, kit) {
     const high = kit.toneColor(el, 'danger');
     palette = Array.from({ length: 8 }, (_, i) => {
       const t = i / 7;
-      return t <= 0.5 ? low.clone().lerp(mid, t / 0.5) : mid.clone().lerp(high, (t - 0.5) / 0.5);
+      return t <= 0.5 ? mixOklab(low, mid, t / 0.5) : mixOklab(mid, high, (t - 0.5) / 0.5);
     });
   } else palette = [kit.toneColor(el, 'accent')];
 
@@ -648,10 +675,21 @@ export function mountScatter(el, kit) {
     const placed = [];
     for (const label of titlesFirst) {
       edge[label.axis](label.at, label.title ? 2.2 : 1).project(camera);
-      const x = ((v.x + 1) / 2) * width;
-      const y = ((1 - v.y) / 2) * height;
       label.w = label.w || label.span.offsetWidth;
       label.h = label.h || label.span.offsetHeight;
+      let x = ((v.x + 1) / 2) * width;
+      let y = ((1 - v.y) / 2) * height;
+      // Titles are pulled inside the stage; ticks that fall outside it are dropped.
+      const inset = 4;
+      const outside =
+        x - label.w / 2 < inset ||
+        x + label.w / 2 > width - inset ||
+        y - label.h / 2 < inset ||
+        y + label.h / 2 > height - inset;
+      if (label.span.className === 't') {
+        x = MathUtils.clamp(x, label.w / 2 + inset, width - label.w / 2 - inset);
+        y = MathUtils.clamp(y, label.h / 2 + inset, height - label.h / 2 - inset);
+      }
       const box = {
         x0: x - label.w / 2 - 2,
         x1: x + label.w / 2 + 2,
@@ -661,7 +699,7 @@ export function mountScatter(el, kit) {
       const clash = placed.some(
         (b) => box.x0 < b.x1 && box.x1 > b.x0 && box.y0 < b.y1 && box.y1 > b.y0,
       );
-      const hidden = v.z > 1 || clash;
+      const hidden = v.z > 1 || clash || (outside && label.span.className !== 't');
       if (!hidden) placed.push(box);
       label.span.style.visibility = hidden ? 'hidden' : '';
       label.span.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;

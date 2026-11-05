@@ -128,30 +128,43 @@ test.describe('scatter-3d', () => {
     await expect(page.locator('.ak-sc-status')).toContainText('of 20,000 points plotted');
   });
 
-  for (const width of [375, 768, 1440]) {
-    test(`axis labels never overlap at ${width}px`, async ({ page }) => {
-      await page.setViewportSize({ width, height: 900 });
-      await page.goto(pageUrl('scatter-3d-basic'));
-      await ready(page);
-      await page.waitForTimeout(200);
-      const clashes = await page.locator('.ak-sc-labels').evaluate((overlay) => {
-        const boxes = [...overlay.querySelectorAll('span')]
-          .filter((s) => getComputedStyle(s).visibility !== 'hidden')
-          .map((s) => s.getBoundingClientRect());
-        let count = 0;
-        for (let i = 0; i < boxes.length; i += 1)
-          for (let j = i + 1; j < boxes.length; j += 1) {
-            const a = boxes[i] as DOMRect;
-            const b = boxes[j] as DOMRect;
-            if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top)
-              count += 1;
-          }
-        return { count, shown: boxes.length };
+  for (const name of ['scatter-3d-basic', 'scatter-3d-20k'])
+    for (const width of [375, 768, 1440]) {
+      test(`${name} axis labels sit inside the stage without overlap at ${width}px`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width, height: 900 });
+        await page.goto(pageUrl(name));
+        await ready(page);
+        await page.waitForTimeout(200);
+        const result = await page.locator('.ak-3d-stage').evaluate((stage) => {
+          const frame = stage.getBoundingClientRect();
+          const spans = [...stage.querySelectorAll('.ak-sc-labels span')].filter(
+            (s) => getComputedStyle(s).visibility !== 'hidden',
+          );
+          const boxes = spans.map((s) => s.getBoundingClientRect());
+          let clashes = 0;
+          for (let i = 0; i < boxes.length; i += 1)
+            for (let j = i + 1; j < boxes.length; j += 1) {
+              const a = boxes[i] as DOMRect;
+              const b = boxes[j] as DOMRect;
+              if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top)
+                clashes += 1;
+            }
+          const outside = boxes.filter(
+            (r) =>
+              r.left < frame.left + 3.5 ||
+              r.right > frame.right - 3.5 ||
+              r.top < frame.top + 3.5 ||
+              r.bottom > frame.bottom - 3.5,
+          ).length;
+          const titles = spans.filter((s) => s.className === 't').length;
+          return { clashes, outside, titles, shown: boxes.length };
+        });
+        expect(result).toMatchObject({ clashes: 0, outside: 0, titles: 3 });
+        expect(result.shown).toBeGreaterThan(6);
       });
-      expect(clashes.count).toBe(0);
-      expect(clashes.shown).toBeGreaterThan(6);
-    });
-  }
+    }
 
   test('without JavaScript every value is in the table under the poster', async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });

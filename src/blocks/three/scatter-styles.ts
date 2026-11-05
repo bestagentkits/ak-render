@@ -25,7 +25,7 @@ export function rampColor(step: number): string {
 const tones = Object.entries(TONE_VARS)
   .map(
     ([tone, color]) =>
-      `.ak-sc .t-${tone}{--ak-sc-c:${color}}.ak-sc .t-${tone}-deep{--ak-sc-c:color-mix(in oklab,${color} 55%,var(--ak-color-text))}`,
+      `.ak-sc .t-${tone}{--ak-sc-c:${color}}.ak-sc .t-${tone}-deep{--ak-sc-c:color-mix(in oklab,${color} 40%,var(--ak-color-text))}`,
   )
   .join('\n');
 const ramp = Array.from(
