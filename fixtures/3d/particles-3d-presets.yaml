@@ -1,0 +1,43 @@
+version: 1
+meta:
+  title: Particle presets
+blocks:
+  - type: particles-3d
+    id: nebula
+    title: Nebula
+    summary: A soft cloud drifts on a noise field and turns slowly about its core.
+    preset: nebula
+  - type: particles-3d
+    id: fountain
+    title: Fountain
+    summary: Particles leap from one point and fall back under gravity, shrinking as they go.
+    preset: fountain
+    seed: 3
+  - type: particles-3d
+    id: snow
+    title: Snow
+    summary: Flakes fall through a box and drift on the wind.
+    preset: snow
+  - type: particles-3d
+    id: fireflies
+    title: Fireflies
+    summary: A few hundred lights wander and pulse in warm and green tones.
+    preset: fireflies
+    count: 600
+  - type: particles-3d
+    id: vortex
+    title: Vortex
+    summary: A ring of embers rises and is drawn into a spinning funnel.
+    preset: vortex
+  - type: particles-3d
+    id: custom
+    title: Custom emitter
+    summary: A sphere emitter with gravity and wind, colored from info to success and growing over its life.
+    preset: fountain
+    shape: sphere
+    fields: [wind, gravity]
+    colors: [info, success]
+    size: grow
+    speed: 0.6
+    count: 3000
+    seed: 42

@@ -494,6 +494,9 @@
         },
         {
           "$ref": "#/$defs/block-bars-3d"
+        },
+        {
+          "$ref": "#/$defs/block-particles-3d"
         }
       ]
     },
@@ -9020,6 +9023,121 @@
         }
       },
       "description": "Grouped or stacked 3D bars."
+    },
+    "block-particles-3d": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "summary"
+      ],
+      "properties": {
+        "type": {
+          "const": "particles-3d"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 600,
+          "description": "What the effect stands for, in words; the caption and the text alternative."
+        },
+        "preset": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "galaxy",
+            "nebula",
+            "fountain",
+            "snow",
+            "fireflies",
+            "vortex"
+          ]
+        },
+        "shape": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "point",
+            "sphere",
+            "ring",
+            "disc",
+            "box"
+          ]
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 2000,
+            "enum": [
+              "swirl",
+              "noise",
+              "gravity",
+              "wind",
+              "attract"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 5
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 64,
+          "maximum": 20000
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "colors": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 2000,
+            "enum": [
+              "accent",
+              "neutral",
+              "success",
+              "warning",
+              "danger",
+              "info"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 4
+        },
+        "size": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "constant",
+            "grow",
+            "shrink",
+            "pulse"
+          ]
+        },
+        "speed": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 4
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
+        }
+      },
+      "description": "Seeded 3D particle effect presets."
     }
   }
 }
