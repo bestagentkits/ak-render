@@ -130,6 +130,7 @@ void main() {
   float self = depth < 1.0 ? logDepth(depth) : 0.0;
   float response = 0.0;
   float filled = 0.0;
+  float behind = 0.0;
   float front = 1.0;
   vec4 nearest = vec4(0.0);
   for (int i = 0; i < 8; i++) {
@@ -141,7 +142,9 @@ void main() {
       front = d;
       nearest = texture2D(uColor, at);
     }
-    if (depth < 1.0) response += max(0.0, self - logDepth(d));
+    float step = depth < 1.0 ? self - logDepth(d) : 0.0;
+    response += max(0.0, step);
+    if (step > 0.02) behind += 1.0;
   }
   // A wider gap: points on most sides three steps out mean a hole in a surface; past an edge only half the ring is filled.
   float around = 0.0;
@@ -158,11 +161,17 @@ void main() {
     }
   }
   if (depth >= 1.0) {
-    if (filled < 5.0 && around < 6.0) {
-      gl_FragColor = vec4(0.0);
+    // Nothing drawn here but a frame line (written without depth): keep it, or the stage shows.
+    if (color.a > 0.0 || (filled < 5.0 && around < 6.0)) {
+      gl_FragColor = color;
+      #include <colorspace_fragment>
       return;
     }
     color = nearest;
+  } else if (behind >= 6.0) {
+    // A far point seen through a gap in a nearer surface is a pinhole too, not an edge to darken.
+    color = nearest;
+    response = 0.0;
   }
   gl_FragColor = vec4(color.rgb * exp(-uStrength * response / 8.0), color.a);
   #include <colorspace_fragment>
@@ -369,9 +378,12 @@ export function mountPointCloud(el, kit) {
     color: kit.cssColor(el, '--ak-color-border', '#d0d0d0'),
     transparent: true,
     opacity: dark ? 0.5 : 0.75,
+    // Frame lines test against the points but leave depth to them, so the eye-dome pass never outlines a line.
+    depthWrite: false,
   });
   const edgeMaterial = new LineBasicMaterial({
     color: ink.clone().lerp(background, dark ? 0.55 : 0.62),
+    depthWrite: false,
   });
   const grid = [];
   for (const axis of ['x', 'y', 'z']) {
@@ -385,6 +397,7 @@ export function mountPointCloud(el, kit) {
   const gridGeometry = new BufferGeometry();
   gridGeometry.setAttribute('position', new BufferAttribute(new Float32Array(grid), 3));
   const gridLines = new LineSegments(gridGeometry, gridMaterial);
+  gridLines.renderOrder = 1;
   const box = [];
   for (const [a, b] of [
     [
@@ -440,6 +453,7 @@ export function mountPointCloud(el, kit) {
   const boxGeometry = new BufferGeometry();
   boxGeometry.setAttribute('position', new BufferAttribute(new Float32Array(box), 3));
   const boxLines = new LineSegments(boxGeometry, edgeMaterial);
+  boxLines.renderOrder = 1;
   scene.add(gridLines, boxLines);
 
   // HTML overlay: tick labels and axis titles stay crisp text, projected each frame.
