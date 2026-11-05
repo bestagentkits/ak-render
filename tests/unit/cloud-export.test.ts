@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
+import { exportArtifact } from '../../apps/cloud/src/screenshot.js';
 import {
   BROWSER_RUN_API,
   browserRunBody,
@@ -292,4 +293,23 @@ describe('exportPageCloud', () => {
     }).catch((caught: unknown) => caught);
     expect((error as ExportError).code).toBe('cloud-failed');
   });
+});
+
+describe('Worker Browser Run binding', () => {
+  it('sends the same ready-gated body through the binding', async () => {
+    const seen: { action: string; options: Record<string, unknown> }[] = [];
+    const env = {
+      BROWSER: {
+        quickAction: async (action: string, options: Record<string, unknown>) => {
+          seen.push({ action, options });
+          return new Response(PNG, { status: 200 });
+        },
+      },
+    } as unknown as Parameters<typeof exportArtifact>[0];
+    const outcome = await exportArtifact(env, scenePage(), 'screenshot');
+    expect(outcome.status).toBe(200);
+    expect(seen[0]?.action).toBe('screenshot');
+    expect(seen[0]?.options).toEqual(browserRunBody(scenePage(), 'png'));
+    expect(seen[0]?.options['waitForSelector']).toMatchObject({ selector: EXPORT_READY_SELECTOR });
+  }, 20_000);
 });
