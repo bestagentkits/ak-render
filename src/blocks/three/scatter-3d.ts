@@ -427,11 +427,10 @@ export const scatter3dBlock: BlockModule = {
   definition: define({
     type: 'scatter-3d',
     category: 'data',
-    tags: ['3d', 'webgl', 'three', 'scatter', 'chart', 'interactive'],
-    useCases: ['explore three numeric variables at once', 'find clusters and outliers'],
+    tags: ['3d', 'chart'],
+    useCases: ['three-variable clusters and outliers'],
     purpose: `3D scatter plot of up to ${MAX_POINTS} points with real axes and units.`,
-    summary:
-      'Scatter 3D: x/y/z columns, size and color encodings, legend filter, pick and brush write state.',
+    summary: '3D scatter, pick and brush.',
     props: SCATTER_PROPS,
     runtimeFeatures: ['three'],
     actions: ['set-value'],

@@ -44,6 +44,7 @@ import {
   WebGLRenderer,
 } from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { mountModel } from './model.js';
 import { mountNetwork } from './network.js';
 import { mountScatter } from './scatter.js';
 
@@ -718,7 +719,7 @@ function mount(el) {
 }
 
 /** Widgets with their own runtime module, keyed by `data-ak-3d`; the rest mount as a scene. */
-const WIDGETS = { network: mountNetwork, scatter: mountScatter };
+const WIDGETS = { model: mountModel, network: mountNetwork, scatter: mountScatter };
 /** What a widget module needs from the shared runtime. */
 const kit = {
   api: () => api,
@@ -731,6 +732,10 @@ const kit = {
   qualityProfile,
   webgl2Available,
   RENDER_SAMPLES,
+  shadowMaterial,
+  RIGS,
+  trio,
+  v3,
 };
 
 function mountAll() {
@@ -791,7 +796,8 @@ export function boot(pageApi) {
     },
     ready() {
       return [...document.querySelectorAll('[data-ak-3d]')].every(
-        (el) => el.getAttribute('data-ak-3d-state') !== 'static' || !el.isConnected,
+        (el) =>
+          !['static', 'loading'].includes(el.getAttribute('data-ak-3d-state')) || !el.isConnected,
       );
     },
   };

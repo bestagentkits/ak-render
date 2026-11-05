@@ -35,6 +35,13 @@ export interface DocumentInput {
    * keeps it `'none'`.
    */
   connectOrigins?: string[];
+  /**
+   * The page loads a glTF model. GLTFLoader reads inlined models and their
+   * buffers through `fetch` (`data:`) and GLB textures through `blob:` URLs,
+   * so `connect-src` and `img-src` open to exactly those schemes and the
+   * allowed model origins; a page without a model keeps `connect-src 'none'`.
+   */
+  modelLoader?: boolean;
   themeToggle: boolean;
   /** Resolved theme density, emitted as a document-level attribute. */
   density: string;
@@ -73,7 +80,18 @@ function directives(
   // `'self'` lets the page's own relative assets load when the file is served
   // over HTTP(S) instead of opened from disk. It adds no fetch path: remote URLs
   // in the spec are still gated by the network policy before they reach markup.
-  const imageSources = ['data:', 'file:', "'self'", ...origins];
+  const loader = input.modelLoader === true;
+  const imageSources = [
+    ...new Set([
+      'data:',
+      ...(loader ? ['blob:'] : []),
+      'file:',
+      "'self'",
+      ...origins,
+      ...(loader ? connects : []),
+    ]),
+  ];
+  const connectSources = loader ? ['data:', 'blob:', ...connects] : connects;
   const mediaSources = ['file:', "'self'", ...origins];
   const parts = [
     "default-src 'none'",
@@ -81,7 +99,7 @@ function directives(
     "form-action 'none'",
     "frame-src 'none'",
     "object-src 'none'",
-    connects.length === 0 ? "connect-src 'none'" : `connect-src ${connects.join(' ')}`,
+    connectSources.length === 0 ? "connect-src 'none'" : `connect-src ${connectSources.join(' ')}`,
     // Only embedded `data:` faces are ever allowed; a page without one keeps fonts closed.
     input.css.includes('@font-face') ? 'font-src data:' : "font-src 'none'",
     `img-src ${imageSources.join(' ')}`,

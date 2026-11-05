@@ -74,10 +74,34 @@ const BUFFER_DATA_MIMES: ReadonlySet<string> = new Set([
 const IMAGE_MIMES: ReadonlySet<string> = new Set(Object.values(IMAGE_TYPES));
 
 /**
- * glTF extensions the bundled runtime can decode. Draco, Meshopt and KTX2
- * decoders are not bundled, so a model that requires one cannot render.
+ * glTF extensions a model may require: the ones the bundled GLTFLoader decodes
+ * in plain JavaScript. Draco, Meshopt and KTX2 need a WebAssembly or worker
+ * decoder that the page's CSP does not allow (see docs/3d.md), so a model that
+ * requires one fails at compile time instead of failing in the browser.
  */
-export const SUPPORTED_GLTF_EXTENSIONS: readonly string[] = [];
+export const SUPPORTED_GLTF_EXTENSIONS: readonly string[] = [
+  'KHR_materials_variants',
+  'KHR_mesh_quantization',
+  'KHR_texture_transform',
+  'KHR_materials_emissive_strength',
+  'KHR_materials_clearcoat',
+  'KHR_materials_transmission',
+  'KHR_materials_ior',
+  'KHR_materials_specular',
+  'KHR_materials_sheen',
+  'KHR_materials_unlit',
+  'EXT_texture_webp',
+];
+
+/** What the compiler learns from a local model: names for its controls, bounds for its plan. */
+export interface ModelInfo {
+  /** Animation clip names, in file order; unnamed clips are `animation_<i>`, as GLTFLoader names them. */
+  clips: string[];
+  /** KHR_materials_variants names, in file order. */
+  variants: string[];
+  /** Axis-aligned bounds of the default scene, when its accessors declare them. */
+  bounds?: { min: [number, number, number]; max: [number, number, number] };
+}
 
 /** Running total of inlined bytes for one page; share one across a page's models. */
 export interface ModelAssetBudget {
@@ -109,6 +133,7 @@ export type ResolvedModelAsset =
       bytes: number;
       /** Allowed remote origins the model's own URIs fetch from, sorted. */
       connectOrigins: string[];
+      info: ModelInfo;
     }
   | { kind: 'remote'; uri: string; connectOrigins: string[] };
 
@@ -128,6 +153,8 @@ interface Context {
   readonly origins: Set<string>;
   /** Bytes read for this model; committed to the budget only on success. */
   bytes: number;
+  /** The model's glTF JSON once parsed. */
+  json?: GltfJson;
 }
 
 /** Where inside a glTF a problem sits; absent for the model reference itself. */
@@ -137,6 +164,19 @@ interface Site {
 }
 
 type Role = 'buffer' | 'image';
+
+/**
+ * A resolver for `compile({ modelResolver })`: every model on the page reads
+ * from `baseDir` and shares one page budget.
+ */
+export function createModelResolver(
+  baseDir: string,
+  limits: ModelAssetLimits = MODEL_ASSET_LIMITS,
+): (reference: string, path: string, policy: NetworkPolicy) => ModelAssetResult {
+  const budget = createModelAssetBudget();
+  return (reference, path, policy) =>
+    resolveModelAsset(reference, { baseDir, path, policy, budget, limits });
+}
 
 /** Resolve one model reference. Never touches the network. */
 export function resolveModelAsset(
@@ -206,6 +246,7 @@ export function resolveModelAsset(
       mime,
       bytes: ctx.bytes,
       connectOrigins: [...ctx.origins].sort(),
+      info: describeGltf(ctx.json ?? {}),
     },
     diagnostics: bag.list(),
   };
@@ -596,6 +637,7 @@ function parseGltfJson(ctx: Context, bytes: Buffer): GltfJson | undefined {
       return undefined;
     }
   }
+  ctx.json = json;
   const images = Array.isArray(json.images) ? json.images : [];
   images.forEach((image, index) => {
     if (!isRecord(image) || image.mimeType === undefined) return;
@@ -669,4 +711,118 @@ function checkDataUri(ctx: Context, uri: string, site: Site, role: Role): void {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function names(list: unknown, fallback: (index: number) => string): string[] {
+  if (!Array.isArray(list)) return [];
+  // A repeated name gets its index so every clip or variant stays selectable.
+  const seen = new Set<string>();
+  return list.map((item, index) => {
+    const given =
+      isRecord(item) && typeof item.name === 'string' && item.name !== ''
+        ? item.name.slice(0, 64)
+        : fallback(index);
+    let name = given;
+    for (let n = index + 1; seen.has(name); n += 1) name = `${given} (${n})`;
+    seen.add(name);
+    return name;
+  });
+}
+
+type Matrix = number[];
+const IDENTITY: Matrix = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+
+function multiply(a: Matrix, b: Matrix): Matrix {
+  const out = new Array<number>(16).fill(0);
+  for (let c = 0; c < 4; c += 1)
+    for (let r = 0; r < 4; r += 1)
+      for (let k = 0; k < 4; k += 1)
+        out[c * 4 + r] = (out[c * 4 + r] ?? 0) + (a[k * 4 + r] ?? 0) * (b[c * 4 + k] ?? 0);
+  return out;
+}
+
+function numbers(value: unknown, length: number): number[] | undefined {
+  return Array.isArray(value) &&
+    value.length === length &&
+    value.every((n) => typeof n === 'number' && Number.isFinite(n))
+    ? (value as number[])
+    : undefined;
+}
+
+/** A node's local matrix, column-major as glTF stores it. */
+function localMatrix(node: Record<string, unknown>): Matrix {
+  const matrix = numbers(node.matrix, 16);
+  if (matrix !== undefined) return matrix;
+  const [tx = 0, ty = 0, tz = 0] = numbers(node.translation, 3) ?? [];
+  const [x = 0, y = 0, z = 0, w = 1] = numbers(node.rotation, 4) ?? [];
+  const [sx = 1, sy = 1, sz = 1] = numbers(node.scale, 3) ?? [];
+  // biome-ignore format: a 4x4 matrix reads best as four columns.
+  return [
+    (1 - 2 * (y * y + z * z)) * sx, 2 * (x * y + z * w) * sx, 2 * (x * z - y * w) * sx, 0,
+    2 * (x * y - z * w) * sy, (1 - 2 * (x * x + z * z)) * sy, 2 * (y * z + x * w) * sy, 0,
+    2 * (x * z + y * w) * sz, 2 * (y * z - x * w) * sz, (1 - 2 * (x * x + y * y)) * sz, 0,
+    tx, ty, tz, 1,
+  ];
+}
+
+/**
+ * Names and bounds read from the glTF JSON alone: clip and variant names for
+ * the block's controls, and the default scene's bounds (each POSITION
+ * accessor's min/max through its node's world transform) for the static plan.
+ */
+export function describeGltf(json: Record<string, unknown>): ModelInfo {
+  const variants = isRecord(json.extensions) ? json.extensions.KHR_materials_variants : undefined;
+  const info: ModelInfo = {
+    clips: names(json.animations, (i) => `animation_${i}`),
+    variants: isRecord(variants) ? names(variants.variants, (i) => `variant-${i + 1}`) : [],
+  };
+  const nodes = Array.isArray(json.nodes) ? json.nodes : [];
+  const meshes = Array.isArray(json.meshes) ? json.meshes : [];
+  const accessors = Array.isArray(json.accessors) ? json.accessors : [];
+  const scenes = Array.isArray(json.scenes) ? json.scenes : [];
+  const scene = scenes[typeof json.scene === 'number' ? json.scene : 0];
+  const roots = isRecord(scene) && Array.isArray(scene.nodes) ? scene.nodes : [];
+  const min = [Infinity, Infinity, Infinity];
+  const max = [-Infinity, -Infinity, -Infinity];
+  const seen = new Set<number>();
+  const visit = (index: unknown, parent: Matrix): void => {
+    if (typeof index !== 'number' || seen.has(index)) return;
+    seen.add(index);
+    const node = nodes[index];
+    if (!isRecord(node)) return;
+    const world = multiply(parent, localMatrix(node));
+    const mesh = typeof node.mesh === 'number' ? meshes[node.mesh] : undefined;
+    const primitives = isRecord(mesh) && Array.isArray(mesh.primitives) ? mesh.primitives : [];
+    for (const primitive of primitives) {
+      const attributes = isRecord(primitive) ? primitive.attributes : undefined;
+      const position = isRecord(attributes) ? attributes.POSITION : undefined;
+      const accessor = typeof position === 'number' ? accessors[position] : undefined;
+      if (!isRecord(accessor)) continue;
+      const lo = numbers(accessor.min, 3);
+      const hi = numbers(accessor.max, 3);
+      if (lo === undefined || hi === undefined) continue;
+      for (let corner = 0; corner < 8; corner += 1) {
+        const p = [0, 1, 2].map((axis) => ((corner >> axis) & 1 ? hi[axis] : lo[axis]) ?? 0);
+        for (let axis = 0; axis < 3; axis += 1) {
+          const v =
+            (world[axis] ?? 0) * (p[0] ?? 0) +
+            (world[4 + axis] ?? 0) * (p[1] ?? 0) +
+            (world[8 + axis] ?? 0) * (p[2] ?? 0) +
+            (world[12 + axis] ?? 0);
+          min[axis] = Math.min(min[axis] ?? v, v);
+          max[axis] = Math.max(max[axis] ?? v, v);
+        }
+      }
+    }
+    if (Array.isArray(node.children)) for (const child of node.children) visit(child, world);
+  };
+  for (const root of roots) visit(root, IDENTITY);
+  if ([...min, ...max].every(Number.isFinite)) {
+    const round = (n: number) => Math.round(n * 1e4) / 1e4;
+    info.bounds = {
+      min: min.map(round) as [number, number, number],
+      max: max.map(round) as [number, number, number],
+    };
+  }
+  return info;
 }
