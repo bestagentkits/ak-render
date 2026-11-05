@@ -272,7 +272,7 @@ export function frameCamera(
 ): SceneCamera {
   const given =
     authored !== null && typeof authored === 'object' && !Array.isArray(authored) ? authored : {};
-  const fov = typeof given.fov === 'number' ? given.fov : 45;
+  const fov = typeof given.fov === 'number' ? given.fov : 30;
   const drawn = objects.filter((object) => object.shape !== 'group');
   if (Array.isArray(given.position)) {
     return { position: vec(given.position, [0, 0, 0]), target: vec(given.target, [0, 0, 0]), fov };

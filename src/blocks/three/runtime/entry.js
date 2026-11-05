@@ -27,7 +27,7 @@ import {
   Mesh,
   MeshPhysicalMaterial,
   MeshStandardMaterial,
-  PCFSoftShadowMap,
+  PCFShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
   PMREMGenerator,
@@ -140,6 +140,16 @@ function isDark(el) {
   return hsl.l < 0.4;
 }
 
+/** Shadow tinted with the theme's ink, so it takes the page's warmth instead of neutral grey. */
+function shadowMaterial(el) {
+  const dark = isDark(el);
+  const ink = cssColor(el, '--ak-color-text', '#222222');
+  const tint = dark
+    ? new Color(0x000000)
+    : ink.clone().lerp(cssColor(el, '--ak-color-accent', '#886622'), 0.25);
+  return new ShadowMaterial({ color: tint, opacity: dark ? 0.5 : 0.2 });
+}
+
 function materialFor(kind, color) {
   if (kind === 'glass') {
     return new MeshPhysicalMaterial({
@@ -151,7 +161,13 @@ function materialFor(kind, color) {
       opacity: 0.6,
     });
   }
-  if (kind === 'metal') return new MeshStandardMaterial({ color, metalness: 0.9, roughness: 0.25 });
+  if (kind === 'metal')
+    return new MeshStandardMaterial({
+      color,
+      metalness: 0.85,
+      roughness: 0.32,
+      envMapIntensity: 1.6,
+    });
   if (kind === 'matte') return new MeshStandardMaterial({ color, metalness: 0, roughness: 0.95 });
   if (kind === 'wireframe') return new MeshStandardMaterial({ color, wireframe: true });
   if (kind === 'emissive')
@@ -238,7 +254,7 @@ function mount(el) {
   stage.appendChild(canvas);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, quality === 'high' ? 2 : 1));
   renderer.shadowMap.enabled = quality === 'high';
-  renderer.shadowMap.type = PCFSoftShadowMap;
+  renderer.shadowMap.type = PCFShadowMap;
   renderer.toneMapping = ACESFilmicToneMapping;
   // Dark themes carry pastel tones; less exposure keeps their faces apart instead of washing out.
   renderer.toneMappingExposure = isDark(el) ? 0.8 : 1;
@@ -250,7 +266,7 @@ function mount(el) {
   scene.environment = environment;
   scene.environmentIntensity = 0.55;
   const cfgCamera = config.camera || {};
-  const camera = new PerspectiveCamera(cfgCamera.fov || 45, 16 / 9, 0.05, 5000);
+  const camera = new PerspectiveCamera(cfgCamera.fov || 30, 16 / 9, 0.05, 5000);
   const home = {
     position: v3(cfgCamera.position, new Vector3(4, 3, 6)),
     target: v3(cfgCamera.target, new Vector3()),
@@ -294,7 +310,7 @@ function mount(el) {
       const isGround = spec.shape === 'plane' && (spec.tone || 'accent') === 'neutral';
       if (isGround) ground = true;
       const material = isGround
-        ? new ShadowMaterial({ opacity: isDark(el) ? 0.5 : 0.24 })
+        ? shadowMaterial(el)
         : materialFor(spec.material || 'standard', toneColor(el, spec.tone || 'accent'));
       owned.geometries.push(geometry);
       owned.materials.push(material);
@@ -330,10 +346,7 @@ function mount(el) {
     : bounds.getBoundingSphere(new Sphere());
   const radius = Math.max(sphere.radius, 0.5);
   const dark = isDark(el);
-  const catcher = new Mesh(
-    geometryFor('plane', 1),
-    new ShadowMaterial({ opacity: dark ? 0.45 : 0.2 }),
-  );
+  const catcher = new Mesh(geometryFor('plane', 1), shadowMaterial(el));
   owned.geometries.push(catcher.geometry);
   owned.materials.push(catcher.material);
   catcher.rotation.x = -Math.PI / 2;
@@ -362,7 +375,9 @@ function mount(el) {
     shadow.camera.updateProjectionMatrix();
     shadow.bias = -0.0004;
     shadow.normalBias = 0.02;
-    shadow.radius = 4;
+    // PCF honours radius: a wide penumbra so shadows settle into the stage, not stick to it.
+    shadow.radius = 9;
+    shadow.blurSamples = 16;
   }
   for (const light of scene.children) {
     if (light.isDirectionalLight && light !== keyLight) {

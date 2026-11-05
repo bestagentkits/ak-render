@@ -73,6 +73,7 @@ test.describe('local export', () => {
       (caught: unknown) => caught,
     );
     expect((error as ExportError).code).toBe('write-failed');
+    expect((error as ExportError).message).toContain(outDir);
   });
   test('a failed export leaves the older file at --out untouched', async () => {
     const out = workspace.write('stale.png', 'old');

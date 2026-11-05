@@ -34,7 +34,7 @@ slab to a framed, lit subject; it applies to any block.
    browser tests) and regenerate snapshots and gallery for intended changes.
 6. **Score it.** Spawn the QA subagent described in `AGENTS.md`. While it runs,
    keep working; fold its findings in when the report lands and re-score until
-   it is above 8.
+   it scores 8 or above.
 
 ## Rules of taste that held up
 
@@ -64,4 +64,4 @@ slab to a framed, lit subject; it applies to any block.
 - Screenshots at 1440, 768 and 375 in light and dark, plus a rasterised PDF
   page, viewed and clean.
 - Every gate green.
-- QA score above 8, with each finding's Definition of Done met.
+- QA score of 8 or above, with each finding's Definition of Done met.

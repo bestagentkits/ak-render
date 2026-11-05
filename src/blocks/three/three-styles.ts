@@ -18,8 +18,9 @@ export const THREE_CSS = `
 .ak-3d-frame{position:absolute;inset:0;width:100%;height:100%;display:block}
 .ak-3d[data-ak-3d-state="frozen"] .ak-3d-canvas{visibility:hidden}
 .ak-3d-caption{color:var(--ak-color-text-muted)}
-.ak-3d-objects{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;align-items:flex-start;gap:var(--ak-space-unit)}
+.ak-3d-objects{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;align-items:stretch;gap:var(--ak-space-unit)}
 .ak-3d-objects li{display:flex}
+.ak-3d-objects li>*{flex:1}
 .ak-3d-objects button,.ak-3d-objects li>span{display:grid;gap:2px;text-align:left;font:inherit;color:var(--ak-color-text);background:var(--ak-color-surface);border:var(--ak-border-width) solid var(--ak-color-border);border-radius:var(--ak-radius-small);padding:calc(var(--ak-space-unit)*.75) calc(var(--ak-space-unit)*1.25);min-height:44px}
 .ak-3d-objects li>span{border-style:dashed;background:transparent;color:var(--ak-color-text-muted)}
 .ak-3d-objects button:not([disabled]){cursor:pointer}

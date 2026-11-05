@@ -26,6 +26,8 @@ export const MAX_EXPORT_TIMEOUT_MS = 300_000;
 
 /** Why an export failed, stable for agents and scripts to branch on. */
 export type ExportErrorCode =
+  | 'usage'
+  | 'invalid-input'
   | 'invalid-spec'
   | 'browser-unavailable'
   | 'driver-unavailable'
@@ -263,7 +265,7 @@ export async function exportPage(options: ExportOptions): Promise<ExportReceipt>
   } catch {
     // Nothing there yet.
   }
-  if (outIsDir) throw new ExportError('write-failed', ` is a directory, not a file`);
+  if (outIsDir) throw new ExportError('write-failed', `${options.out} is a directory, not a file`);
   let browser: ExportBrowser & { version(): string };
   try {
     browser = (await launchPlaywrightChromium(choice.path, remaining(), [
