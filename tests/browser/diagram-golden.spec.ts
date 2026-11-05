@@ -122,11 +122,10 @@ test.describe('diagram golden cases', () => {
             expect(Object.keys(boxes).sort()).toEqual(Object.keys(expected).sort());
             // A small tolerance absorbs sub-pixel rounding between platforms.
             for (const [id, box] of Object.entries(boxes)) {
-              box.forEach((value, index) =>
-                expect(Math.abs(value - (expected[id]?.[index] ?? Number.NaN)), id).toBeLessThan(
-                  0.003,
-                ),
-              );
+              for (const [index, value] of box.entries()) {
+                const want = expected[id]?.[index] ?? Number.NaN;
+                expect(Math.abs(value - want), id).toBeLessThan(0.003);
+              }
             }
           }
         }
