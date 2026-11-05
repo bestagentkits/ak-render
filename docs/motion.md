@@ -27,6 +27,11 @@ describes them.
 | `tabs-slide` | tabs | On selection: the marker slides to the new tab, the panel fades in | Marker and panel switch at once |
 | `accordion-expand` | accordion | On open and close: the section height eases | Sections snap |
 | `dialog-pop` | dialog | Scales in on open; fades out on close, then focus returns to the opener | Opens and closes at once |
+| `edge-trace` | diagram-panel (contract 2) | Once on arrival, and again for the selected route: relationships draw in order | Every relationship drawn in place |
+| `signal-relay` | diagram-panel (contract 2) | Once on arrival, and again for the selection: a pulse runs along each relationship on a temporary copy | No pulse |
+| `node-activation` | diagram-panel (contract 2) | Once on arrival, and again for the selection: nodes light up one after another | Every node in place |
+| `sequence-playback` | diagram-panel (contract 2) | Only when the reader presses Play or Next step: one relationship at a time in spec order, named in a status line | Next step still walks the sequence; Play is hidden |
+| `edge-flow` | diagram-panel (contract 2) | While the diagram is in view, until the reader presses Pause flow or selects a node: dashed relationships march and a glowing pulse travels each one. At most one diagram flows per page | Dashed relationships at rest; Pause is hidden |
 
 Validation fails with a JSON path and the compatible recipe list for an unknown
 recipe, a recipe on a block it does not target, `fade-swap` without
@@ -54,6 +59,19 @@ recipe can outlast the policy. Precedence is:
 3. the block's `motion` recipe, timed by the theme's `motion-duration` and `motion-easing`.
 
 There is no page- or theme-level default recipe: motion is opt-in per block.
+
+### Diagram motion governor
+
+The five diagram recipes share one governor per page (`src/motion/diagram-motion.ts`).
+It plays one diagram at a time: an ambient run starts when a diagram is at
+least 35% in view, plays once, and the next visible diagram waits its turn. A
+viewer selection, route, downstream view or inspected relationship plays a
+focused run that pre-empts any ambient one. A run ends with its last animation
+(with a timer as backstop), caps at 40 items and stagger at the twelfth, and
+stops at once when the page is hidden, the theme or motion policy switches, the
+reader turns on reduced motion, or the page prints. The drawing never depends
+on it: every node, relationship and label is in place before and after a run.
+The exception is `edge-flow`, the page's one ambient loop: the first visible, unpaused, unselected flow diagram flows until it leaves view, the reader pauses it or selects, and resumes when those clear.
 
 ## How a recipe is built
 

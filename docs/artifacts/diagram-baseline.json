@@ -1,0 +1,45 @@
+{
+  "note": "Recorded with AK_RECORD_DIAGRAM_BASELINE=1 on the reference grid adapter. A baseline, not a threshold.",
+  "rows": [
+    {
+      "case": "chain",
+      "nodes": 3,
+      "edges": 2,
+      "compileMsMedian": 3.09,
+      "htmlBytes": 142502,
+      "domElements": 96,
+      "diagramElements": 32,
+      "jsHeapUsedKb": 910
+    },
+    {
+      "case": "dense",
+      "nodes": 8,
+      "edges": 18,
+      "compileMsMedian": 4.61,
+      "htmlBytes": 149847,
+      "domElements": 261,
+      "diagramElements": 92,
+      "jsHeapUsedKb": 968
+    },
+    {
+      "case": "nested-boundaries",
+      "nodes": 5,
+      "edges": 4,
+      "compileMsMedian": 4.2,
+      "htmlBytes": 145195,
+      "domElements": 154,
+      "diagramElements": 52,
+      "jsHeapUsedKb": 931
+    },
+    {
+      "case": "large",
+      "nodes": 60,
+      "edges": 59,
+      "compileMsMedian": 7.97,
+      "htmlBytes": 189084,
+      "domElements": 1068,
+      "diagramElements": 486,
+      "jsHeapUsedKb": 1198
+    }
+  ]
+}
