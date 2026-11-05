@@ -17,6 +17,7 @@ import {
 import { checkIconRequest, parseIconValue } from '../icons/icon-catalog.js';
 import { ICON_PACK_IDS, ICON_SIZES } from '../icons/icon-packs.js';
 import { isPlainObject, type JsonValue } from '../json.js';
+import type { MediaCapability } from '../spec/network-policy.js';
 import { enumFixHints, renameFixHints, wrapBlockFixHints } from './fix-hints.js';
 
 export type PropSchema =
@@ -81,7 +82,7 @@ export interface UrlPropSchema extends PropSchemaBase {
    * compiler adds an allowed remote origin to the page's policy, wherever the
    * prop sits (list items and nested slots included).
    */
-  asset?: 'images' | 'media';
+  asset?: MediaCapability;
   /**
    * A blocked remote reference fails validation at its own path instead of
    * leaving the renderer to drop it. For assets with no visible fallback, such

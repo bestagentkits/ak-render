@@ -98,15 +98,19 @@ export function assetReferences(
 /**
  * Origins the page's policy must name so its allowed remote assets load.
  * Provider allowlists are applied by the renderers, which never emit a
- * reference the policy does not allow.
+ * reference the policy does not allow. `capabilities` selects which gates count, so
+ * fetched assets (models) and displayed assets (images, media) can land in
+ * different CSP directives.
  */
 export function assetOrigins(
   policy: NetworkPolicy,
   references: readonly AssetReference[],
+  capabilities: readonly MediaCapability[],
 ): string[] {
   if (policy === 'deny') return [];
   const origins: string[] = [];
   for (const { reference, capability } of references) {
+    if (!capabilities.includes(capability)) continue;
     if (!capabilityAllowed(policy, capability) || !/^https?:/iu.test(reference)) continue;
     try {
       origins.push(new URL(reference).origin);

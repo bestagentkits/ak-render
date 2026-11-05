@@ -172,7 +172,8 @@
                     "enum": [
                       "media",
                       "fonts",
-                      "images"
+                      "images",
+                      "models"
                     ]
                   }
                 }

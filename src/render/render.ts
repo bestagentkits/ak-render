@@ -22,6 +22,7 @@ import { DEFAULT_REGISTRY } from '../registry/registry.js';
 import type { RuntimeFeature } from '../registry/roster.js';
 import { assetOrigins, assetReferences } from '../spec/asset-references.js';
 import { evaluateCondition } from '../spec/conditions.js';
+import { CONNECT_CAPABILITIES, type MediaCapability } from '../spec/network-policy.js';
 import { type NormalizeResult, normalizeSpec } from '../spec/normalize.js';
 import { loadTheme, type ResolvedTheme, resolveTheme } from '../theme/load-theme.js';
 import { builtinThemeCatalog, type ThemeCatalog } from '../theme/theme-catalog.js';
@@ -38,6 +39,9 @@ import { BASE_CSS, FEATURE_CSS } from './styles.js';
 import { inverseSurfaceCss, usesInverseSurface } from './surface-styles.js';
 import { SYNTAX_TOKEN_MARKUP } from './syntax-highlight.js';
 import { verifyDocument, verifyIr } from './verify.js';
+
+/** Capabilities the page displays from a remote origin: `img-src` and `media-src`. */
+const DISPLAY_CAPABILITIES: readonly MediaCapability[] = ['images', 'media'];
 
 export interface RenderOptions {
   /** Theme preset name or typed theme input; defaults to the spec's theme. */
@@ -121,13 +125,18 @@ function collectFeatures(ir: IrDocument, includeTheme: boolean): Set<RuntimeFeat
 }
 
 /** Origins of the allowed remote assets, found through each block's `asset` props. */
-function collectOrigins(ir: IrDocument, registry: BlockRegistry): string[] {
+function collectOrigins(
+  ir: IrDocument,
+  registry: BlockRegistry,
+  capabilities: readonly MediaCapability[],
+): string[] {
   return ir.nodes.flatMap((node) => {
     const definition = registry.byType.get(node.type);
     if (definition === undefined) return [];
     return assetOrigins(
       ir.policy.network,
       assetReferences(definition.props, node.props, node.path),
+      capabilities,
     );
   });
 }
@@ -371,7 +380,8 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
     css,
     js,
     body,
-    allowedOrigins: collectOrigins(ir, registry),
+    allowedOrigins: collectOrigins(ir, registry, DISPLAY_CAPABILITIES),
+    connectOrigins: collectOrigins(ir, registry, CONNECT_CAPABILITIES),
     themeToggle: includeThemeToggle,
     density: resolved.density,
     motion: motionPolicyOf(resolved.motionPolicy),
