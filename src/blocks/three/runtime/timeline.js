@@ -412,7 +412,14 @@ export function timelineWidget(ctx) {
       const isCurrent = i === current;
       tag.toggleAttribute('data-ak-current', isCurrent);
       const text = isCurrent && m.date ? `${m.date} · ${m.label}` : m.date || m.label;
-      if (tag.textContent !== text) tag.textContent = text;
+      // A tag's width caps at a share of the stage, so a resize measures it again.
+      if (tag.textContent !== text || tag.measuredAt !== width) {
+        tag.measuredAt = width;
+        tag.textContent = text;
+        tag.hidden = false;
+        // Measured once per text, so a flight frame writes transforms without forcing layout.
+        tag.size = { width: tag.offsetWidth, height: tag.offsetHeight };
+      }
       // The tag stands on the top of its marker, whatever the marker's size on screen.
       projected.copy(markers[i].position);
       projected.y += (MARKER / 2) * markers[i].scale.y;
@@ -422,11 +429,11 @@ export function timelineWidget(ctx) {
       tag.hidden = !visible;
       if (!visible) continue;
       // Keep the whole pill inside the stage.
-      const half = tag.offsetWidth / 2 + 6;
+      const half = tag.size.width / 2 + 6;
       const x = Math.min(width - half, Math.max(half, ((projected.x + 1) / 2) * width));
       const y = ((1 - projected.y) / 2) * height;
-      const top = y - TAG_GAP - tag.offsetHeight;
-      const box = { left: x - half, right: x + half, top, bottom: top + tag.offsetHeight };
+      const top = y - TAG_GAP - tag.size.height;
+      const box = { left: x - half, right: x + half, top, bottom: top + tag.size.height };
       const collides = placed.some(
         (other) =>
           box.left < other.right &&
