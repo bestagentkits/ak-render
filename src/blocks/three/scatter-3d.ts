@@ -233,10 +233,10 @@ function placeLabels(labels: PosterLabel[]): PosterLabel[] {
     const h = size * 1.2;
     let { x, y } = label;
     const outside =
-      x - w / 2 < inset || x + w / 2 > 640 - inset || y - h / 2 < inset || y + h / 2 > 360 - inset;
+      x - w / 2 < inset || x + w / 2 > W - inset || y - h / 2 < inset || y + h / 2 > H - inset;
     if (label.title) {
-      x = Math.min(Math.max(x, w / 2 + inset), 640 - w / 2 - inset);
-      y = Math.min(Math.max(y, h / 2 + inset), 360 - h / 2 - inset);
+      x = Math.min(Math.max(x, w / 2 + inset), W - w / 2 - inset);
+      y = Math.min(Math.max(y, h / 2 + inset), H - h / 2 - inset);
     } else if (outside) continue;
     const box = { x0: x - w / 2 - 2, x1: x + w / 2 + 2, y0: y - h / 2, y1: y + h / 2 };
     if (placed.some((b) => box.x0 < b.x1 && box.x1 > b.x0 && box.y0 < b.y1 && box.y1 > b.y0))
