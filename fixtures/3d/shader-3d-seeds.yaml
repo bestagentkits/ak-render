@@ -1,0 +1,22 @@
+version: 1
+meta:
+  title: Shader seeds
+blocks:
+  - type: shader-3d
+    id: twin-a
+    summary: A dissolving sphere from seed 11.
+    preset: dissolve
+    shape: sphere
+    seed: 11
+  - type: shader-3d
+    id: twin-b
+    summary: The same sphere from the same seed.
+    preset: dissolve
+    shape: sphere
+    seed: 11
+  - type: shader-3d
+    id: other
+    summary: The same sphere from another seed.
+    preset: dissolve
+    shape: sphere
+    seed: 12

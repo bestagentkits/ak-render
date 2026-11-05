@@ -1,0 +1,30 @@
+version: 1
+meta:
+  title: Shader presets
+blocks:
+  - type: shader-3d
+    id: noise
+    title: Noise
+    summary: A sphere swells on a slow noise field, its veins glowing where the surface rises.
+    preset: noise
+  - type: shader-3d
+    id: fresnel
+    title: Fresnel
+    summary: A dark torus knot whose edges catch the light, brightest where they turn away from the eye.
+    preset: fresnel
+  - type: shader-3d
+    id: hologram
+    title: Hologram
+    summary: A ring drawn as light, banded by scan lines that climb its surface.
+    preset: hologram
+  - type: shader-3d
+    id: distortion
+    title: Distortion
+    summary: A sheet of silk ripples under crossing waves, its sheen shifting with the angle.
+    preset: distortion
+    seed: 4
+  - type: shader-3d
+    id: dissolve
+    title: Dissolve
+    summary: A torus knot burns away along a noise front, its edge glowing as it goes.
+    preset: dissolve
