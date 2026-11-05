@@ -12,17 +12,26 @@
 import {
   BufferAttribute,
   BufferGeometry,
+  DepthTexture,
   LineBasicMaterial,
   LineSegments,
   MathUtils,
   Matrix4,
+  Mesh,
+  NearestFilter,
+  OrthographicCamera,
   PerspectiveCamera,
+  PlaneGeometry,
   Points,
   Scene,
   ShaderMaterial,
+  SRGBColorSpace,
+  Vector2,
   Vector3,
   WebGLRenderer,
+  WebGLRenderTarget,
 } from 'three';
+import { cloudRamp, RAMP_TONES } from '../point-cloud-ramp.ts';
 
 /** Most points a low quality profile draws; the status line says so when it applies. */
 const LOW_PROFILE_POINTS = 50000;
@@ -45,7 +54,7 @@ void main() {
   vCut = position.y - uCut;
 }`;
 
-/** Round, softly domed points; far points sink toward the background for depth. */
+/** Round, nearly flat points; far points sink toward the background for depth. */
 const FRAGMENT = `
 uniform vec3 uBg;
 varying vec3 vColor;
@@ -85,51 +94,84 @@ void main() {
   #include <colorspace_fragment>
 }`;
 
+/**
+ * Eye-dome lighting: a pixel darkens by how far its neighbours sit in front of
+ * it, so roofs, crowns and walls get an outline against what lies behind them
+ * without normals or lights. A pinhole whose neighbours are nearly all points
+ * takes the nearest one's colour, so a surface never shows the stage through it.
+ */
+const EDL_VERTEX = `
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  gl_Position = vec4(position.xy, 0.0, 1.0);
+}`;
+
+const EDL_FRAGMENT = `
+uniform sampler2D uColor;
+uniform sampler2D uDepth;
+uniform vec2 uStep;
+uniform vec2 uNearFar;
+uniform float uStrength;
+varying vec2 vUv;
+float logDepth(float d) {
+  float z = d * 2.0 - 1.0;
+  float n = uNearFar.x;
+  float f = uNearFar.y;
+  return log2(2.0 * n * f / (f + n - z * (f - n)));
+}
+void main() {
+  vec2 ring[8] = vec2[8](
+    vec2(1.0, 0.0), vec2(-1.0, 0.0), vec2(0.0, 1.0), vec2(0.0, -1.0),
+    vec2(0.7071, 0.7071), vec2(-0.7071, 0.7071), vec2(0.7071, -0.7071), vec2(-0.7071, -0.7071)
+  );
+  vec4 color = texture2D(uColor, vUv);
+  float depth = texture2D(uDepth, vUv).x;
+  float self = depth < 1.0 ? logDepth(depth) : 0.0;
+  float response = 0.0;
+  float filled = 0.0;
+  float front = 1.0;
+  vec4 nearest = vec4(0.0);
+  for (int i = 0; i < 8; i++) {
+    vec2 at = vUv + ring[i] * uStep;
+    float d = texture2D(uDepth, at).x;
+    if (d >= 1.0) continue;
+    filled += 1.0;
+    if (d < front) {
+      front = d;
+      nearest = texture2D(uColor, at);
+    }
+    if (depth < 1.0) response += max(0.0, self - logDepth(d));
+  }
+  // A wider gap: points on most sides three steps out mean a hole in a surface; past an edge only half the ring is filled.
+  float around = 0.0;
+  if (depth >= 1.0 && filled < 5.0) {
+    for (int i = 0; i < 8; i++) {
+      vec2 at = vUv + ring[i] * uStep * 3.0;
+      float d = texture2D(uDepth, at).x;
+      if (d >= 1.0) continue;
+      around += 1.0;
+      if (d < front) {
+        front = d;
+        nearest = texture2D(uColor, at);
+      }
+    }
+  }
+  if (depth >= 1.0) {
+    if (filled < 5.0 && around < 6.0) {
+      gl_FragColor = vec4(0.0);
+      return;
+    }
+    color = nearest;
+  }
+  gl_FragColor = vec4(color.rgb * exp(-uStrength * response / 8.0), color.a);
+  #include <colorspace_fragment>
+}`;
+
+/** Edge strength of the eye-dome pass; tuned on the depot survey in both schemes. */
+const EDL_STRENGTH = 30;
+
 const fmt = (n) => n.toLocaleString('en-US');
-
-/** Linear sRGB to oklab, for mixing theme tones in oklch like the CSS legend does. */
-function toLab(c) {
-  const l = Math.cbrt(0.4122214708 * c.r + 0.5363325363 * c.g + 0.0514459929 * c.b);
-  const m = Math.cbrt(0.2119034982 * c.r + 0.6806995451 * c.g + 0.1073969566 * c.b);
-  const s = Math.cbrt(0.0883024619 * c.r + 0.2817188376 * c.g + 0.6299787005 * c.b);
-  return [
-    0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
-    1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
-    0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s,
-  ];
-}
-
-/** Mix two colours in oklch along the shorter hue arc, as `color-mix(in oklch, ...)` does. */
-function mixOklch(a, b, t) {
-  const [la, aa, ba] = toLab(a);
-  const [lb, ab, bb] = toLab(b);
-  const ca = Math.hypot(aa, ba);
-  const cb = Math.hypot(ab, bb);
-  let ha = Math.atan2(ba, aa);
-  let hb = Math.atan2(bb, ab);
-  // An achromatic end takes the other end's hue, so the mix never swings through an arbitrary one.
-  if (ca < 1e-4) ha = hb;
-  if (cb < 1e-4) hb = ha;
-  let dh = hb - ha;
-  if (dh > Math.PI) dh -= 2 * Math.PI;
-  if (dh < -Math.PI) dh += 2 * Math.PI;
-  const L = la + (lb - la) * t;
-  const C = ca + (cb - ca) * t;
-  const H = ha + dh * t;
-  const A = C * Math.cos(H);
-  const B = C * Math.sin(H);
-  const l = (L + 0.3963377774 * A + 0.2158037573 * B) ** 3;
-  const m = (L - 0.1055613458 * A - 0.0638541728 * B) ** 3;
-  const s = (L - 0.0894841775 * A - 1.291485548 * B) ** 3;
-  const clamp = (v) => Math.min(1, Math.max(0, v));
-  return a
-    .clone()
-    .setRGB(
-      clamp(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s),
-      clamp(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s),
-      clamp(-0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s),
-    );
-}
 
 export function mountPointCloud(el, kit) {
   const api = kit.api();
@@ -169,6 +211,8 @@ export function mountPointCloud(el, kit) {
   canvas.setAttribute('aria-keyshortcuts', 'ArrowLeft ArrowRight ArrowUp ArrowDown + - N P Home');
   stage.appendChild(canvas);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, quality === 'high' ? 2 : 1));
+  // A frame is three renders (cloud, eye-dome pass, marker); the stats count all of them.
+  renderer.info.autoReset = false;
 
   const count = config.count || 0;
   const xs = config.x || [];
@@ -197,18 +241,17 @@ export function mountPointCloud(el, kit) {
     return out;
   }
   const [hx, hy, hz] = config.half || [1, 1, 1];
+  /** How far ticks sit outside the box edges, as the compiler placed them in the static drawing. */
+  const tickOffset = config.camera?.tick ?? 0.045;
 
-  // Color ramp from the theme: info -> accent -> danger, by intensity or height.
+  // Color ramp from the theme's tones, by intensity or height; the CSS legend mirrors it.
   const background = kit.cssColor(el, '--ak-color-background', '#ffffff');
   const ink = kit.cssColor(el, '--ak-color-text', '#222222');
   const dark = kit.isDark(el);
-  const low = kit.toneColor(el, 'info');
-  const mid = kit.toneColor(el, 'accent');
-  const high = kit.toneColor(el, 'danger');
-  const ramp = Array.from({ length: RAMP_STEPS }, (_, k) => {
-    const t = k / (RAMP_STEPS - 1);
-    return t <= 0.5 ? mixOklch(low, mid, t / 0.5) : mixOklch(mid, high, (t - 0.5) / 0.5);
-  });
+  const stops = RAMP_TONES.map((tone) => kit.toneColor(el, tone).toArray());
+  const ramp = Array.from({ length: RAMP_STEPS }, (_, k) =>
+    ink.clone().setRGB(...cloudRamp(stops, ink.toArray(), k / (RAMP_STEPS - 1))),
+  );
   const [lo, hi] = config.color?.domain || [0, 1];
   const colorValue = (i) => (intensity ? intensity[i] : zUp ? zs[i] : ys[i]);
   const colorOf = (i) =>
@@ -243,7 +286,7 @@ export function mountPointCloud(el, kit) {
   geometry.setAttribute('aColor', new BufferAttribute(colors, 3));
   geometry.setDrawRange(0, drawn);
   // About one point spacing wide: a sparse cloud gets marks, a dense one reads as surfaces.
-  const base = MathUtils.clamp(4 / Math.sqrt(Math.max(drawn, 1)), 0.009, 0.09);
+  const base = MathUtils.clamp(5 / Math.sqrt(Math.max(drawn, 1)), 0.01, 0.1);
   const material = new ShaderMaterial({
     vertexShader: VERTEX,
     fragmentShader: FRAGMENT,
@@ -268,7 +311,7 @@ export function mountPointCloud(el, kit) {
       uSize: { value: 22 },
       uInk: { value: ink },
       uBg: { value: background },
-      uColor: { value: mid.clone() },
+      uColor: { value: ramp[0].clone() },
     },
     transparent: true,
     depthTest: false,
@@ -277,7 +320,48 @@ export function mountPointCloud(el, kit) {
   mark.frustumCulled = false;
   mark.renderOrder = 2;
   mark.visible = false;
-  scene.add(mark);
+  // The marker draws after the eye-dome pass, so its ring is never shaded.
+  const markScene = new Scene();
+  markScene.add(mark);
+
+  // The cloud and its frame render into a target whose depth feeds the eye-dome pass.
+  const frameTarget = new WebGLRenderTarget(1, 1, {
+    minFilter: NearestFilter,
+    magFilter: NearestFilter,
+    depthBuffer: true,
+    colorSpace: SRGBColorSpace,
+  });
+  frameTarget.depthTexture = new DepthTexture(1, 1);
+  const edlMaterial = new ShaderMaterial({
+    vertexShader: EDL_VERTEX,
+    fragmentShader: EDL_FRAGMENT,
+    uniforms: {
+      uColor: { value: frameTarget.texture },
+      uDepth: { value: frameTarget.depthTexture },
+      uStep: { value: new Vector2(1, 1) },
+      uNearFar: { value: new Vector2(0.05, 100) },
+      uStrength: { value: EDL_STRENGTH },
+    },
+    depthTest: false,
+    depthWrite: false,
+  });
+  const edlGeometry = new PlaneGeometry(2, 2);
+  const edlQuad = new Mesh(edlGeometry, edlMaterial);
+  edlQuad.frustumCulled = false;
+  const post = new Scene();
+  post.add(edlQuad);
+  const postCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  /** One frame: the cloud into the target, the eye-dome pass to the canvas, then the marker. */
+  function draw() {
+    renderer.info.reset();
+    renderer.setRenderTarget(frameTarget);
+    renderer.render(scene, camera);
+    renderer.setRenderTarget(null);
+    renderer.render(post, postCamera);
+    renderer.autoClear = false;
+    renderer.render(markScene, camera);
+    renderer.autoClear = true;
+  }
 
   // The clip box: its edges, and a floor grid on the horizontal ticks.
   const axes = config.axes || {};
@@ -763,8 +847,13 @@ export function mountPointCloud(el, kit) {
     ];
     const placed = [];
     const inset = 4;
+    // Two axes meet at a box corner; only the first shown tick there stays, so "80" and "0" never read as "80 0".
+    const corners = [];
     for (const label of titlesFirst) {
-      edge[label.w](label.at, label.title && label.w !== 1 ? 0.2 : 0.07).project(camera);
+      const anchor = label.title ? null : edge[label.w](label.at, 0).clone();
+      const shared =
+        anchor !== null && corners.some((c) => c.w !== label.w && c.at.distanceTo(anchor) < 1e-3);
+      edge[label.w](label.at, label.title && label.w !== 1 ? 0.2 : tickOffset).project(camera);
       label.width = label.width || label.span.offsetWidth;
       label.height = label.height || label.span.offsetHeight;
       let x = ((v.x + 1) / 2) * width;
@@ -787,15 +876,20 @@ export function mountPointCloud(el, kit) {
       const clash = placed.some(
         (b) => boxed.x0 < b.x1 && boxed.x1 > b.x0 && boxed.y0 < b.y1 && boxed.y1 > b.y0,
       );
-      const hidden = v.z > 1 || clash || (outside && !label.title);
-      if (!hidden) placed.push(boxed);
+      const hidden = v.z > 1 || shared || clash || (outside && !label.title);
+      if (!hidden) {
+        placed.push(boxed);
+        if (anchor) corners.push({ w: label.w, at: anchor });
+      }
       label.span.style.visibility = hidden ? 'hidden' : '';
       label.span.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
     }
   }
 
   // Until the reader orbits, a stage narrower than 16:9 backs the camera off so the box still fits.
-  const fit = camConfig.fit || [0.8, 0.66];
+  const fit = camConfig.fit || [0.84, 0.8];
+  // The box sits this far below the middle, clear of the tools; in clip space that is twice it.
+  const drop = 2 * (camConfig.drop || 0);
   const corners = [];
   for (const a of [-1, 1])
     for (const b of [-1, 1])
@@ -812,7 +906,7 @@ export function mountPointCloud(el, kit) {
         camera.updateMatrixWorld();
         return corners.every((corner) => {
           v.copy(corner).project(camera);
-          return v.z < 1 && Math.abs(v.x) <= fit[0] && Math.abs(v.y) <= fit[1];
+          return v.z < 1 && Math.abs(v.x) <= fit[0] && Math.abs(v.y + drop) <= fit[1];
         });
       };
       let lo = 0.2;
@@ -835,6 +929,12 @@ export function mountPointCloud(el, kit) {
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
     if (!moved) fitHome();
+    const size = renderer.getDrawingBufferSize(new Vector2());
+    frameTarget.setSize(size.x, size.y);
+    // One pixel at density 1, two on a dense screen: the ring spans a point's own edge.
+    const ring = Math.max(1, Math.round(renderer.getPixelRatio()));
+    edlMaterial.uniforms.uStep.value.set(ring / size.x, ring / size.y);
+    edlMaterial.uniforms.uNearFar.value.set(camera.near, camera.far);
     const focal =
       (height * renderer.getPixelRatio()) / (2 * Math.tan(MathUtils.degToRad(camera.fov) / 2));
     material.uniforms.uScale.value = base * focal;
@@ -858,7 +958,7 @@ export function mountPointCloud(el, kit) {
       const distance = camera.position.distanceTo(target);
       material.uniforms.uDepth.value = [Math.max(0.01, distance - reach), distance + reach];
       const begin = performance.now();
-      renderer.render(scene, camera);
+      draw();
       record.renderMs.push(performance.now() - begin);
       if (record.renderMs.length > kit.RENDER_SAMPLES) record.renderMs.shift();
       placeTip();
@@ -882,7 +982,7 @@ export function mountPointCloud(el, kit) {
       if (record.lost || record.frames === 0) return null;
       if (stage.querySelector('.ak-3d-frame'))
         return { width: canvas.width, height: canvas.height };
-      renderer.render(scene, camera);
+      draw();
       const frame = document.createElement('img');
       frame.className = 'ak-3d-frame';
       frame.alt = '';
@@ -920,6 +1020,10 @@ export function mountPointCloud(el, kit) {
         gridMaterial,
         boxGeometry,
         edgeMaterial,
+        edlGeometry,
+        edlMaterial,
+        frameTarget.depthTexture,
+        frameTarget,
       ])
         disposable.dispose();
       renderer.dispose();

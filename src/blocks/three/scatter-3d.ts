@@ -233,7 +233,7 @@ function posterGrid(layout: ScatterLayout, at: ReturnType<typeof orbitProjector>
   return out.join('');
 }
 
-export type PosterLabel = { x: number; y: number; text: string; title: boolean };
+export type PosterLabel = { x: number; y: number; text: string; title: boolean; end?: boolean };
 
 /** Same rule as the live overlay: titles are pulled inside the frame first, then ticks that
  * would leave it or overlap a placed label are dropped. Widths are estimated generously from the font size, since the fallback font varies. */

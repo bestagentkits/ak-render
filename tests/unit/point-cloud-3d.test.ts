@@ -8,12 +8,20 @@ import {
   MAX_CLOUD_POINTS,
   parsePointCloudText,
 } from '../../src/assets/point-cloud-assets.js';
-import { worldAxis } from '../../src/blocks/three/point-cloud-3d.js';
+import { cloudCamera, DROP, FIT, worldAxis } from '../../src/blocks/three/point-cloud-3d.js';
 import { lodOrder, POSTER_POINTS, TABLE_ROWS } from '../../src/blocks/three/point-cloud-ir.js';
+import {
+  cloudRamp,
+  RAMP_TONES,
+  type Rgb,
+  toOklch,
+} from '../../src/blocks/three/point-cloud-ramp.js';
 import { export3dPosterSvg } from '../../src/blocks/three/poster-export.js';
+import { orbitProjector, POSTER_H, POSTER_W } from '../../src/blocks/three/scatter-3d.js';
 import { RenderError } from '../../src/errors.js';
 import { compile } from '../../src/render/render.js';
 import { normalizeSpec } from '../../src/spec/normalize.js';
+import { PRESETS } from '../../src/theme/presets.js';
 
 const fixtureDir = fileURLToPath(new URL('../../fixtures/3d/', import.meta.url));
 const fixture = (name: string) => readFileSync(join(fixtureDir, `${name}.yaml`), 'utf8');
@@ -112,6 +120,7 @@ describe('point cloud files', () => {
   mkdirSync(join(dir, 'scans'));
   writeFileSync(join(dir, 'scans', 'a.xyz'), 'x y z rgb\n1 2 3 7\n');
   writeFileSync(join(dir, 'scans', 'b.las'), '');
+  mkdirSync(join(dir, 'scans', 'folder.xyz'));
 
   it('reads a file inside the spec directory and warns on undrawn columns', () => {
     const result = createPointCloudResolver(dir)('scans/a.xyz', '$.blocks[0].src');
@@ -127,6 +136,8 @@ describe('point cloud files', () => {
     ['https://example.com/a.xyz', 'POLICY_VIOLATION', 'must be a local file'],
     ['scans/b.las', 'SPEC_VALIDATION_ERROR', 'must be a .xyz'],
     ['scans/missing.xyz', 'SPEC_VALIDATION_ERROR', 'was not found'],
+    // Checked before it is opened, so a pipe or device never blocks the compile.
+    ['scans/folder.xyz', 'SPEC_VALIDATION_ERROR', 'is not a file'],
   ])('rejects %s', (reference, code, message) => {
     const result = createPointCloudResolver(dir)(reference, '$.blocks[0].src');
     expect(result.cloud).toBeUndefined();
@@ -193,7 +204,63 @@ describe('point-cloud-3d validation', () => {
   });
 });
 
+/** sRGB hex to linear channels, as the runtime reads theme colours. */
+function linear(hex: string): Rgb {
+  const channel = (k: number) => {
+    const c = Number.parseInt(hex.slice(1 + k * 2, 3 + k * 2), 16) / 255;
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  return [channel(0), channel(1), channel(2)];
+}
+
+describe('point-cloud-3d colour ramp', () => {
+  const schemes = Object.values(PRESETS).flatMap((preset) => [
+    [`${preset.name} light`, preset.light] as const,
+    [`${preset.name} dark`, preset.dark] as const,
+  ]);
+  it.each(schemes)('%s: every step keeps its colour and lightness runs one way', (_, tokens) => {
+    const stops = RAMP_TONES.map((tone) => linear(String(tokens[`color-${tone}`])));
+    const ink = linear(String(tokens['color-text']));
+    const steps = Array.from({ length: 17 }, (_, k) => toOklch(cloudRamp(stops, ink, k / 16)));
+    for (const [, chroma] of steps) expect(chroma).toBeGreaterThanOrEqual(0.08);
+    const lightness = steps.map(([l]) => l);
+    const rising = (lightness.at(-1) ?? 0) > (lightness[0] ?? 0);
+    for (let k = 1; k < lightness.length; k += 1) {
+      const step = (lightness[k] ?? 0) - (lightness[k - 1] ?? 0);
+      expect(rising ? step : -step).toBeGreaterThan(-0.005);
+    }
+    // The top of the ramp moves toward the text: darker on a light page, lighter on a dark one.
+    const [textLightness] = toOklch(ink);
+    expect(rising).toBe((textLightness ?? 0) > (lightness[0] ?? 0));
+  });
+});
+
 describe('point-cloud-3d layout', () => {
+  it('frames the box in the stage, centred just below the middle', () => {
+    for (const half of [
+      [1, 0.18, 0.75],
+      [1, 1, 1],
+      [0.4, 1, 0.4],
+    ] as const) {
+      const { orbit, target } = cloudCamera([...half]);
+      const at = orbitProjector(orbit, target);
+      const corners = [-1, 1].flatMap((x) =>
+        [-1, 1].flatMap((y) => [-1, 1].map((z) => at([x * half[0], y * half[1], z * half[2]]))),
+      );
+      const xs = corners.map((p) => p.x);
+      const ys = corners.map((p) => p.y);
+      const width = (Math.max(...xs) - Math.min(...xs)) / POSTER_W;
+      const height = (Math.max(...ys) - Math.min(...ys)) / POSTER_H;
+      // One side of the window is filled, and nothing leaves it.
+      expect(Math.max(width / FIT[0], height / FIT[1])).toBeGreaterThan(0.95);
+      expect(Math.max(width / FIT[0], height / FIT[1])).toBeLessThanOrEqual(1);
+      const cx = (Math.max(...xs) + Math.min(...xs)) / 2 / POSTER_W;
+      const cy = (Math.max(...ys) + Math.min(...ys)) / 2 / POSTER_H;
+      expect(Math.abs(cx - 0.5)).toBeLessThan(0.01);
+      expect(Math.abs(cy - 0.5 - DROP)).toBeLessThan(0.01);
+    }
+  });
+
   it('orders points so every prefix spreads over the cloud', () => {
     // Eight corners of the cube, listed corner-major with a cluster at each.
     const corners: [number, number, number][] = [];

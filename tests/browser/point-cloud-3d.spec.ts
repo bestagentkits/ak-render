@@ -57,8 +57,8 @@ test.describe('point-cloud-3d', { tag: '@gl' }, () => {
       ).akRender3d.stats(),
     );
     expect(stats.mounts).toBe(1);
-    // The cloud, the selection marker, the floor grid and the box: never one per point.
-    expect(stats.calls).toBeLessThanOrEqual(4);
+    // The cloud, the floor grid, the box, the eye-dome pass and the selection marker: never one per point.
+    expect(stats.calls).toBeLessThanOrEqual(5);
     // 60,000 is the spec's budget; a low quality profile draws at most 50,000.
     await expect(page.locator('.ak-pc-status')).toHaveText(
       /^Drawing an even (60,000|50,000) of the 99,071 points in the clip box \(level of detail( for this device)?\); 929 outside the box are hidden\.$/u,
@@ -96,6 +96,42 @@ test.describe('point-cloud-3d', { tag: '@gl' }, () => {
     await expect(page.locator('.ak-pc-status')).toContainText(/the section hides \d+ above/u);
     await page.locator('.ak-pc-tools button', { hasText: 'Reset view' }).click();
     await expect(page.locator('.ak-pc-status')).not.toContainText('section');
+  });
+
+  test('a click picks the front surface, never a point hidden behind it', async ({ page }) => {
+    // Two 20 x 20 layers, 5 m apart: seen from above, the top layer hides the lower one.
+    const x: number[] = [];
+    const y: number[] = [];
+    const z: number[] = [];
+    const id: string[] = [];
+    for (const [layer, height] of [
+      ['low', 0],
+      ['top', 5],
+    ] as const)
+      for (let i = 0; i <= 20; i += 1)
+        for (let j = 0; j <= 20; j += 1) {
+          x.push(i);
+          y.push(j);
+          z.push(height);
+          id.push(`${layer}-${i}-${j}`);
+        }
+    const spec = {
+      version: 1,
+      meta: { title: 'Layers' },
+      blocks: [
+        { type: 'point-cloud-3d', id: 'layers', summary: 'Two layers.', data: { x, y, z, id } },
+      ],
+    };
+    await page.goto(
+      `file://${workspace.write('point-cloud-layers', compile(spec, { source: 'layers' }).html)}`,
+    );
+    await ready(page);
+    const stage = page.locator('.ak-3d-stage');
+    await stage.scrollIntoViewIfNeeded();
+    const box = await stage.boundingBox();
+    if (!box) throw new Error('the stage has no box');
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(selectedId(page)).toHaveText(/^top-/u);
   });
 
   test('unmounting frees the scene and restores the static status', async ({ page }) => {

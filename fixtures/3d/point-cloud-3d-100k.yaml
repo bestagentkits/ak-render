@@ -3,13 +3,12 @@
 # and a 60,000-point budget makes the live view state how many it draws.
 version: 1
 meta:
-  title: Depot survey, 100k
+  title: Depot survey, 100,000 points
 state:
   point: p99999
 blocks:
   - type: point-cloud-3d
     id: depot
-    title: Depot survey, 100,000 points
     summary: One hundred thousand laser returns over an 80 by 60 metre depot, coloured by return intensity, clipped at 11 metres elevation.
     src: point-cloud/depot-100k.xyz
     bind: state.point

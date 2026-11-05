@@ -82,38 +82,87 @@ export function halfExtents(layout: CloudLayout): Vec3 {
   return half;
 }
 
-/** The orbit camera, framed on the box's bounding sphere so a flat survey fills the stage. */
 /** Share of the stage width and height the box's corners may fill at home; the rest holds labels and tools. */
-export const FIT: readonly [number, number] = [0.8, 0.66];
+export const FIT: readonly [number, number] = [0.84, 0.8];
+/** How far below the stage's middle the box sits, as a share of its height: clear of the tools bar. */
+export const DROP = 0.03;
+/** How far ticks sit outside the box edges, in world units; the live overlay reads it from the config. */
+const TICK_OFFSET = 0.045;
 const THETA = 0.68;
 const PHI = 1.08;
 
-/** The home orbit camera: the nearest radius whose view holds every box corner inside `FIT`. */
+/**
+ * The home orbit camera: the box's corners fill `FIT` of the stage, centred
+ * `DROP` below the middle. Each pass finds the nearest radius whose view holds
+ * the corners in that window, then slides the target in the view plane so the
+ * projected box is centred in it.
+ */
 export function cloudCamera(half: Vec3): { orbit: OrbitCamera; target: Vec3 } {
-  const target: Vec3 = [0, r4(-0.06 * Math.hypot(...half)), 0];
   const corners: Vec3[] = [];
   for (const x of [-1, 1])
     for (const y of [-1, 1])
       for (const z of [-1, 1]) corners.push([x * half[0], y * half[1], z * half[2]]);
-  const fits = (radius: number) => {
-    const at = orbitProjector({ theta: THETA, phi: PHI, radius, fov: FOV }, target);
-    return corners.every((c) => {
-      const p = at(c);
-      return (
-        p.depth > 0 &&
-        Math.abs(p.x - POSTER_W / 2) <= (FIT[0] * POSTER_W) / 2 &&
-        Math.abs(p.y - POSTER_H / 2) <= (FIT[1] * POSTER_H) / 2
-      );
-    });
+  // The view plane's axes for this orbit: right and up, as the projector builds them.
+  const back: Vec3 = [
+    Math.sin(PHI) * Math.sin(THETA),
+    Math.cos(PHI),
+    Math.sin(PHI) * Math.cos(THETA),
+  ];
+  const rl = Math.hypot(back[0], back[2]);
+  const right: Vec3 = [back[2] / rl, 0, -back[0] / rl];
+  const up: Vec3 = [
+    -(right[1] * back[2] - right[2] * back[1]),
+    -(right[2] * back[0] - right[0] * back[2]),
+    -(right[0] * back[1] - right[1] * back[0]),
+  ];
+  const middle = POSTER_H * (0.5 + DROP);
+  let target: Vec3 = [0, 0, 0];
+  let radius = 40;
+  const bounds = (r: number) => {
+    const at = orbitProjector({ theta: THETA, phi: PHI, radius: r, fov: FOV }, target);
+    const p = corners.map(at);
+    const xs = p.map((q) => q.x);
+    const ys = p.map((q) => q.y);
+    return {
+      ok: p.every((q) => q.depth > 0),
+      x0: Math.min(...xs),
+      x1: Math.max(...xs),
+      y0: Math.min(...ys),
+      y1: Math.max(...ys),
+      f: p[0]?.f ?? 1,
+    };
   };
-  let lo = 0.2;
-  let hi = 40;
-  for (let k = 0; k < 40; k += 1) {
-    const mid = (lo + hi) / 2;
-    if (fits(mid)) hi = mid;
-    else lo = mid;
+  for (let pass = 0; pass < 4; pass += 1) {
+    const fits = (r: number) => {
+      const b = bounds(r);
+      return (
+        b.ok &&
+        b.x0 >= (POSTER_W * (1 - FIT[0])) / 2 &&
+        b.x1 <= (POSTER_W * (1 + FIT[0])) / 2 &&
+        b.y0 >= middle - (POSTER_H * FIT[1]) / 2 &&
+        b.y1 <= middle + (POSTER_H * FIT[1]) / 2
+      );
+    };
+    let lo = 0.2;
+    let hi = 40;
+    for (let k = 0; k < 40; k += 1) {
+      const mid = (lo + hi) / 2;
+      if (fits(mid)) hi = mid;
+      else lo = mid;
+    }
+    radius = hi;
+    const b = bounds(radius);
+    const dx = ((b.x0 + b.x1) / 2 - POSTER_W / 2) * (radius / b.f);
+    const dy = ((b.y0 + b.y1) / 2 - middle) * (radius / b.f);
+    target = [0, 1, 2].map(
+      (a) => (target[a] ?? 0) + (right[a] ?? 0) * dx - (up[a] ?? 0) * dy,
+    ) as Vec3;
   }
-  return { orbit: { theta: THETA, phi: PHI, radius: r4(hi), fov: FOV }, target };
+  // A 1% margin absorbs the last slide, which moved the box after its radius was found.
+  return {
+    orbit: { theta: THETA, phi: PHI, radius: r4(radius * 1.01), fov: FOV },
+    target: target.map(r4) as Vec3,
+  };
 }
 
 const worldOf = (layout: CloudLayout, i: number): Vec3 =>
@@ -175,7 +224,14 @@ export function pointCloudConfig(node: IrNode, layout: CloudLayout): Record<stri
       domain: color.scale.domain,
       title: axisTitle(color.scale),
     },
-    camera: { position: orbitPosition(orbit, target), target, fov: orbit.fov, fit: [...FIT] },
+    camera: {
+      position: orbitPosition(orbit, target),
+      target,
+      fov: orbit.fov,
+      fit: [...FIT],
+      drop: DROP,
+      tick: TICK_OFFSET,
+    },
   };
   if (layout.intensity) config.intensity = layout.intensity;
   if (layout.ids) config.ids = layout.ids;
@@ -188,7 +244,7 @@ export function pointCloudConfig(node: IrNode, layout: CloudLayout): Record<stri
 /** A point beside the box's front-bottom edge of a world axis, `k` steps outward, for this camera. */
 function edgePoint(world: 0 | 1 | 2, t: number, half: Vec3, k: number): Vec3 {
   const [hx, hy, hz] = half;
-  const o = 0.07 * k;
+  const o = TICK_OFFSET * k;
   if (world === 0) return [t, -hy - o, hz + o];
   if (world === 1) return [hx + o, t, -hz - o];
   return [hx + o, -hy - o, t];
@@ -260,18 +316,25 @@ function posterLabels(layout: CloudLayout, half: Vec3, at: ReturnType<typeof orb
   for (const axis of AXES) {
     const scale = layout.scales[axis];
     const { w } = worldAxis(layout.up, axis);
-    for (const t of scale.ticks) {
+    scale.ticks.forEach((t, k) => {
       const p = at(edgePoint(w, worldTick(layout, axis, t), half, 1));
-      labels.push({ x: p.x, y: p.y, text: formatTick(t, scale), title: false });
-    }
-    const p = at(edgePoint(w, w === 1 ? half[1] + 0.14 : 0, half, w === 1 ? 1 : 2.9));
+      // The end ticks stay on a phone, where the inner ones would be too small to read.
+      const end = k === 0 || k === scale.ticks.length - 1;
+      labels.push({ x: p.x, y: p.y, text: formatTick(t, scale), title: false, end });
+    });
+    const p = at(edgePoint(w, w === 1 ? half[1] + 0.14 : 0, half, w === 1 ? 1 : 0.2 / TICK_OFFSET));
     labels.push({ x: p.x, y: p.y, text: axisTitle(scale), title: true });
   }
   return placeLabels(labels, 6)
-    .map(
-      (l) =>
-        `<text${l.title ? ' class="t"' : ''} x="${r1(l.x)}" y="${r1(l.y + (l.title ? 4 : 3))}">${escapeText(l.text)}</text>`,
-    )
+    .map((l) => {
+      if (!l.title)
+        return `<text${l.end ? ' class="x"' : ''} x="${r1(l.x)}" y="${r1(l.y + 3)}">${escapeText(l.text)}</text>`;
+      // A title near a side is anchored on its outer edge, so the larger phone type grows inward.
+      const half = (l.text.length * 10 * 0.68) / 2;
+      const side = l.x > POSTER_W * 0.6 ? 'e' : l.x < POSTER_W * 0.4 ? 's' : '';
+      const x = side === 'e' ? l.x + half : side === 's' ? l.x - half : l.x;
+      return `<text class="t${side ? ` t${side}` : ''}" x="${r1(x)}" y="${r1(l.y + 4)}">${escapeText(l.text)}</text>`;
+    })
     .join('');
 }
 

@@ -1,25 +1,34 @@
 /** Token-driven CSS for `point-cloud-3d`: poster, legend ramp, overlay labels, selection and tables. */
 
+import {
+  RAMP_CHROMA,
+  RAMP_HUE_CHROMA,
+  RAMP_INK,
+  RAMP_LIGHTNESS,
+  RAMP_TONES,
+  rampSegment,
+} from './point-cloud-ramp.js';
 import { COLOR_STEPS } from './scatter-ir.js';
 
-/**
- * The cloud's ramp: info through accent to danger, mixed in oklch so the hue
- * turns instead of passing through grey. The runtime mixes the same way.
- */
-export function cloudRampColor(step: number): string {
-  const t = step / (COLOR_STEPS - 1);
-  if (t <= 0.5) {
-    const k = Math.round((t / 0.5) * 100);
-    return `color-mix(in oklch,var(--ak-color-accent) ${k}%,var(--ak-color-info))`;
-  }
-  const k = Math.round(((t - 0.5) / 0.5) * 100);
-  return `color-mix(in oklch,var(--ak-color-danger) ${k}%,var(--ak-color-accent))`;
+const pct = (v: number) => `${Math.round(v * 1000) / 10}%`;
+
+/** The tone hue at `step`: a plain oklch mix of the two nearest tone stops. */
+function rampHue(step: number): string {
+  const { from, k } = rampSegment(step / (COLOR_STEPS - 1));
+  return `color-mix(in oklch,var(--ak-color-${RAMP_TONES[from + 1]}) ${pct(k)},var(--ak-color-${RAMP_TONES[from]}))`;
 }
 
-const ramp = Array.from(
-  { length: COLOR_STEPS },
-  (_, i) => `.ak-pc .q${i}{--ak-pc-c:${cloudRampColor(i)}}`,
-).join('\n');
+/** The CSS mirror of `cloudRamp`: the hue at one lightness, then mixed toward the text colour. */
+export function cloudRampColor(step: number): string {
+  const ink = pct((RAMP_INK * step) / (COLOR_STEPS - 1));
+  const hue = `oklch(from ${rampHue(step)} ${RAMP_LIGHTNESS} max(c,${RAMP_HUE_CHROMA}) h)`;
+  return `oklch(from color-mix(in oklab,var(--ak-color-text) ${ink},${hue}) l max(c,${RAMP_CHROMA}) h)`;
+}
+
+const steps = Array.from({ length: COLOR_STEPS }, (_, i) => i);
+// Plain tone mixes first; a browser with relative colours takes the lightness-ordered ramp.
+const ramp = `${steps.map((i) => `.ak-pc .q${i}{--ak-pc-c:${rampHue(i)}}`).join('\n')}
+@supports (color:oklch(from red l c h)){${steps.map((i) => `.ak-pc .q${i}{--ak-pc-c:${cloudRampColor(i)}}`).join('')}}`;
 
 export const POINT_CLOUD_CSS = `
 ${ramp}
@@ -30,7 +39,9 @@ ${ramp}
 .ak-pc-poster .ak-pc-mark .s{fill:var(--ak-pc-c);stroke:var(--ak-color-background);stroke-width:1.5}
 .ak-pc-poster text{fill:var(--ak-color-text-muted);font:500 9px var(--ak-font-body,inherit);text-anchor:middle}
 .ak-pc-poster text.t{fill:var(--ak-color-text);font-weight:650;font-size:10px}
-@media (max-width:480px){.ak-pc-poster text{display:none}.ak-pc-poster text.t{display:inline;font-size:15px}}
+.ak-pc-poster text.te{text-anchor:end}
+.ak-pc-poster text.ts{text-anchor:start}
+@media (max-width:480px){.ak-pc-poster text{display:none}.ak-pc-poster text:is(.t,.x){display:inline;font-size:17px}.ak-pc-poster text.t{font-size:20px}}
 .ak-pc-labels{position:absolute;inset:0;pointer-events:none;z-index:1;font:500 11px/1 var(--ak-font-body,inherit);color:var(--ak-color-text-muted);font-variant-numeric:tabular-nums}
 .ak-pc-labels span{position:absolute;left:0;top:0;white-space:nowrap;transform:translate(-50%,-50%)}
 .ak-pc-labels .t{color:var(--ak-color-text);font-weight:650;font-size:12px;letter-spacing:.01em}
