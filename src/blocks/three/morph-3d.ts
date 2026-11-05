@@ -362,9 +362,7 @@ export function renderMorph(node: IrNode, context: RenderContext): string {
     [
       titleHeader(node),
       `<div class="ak-3d-stage">${shown ? morphPoster(shown, summary, uid) : ''}</div>`,
-      `<figcaption class="ak-3d-caption">${escapeText(summary)}<span class="ak-mo-meta">${escapeText(
-        `${sequence} · ${String(morph.easing)} · ${String(morph.mode)}`,
-      )}</span></figcaption>`,
+      `<figcaption class="ak-3d-caption">${escapeText(summary)}<span class="ak-mo-meta">${escapeText(sequence)}</span></figcaption>`,
       targetList(targets, current),
     ].join(''),
   );

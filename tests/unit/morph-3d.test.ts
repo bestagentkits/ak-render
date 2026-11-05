@@ -91,7 +91,7 @@ describe('morph-3d contract', () => {
       expect(html.match(/data-ak-morph-target="/gu)?.length).toBe(3);
       expect(html.match(/class="ak-mo-glyph"/gu)?.length).toBe(3);
       expect(html.match(/<svg class="ak-3d-poster ak-mo-poster"/gu)?.length).toBe(1);
-      expect(html).toContain('Sphere → Cube → Star · spring · loop');
+      expect(html).toContain('<span class="ak-mo-meta">Sphere → Cube → Star</span>');
       const { morph, objects } = sceneOf(html);
       expect(morph.targets.map((t) => t.shape)).toEqual(['sphere', 'cube', 'star']);
       expect(morph).toMatchObject({

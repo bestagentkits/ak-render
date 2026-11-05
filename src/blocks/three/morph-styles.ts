@@ -10,13 +10,13 @@ const TONE = 'var(--ak-3d-tone,var(--ak-color-accent))';
 export const SHADE_STEPS = 24;
 const LIT_STEPS = SHADE_STEPS - 1;
 /** The share of the lit range below the bare tone: these steps mix toward ink, the rest toward white. */
-const TONE_AT = 0.55;
+const TONE_AT = 0.42;
 function shadeFill(step: number): string {
-  if (step === LIT_STEPS) return `color-mix(in oklab,${TONE} 28%,#fff)`;
+  if (step === LIT_STEPS) return `color-mix(in oklch,${TONE} 30%,#fff)`;
   const t = step / (LIT_STEPS - 1);
   if (t <= TONE_AT)
-    return `color-mix(in oklab,${TONE} ${Math.round(40 + (t / TONE_AT) * 60)}%,#05060a)`;
-  return `color-mix(in oklab,${TONE} ${Math.round(100 - ((t - TONE_AT) / (1 - TONE_AT)) * 34)}%,#fff)`;
+    return `color-mix(in oklch,${TONE} ${Math.round(62 + (t / TONE_AT) * 38)}%,#10121c)`;
+  return `color-mix(in oklch,${TONE} ${Math.round(100 - ((t - TONE_AT) / (1 - TONE_AT)) * 30)}%,#fff)`;
 }
 const shades = Array.from({ length: SHADE_STEPS }, (_, step) => {
   const fill = shadeFill(step);
@@ -28,7 +28,7 @@ ${shades}
 .ak-mo-surface path{stroke-width:.6;stroke-linejoin:round;fill-opacity:1}
 .ak-mo .ak-3d-stage{background:radial-gradient(40% 46% at 50% 44%,color-mix(in oklab,var(--ak-color-accent) 16%,transparent),transparent 72%),radial-gradient(60% 30% at 50% 100%,color-mix(in oklab,var(--ak-color-accent) 10%,transparent),transparent 70%),radial-gradient(120% 95% at 50% 0%,var(--ak-color-surface-raised,var(--ak-color-surface)),color-mix(in oklab,var(--ak-color-background) 90%,var(--ak-color-text)))}
 .ak-mo-outline{mask-type:alpha}
-.ak-mo-shadow stop{stop-color:var(--ak-color-text)}
+.ak-mo-shadow stop{stop-color:color-mix(in oklab,var(--ak-color-background) 25%,#000)}
 .ak-mo-meta{display:block;margin-top:2px;color:var(--ak-color-text-muted);font-size:.85em}
 .ak-mo-targets{counter-reset:ak-mo}
 .ak-mo-targets li{position:relative}
@@ -41,5 +41,6 @@ ${shades}
 .ak-mo-pause:hover{border-color:color-mix(in oklab,var(--ak-color-text) 45%,transparent)}
 .ak-mo-pause:focus-visible{outline:2px solid var(--ak-color-accent);outline-offset:2px}
 [data-ak-3d-state="frozen"] .ak-mo-pause{display:none}
+@media (max-width:480px){.ak-mo-targets{flex-direction:column}.ak-mo-targets button{flex:1;width:100%}}
 @media print{.ak-mo-pause{display:none}.ak-mo-targets button{box-shadow:none}}
 `;
