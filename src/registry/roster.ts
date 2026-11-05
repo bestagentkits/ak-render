@@ -72,6 +72,7 @@ export const CORE_RUNTIME_FEATURES = [
   'dialog',
   'chart',
   'diagram',
+  'diagram-viewer',
   'media',
   'outline',
   'bento',

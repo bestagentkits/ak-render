@@ -82,6 +82,15 @@ metal metalness 0.85 roughness 0.32.
 - **Stills are stills.** In PNG and PDF, freeze the live frame at device scale
   2; hide interactive chrome that has no meaning on paper.
 
+- **Graphs: dim, never erase.** For a selection in a dense graph, mix the
+  other nodes a quarter toward the muted tone and about half toward the
+  background, so group colour still reads; a full fade turns 1000 nodes into
+  a grey blob. Do not select anything on load in a large graph.
+- **Graphs: adjacent groups need distant hues.** Order the tone cycle so
+  neighbouring clusters never share a warm hue (accent, info, success,
+  danger, neutral, warning). Fit the camera to projected node bounds, not to
+  the layout extent.
+
 ## Done means
 
 - Screenshots at 1440, 768 and 375 in light and dark, plus a rasterised PDF

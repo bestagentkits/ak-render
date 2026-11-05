@@ -26,8 +26,16 @@
 
 import { stableHash } from '../hash.js';
 import type { JsonValue } from '../json.js';
+import {
+  bindManifest,
+  checkManifestAgainstGraph,
+  type DiagramCapability,
+  type DiagramRenderResult,
+  readManifest,
+} from './adapter-manifest.js';
 import { ADAPTER_STYLE_MARKER, fitAdapterMarkup } from './adapter-markup-fit.js';
 import { ADAPTER_SCOPE_ATTRIBUTE } from './adapter-stylesheet-filter.js';
+import { readDiagramGraph } from './semantic-graph.js';
 
 export interface DiagramRenderRequest {
   /** The diagram spec exactly as authored, bounded by the Page Spec limits. */
@@ -36,8 +44,11 @@ export interface DiagramRenderRequest {
   readonly title: string;
   /** Stable node id of the owning block, usable for adapter-side cache keys. */
   readonly nodeId: string;
-  /** Version of the adapter contract this request was built against. */
-  readonly contractVersion: 1;
+  /**
+   * Version of the adapter contract this request was built against: the
+   * adapter's declared `contract`, or 1.
+   */
+  readonly contractVersion: 1 | 2;
 }
 
 export interface DiagramAdapter {
@@ -46,11 +57,18 @@ export interface DiagramAdapter {
   /** Adapter version, reported in diagnostics. */
   readonly version: string;
   /**
-   * Return trusted markup (an SVG fragment) for the request, or `undefined` to
-   * fall back. Throwing is treated exactly like returning `undefined`: a broken
-   * adapter degrades the page instead of failing the compile.
+   * Contract the adapter speaks. Version 2 may return a `DiagramRenderResult`
+   * (SVG plus a semantic manifest and capabilities); version 1, the default,
+   * returns markup only.
    */
-  render(request: DiagramRenderRequest): string | undefined;
+  readonly contract?: 1 | 2;
+  /**
+   * Return trusted markup (an SVG fragment) or, under contract 2, a result with
+   * a manifest, or `undefined` to fall back. Throwing is treated exactly like
+   * returning `undefined`: a broken adapter degrades the page instead of
+   * failing the compile.
+   */
+  render(request: DiagramRenderRequest): string | DiagramRenderResult | undefined;
 }
 
 export interface DiagramAdapterResult {
@@ -69,9 +87,16 @@ export interface DiagramAdapterResult {
    * `data-ak-diagram-scope` attribute set to this token.
    */
   readonly scope?: string;
+  /** 2 when the markup carries a bound semantic manifest, otherwise 1. */
+  readonly contract?: 1 | 2;
+  /** Interactions the drawing supports, from a v2 result. */
+  readonly capabilities?: readonly DiagramCapability[];
+  /** How many nodes, relationships and groups the manifest bound. */
+  readonly manifest?: { readonly nodes: number; readonly edges: number; readonly groups: number };
 }
 
-export const DIAGRAM_ADAPTER_CONTRACT_VERSION = 1 as const;
+/** The highest adapter contract this compiler speaks. */
+export const DIAGRAM_ADAPTER_CONTRACT_VERSION = 2 as const;
 
 /** Bound on adapter output, so a runaway adapter cannot inflate the artifact. */
 export const MAX_DIAGRAM_MARKUP_BYTES = 256 * 1024;
@@ -157,13 +182,19 @@ export function runDiagramAdapter(
   request: Omit<DiagramRenderRequest, 'contractVersion'>,
 ): DiagramAdapterResult | undefined {
   if (adapter === undefined) return undefined;
-  let markup: string | undefined;
+  const contract = adapter.contract === 2 ? 2 : 1;
+  let answer: string | DiagramRenderResult | undefined;
   try {
-    markup = adapter.render({ ...request, contractVersion: DIAGRAM_ADAPTER_CONTRACT_VERSION });
+    answer = adapter.render({ ...request, contractVersion: contract });
   } catch {
     return { markup: '', adapter: adapter.name, rejected: 'adapter threw' };
   }
-  if (markup === undefined) return undefined;
+  if (answer === undefined) return undefined;
+  const structured = typeof answer === 'object' && answer !== null ? answer : undefined;
+  if (structured !== undefined && contract !== 2) {
+    return { markup: '', adapter: adapter.name, rejected: 'a v1 adapter returned a v2 result' };
+  }
+  const markup = structured === undefined ? (answer as string) : structured.svg;
   const check = checkAdapterMarkup(markup);
   if (!check.ok) {
     return { markup: '', adapter: adapter.name, rejected: check.reason ?? 'rejected' };
@@ -171,12 +202,28 @@ export function runDiagramAdapter(
   const scope = adapterScope(request.nodeId);
   const fitted = fitAdapterMarkup(markup, scope);
   if (!fitted.ok) return { markup: '', adapter: adapter.name, rejected: fitted.reason };
+  const removed =
+    fitted.removedInlineStyles === 0 ? {} : { removedInlineStyles: fitted.removedInlineStyles };
+  if (structured === undefined) {
+    return { markup: fitted.markup, adapter: adapter.name, scope, contract: 1, ...removed };
+  }
+  const read = readManifest(structured);
+  if (!read.ok) return { markup: '', adapter: adapter.name, rejected: read.reason };
+  const spec = request.spec;
+  const graph = readDiagramGraph(
+    typeof spec === 'object' && spec !== null && !Array.isArray(spec) ? spec : {},
+  );
+  const mismatch = checkManifestAgainstGraph(read.manifest, graph);
+  if (mismatch !== undefined) return { markup: '', adapter: adapter.name, rejected: mismatch };
+  const bound = bindManifest(fitted.markup, read.manifest, graph, scope);
+  if (!bound.ok) return { markup: '', adapter: adapter.name, rejected: bound.reason };
   return {
-    markup: fitted.markup,
+    markup: bound.bound.markup,
     adapter: adapter.name,
     scope,
-    ...(fitted.removedInlineStyles === 0
-      ? {}
-      : { removedInlineStyles: fitted.removedInlineStyles }),
+    contract: 2,
+    capabilities: read.capabilities,
+    manifest: { nodes: bound.bound.nodes, edges: bound.bound.edges, groups: bound.bound.groups },
+    ...removed,
   };
 }

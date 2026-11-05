@@ -95,7 +95,7 @@ function mixOklab(a, b, t) {
 }
 
 export function mountScatter(el, kit) {
-  const { api } = kit;
+  const api = kit.api();
   let config;
   try {
     config = JSON.parse(el.getAttribute('data-ak-scene') || '{}');

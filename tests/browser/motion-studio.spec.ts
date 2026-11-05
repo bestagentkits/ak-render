@@ -41,7 +41,7 @@ const diff = (page: Page) => page.locator('#diff');
 test('lists blocks, inspects the selected recipe and previews the real page', async ({ page }) => {
   await open(page);
   await expect(page.locator('#blocks button[data-id="reveal-card"]')).toBeVisible();
-  await expect(page.locator('#recipes button')).toHaveCount(7);
+  await expect(page.locator('#recipes button')).toHaveCount(12);
   await expect(page.locator('#inspector')).toContainText('reveal-card');
   await expect(page.locator('#inspector .lane').first()).toBeVisible();
   await expect(page.locator('#css')).toContainText('[data-ak-motion="reveal-soft"]');

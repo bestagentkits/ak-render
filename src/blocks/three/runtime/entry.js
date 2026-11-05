@@ -44,6 +44,7 @@ import {
   WebGLRenderer,
 } from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { mountNetwork } from './network.js';
 import { mountScatter } from './scatter.js';
 
 const TONE_VARS = {
@@ -716,31 +717,28 @@ function mount(el) {
   return record;
 }
 
-/**
- * Widgets with their own mount, keyed by `data-ak-3d`; anything else is a scene.
- * Each gets the shared kit and returns a record the shared loop drives.
- */
-const WIDGETS = { scatter: mountScatter };
-function widgetKit() {
-  return {
-    api,
-    mounts,
-    schedule,
-    RENDER_SAMPLES,
-    cssColor,
-    toneColor,
-    isDark,
-    qualityProfile,
-    webgl2Available,
-  };
-}
+/** Widgets with their own runtime module, keyed by `data-ak-3d`; the rest mount as a scene. */
+const WIDGETS = { network: mountNetwork, scatter: mountScatter };
+/** What a widget module needs from the shared runtime. */
+const kit = {
+  api: () => api,
+  motionAllowed: () => api.motionAllowed(),
+  mounts,
+  schedule,
+  toneColor,
+  cssColor,
+  isDark,
+  qualityProfile,
+  webgl2Available,
+  RENDER_SAMPLES,
+};
 
 function mountAll() {
   for (const el of document.querySelectorAll('[data-ak-3d]')) {
     if ([...mounts].some((m) => m.el === el)) continue;
     try {
       const widget = WIDGETS[el.getAttribute('data-ak-3d')];
-      if (widget) widget(el, widgetKit());
+      if (widget) widget(el, kit);
       else mount(el);
     } catch (_error) {
       // A scene that cannot be built reports it; the page and its other scenes keep working.

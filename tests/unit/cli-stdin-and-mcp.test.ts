@@ -450,7 +450,7 @@ describe('MCP motion tools', () => {
 
   it('lists the recipe catalog with no arguments', async () => {
     const listing = payload(await call('motions'));
-    expect(listing['recipeCount']).toBe(7);
+    expect(listing['recipeCount']).toBe(12);
     expect(Array.isArray(listing['recipes'])).toBe(true);
   });
 
