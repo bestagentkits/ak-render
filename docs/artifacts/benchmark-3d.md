@@ -21,33 +21,38 @@ and fails when draw calls or triangles drift from this baseline.
 | --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- |
 | scene-3d-basic | mobile 375 | low@1 | 16.7 / 16.8 | 0.2 / 0.3 | 5 | 2,434 | lost → ready | no |
 | scene-3d-basic | tablet 768 | low@1 | 16.7 / 16.7 | 0.2 / 0.4 | 5 | 2,434 | lost → ready | no |
-| scene-3d-basic | desktop 1440 | high@1 | 16.7 / 33.4 | 0.3 / 0.5 | 5 | 2,434 | lost → ready | no |
-| scene-3d-basic | desktop-2x 1440 | high@2 | 66.7 / 83.4 | 0.3 / 0.6 | 5 | 2,434 | lost → ready | no |
-| scene-3d-dense | mobile 375 | low@1 | 16.7 / 33.4 | 0.4 / 0.9 | 49 | 44,802 | lost → ready | no |
-| scene-3d-dense | tablet 768 | low@1 | 33.3 / 33.4 | 0.4 / 0.7 | 49 | 44,802 | lost → ready | no |
-| scene-3d-dense | desktop 1440 | high@1 | 50.0 / 66.7 | 0.6 / 1.0 | 49 | 44,802 | lost → ready | no |
-| scene-3d-dense | desktop-2x 1440 | high@2 | 100.1 / 133.4 | 0.6 / 0.8 | 49 | 44,802 | lost → ready | no |
+| scene-3d-basic | desktop 1440 | high@1 | 16.7 / 33.4 | 0.3 / 0.4 | 5 | 2,434 | lost → ready | no |
+| scene-3d-basic | desktop-2x 1440 | high@2 | 66.6 / 66.8 | 0.3 / 0.4 | 5 | 2,434 | lost → ready | no |
+| scene-3d-dense | mobile 375 | low@1 | 16.7 / 16.8 | 0.4 / 0.5 | 49 | 44,802 | lost → ready | no |
+| scene-3d-dense | tablet 768 | low@1 | 16.7 / 33.4 | 0.4 / 0.6 | 49 | 44,802 | lost → ready | no |
+| scene-3d-dense | desktop 1440 | high@1 | 50.0 / 50.1 | 0.6 / 0.9 | 49 | 44,802 | lost → ready | no |
+| scene-3d-dense | desktop-2x 1440 | high@2 | 83.4 / 100.0 | 0.6 / 0.8 | 49 | 44,802 | lost → ready | no |
 | network-3d-basic | mobile 375 | low@1 | 16.7 / 16.8 | 0.0 / 0.0 | 4 | 3,242 | lost → ready | no |
 | network-3d-basic | tablet 768 | low@1 | 16.7 / 16.8 | 0.0 / 0.0 | 4 | 3,242 | lost → ready | no |
-| network-3d-basic | desktop 1440 | high@1 | 16.7 / 16.8 | 0.0 / 0.0 | 4 | 5,762 | lost → ready | no |
-| network-3d-basic | desktop-2x 1440 | high@2 | 16.7 / 16.8 | 0.0 / 0.0 | 4 | 5,762 | lost → ready | no |
-| network-3d-stress | mobile 375 | low@1 | 16.7 / 16.7 | 0.0 / 0.0 | 3 | 180,000 | lost → ready | no |
+| network-3d-basic | desktop 1440 | high@1 | 16.7 / 16.7 | 0.0 / 0.0 | 4 | 5,762 | lost → ready | no |
+| network-3d-basic | desktop-2x 1440 | high@2 | 16.7 / 16.7 | 0.0 / 0.0 | 4 | 5,762 | lost → ready | no |
+| network-3d-stress | mobile 375 | low@1 | 16.7 / 16.8 | 0.0 / 0.0 | 3 | 180,000 | lost → ready | no |
 | network-3d-stress | tablet 768 | low@1 | 16.7 / 16.7 | 0.0 / 0.0 | 3 | 180,000 | lost → ready | no |
-| network-3d-stress | desktop 1440 | high@1 | 16.7 / 16.8 | 0.0 / 0.0 | 3 | 320,000 | lost → ready | no |
+| network-3d-stress | desktop 1440 | high@1 | 16.7 / 16.7 | 0.0 / 0.0 | 3 | 320,000 | lost → ready | no |
 | network-3d-stress | desktop-2x 1440 | high@2 | 16.7 / 16.8 | 0.0 / 0.0 | 3 | 320,000 | lost → ready | no |
-| scatter-3d-20k | mobile 375 | low@1 | 16.7 / 16.7 | 0.0 / 0.0 | 7 | 0 | lost → ready | no |
+| scatter-3d-20k | mobile 375 | low@1 | 16.7 / 16.8 | 0.0 / 0.0 | 7 | 0 | lost → ready | no |
 | scatter-3d-20k | tablet 768 | low@1 | 16.7 / 16.8 | 0.0 / 0.0 | 7 | 0 | lost → ready | no |
 | scatter-3d-20k | desktop 1440 | high@1 | 16.7 / 16.8 | 0.0 / 0.0 | 7 | 0 | lost → ready | no |
-| scatter-3d-20k | desktop-2x 1440 | high@2 | 16.7 / 16.8 | 0.0 / 0.0 | 7 | 0 | lost → ready | no |
+| scatter-3d-20k | desktop-2x 1440 | high@2 | 16.7 / 16.7 | 0.0 / 0.0 | 7 | 0 | lost → ready | no |
+| bars-3d-dense | mobile 375 | low@1 | 16.7 / 16.8 | 1.4 / 1.6 | 501 | 5,958 | lost → ready | no |
+| bars-3d-dense | tablet 768 | low@1 | 16.7 / 16.7 | 1.5 / 1.8 | 501 | 5,958 | lost → ready | no |
+| bars-3d-dense | desktop 1440 | high@1 | 16.7 / 16.7 | 2.1 / 2.1 | 501 | 5,958 | lost → ready | no |
+| bars-3d-dense | desktop-2x 1440 | high@2 | 16.7 / 16.8 | 0.0 / 0.0 | 501 | 5,958 | lost → ready | no |
 
 Agent cost is assumed, not measured: spec tokens are bytes / 4 and a page task is 2 calls (render, export). User tokens are not measured here; `pnpm bench:agent` measures live-model tokens.
 
 | Fixture | Spec bytes | Spec tokens (assumed) | Round-trips (assumed) | HTML bytes | PNG export ok | Export p50 ms | Export max ms (n=5) |
 | --- | ---: | ---: | ---: | ---: | --- | ---: | ---: |
-| scene-3d-basic | 1,276 | 319 | 2 | 693,811 | 5/5 | 2107.1 | 2237.3 |
-| scene-3d-dense | 5,409 | 1,352 | 2 | 711,119 | 5/5 | 1702.7 | 1782.7 |
-| network-3d-basic | 4,416 | 1,104 | 2 | 729,604 | 5/5 | 2070.9 | 2797.8 |
-| network-3d-stress | 37,484 | 9,371 | 2 | 1,216,916 | 5/5 | 1906.5 | 2316.6 |
-| scatter-3d-20k | 618,309 | 154,577 | 2 | 5,253,177 | 5/5 | 11926.6 | 12266.0 |
+| scene-3d-basic | 1,276 | 319 | 2 | 796,108 | 5/5 | 1353.6 | 1445.9 |
+| scene-3d-dense | 5,409 | 1,352 | 2 | 813,416 | 5/5 | 1336.4 | 1391.9 |
+| network-3d-basic | 4,416 | 1,104 | 2 | 831,901 | 5/5 | 1500.2 | 1778.7 |
+| network-3d-stress | 37,484 | 9,371 | 2 | 1,319,213 | 5/5 | 1449.5 | 1484.1 |
+| scatter-3d-20k | 618,309 | 154,577 | 2 | 5,355,474 | 5/5 | 6058.5 | 6320.2 |
+| bars-3d-dense | 6,080 | 1,520 | 2 | 1,067,980 | 5/5 | 1599.1 | 1861.0 |
 
 Export time includes launching the browser.
