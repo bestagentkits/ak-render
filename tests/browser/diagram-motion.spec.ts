@@ -38,7 +38,7 @@ const node = (page: Page, panelId: string, id: string) =>
   page.locator(`[data-ak-id="${panelId}"] [data-ak-node="${id}"]`);
 
 test.describe('diagram motion governor', () => {
-  test('edge-flow loops while in view, pauses on request and on selection, and leaves the lines solid', async ({
+  test('edge-flow loops while in view, pauses on request, keeps flowing on selection, and leaves the lines solid', async ({
     page,
   }) => {
     const errors = await open(page, spec(panel('one', 'edge-flow')), 'edge-flow');
@@ -64,29 +64,28 @@ test.describe('diagram motion governor', () => {
     await expect(figure).toHaveAttribute('data-ak-dm-flow', '');
     await node(page, 'one', 'api').focus();
     await page.keyboard.press('Enter');
-    await expect(figure).not.toHaveAttribute('data-ak-dm-flow', /.*/u);
-    await page.keyboard.press('Escape');
     await expect(figure).toHaveAttribute('data-ak-dm-flow', '');
+    await expect(pulses).toHaveCount(2);
     expect(errors).toEqual([]);
   });
 
-  test('edge-flow: only one diagram flows; none under reduced motion, in print or after freeze', async ({
+  test('edge-flow: every diagram in view flows; none under reduced motion, in print or after freeze', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1440, height: 2400 });
     await open(page, spec(panel('one', 'edge-flow'), panel('two', 'edge-flow')), 'flow-two');
-    await expect(page.locator('[data-ak-dm-flow]')).toHaveCount(1);
+    await expect(page.locator('[data-ak-dm-flow]')).toHaveCount(2);
     await page.emulateMedia({ media: 'print' });
     await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
     await expect(page.locator('[data-ak-dm-flow]')).toHaveCount(0);
     await page.emulateMedia({ media: 'screen' });
     await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
-    await expect(page.locator('[data-ak-dm-flow]')).toHaveCount(1);
+    await expect(page.locator('[data-ak-dm-flow]')).toHaveCount(2);
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await expect(page.locator('[data-ak-dm-flow]')).toHaveCount(0);
     await expect(page.locator('[data-ak-dm-pause]').first()).toBeHidden();
     await page.emulateMedia({ reducedMotion: 'no-preference' });
-    await expect(page.locator('[data-ak-dm-flow]')).toHaveCount(1);
+    await expect(page.locator('[data-ak-dm-flow]')).toHaveCount(2);
     await page.evaluate(() =>
       (window as unknown as { akRenderDiagram: { freeze(): void } }).akRenderDiagram.freeze(),
     );

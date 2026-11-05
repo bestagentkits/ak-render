@@ -7,8 +7,8 @@
  *
  * - ambient playback, which runs once when a diagram scrolls into view, one
  *   diagram at a time, the rest waiting their turn;
- * - edge flow, the page's one ambient loop: at most one diagram flows at a
- *   time, only while it is in view, until the reader pauses it or selects;
+ * - edge flow, a loop on each flow diagram while it is in view, until the
+ *   reader pauses it; a selection keeps it flowing;
  * - focused playback, which follows the viewer's selection or route and
  *   pre-empts any ambient run;
  * - visibility, a theme or motion-policy switch and print, each of which stops
@@ -129,32 +129,32 @@ function wireDiagramMotion() {
     path.parentNode.insertBefore(pulse, path.nextSibling);
     return pulse;
   }
-  var flowing = null;
-  function endFlow() {
-    if (!flowing) return;
-    flowing.figure.removeAttribute('data-ak-dm-flow');
-    flowing.pulses.forEach(function (pulse) { if (pulse.parentNode) pulse.parentNode.removeChild(pulse); });
-    flowing.pulses = [];
-    flowing = null;
+  function stopFlow(entry) {
+    if (!entry.flowing) return;
+    entry.flowing = false;
+    entry.figure.removeAttribute('data-ak-dm-flow');
+    entry.pulses.forEach(function (pulse) { if (pulse.parentNode) pulse.parentNode.removeChild(pulse); });
+    entry.pulses = [];
   }
-  // The one ambient loop: the first visible, unpaused, unselected flow diagram.
+  function endFlow() {
+    entries.forEach(stopFlow);
+  }
+  // Every flow diagram in view flows until the reader pauses it; a selection
+  // keeps the flow, so the highlighted route stays alive.
   function flow() {
-    var pick = null;
-    if (!frozen && motionAllowed() && !doc.hidden) {
-      for (var i = 0; i < entries.length && !pick; i += 1) {
-        var entry = entries[i];
-        if (entry.recipe === 'edge-flow' && entry.visible && !entry.paused && !entry.selected) pick = entry;
-      }
-    }
-    if (pick === flowing) return;
-    endFlow();
-    if (!pick) return;
-    pick.edges.slice(0, 40).forEach(function (edge, index) {
-      var path = paths(edge)[0];
-      if (path && path.parentNode) pick.pulses.push(pulseOf(path, String(index % 4)));
+    var allowed = !frozen && motionAllowed() && !doc.hidden;
+    entries.forEach(function (entry) {
+      if (entry.recipe !== 'edge-flow') return;
+      var on = allowed && entry.visible && !entry.paused;
+      if (!on) { stopFlow(entry); return; }
+      if (entry.flowing) return;
+      entry.edges.slice(0, 40).forEach(function (edge, index) {
+        var path = paths(edge)[0];
+        if (path && path.parentNode) entry.pulses.push(pulseOf(path, String(index % 4)));
+      });
+      entry.figure.setAttribute('data-ak-dm-flow', '');
+      entry.flowing = true;
     });
-    pick.figure.setAttribute('data-ak-dm-flow', '');
-    flowing = pick;
   }
   function wireFlow(entry) {
     entry.pulses = [];
@@ -281,11 +281,6 @@ function wireDiagramMotion() {
     if (recipe === 'sequence-playback') { wireSequence(entry); return; }
     if (recipe === 'edge-flow') {
       wireFlow(entry);
-      if (typeof diagramViewers !== 'undefined') {
-        diagramViewers.forEach(function (viewer) {
-          if (viewer.canvas === canvas) viewer.listeners.push(function (state) { entry.selected = state.mode !== 'idle'; flow(); });
-        });
-      }
       return;
     }
     if (typeof diagramViewers !== 'undefined') {
