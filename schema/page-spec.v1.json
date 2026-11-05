@@ -499,6 +499,9 @@
           "$ref": "#/$defs/block-particles-3d"
         },
         {
+          "$ref": "#/$defs/block-text-3d"
+        },
+        {
           "$ref": "#/$defs/block-product-3d"
         },
         {
@@ -9144,6 +9147,108 @@
         }
       },
       "description": "Seeded 3D particle effect presets."
+    },
+    "block-text-3d": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "text"
+      ],
+      "properties": {
+        "type": {
+          "const": "text-3d"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 600,
+          "description": "Optional caption under the lettering."
+        },
+        "font": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "display",
+            "serif"
+          ]
+        },
+        "material": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "satin",
+            "metal",
+            "chrome",
+            "glass",
+            "neon"
+          ]
+        },
+        "tone": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "accent",
+            "neutral",
+            "success",
+            "warning",
+            "danger",
+            "info"
+          ]
+        },
+        "depth": {
+          "type": "number",
+          "minimum": 0.05,
+          "maximum": 1
+        },
+        "bevel": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "none",
+            "soft",
+            "round"
+          ]
+        },
+        "animation": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "rise",
+            "wave",
+            "float",
+            "spin",
+            "none"
+          ]
+        },
+        "split": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "character",
+            "word"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
+        }
+      },
+      "description": "Extruded 3D text with materials and motion."
     },
     "block-product-3d": {
       "type": "object",

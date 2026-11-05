@@ -53,6 +53,7 @@ import { mountNetwork } from './network.js';
 import { liveParticleResources, mountParticles } from './particles.js';
 import { productWidget } from './product.js';
 import { mountScatter } from './scatter.js';
+import { liveTextResources, mountText } from './text.js';
 
 /** Data widgets that add marks and transitions on top of the shared scene, by `data-ak-3d` kind. */
 const SCENE_WIDGETS = { bars: barsWidget, product: productWidget, morph: morphWidget };
@@ -791,6 +792,7 @@ const WIDGETS = {
   network: mountNetwork,
   scatter: mountScatter,
   particles: mountParticles,
+  text: mountText,
 };
 /** What a widget module needs from the shared runtime. */
 const kit = {
@@ -848,6 +850,8 @@ function stats() {
     frames,
     /** Particle geometries and materials still alive; zero once every scene is unmounted. */
     particleResources: liveParticleResources(),
+    /** Text geometries, materials and environment maps still alive; zero once every scene is unmounted. */
+    textResources: liveTextResources(),
     /** Morph geometries and materials still alive; zero once every morph is unmounted. */
     morphResources: liveMorphResources(),
   };
