@@ -10,6 +10,7 @@ Release mechanics and the compatibility contract live in
 ## [Unreleased]
 
 ### Added
+- `edge-flow` diagram motion recipe: dashed relationships march and a glowing pulse travels each one while the diagram is in view, with a Pause flow control; the governor keeps it to one flowing diagram per page and stops it on selection, reduced motion, print and hidden tabs. The diagram showcase opens with a deploy pipeline drawn as dark cards with a mono subtitle, a glowing hub and a status pill.
 
 - `scene-3d` block: a nested 3D scene as typed data (primitive shapes, material
   and lighting presets, camera, timeline, views) drawn live by a shared, inlined
@@ -19,6 +20,22 @@ Release mechanics and the compatibility contract live in
   Chrome, Edge or Playwright Chromium (never downloaded) that captures each 3D
   scene's live WebGL frame and fails with a stable code instead of exporting the
   static plan. `ak-render export doctor` reports the browser and its WebGL 2 support.
+- `exportDiagramSvg` writes a standalone, deterministic SVG of a contract 2 drawing; `window.akRenderDiagram.freeze()` settles diagram motion for capture; Motion Studio accepts a diagram adapter and inspects the drawing. See [docs/diagram-adapter.md](./docs/diagram-adapter.md#export-and-motion-studio).
+- 22 golden diagram cases with determinism, zero-fabrication, geometry, accessibility, offline, print, no-JS, preset and motion checks, and a recorded compile time, DOM size and memory baseline. See [docs/diagram-adapter.md](./docs/diagram-adapter.md#golden-cases-and-baseline).
+
+- Diagram motion recipes for contract 2 drawings: `edge-trace`, `signal-relay`, `node-activation` and `sequence-playback`. One governor per page plays one diagram at a time, follows the viewer's selection, and stops on hide, theme switch, reduced motion and print; sequence playback never starts itself and names each step in a status line. See [docs/motion.md](./docs/motion.md#diagram-motion-governor).
+
+- Diagram viewer for adapter contract 2 drawings: select a node to see its connections, Shift+select to trace a directed route, show everything downstream, inspect a relationship, find a node (diacritic-insensitive), zoom, fit and pan, with the selection kept in the link. Controls appear only for the capabilities the adapter declares, ship hidden without script and drop out of print.
+
+- Diagram adapter contract 2. An adapter that declares `contract: 2` may
+  return `{ svg, manifest, capabilities }`: the manifest names which drawn
+  element is which node, relationship and group of the spec, and the
+  capabilities say which viewer interactions the drawing supports. The
+  compiler rejects a manifest that names anything the spec does not declare,
+  writes its own `data-ak-*` hooks with labels taken from the spec, and
+  prefixes every id in the drawing with the panel scope. Contract 1 adapters
+  are unchanged. See [docs/diagram-adapter.md](./docs/diagram-adapter.md#contract-2-semantic-manifest).
+
 - ChatGPT plugin package. `packaging/chatgpt/` connects ChatGPT to the hosted
   MCP server at `https://render.agentkit.best/mcp` with AgentKit OAuth, so no
   Node or npm is needed; the local stdio manifests are unchanged.
