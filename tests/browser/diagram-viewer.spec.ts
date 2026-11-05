@@ -209,4 +209,13 @@ test.describe('diagram viewer hardening', () => {
     await node(page, 'client').click({ modifiers: ['Shift'] });
     await expect(page.locator('[data-ak-dv-state]')).toHaveCount(0);
   });
+
+  test('Escape disarms a pending trace', async ({ page }) => {
+    await open(page);
+    await node(page, 'client').click();
+    await page.locator('.ak-dv-details button', { hasText: 'Trace a route' }).click();
+    await page.keyboard.press('Escape');
+    await node(page, 'db').click();
+    expect(await state(page, 'db')).toBe('focus');
+  });
 });

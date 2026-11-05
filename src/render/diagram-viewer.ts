@@ -177,6 +177,7 @@ function wireDiagramViewers() {
       panel.hidden = children.length === 0;
     }
     function clear() {
+      armed = null;
       reset();
       viewer.mode = 'idle';
       viewer.focus = null;
@@ -316,6 +317,7 @@ function wireDiagramViewers() {
       emit();
     }
     function inspect(edge) {
+      armed = null;
       reset();
       canvas.setAttribute('data-ak-dv-active', '');
       var from = edge.getAttribute('data-ak-from');
