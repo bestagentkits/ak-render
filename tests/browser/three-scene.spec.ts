@@ -103,6 +103,8 @@ test.describe('scene-3d', () => {
   });
 
   test('ten mount/unmount cycles leave no geometry or mount behind', async ({ page }) => {
+    // Ten full mounts on CI software GL take longer than the default 30s.
+    test.setTimeout(120_000);
     await page.goto(scenePage());
     await ready(page);
     const result = await page.evaluate(() => {

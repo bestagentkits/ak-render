@@ -175,6 +175,9 @@ function materialFor(kind, color) {
   return new MeshStandardMaterial({ color, metalness: 0.1, roughness: 0.55 });
 }
 
+/** Render durations each scene keeps for the benchmark; a fixed ring. */
+const RENDER_SAMPLES = 240;
+
 /** Low on coarse-pointer or few-core devices: lower pixel ratio, no shadows. */
 function qualityProfile() {
   const coarse = window.matchMedia?.('(pointer: coarse)').matches;
@@ -583,6 +586,8 @@ function mount(el) {
     animating: motion && tweens.length > 0,
     started: 0,
     frames: 0,
+    /** The most recent render durations, for the benchmark; a fixed ring. */
+    renderMs: [],
     tick(now) {
       if (!record.started) record.started = now;
       const elapsed = now - record.started;
@@ -600,7 +605,10 @@ function mount(el) {
           );
         }
       }
+      const begin = performance.now();
       renderer.render(scene, camera);
+      record.renderMs.push(performance.now() - begin);
+      if (record.renderMs.length > RENDER_SAMPLES) record.renderMs.shift();
       record.frames += 1;
       if (record.frames === 1) {
         el.setAttribute('data-ak-3d-state', 'ready');
@@ -608,7 +616,12 @@ function mount(el) {
       }
     },
     info() {
-      return { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
+      return {
+        calls: renderer.info.render.calls,
+        triangles: renderer.info.render.triangles,
+        quality,
+        dpr: renderer.getPixelRatio(),
+      };
     },
     /** Stop motion and pin the current frame as an image, so print and export carry the live scene. */
     freeze() {
@@ -717,11 +730,23 @@ function mountAll() {
 function stats() {
   let calls = 0;
   let triangles = 0;
+  const renderMs = [];
+  const profiles = new Set();
   for (const record of mounts) {
-    calls += record.info().calls;
-    triangles += record.info().triangles;
+    const info = record.info();
+    calls += info.calls;
+    triangles += info.triangles;
+    profiles.add(`${info.quality}@${info.dpr}`);
+    renderMs.push(...record.renderMs);
   }
-  return { mounts: mounts.size, geometries: geometries.size, calls, triangles };
+  return {
+    mounts: mounts.size,
+    geometries: geometries.size,
+    calls,
+    triangles,
+    profile: [...profiles].join(','),
+    renderMs,
+  };
 }
 
 export function boot(pageApi) {
@@ -733,6 +758,10 @@ export function boot(pageApi) {
       for (const record of [...mounts]) record.unmount();
     },
     stats,
+    /** Forget recorded render times so a measurement starts after warm-up. */
+    resetSamples() {
+      for (const record of mounts) record.renderMs = [];
+    },
     /** Pin every live scene's current frame; returns the pixel size of each frozen frame. */
     freeze() {
       return [...mounts].map((record) => record.freeze()).filter(Boolean);
