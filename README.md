@@ -542,7 +542,7 @@ pnpm bench:spec      # spec compression for the composition fixtures
 pnpm bench:agent --model <id> --visual  # live-model A/B; skips without a model API key
 pnpm build && pnpm bench:render --agentkit ../agentkit --repeat 9  # committed render artifact
 pnpm site:build      # compile the landing page and gallery into site/dist
-pnpm site:deploy     # build, then deploy site/dist with wrangler
+pnpm site:deploy     # build, then deploy site/dist with wrangler (CI does this on every push to main: .github/workflows/site-deploy.yml)
 node scripts/generate-site-images.mjs  # after pnpm build: redraw site icons and social card
 ```
 

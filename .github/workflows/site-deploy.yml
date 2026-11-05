@@ -1,0 +1,69 @@
+name: Site deploy
+
+# Publishes render.agentkit.best (landing plus compiled gallery) on every push
+# to main that can change it. The site is static assets only; the cloud
+# renderer stays a manual deploy in cloud-deploy.yml.
+#
+# Required repository secrets (shared with cloud-deploy.yml):
+#   CLOUDFLARE_API_TOKEN   with Workers Scripts and Workers Routes on agentkit.best
+#   CLOUDFLARE_ACCOUNT_ID
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - 'docs/gallery/**'
+      - 'fixtures/**'
+      - 'src/**'
+      - 'scripts/build-site.mjs'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/site-deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: site-deploy
+  cancel-in-progress: false
+
+env:
+  PNPM_VERSION: 9.15.0
+  # Pinned so a deploy is reproducible; bump deliberately.
+  WRANGLER_VERSION: 4.147.0
+
+jobs:
+  deploy:
+    name: Deploy render.agentkit.best
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # A stale gallery would publish pages that differ from the compiler.
+      - run: pnpm site:build
+      - run: pnpm gallery:check
+
+      - name: Deploy
+        run: npx --yes "wrangler@${WRANGLER_VERSION}" deploy --config site/wrangler.jsonc
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Smoke check
+        run: |
+          set -euo pipefail
+          for path in / /gallery/; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "https://render.agentkit.best${path}")
+            echo "${path} -> ${code}"
+            [ "${code}" = "200" ]
+          done
