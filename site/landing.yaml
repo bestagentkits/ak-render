@@ -223,12 +223,12 @@ blocks:
             size: wide
             src: assets/crop-timeline.webp
             alt: The timeline block from the plan gallery page
-          - title: Diagrams without an engine
-            text: Structured flows render as accessible markup.
+          - title: Diagrams that flow
+            text: Edges march with glowing pulses, nodes read as cards, and a click traces the route. Search, focus, zoom, SVG export, and a Pause control for every loop.
             eyebrow: Diagram
-            size: wide
-            src: assets/crop-diagram.webp
-            alt: The diagram block from the plan gallery page, a three-node flow
+            size: large
+            src: assets/crop-diagram-flow.webp
+            alt: The deploy pipeline from the diagram showcase gallery page in dark mode, with dashed edges carrying glowing pulses into a glowing control plane hub
           - title: Charts follow the scheme
             text: Every chart stop recolors from theme tokens in dark mode.
             eyebrow: Theme
@@ -704,6 +704,9 @@ blocks:
           - src: assets/shot-media.webp
             alt: Screenshot of the media.html gallery page compiled by AK Render
             caption: 'Media: video, images, before and after'
+          - src: assets/shot-diagram-showcase.webp
+            alt: Screenshot of the diagram-showcase.html gallery page compiled by AK Render
+            caption: 'Diagrams: flowing edges, trace and export'
           - src: assets/shot-theme-showcase.webp
             alt: Screenshot of the theme-showcase.html gallery page compiled by AK Render
             caption: 'Theme showcase: one spec under every preset'
@@ -791,6 +794,9 @@ blocks:
           - type: link
             label: incident-report
             href: gallery/incident-report.html
+          - type: link
+            label: diagram-showcase
+            href: gallery/diagram-showcase.html
 
   - type: section
     id: measured

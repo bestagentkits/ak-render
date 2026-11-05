@@ -9,12 +9,13 @@
  * `render()` is the same pipeline reduced to the HTML string.
  */
 
-import { type Diagnostic, DiagnosticBag } from '../diagnostics.js';
+import type { ModelAssetResult, ResolvedModelAsset } from '../assets/model-assets.js';
+import { type Diagnostic, DiagnosticBag, pathKey } from '../diagnostics.js';
 import type { DiagramAdapter } from '../diagram/adapter.js';
 import { RenderError } from '../errors.js';
 import { stableHash } from '../hash.js';
 import { ICON_CSS, type IconCollector, renderIconSprite } from '../icons/icon-render.js';
-import type { IrDocument, IrNode } from '../ir.js';
+import type { IrDocument, IrNode, NetworkPolicy } from '../ir.js';
 import { DIAGRAM_CANVAS_V2, DIAGRAM_MOTION_RECIPES } from '../motion/diagram-motion.js';
 import { getMotionRecipe, motionRecipeCss } from '../motion/recipes.js';
 import type { BlockRegistry, FeatureModule } from '../registry/block-module.js';
@@ -22,7 +23,7 @@ import { DEFAULT_REGISTRY } from '../registry/registry.js';
 import type { RuntimeFeature } from '../registry/roster.js';
 import { assetOrigins, assetReferences } from '../spec/asset-references.js';
 import { evaluateCondition } from '../spec/conditions.js';
-import { CONNECT_CAPABILITIES, type MediaCapability } from '../spec/network-policy.js';
+import { CONNECT_CAPABILITIES, isRemote, type MediaCapability } from '../spec/network-policy.js';
 import { type NormalizeResult, normalizeSpec } from '../spec/normalize.js';
 import { loadTheme, type ResolvedTheme, resolveTheme } from '../theme/load-theme.js';
 import { builtinThemeCatalog, type ThemeCatalog } from '../theme/theme-catalog.js';
@@ -65,7 +66,21 @@ export interface RenderOptions {
    * supported extension point.
    */
   registry?: BlockRegistry;
+  /**
+   * Resolves a model block's `src`. The CLI and the local MCP server pass one
+   * built on `createModelResolver(baseDir)`, which inlines local GLB/glTF files.
+   * Without it a remote model still loads under the `models` capability, but a
+   * local one fails with a diagnostic: this module never touches the disk.
+   */
+  modelResolver?: ModelResolver;
 }
+
+/** Resolve one model reference at a JSON path; see `createModelResolver`. */
+export type ModelResolver = (
+  reference: string,
+  path: string,
+  policy: NetworkPolicy,
+) => ModelAssetResult;
 
 export interface CompileResult {
   html: string;
@@ -261,6 +276,7 @@ function renderBody(
     registry: BlockRegistry;
     diagramAdapter?: DiagramAdapter;
     warnings: Diagnostic[];
+    models: ReadonlyMap<string, ResolvedModelAsset>;
   },
 ): { body: string; usesIcons: boolean } {
   const byId = nodeIndex(ir);
@@ -284,6 +300,7 @@ function renderBody(
     renderChildren: (node) => renderList(node.children),
     renderSlot: (node, key) => renderList(node.slots?.[key] ?? []),
     byId: (id) => byId.get(id),
+    models: renderOptions.models,
   };
   const root = byId.get(ir.rootId);
   if (root === undefined) {
@@ -293,6 +310,60 @@ function renderBody(
   // the `<main>` landmark and the h1 fallback.
   const page = renderNode(root, context);
   return { body: `${page}${renderIconSprite(icons)}`, usesIcons: icons.size > 0 };
+}
+
+/** The prop every model block names its source with. */
+const MODEL_SOURCE = 'src';
+
+/**
+ * Resolve every model block's source before rendering. A remote model without
+ * a resolver passes through: validation already gated it on the `models`
+ * capability. A local one needs the resolver, which only Node callers have.
+ */
+function resolveModels(
+  ir: IrDocument,
+  registry: BlockRegistry,
+  resolver: ModelResolver | undefined,
+): Map<string, ResolvedModelAsset> {
+  const models = new Map<string, ResolvedModelAsset>();
+  const errors: Diagnostic[] = [];
+  for (const node of ir.nodes) {
+    const definition = registry.byType.get(node.type);
+    if (definition?.props[MODEL_SOURCE]?.kind !== 'url') continue;
+    if ((definition.props[MODEL_SOURCE] as { asset?: string }).asset !== 'models') continue;
+    const reference = node.props[MODEL_SOURCE];
+    if (typeof reference !== 'string') continue;
+    const path = pathKey(node.path, MODEL_SOURCE);
+    if (resolver === undefined) {
+      if (isRemote(reference))
+        models.set(node.id, { kind: 'remote', uri: reference, connectOrigins: [] });
+      else
+        errors.push({
+          code: 'SPEC_VALIDATION_ERROR',
+          severity: 'error',
+          path,
+          nodeId: node.id,
+          message: `local model "${reference}" needs a compile from a spec file, which can read it`,
+          details: {
+            fix: 'compile the spec file with the CLI or the local MCP server, or use a remote URL under the models capability',
+          },
+        });
+      continue;
+    }
+    const result = resolver(reference, path, ir.policy.network);
+    for (const diagnostic of result.diagnostics)
+      if (diagnostic.severity === 'error') errors.push({ ...diagnostic, nodeId: node.id });
+    if (result.asset !== undefined) models.set(node.id, result.asset);
+  }
+  const first = errors[0];
+  if (first !== undefined) {
+    throw new RenderError(first.code, first.message, {
+      path: first.path,
+      ...(first.nodeId === undefined ? {} : { nodeId: first.nodeId }),
+      details: { ...(first.details ?? {}), diagnostics: errors },
+    });
+  }
+  return models;
 }
 
 /** Run the full pipeline and return everything it produced. */
@@ -343,10 +414,12 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
     });
   }
 
+  const models = resolveModels(ir, registry, options.modelResolver);
   const renderWarnings: Diagnostic[] = [];
   const { body, usesIcons } = renderBody(ir, resolved, features, {
     registry,
     warnings: renderWarnings,
+    models,
     ...(options.diagramAdapter === undefined ? {} : { diagramAdapter: options.diagramAdapter }),
   });
   // Code panels live in several blocks and nested props, and only some
@@ -381,7 +454,11 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
     js,
     body,
     allowedOrigins: collectOrigins(ir, registry, DISPLAY_CAPABILITIES),
-    connectOrigins: collectOrigins(ir, registry, CONNECT_CAPABILITIES),
+    connectOrigins: [
+      ...collectOrigins(ir, registry, CONNECT_CAPABILITIES),
+      ...[...models.values()].flatMap((model) => model.connectOrigins),
+    ],
+    modelLoader: models.size > 0,
     themeToggle: includeThemeToggle,
     density: resolved.density,
     motion: motionPolicyOf(resolved.motionPolicy),

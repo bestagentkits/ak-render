@@ -55,7 +55,7 @@ finding: `ID | blocker|minor | fix | DoD with a measurable threshold`.
 ## Defaults that held up
 
 Start from these instead of searching again: camera fov 30, subject fill
-0.84 of the frame (`visual:check` fill ≥ 0.6 on the stage), centre offset
+0.84 of the frame (`visual:check` fill ≥ 0.6 on the stage, or fillY ≥ 0.7 with\nmarginY ≥ 0.06 when a wide stage fills by height; fit a loaded model in the\nruntime with the real aspect, centring its projected box), centre offset
 ≤ 0.05, shadow radius 9 with 16 blur samples, exposure 0.8 dark / 1 light,
 metal metalness 0.85 roughness 0.32.
 
@@ -81,6 +81,15 @@ metal metalness 0.85 roughness 0.32.
   it does not shrink to a strip.
 - **Stills are stills.** In PNG and PDF, freeze the live frame at device scale
   2; hide interactive chrome that has no meaning on paper.
+
+- **Graphs: dim, never erase.** For a selection in a dense graph, mix the
+  other nodes a quarter toward the muted tone and about half toward the
+  background, so group colour still reads; a full fade turns 1000 nodes into
+  a grey blob. Do not select anything on load in a large graph.
+- **Graphs: adjacent groups need distant hues.** Order the tone cycle so
+  neighbouring clusters never share a warm hue (accent, info, success,
+  danger, neutral, warning). Fit the camera to projected node bounds, not to
+  the layout extent.
 
 ## Done means
 

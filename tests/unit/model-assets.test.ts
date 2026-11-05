@@ -7,6 +7,7 @@ import {
   MODEL_ASSET_LIMITS,
   type ResolveModelAssetOptions,
   resolveModelAsset,
+  SUPPORTED_GLTF_EXTENSIONS,
 } from '../../src/assets/model-assets.js';
 import type { NetworkPolicy } from '../../src/ir.js';
 import { buildContentSecurityPolicy } from '../../src/render/document.js';
@@ -263,7 +264,7 @@ describe('local model resolver', () => {
     expect(result.asset).toBeUndefined();
     expect(result.diagnostics[0]?.details).toMatchObject({
       unsupported: ['KHR_draco_mesh_compression', 'KHR_texture_basisu'],
-      supported: [],
+      supported: [...SUPPORTED_GLTF_EXTENSIONS],
     });
     expect(result.diagnostics[0]?.message).toMatch(/no bundled decoder/u);
   });

@@ -44,6 +44,13 @@ import {
   WebGLRenderer,
 } from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { barsWidget } from './bars.js';
+import { mountModel } from './model.js';
+import { mountNetwork } from './network.js';
+import { mountScatter } from './scatter.js';
+
+/** Data widgets that add marks and transitions on top of the shared scene, by `data-ak-3d` kind. */
+const SCENE_WIDGETS = { bars: barsWidget };
 
 const TONE_VARS = {
   accent: '--ak-color-accent',
@@ -409,6 +416,22 @@ function mount(el) {
       };
     })
     .filter(Boolean);
+  const widget =
+    SCENE_WIDGETS[el.getAttribute('data-ak-3d')]?.({
+      el,
+      config,
+      scene,
+      nodes,
+      camera,
+      target,
+      motion,
+      api,
+      requestRender: () => requestRender(),
+      animate() {
+        record.animating = true;
+        schedule();
+      },
+    }) || null;
 
   let selected = null;
   const buttons = Array.prototype.slice.call(el.querySelectorAll('[data-ak-3d-pick]'));
@@ -519,7 +542,7 @@ function mount(el) {
         -((event.clientY - rect.top) / rect.height) * 2 + 1,
       );
       raycaster.setFromCamera(pointer, camera);
-      const hit = raycaster.intersectObjects(pickable, false)[0];
+      const hit = raycaster.intersectObjects(pickable, false).find((h) => h.object.visible);
       if (hit) select(hit.object.userData.id);
     }
     downAt = null;
@@ -529,7 +552,6 @@ function mount(el) {
     spherical.r *= event.deltaY > 0 ? 1.1 : 0.9;
     applySpherical();
   };
-  const order = pickable.map((object) => object.userData.id);
   const onKey = (event) => {
     const key = event.key;
     if (key === 'ArrowLeft') spherical.theta -= 0.15;
@@ -538,7 +560,10 @@ function mount(el) {
     else if (key === 'ArrowDown') spherical.phi += 0.15;
     else if (key === '+' || key === '=') spherical.r *= 0.9;
     else if (key === '-') spherical.r *= 1.1;
-    else if ((key === 'Enter' || key === ' ' || key === 'n' || key === 'p') && order.length) {
+    else if (key === 'Enter' || key === ' ' || key === 'n' || key === 'p') {
+      // Bars a filter hid are skipped, as they are for the pointer.
+      const order = pickable.filter((object) => object.visible).map((object) => object.userData.id);
+      if (!order.length) return;
       const at = order.indexOf(selected);
       const step = key === 'p' ? -1 : 1;
       select(order[(at + step + order.length) % order.length]);
@@ -561,7 +586,21 @@ function mount(el) {
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
+    frameWidget();
     requestRender();
+  }
+  // A data widget reframes for each stage aspect until the reader moves the camera.
+  let framedAt = null;
+  function frameWidget() {
+    const fit = widget?.frame?.(camera.aspect);
+    if (!fit || (framedAt && camera.position.distanceToSquared(framedAt) > 1e-6)) return;
+    camera.position.set(...fit.position);
+    target.set(...fit.target);
+    camera.lookAt(target);
+    home.position.copy(camera.position);
+    home.target.copy(target);
+    readSpherical();
+    framedAt = camera.position.clone();
   }
   const resizeObserver = window.ResizeObserver ? new ResizeObserver(resize) : null;
   resizeObserver?.observe(stage);
@@ -583,7 +622,7 @@ function mount(el) {
     el,
     visible: true,
     lost: false,
-    animating: motion && tweens.length > 0,
+    animating: motion && (tweens.length > 0 || widget !== null),
     started: 0,
     frames: 0,
     /** The most recent render durations, for the benchmark; a fixed ring. */
@@ -605,6 +644,7 @@ function mount(el) {
           );
         }
       }
+      if (widget && !widget.tick(now) && !(motion && tweens.length > 0)) record.animating = false;
       const begin = performance.now();
       renderer.render(scene, camera);
       record.renderMs.push(performance.now() - begin);
@@ -629,16 +669,18 @@ function mount(el) {
       const frozen = stage.querySelector('.ak-3d-frame');
       if (frozen) return { width: canvas.width, height: canvas.height };
       record.animating = false;
+      widget?.settle();
       renderer.render(scene, camera);
       const frame = document.createElement('img');
       frame.className = 'ak-3d-frame';
       frame.alt = '';
-      frame.src = canvas.toDataURL('image/png');
+      frame.src = (widget?.annotate?.(canvas) || canvas).toDataURL('image/png');
       canvas.after(frame);
       el.setAttribute('data-ak-3d-state', 'frozen');
       return { width: canvas.width, height: canvas.height };
     },
     sync() {
+      widget?.sync();
       if (config.bind) {
         const value = api.readPath(config.bind);
         if (typeof value === 'string' && value !== selected && nodes.has(value)) highlight(value);
@@ -650,6 +692,7 @@ function mount(el) {
     },
     unmount() {
       cancelVisibility();
+      widget?.dispose();
       resizeObserver?.disconnect();
       for (const button of buttons) {
         button.removeEventListener('click', onButton);
@@ -715,11 +758,33 @@ function mount(el) {
   return record;
 }
 
+/** Widgets with their own runtime module, keyed by `data-ak-3d`; the rest mount as a scene. */
+const WIDGETS = { model: mountModel, network: mountNetwork, scatter: mountScatter };
+/** What a widget module needs from the shared runtime. */
+const kit = {
+  api: () => api,
+  motionAllowed: () => api.motionAllowed(),
+  mounts,
+  schedule,
+  toneColor,
+  cssColor,
+  isDark,
+  qualityProfile,
+  webgl2Available,
+  RENDER_SAMPLES,
+  shadowMaterial,
+  RIGS,
+  trio,
+  v3,
+};
+
 function mountAll() {
   for (const el of document.querySelectorAll('[data-ak-3d]')) {
     if ([...mounts].some((m) => m.el === el)) continue;
     try {
-      mount(el);
+      const widget = WIDGETS[el.getAttribute('data-ak-3d')];
+      if (widget) widget(el, kit);
+      else mount(el);
     } catch (_error) {
       // A scene that cannot be built reports it; the page and its other scenes keep working.
       el.setAttribute('data-ak-3d-state', 'error');
@@ -771,7 +836,8 @@ export function boot(pageApi) {
     },
     ready() {
       return [...document.querySelectorAll('[data-ak-3d]')].every(
-        (el) => el.getAttribute('data-ak-3d-state') !== 'static' || !el.isConnected,
+        (el) =>
+          !['static', 'loading'].includes(el.getAttribute('data-ak-3d-state')) || !el.isConnected,
       );
     },
   };
