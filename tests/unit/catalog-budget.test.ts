@@ -15,8 +15,9 @@ import { BLOCK_DEFINITIONS, blockTypes } from '../../src/registry/registry.js';
 
 const BUDGET = {
   catalogText: 9_000,
-  // Raised for the 3D blocks of #132; grouping them to get back under 20k is #155.
-  catalogJson: 20_500,
+  // 3D blocks are listed by name under one `3d` family (~15 bytes per added block),
+  // so the planned 3D roster fits without raising this.
+  catalogJson: 20_000,
   categoryText: 3_000,
   compactDescribe: 1_500,
   summaryLength: 110,

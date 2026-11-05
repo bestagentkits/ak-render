@@ -15,7 +15,13 @@ describe('catalog and describe', () => {
     const listing = catalog();
     expect(listing.schemaVersion).toBe(1);
     expect(listing.blockCount).toBe(BLOCK_DEFINITIONS.length);
-    expect(listing.blocks).toHaveLength(BLOCK_DEFINITIONS.length);
+    const familyTypes = listing.families.flatMap((family) => family.types);
+    expect(listing.blocks.length + familyTypes.length).toBe(BLOCK_DEFINITIONS.length);
+    expect(familyTypes).toEqual(
+      BLOCK_DEFINITIONS.filter((definition) => definition.tags.includes('3d')).map(
+        (definition) => definition.type,
+      ),
+    );
 
     const entry = listing.blocks.find((block) => block.type === 'carousel');
     expect(entry).toEqual({
@@ -45,9 +51,12 @@ describe('catalog and describe', () => {
       const expected = BLOCK_DEFINITIONS.filter((definition) => definition.category === category);
       expect(listing.category).toBe(category);
       expect(listing.blockCount).toBe(expected.length);
-      expect(listing.blocks.map((entry) => entry.type)).toEqual(
-        expected.map((definition) => definition.type),
-      );
+      expect(
+        [
+          ...listing.blocks.map((entry) => entry.type),
+          ...listing.families.flatMap((family) => family.types),
+        ].sort(),
+      ).toEqual(expected.map((definition) => definition.type).sort());
       expect(listing.actions).toEqual(catalog().actions);
     }
   });
@@ -71,7 +80,9 @@ describe('catalog and describe', () => {
     const json = formatCatalogJson(listing);
     expect(JSON.parse(json)).toEqual(listing);
     const lines = json.split('\n');
-    expect(lines).toHaveLength(listing.blocks.length + listing.actions.length + 8);
+    expect(lines).toHaveLength(
+      listing.blocks.length + listing.families.length + listing.actions.length + 10,
+    );
     expect(lines[0]).toBe('{');
     expect(lines.at(-1)).toBe('}');
     const filtered = formatCatalogJson(catalog({ category: 'media' }));
