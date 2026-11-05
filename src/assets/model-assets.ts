@@ -722,7 +722,8 @@ function names(list: unknown, fallback: (index: number) => string): string[] {
       isRecord(item) && typeof item.name === 'string' && item.name !== ''
         ? item.name.slice(0, 64)
         : fallback(index);
-    const name = seen.has(given) ? `${given} (${index + 1})` : given;
+    let name = given;
+    for (let n = index + 1; seen.has(name); n += 1) name = `${given} (${n})`;
     seen.add(name);
     return name;
   });

@@ -169,6 +169,48 @@ test.describe('model-3d', () => {
     await expect.poll(frame).not.toBe(zoomed);
   });
 
+  test('the loaded model is refit to the stage on resize, and an authored camera is kept', async ({
+    page: p,
+  }) => {
+    await p.emulateMedia({ reducedMotion: 'reduce' });
+    const inside = async () => {
+      const stage = await p.locator('.ak-3d-canvas').boundingBox();
+      if (stage === null) throw new Error('no canvas');
+      const pins = await p
+        .locator('[data-ak-3d-pin]')
+        .evaluateAll((all) =>
+          all
+            .map((pin) => pin.getBoundingClientRect())
+            .map((r) => [r.x + r.width / 2, r.y + r.height / 2]),
+        );
+      return pins.every(
+        ([x, y]) =>
+          (x as number) > stage.x + stage.width * 0.06 &&
+          (x as number) < stage.x + stage.width * 0.94 &&
+          (y as number) > stage.y + stage.height * 0.06 &&
+          (y as number) < stage.y + stage.height * 0.94,
+      );
+    };
+    await p.setViewportSize({ width: 900, height: 700 });
+    await p.goto(glbPage());
+    await ready(p);
+    await expect.poll(inside).toBe(true);
+    await p.setViewportSize({ width: 375, height: 700 });
+    await expect.poll(inside).toBe(true);
+
+    const far = base.replace(
+      '    src: models/crate.glb\n',
+      '    src: models/crate.glb\n    camera: { position: [40, 30, 60], target: [0, 0, 0] }\n',
+    );
+    await p.goto(page('crate-authored', far));
+    await ready(p);
+    const spread = await p.locator('[data-ak-3d-pin]').evaluateAll((all) => {
+      const xs = all.map((pin) => pin.getBoundingClientRect().x);
+      return Math.max(...xs) - Math.min(...xs);
+    });
+    expect(spread).toBeLessThan(60);
+  });
+
   test('a compressed model fails at compile time with the decoder diagnostic', () => {
     expect(() => build(base.replace('models/crate.glb', 'models/crate-draco.gltf'))).toThrow(
       /KHR_draco_mesh_compression/u,

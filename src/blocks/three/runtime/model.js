@@ -380,8 +380,8 @@ export function mountModel(el, kit) {
         i & 2 ? fitBox.max.y : fitBox.min.y,
         i & 4 ? fitBox.max.z : fitBox.min.z,
       );
-      corner.project(camera);
-      if (corner.z > 1) return null;
+      if (corner.applyMatrix4(camera.matrixWorldInverse).z >= 0) return null;
+      corner.applyMatrix4(camera.projectionMatrix);
       out.x0 = Math.min(out.x0, corner.x);
       out.x1 = Math.max(out.x1, corner.x);
       out.y0 = Math.min(out.y0, corner.y);
@@ -589,6 +589,11 @@ export function mountModel(el, kit) {
       // Leave room under the model for its contact shadow.
       fitBox = box.clone();
       fitBox.min.y -= size * 0.03;
+      for (const hotspot of hotspots) fitBox.expandByPoint(hotspot.at);
+      // Clip planes follow the model's scale, so a large model never falls past far.
+      camera.near = size * 1e-3;
+      camera.far = size * 1e3;
+      camera.updateProjectionMatrix();
       fitHome();
       reach.min = size * 0.15;
       reach.max = size * 20;

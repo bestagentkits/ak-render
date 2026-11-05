@@ -117,5 +117,7 @@ describe('describeGltf', () => {
     const json = JSON.parse(readFileSync(join(fixtures, 'models/crate.gltf'), 'utf8'));
     for (const clip of json.animations) clip.name = 'Move';
     expect(describeGltf(json).clips).toEqual(['Move', 'Move (2)']);
+    json.animations = [{ name: 'X (3)' }, { name: 'X' }, { name: 'X' }];
+    expect(new Set(describeGltf(json).clips).size).toBe(3);
   });
 });
