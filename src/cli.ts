@@ -330,6 +330,9 @@ function catalogText(listing: Catalog): string {
     lines.push('', `## ${category}`);
     for (const entry of entries) lines.push(`${entry.type} — ${entry.summary}`);
   }
+  for (const family of listing.families) {
+    lines.push('', `## ${family.name} family`, family.summary, family.types.join(', '));
+  }
   lines.push('', `Actions: ${listing.actions.map((action) => action.type).join(', ')}`);
   return lines.join('\n');
 }
