@@ -283,6 +283,14 @@ const THREE_D_SHOWCASE = {
     'Ring to knot',
     'A ring ties itself into a trefoil knot, then twists into a square band, all on one wrapped surface.',
   ],
+  'timeline-3d-space': [
+    'Road to orbit',
+    'Twelve spaceflight milestones on a path in space; step, scrub or click and the camera flies to each one.',
+  ],
+  'timeline-3d-hundred': [
+    'A hundred sprints',
+    'One hundred milestones coiled into a rising spiral, still in order and one keystroke apart.',
+  ],
   'network-3d-stress': [
     'A thousand-node graph',
     'A large force-laid graph that shows the network widget holding up at scale.',

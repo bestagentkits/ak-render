@@ -55,9 +55,15 @@ import { productWidget } from './product.js';
 import { mountScatter } from './scatter.js';
 import { liveShaderResources, mountShader } from './shader.js';
 import { liveTextResources, mountText } from './text.js';
+import { liveTimelineResources, timelineWidget } from './timeline.js';
 
 /** Data widgets that add marks and transitions on top of the shared scene, by `data-ak-3d` kind. */
-const SCENE_WIDGETS = { bars: barsWidget, product: productWidget, morph: morphWidget };
+const SCENE_WIDGETS = {
+  bars: barsWidget,
+  product: productWidget,
+  morph: morphWidget,
+  timeline: timelineWidget,
+};
 
 const TONE_VARS = {
   accent: '--ak-color-accent',
@@ -858,6 +864,8 @@ function stats() {
     textResources: liveTextResources(),
     /** Morph geometries and materials still alive; zero once every morph is unmounted. */
     morphResources: liveMorphResources(),
+    /** Timeline paths, stems, halos and marker materials still alive; zero once every timeline is unmounted. */
+    timelineResources: liveTimelineResources(),
   };
 }
 
