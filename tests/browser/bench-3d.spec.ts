@@ -168,7 +168,7 @@ function markdown(artifact: Artifact): string {
     'and fails when draw calls or triangles drift from this baseline.',
     '',
     `- **Frame ms** is the gap between ${FRAMES} animation frames. It is vsync-capped (16.7 ms at 60 Hz), so it shows dropped frames, not headroom.`,
-    '- **Render ms** times `renderer.render` alone on the CPU side of the call; it is the cost to compare.',
+    '- **Render ms** is CPU submit time of `renderer.render` only; it excludes GPU work, which frame ms shows on a software GPU.',
     '- **Draws** and **triangles** come from `renderer.info`; they are not a GPU memory measurement.',
     '- **Profile** is the runtime quality tier and device pixel ratio: `low` (coarse pointer) has no shadows or antialiasing, so rows with different profiles are not comparable.',
     meta.softwareGpu
@@ -229,6 +229,10 @@ test('3D benchmark @bench', async ({ browser, browserName }, testInfo) => {
       await page.locator('[data-ak-3d]').scrollIntoViewIfNeeded();
       await expect(page.locator('[data-ak-3d]')).toHaveAttribute('data-ak-3d-state', 'ready');
       if (gpu === '') gpu = await gpuInfo(page);
+      // Drop warm-up samples, shader compilation included, so render time covers the measured frames.
+      await page.evaluate(() =>
+        (window as unknown as { akRender3d: { resetSamples(): void } }).akRender3d.resetSamples(),
+      );
       const deltas = await frameDeltas(page);
       const { calls, triangles, profile, renderMs } = await stats(page);
       viewports.push({
@@ -336,7 +340,9 @@ test('3D benchmark @bench', async ({ browser, browserName }, testInfo) => {
     const baseline = JSON.parse(readFileSync(baselinePath, 'utf8')) as Artifact;
     const draws = (fixtures: FixtureRun[]) =>
       fixtures.flatMap((f) =>
-        f.viewports.map((v) => `${f.fixture} ${v.viewport}: ${v.calls} calls, ${v.triangles} tris`),
+        f.viewports.map(
+          (v) => `${f.fixture} ${v.viewport} ${v.profile}: ${v.calls} calls, ${v.triangles} tris`,
+        ),
       );
     expect(draws(results), 'draws drifted; run pnpm bench:3d:update if intended').toEqual(
       draws(baseline.fixtures),

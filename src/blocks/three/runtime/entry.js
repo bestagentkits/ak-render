@@ -175,9 +175,10 @@ function materialFor(kind, color) {
   return new MeshStandardMaterial({ color, metalness: 0.1, roughness: 0.55 });
 }
 
-/** Low on coarse-pointer or few-core devices: lower pixel ratio, no shadows. */
+/** Render durations each scene keeps for the benchmark; a fixed ring. */
 const RENDER_SAMPLES = 240;
 
+/** Low on coarse-pointer or few-core devices: lower pixel ratio, no shadows. */
 function qualityProfile() {
   const coarse = window.matchMedia?.('(pointer: coarse)').matches;
   const cores = navigator.hardwareConcurrency || 4;
@@ -606,7 +607,8 @@ function mount(el) {
       }
       const begin = performance.now();
       renderer.render(scene, camera);
-      record.renderMs[record.frames % RENDER_SAMPLES] = performance.now() - begin;
+      record.renderMs.push(performance.now() - begin);
+      if (record.renderMs.length > RENDER_SAMPLES) record.renderMs.shift();
       record.frames += 1;
       if (record.frames === 1) {
         el.setAttribute('data-ak-3d-state', 'ready');
@@ -756,6 +758,10 @@ export function boot(pageApi) {
       for (const record of [...mounts]) record.unmount();
     },
     stats,
+    /** Forget recorded render times so a measurement starts after warm-up. */
+    resetSamples() {
+      for (const record of mounts) record.renderMs = [];
+    },
     /** Pin every live scene's current frame; returns the pixel size of each frozen frame. */
     freeze() {
       return [...mounts].map((record) => record.freeze()).filter(Boolean);
