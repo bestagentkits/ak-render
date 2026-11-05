@@ -275,6 +275,14 @@ const THREE_D_SHOWCASE = {
     'Studio speaker',
     'A studio-lit speaker in four finishes, with numbered hotspots and an exploded view.',
   ],
+  'globe-3d-routes': [
+    'Global network',
+    'Twenty-four offices on a dotted globe with a night side; scrub the years or pick an office to fly to it.',
+  ],
+  'globe-3d-stress': [
+    'Five hundred sites',
+    'Five hundred observation sites and two hundred links, clustered into counts until you zoom in.',
+  ],
   'morph-3d-shapes': [
     'Morphing form',
     'One glossy surface springs from a sphere to a rounded cube to a twelve-point star, or to the shape you pick.',

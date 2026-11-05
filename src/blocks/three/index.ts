@@ -2,6 +2,8 @@
 
 import type { BlockGroup } from '../../registry/block-module.js';
 import { bars3dBlock } from './bars-3d.js';
+import { globe3dBlock } from './globe-3d.js';
+import { GLOBE_CSS } from './globe-styles.js';
 import { model3dBlock } from './model-3d.js';
 import { morph3dBlock } from './morph-3d.js';
 import { MORPH_CSS } from './morph-styles.js';
@@ -48,6 +50,7 @@ export const THREE_GROUP: BlockGroup = {
     shader3dBlock,
     text3dBlock,
     product3dBlock,
+    globe3dBlock,
     morph3dBlock,
   ],
   features: [
@@ -62,6 +65,7 @@ export const THREE_GROUP: BlockGroup = {
         SHADER_CSS +
         PRODUCT_CSS +
         TEXT_CSS +
+        GLOBE_CSS +
         MORPH_CSS,
       script: { code: `${THREE_RUNTIME}\n${THREE_BOOT}`, boot: 'wireThree();' },
     },
