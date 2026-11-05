@@ -547,7 +547,7 @@ export function productPoster(model: ProductModel, label: string): string {
       const at = project(hotspot.at, camera);
       if (at === null) return '';
       // A sealed part's pin is hollow: it marks where the part sits, not a surface you can see.
-      const inner = sealed.has(hotspot.part) ? ' data-ak-inner' : '';
+      const inner = sealed.has(hotspot.part) ? ' data-ak-inner=""' : '';
       return `<g class="ak-product-pin"${inner}><circle cx="${r1(at.x)}" cy="${r1(at.y)}" r="11"/><text x="${r1(at.x)}" y="${r1(at.y + 4)}">${i + 1}</text></g>`;
     })
     .join('');

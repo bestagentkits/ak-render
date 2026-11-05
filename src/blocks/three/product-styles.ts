@@ -3,7 +3,7 @@
 /** Neutral finishes: a graphite and a chalk that keep their look in both schemes. */
 const NEUTRALS = `.ak-3d-mark[data-tone="dark"]{--ak-3d-tone:color-mix(in oklab,var(--ak-color-text) 16%,black)}
 .ak-3d-mark[data-tone="light"]{--ak-3d-tone:color-mix(in oklab,var(--ak-color-surface) 10%,white)}
-@supports (color:oklch(from red l c h)){.ak-3d-mark[data-tone="dark"]{--ak-3d-tone:oklch(from var(--ak-color-text) .3 .008 h)}.ak-3d-mark[data-tone="light"]{--ak-3d-tone:oklch(from var(--ak-color-surface) .955 .006 h)}.ak-product .ak-3d-mark[data-tone="neutral"]{--ak-3d-tone:oklch(from var(--ak-color-text-muted) .68 .012 h)}}`;
+@supports (color:oklch(from red l c h)){.ak-3d-mark[data-tone="dark"]{--ak-3d-tone:oklch(from var(--ak-color-text) .3 .008 h)}.ak-3d-mark[data-tone="light"]{--ak-3d-tone:oklch(from var(--ak-color-surface) .955 .006 h)}.ak-product .ak-3d-mark[data-tone="neutral"],.ak-product-poster .ak-3d-mark[data-tone="neutral"]{--ak-3d-tone:oklch(from var(--ak-color-text-muted) .68 .012 h)}}`;
 
 export const PRODUCT_CSS = `
 ${NEUTRALS}
