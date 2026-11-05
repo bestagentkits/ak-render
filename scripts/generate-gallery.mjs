@@ -148,23 +148,23 @@ const diagramShowcase = {
     {
       type: 'diagram-panel',
       id: 'boundaries',
-      title: 'Nested boundaries · edge trace',
+      title: 'Nested boundaries · edge flow',
       spec: golden('nested-boundaries'),
-      motion: 'edge-trace',
+      motion: 'edge-flow',
     },
     {
       type: 'diagram-panel',
       id: 'dataflow',
-      title: 'Dataflow stages · signal relay',
+      title: 'Dataflow stages · edge flow',
       spec: golden('dataflow-stages'),
-      motion: 'signal-relay',
+      motion: 'edge-flow',
     },
     {
       type: 'diagram-panel',
       id: 'diamond',
-      title: 'Diamond · node activation',
+      title: 'Diamond · edge flow',
       spec: golden('diamond'),
-      motion: 'node-activation',
+      motion: 'edge-flow',
     },
     {
       type: 'diagram-panel',
@@ -176,8 +176,9 @@ const diagramShowcase = {
     {
       type: 'diagram-panel',
       id: 'dense',
-      title: 'Two-level tree · search and focus',
+      title: 'Two-level tree · search, focus and flow',
       spec: golden('two-level-tree'),
+      motion: 'edge-flow',
     },
     {
       type: 'cta',

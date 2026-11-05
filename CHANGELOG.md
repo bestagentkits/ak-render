@@ -10,6 +10,8 @@ Release mechanics and the compatibility contract live in
 ## [Unreleased]
 
 ### Added
+
+- `edge-flow` now flows on every diagram in view and keeps flowing when the reader selects a node; every diagram in the showcase uses it except sequence playback.
 - `edge-flow` diagram motion recipe: dashed relationships march and a glowing pulse travels each one while the diagram is in view, with a Pause flow control; the governor keeps it to one flowing diagram per page and stops it on selection, reduced motion, print and hidden tabs. The diagram showcase opens with a deploy pipeline drawn as dark cards with a mono subtitle, a glowing hub and a status pill.
 
 - `exportDiagramSvg` writes a standalone, deterministic SVG of a contract 2 drawing; `window.akRenderDiagram.freeze()` settles diagram motion for capture; Motion Studio accepts a diagram adapter and inspects the drawing. See [docs/diagram-adapter.md](./docs/diagram-adapter.md#export-and-motion-studio).
