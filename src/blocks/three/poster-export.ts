@@ -18,6 +18,8 @@ import { NETWORK_CSS } from './network-styles.js';
 import { PARTICLES_CSS, particleSchemeVars } from './particles-styles.js';
 import { PRODUCT_CSS } from './product-styles.js';
 import { SCATTER_CSS } from './scatter-styles.js';
+import { SHADER_CSS, shaderSchemeVars } from './shader-styles.js';
+import { TEXT_CSS } from './text-styles.js';
 import { THREE_CSS } from './three-styles.js';
 
 export interface PosterSvgOptions extends RenderOptions {
@@ -56,6 +58,9 @@ export function export3dPosterSvg(spec: unknown, options: PosterSvgOptions = {})
   const svg = html.slice(start, html.indexOf('</svg>', start) + 6);
   // A particle poster draws its own night sky, whose tones follow the scheme.
   const particles = /^<svg[^>]*\bclass="[^"]*\bak-pt-poster\b/u.test(svg);
+  // So does a shader poster.
+  const shader = /^<svg[^>]*\bclass="[^"]*\bak-sh-poster\b/u.test(svg);
+  const lettering = /^<svg[^>]*\bclass="[^"]*\bak-tx-poster\b/u.test(svg);
   // A product plan needs its neutral finishes, pins and contact shadow.
   const product = /^<svg[^>]*\bclass="[^"]*\bak-product-poster\b/u.test(svg);
   // A globe needs its ocean, glow, land dots and arcs.
@@ -67,13 +72,14 @@ export function export3dPosterSvg(spec: unknown, options: PosterSvgOptions = {})
       .sort()
       .map((name) => `--ak-${name}:${tokens[name]}`);
     if (particles) variables.push(particleSchemeVars(which));
+    if (shader) variables.push(shaderSchemeVars(which));
     return `svg{--ak-font-body:system-ui,sans-serif;${variables.join(';')};color:${tokens['color-text'] ?? 'inherit'}}`;
   };
   const colours =
     scheme === 'auto'
       ? `${palette('light')}@media (prefers-color-scheme:dark){${palette('dark')}}`
       : palette(scheme);
-  const style = `${colours}${THREE_CSS}${NETWORK_CSS}${SCATTER_CSS}${particles ? PARTICLES_CSS : ''}${product ? PRODUCT_CSS : ''}${globe ? GLOBE_CSS : ''}${labels ? '' : 'text{display:none}'}`;
+  const style = `${colours}${THREE_CSS}${NETWORK_CSS}${SCATTER_CSS}${particles ? PARTICLES_CSS : ''}${shader ? SHADER_CSS : ''}${product ? PRODUCT_CSS : ''}${lettering ? TEXT_CSS : ''}${globe ? GLOBE_CSS : ''}${labels ? '' : 'text{display:none}'}`;
   return `<?xml version="1.0" encoding="UTF-8"?>\n${svg.replace(
     /^<svg([^>]*)>/u,
     `<svg xmlns="http://www.w3.org/2000/svg"$1><style>${style}</style>`,

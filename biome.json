@@ -16,7 +16,8 @@
       "!src/render/embedded-fonts.generated.ts",
       "!src/icons/icon-data.generated.ts",
       "!src/blocks/three/three-runtime.generated.ts",
-      "!src/blocks/three/world-land.generated.ts"
+      "!src/blocks/three/world-land.generated.ts",
+      "!src/blocks/three/outline-fonts.generated.ts"
     ]
   },
   "formatter": {

@@ -1,0 +1,27 @@
+version: 1
+meta:
+  title: Shader controls
+state:
+  look: dissolve
+  reveal: 0.38
+blocks:
+  - type: shader-3d
+    id: reveal
+    title: Reveal
+    summary: A torus knot burns away along a noise front; the sliders set how much is gone and how hot the edge glows.
+    preset: dissolve
+    seed: 7
+    controls: [preset, progress, intensity, speed]
+    bind:
+      preset: state.look
+      progress: state.reveal
+  - type: select
+    id: look-pick
+    label: Effect
+    bind: state.look
+    options:
+      - { value: noise, label: Noise }
+      - { value: fresnel, label: Fresnel }
+      - { value: hologram, label: Hologram }
+      - { value: distortion, label: Distortion }
+      - { value: dissolve, label: Dissolve }
