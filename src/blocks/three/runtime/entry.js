@@ -49,6 +49,7 @@ import { mountModel } from './model.js';
 import { mountNetwork } from './network.js';
 import { liveParticleResources, mountParticles } from './particles.js';
 import { mountScatter } from './scatter.js';
+import { liveShaderResources, mountShader } from './shader.js';
 
 /** Data widgets that add marks and transitions on top of the shared scene, by `data-ak-3d` kind. */
 const SCENE_WIDGETS = { bars: barsWidget };
@@ -765,6 +766,7 @@ const WIDGETS = {
   network: mountNetwork,
   scatter: mountScatter,
   particles: mountParticles,
+  shader: mountShader,
 };
 /** What a widget module needs from the shared runtime. */
 const kit = {
@@ -822,6 +824,8 @@ function stats() {
     frames,
     /** Particle geometries and materials still alive; zero once every scene is unmounted. */
     particleResources: liveParticleResources(),
+    /** Shader-effect geometries and materials still alive; zero once every scene is unmounted. */
+    shaderResources: liveShaderResources(),
   };
 }
 

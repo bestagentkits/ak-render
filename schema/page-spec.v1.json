@@ -497,6 +497,9 @@
         },
         {
           "$ref": "#/$defs/block-particles-3d"
+        },
+        {
+          "$ref": "#/$defs/block-shader-3d"
         }
       ]
     },
@@ -9138,6 +9141,165 @@
         }
       },
       "description": "Seeded 3D particle effect presets."
+    },
+    "block-shader-3d": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "summary"
+      ],
+      "properties": {
+        "type": {
+          "const": "shader-3d"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 600,
+          "description": "What the effect stands for, in words; the caption and the text alternative."
+        },
+        "preset": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "noise",
+            "fresnel",
+            "hologram",
+            "distortion",
+            "dissolve"
+          ]
+        },
+        "shape": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "sphere",
+            "torus",
+            "torus-knot",
+            "plane"
+          ]
+        },
+        "colors": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 2000,
+            "enum": [
+              "accent",
+              "neutral",
+              "success",
+              "warning",
+              "danger",
+              "info"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 2
+        },
+        "intensity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0.25,
+          "maximum": 4
+        },
+        "progress": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "speed": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 4
+        },
+        "post": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 2000,
+            "enum": [
+              "bloom",
+              "chromatic",
+              "scanlines",
+              "grain",
+              "vignette",
+              "none"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 5
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        },
+        "controls": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 2000,
+            "enum": [
+              "preset",
+              "intensity",
+              "scale",
+              "progress",
+              "speed"
+            ]
+          },
+          "maxItems": 5
+        },
+        "bind": {
+          "type": "object",
+          "properties": {
+            "preset": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "intensity": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "scale": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "progress": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "speed": {
+              "type": "string",
+              "maxLength": 128
+            }
+          },
+          "additionalProperties": false
+        },
+        "on": {
+          "description": "Bindings fired with `{ value, param }` when a built-in control changes the effect.",
+          "$ref": "#/$defs/actionMap"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
+        }
+      },
+      "description": "Shader effect presets with typed controls."
     }
   }
 }
