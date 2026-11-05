@@ -87,6 +87,8 @@ test.describe('model-3d', () => {
   });
 
   test('clip, variant and hotspot flow through page state', async ({ page: p }) => {
+    // A playing clip moves the pins; reduced motion holds them still enough to click.
+    await p.emulateMedia({ reducedMotion: 'reduce' });
     await p.goto(glbPage());
     await ready(p);
     await expect(model(p)).toHaveAttribute('data-ak-3d-playing', 'Spin');
