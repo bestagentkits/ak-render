@@ -1,6 +1,6 @@
 # Diagram adapter
 
-AK Render does not lay out diagrams. A host that owns a typed diagram compiler —
+AK Render does not lay out diagrams ([ADR 0003](./adr/0003-diagram-layout-without-adapter.md)). A host that owns a typed diagram compiler —
 AgentKit's Engineer install provides `ak:diagram` — registers an adapter, and
 every `diagram-panel` block renders through it. Everything else keeps the
 structured semantic fallback.
