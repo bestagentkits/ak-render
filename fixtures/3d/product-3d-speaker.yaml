@@ -14,17 +14,17 @@ blocks:
     variantBind: state.finish
     explodeBind: state.view
     parts:
-      - { id: foot, label: Base, shape: cylinder, position: [0, 0.04, 0], scale: [1.5, 0.08, 1.25], tone: dark, material: matte }
-      - { id: body, label: Cabinet, shape: rounded-box, position: [0, 1.2, 0], scale: [1.5, 2.2, 1.3], tone: dark, material: matte, explode: [0, 0.35, -0.6] }
-      - { id: grille, label: Front baffle, shape: rounded-box, position: [0, 1.2, 0.66], scale: [1.38, 2.06, 0.06], tone: dark, material: matte, explode: [0, 0.35, 0.75] }
-      - { id: woofer, label: Woofer, shape: cylinder, position: [0, 0.86, 0.72], rotation: [90, 0, 0], scale: [1.02, 0.08, 1.02], tone: neutral, material: metal, explode: [0, 0.35, 1.5] }
-      - { id: dome, label: Dust cap, shape: sphere, position: [0, 0.86, 0.76], scale: [0.4, 0.4, 0.16], tone: accent, material: standard, explode: [0, 0.35, 1.85] }
-      - { id: plate, label: Tweeter plate, shape: cylinder, position: [0, 1.76, 0.71], rotation: [90, 0, 0], scale: [0.52, 0.05, 0.52], tone: neutral, material: metal, explode: [0, 0.55, 1.5] }
-      - { id: tweeter, label: Tweeter, shape: sphere, position: [0, 1.76, 0.74], scale: [0.3, 0.3, 0.16], tone: light, material: standard, explode: [0, 0.55, 1.75] }
-      - { id: dial, label: Volume dial, shape: cylinder, position: [0, 2.36, 0.1], scale: [0.56, 0.12, 0.56], tone: neutral, material: metal, explode: [0, 1.05, 0.1] }
-      - { id: ring, label: Light ring, shape: torus, position: [0, 2.31, 0.1], rotation: [90, 0, 0], size: 0.68, scale: [1, 1, 0.5], tone: accent, material: emissive, explode: [0, 0.8, 0.1] }
-      - { id: battery, label: Battery, shape: capsule, position: [0, 0.75, -0.25], rotation: [0, 0, 90], scale: [0.9, 1.4, 0.9], tone: success, material: standard, explode: [1.75, 0.35, -0.25] }
-      - { id: port, label: Bass port, shape: cylinder, position: [0, 0.55, -0.62], rotation: [90, 0, 0], scale: [0.34, 0.16, 0.34], tone: neutral, material: metal, explode: [0, 0.35, -1.3] }
+      - { id: foot, shape: cylinder, position: [0, 0.04, 0], scale: [1.5, 0.08, 1.25], tone: dark, material: matte }
+      - { id: body, shape: rounded-box, position: [0, 1.2, 0], scale: [1.5, 2.2, 1.3], tone: dark, material: matte, explode: [0, 0.35, -0.6] }
+      - { id: grille, shape: rounded-box, position: [0, 1.2, 0.66], scale: [1.38, 2.06, 0.06], tone: dark, material: matte, explode: [0, 0.35, 0.75] }
+      - { id: woofer, shape: cylinder, position: [0, 0.86, 0.72], rotation: [90, 0, 0], scale: [1.02, 0.08, 1.02], tone: neutral, material: metal, explode: [0, 0.35, 1.5] }
+      - { id: dome, shape: sphere, position: [0, 0.86, 0.76], scale: [0.4, 0.4, 0.16], tone: accent, material: standard, explode: [0, 0.35, 1.85] }
+      - { id: plate, shape: cylinder, position: [0, 1.76, 0.71], rotation: [90, 0, 0], scale: [0.52, 0.05, 0.52], tone: neutral, material: metal, explode: [0, 0.55, 1.5] }
+      - { id: tweeter, shape: sphere, position: [0, 1.76, 0.74], scale: [0.3, 0.3, 0.16], tone: light, material: standard, explode: [0, 0.55, 1.75] }
+      - { id: dial, shape: cylinder, position: [0, 2.36, 0.1], scale: [0.56, 0.12, 0.56], tone: neutral, material: metal, explode: [0, 1.05, 0.1] }
+      - { id: ring, shape: torus, position: [0, 2.31, 0.1], rotation: [90, 0, 0], size: 0.68, scale: [1, 1, 0.5], tone: accent, material: emissive, explode: [0, 0.8, 0.1] }
+      - { id: battery, shape: capsule, position: [0, 0.75, -0.25], rotation: [0, 0, 90], scale: [0.9, 1.4, 0.9], tone: success, material: standard, explode: [1.75, 0.35, -0.25] }
+      - { id: port, shape: cylinder, position: [0, 0.55, -0.62], rotation: [90, 0, 0], scale: [0.34, 0.16, 0.34], tone: neutral, material: metal, explode: [0, 0.35, -1.3] }
     variants:
       - id: graphite
         label: Graphite

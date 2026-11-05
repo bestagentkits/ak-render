@@ -126,6 +126,27 @@ test.describe('product-3d', { tag: '@gl' }, () => {
     await page.locator('.ak-3d-canvas').focus();
     await page.keyboard.press('e');
     await expect(view).toHaveValue('exploded');
+    // A modified key belongs to the browser, not the widget.
+    await page.keyboard.press('Control+e');
+    await expect(button).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('a resize keeps the chosen hotspot and its close-up', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(pageUrl());
+    await ready(page);
+    const feature = page.locator('[data-ak-id="feature-pick"] select');
+    await page.locator('[data-ak-product-hotspot="battery"]').click();
+    await page.locator('[data-ak-product-explode]').click();
+    await page.setViewportSize({ width: 760, height: 900 });
+    await expect(feature).toHaveValue('battery');
+    await expect(page.locator('[data-ak-product-hotspot="battery"]')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await expect(page.locator('[data-ak-product-explode]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.ak-product-detail')).toContainText('20-hour battery');
   });
 
   test('with motion allowed, transitions settle and the scene stops rendering', async ({

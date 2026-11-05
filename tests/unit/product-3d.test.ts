@@ -18,8 +18,8 @@ interface Hotspot {
 interface Product {
   variant: string;
   exploded: boolean;
-  spread: number;
-  closeUp: number;
+  bounds: number[][];
+  explodedBounds: number[][];
   hotspots: Hotspot[];
   variants: { id: string }[];
   explode: Record<string, number[]>;
@@ -72,7 +72,8 @@ describe('product-3d contract', () => {
     expect(runs[2]).toBe(runs[0]);
     expect(runs[0]).toContain('data-ak-3d="product"');
     expect(runs[0]).toContain('__akThree');
-  });
+    // Three compiles inline the 680 kB runtime each time; allow for a loaded CI host.
+  }, 20_000);
 
   it('renders at least three finishes and five hotspots readable without JS', () => {
     const html = compile(FIXTURE, { source: 'product' }).html;
@@ -123,7 +124,9 @@ describe('product-3d contract', () => {
     expect(objects.every((o) => !('explode' in o))).toBe(true);
     expect(product.explode).toEqual({ body: [0, 0, -1], cap: [0, 1, 0] });
     expect(product.exploded).toBe(true);
-    expect(product.spread).toBeGreaterThan(1);
+    // The exploded box grows by the offsets: the cap rises 1 and the body moves back 1.
+    expect(product.explodedBounds[1]?.[1]).toBeCloseTo((product.bounds[1]?.[1] ?? 0) + 1, 3);
+    expect(product.explodedBounds[0]?.[2]).toBeCloseTo((product.bounds[0]?.[2] ?? 0) - 1, 3);
     const [top, side] = product.hotspots;
     expect(top?.at).toEqual([0, 2.2, 0]);
     expect(top?.shift).toEqual([0, 1, 0]);

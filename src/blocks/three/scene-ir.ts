@@ -23,8 +23,6 @@ export const SHAPES = [
   'torus-knot',
   'plane',
   'icosahedron',
-  'rounded-box',
-  'capsule',
   'group',
 ] as const;
 export const MATERIALS = ['standard', 'matte', 'metal', 'glass', 'wireframe', 'emissive'] as const;

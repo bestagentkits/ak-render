@@ -6,7 +6,7 @@
  * and write to page state. Under reduced motion every change is immediate.
  */
 
-import { Color, MeshPhysicalMaterial, Vector3 } from 'three';
+import { Box3, Color, MeshPhysicalMaterial, Vector3 } from 'three';
 
 const FLY_MS = 950;
 const EXPLODE_MS = 900;
@@ -14,6 +14,11 @@ const FINISH_MS = 480;
 const INTRO_MS = 1300;
 /** How far apart the parts start before they assemble on load, as a share of the exploded offset. */
 const INTRO_SPREAD = 0.45;
+/** Share of the half frame the whole product fills, across and down. */
+const FIT_HOME = [0.84, 0.8];
+/** Share a close-up fills, and how far it sits right and up of centre, clear of the card. */
+const FIT_CLOSE = [0.46, 0.52];
+const CLOSE_BIAS = [0.2, 0.12];
 
 /** Surface presets per material name; the compiler's closed vocabulary. */
 const SURFACES = {
@@ -183,26 +188,108 @@ export function productWidget(ctx) {
 
   // ---- Camera --------------------------------------------------------------------------------
   const home = { position: camera.position.clone(), target: ctx.target.clone() };
-  const center = new Vector3(...product.center);
-  const [lo, hi] = product.bounds;
+  const homeDir = home.position.clone().sub(home.target).normalize();
+  const boxCorners = ([lo, hi], shift = null, k = 0) => {
+    const out = [];
+    for (const x of [lo[0], hi[0]])
+      for (const y of [lo[1], hi[1]])
+        for (const z of [lo[2], hi[2]]) {
+          const point = new Vector3(x, y, z);
+          if (shift) point.addScaledVector(shift, k);
+          out.push(point);
+        }
+    return out;
+  };
+  const pinPoints = (k) =>
+    product.hotspots.map((h) => new Vector3(...h.at).addScaledVector(new Vector3(...h.shift), k));
+  const assembledCorners = [...boxCorners(product.bounds), ...pinPoints(0)];
+  /**
+   * The corners of every part's own box at spread k. The exploded view fits these rather than
+   * the overall box, whose corners are mostly empty air once parts move apart on several axes.
+   */
+  const box = new Box3();
+  const partCorners = (k) => {
+    const out = [];
+    for (const part of parts.values()) {
+      box.setFromObject(part.object);
+      if (box.isEmpty()) continue;
+      const shift = part.offset.clone().multiplyScalar(k - explodeK);
+      out.push(...boxCorners([box.min.toArray(), box.max.toArray()], shift, 1));
+    }
+    return out;
+  };
+  const explodedCorners = () => [...partCorners(1), ...pinPoints(1)];
   let flight = null;
-  /** Home, stood back by the product's spread when exploded, along the reader's current bearing. */
-  function homeView() {
-    const distance = home.position.distanceTo(home.target) * (exploded ? product.spread : 1);
-    const dir = camera.position.clone().sub(ctx.target).normalize();
-    const target = home.target.clone();
-    return { position: target.clone().addScaledVector(dir, distance), target };
+
+  /**
+   * The camera along `dir` that fits `corners` inside the given share of the frame,
+   * with the subject nudged by `bias` (a share of the half frame, right and up).
+   */
+  function fitAlong(dir, corners, aspect, [limitX, limitY], [biasX, biasY] = [0, 0]) {
+    const probe = camera.clone();
+    probe.aspect = aspect;
+    probe.updateProjectionMatrix();
+    const aim = new Vector3();
+    for (const corner of corners) aim.add(corner);
+    aim.multiplyScalar(1 / Math.max(corners.length, 1));
+    const point = new Vector3();
+    const right = new Vector3();
+    const up = new Vector3();
+    const extent = (distance) => {
+      probe.position.copy(aim).addScaledVector(dir, distance);
+      probe.lookAt(aim);
+      probe.updateMatrixWorld();
+      let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity];
+      for (const corner of corners) {
+        point.copy(corner).project(probe);
+        x0 = Math.min(x0, point.x);
+        x1 = Math.max(x1, point.x);
+        y0 = Math.min(y0, point.y);
+        y1 = Math.max(y1, point.y);
+      }
+      return [x0, y0, x1, y1];
+    };
+    let distance = Math.max(home.position.distanceTo(home.target), 1e-3);
+    for (let pass = 0; pass < 3; pass += 1) {
+      let near = distance * 0.05;
+      let far = distance * 8;
+      for (let i = 0; i < 36; i += 1) {
+        const mid = (near + far) / 2;
+        const [x0, y0, x1, y1] = extent(mid);
+        if ((x1 - x0) / 2 > limitX || (y1 - y0) / 2 > limitY) near = mid;
+        else far = mid;
+      }
+      distance = far;
+      const [x0, y0, x1, y1] = extent(distance);
+      const halfH = Math.tan((probe.fov * Math.PI) / 360) * distance;
+      right.setFromMatrixColumn(probe.matrixWorld, 0);
+      up.setFromMatrixColumn(probe.matrixWorld, 1);
+      aim.addScaledVector(right, ((x0 + x1) / 2) * halfH * aspect);
+      aim.addScaledVector(up, ((y0 + y1) / 2) * halfH);
+    }
+    const halfH = Math.tan((probe.fov * Math.PI) / 360) * distance;
+    aim.addScaledVector(right, -biasX * halfH * aspect).addScaledVector(up, -biasY * halfH);
+    return { position: aim.clone().addScaledVector(dir, distance), target: aim };
   }
+
+  /** The whole product, assembled or exploded, along the reader's current bearing. */
+  function homeView() {
+    const dir = camera.position.clone().sub(ctx.target).normalize();
+    return fitAlong(dir, exploded ? explodedCorners() : assembledCorners, camera.aspect, FIT_HOME);
+  }
+  /** A close-up on the hotspot's part, set up and right of centre so the card stays clear. */
   function viewOf(id) {
     const spec = byId.get(id)?.spec;
     if (!spec) return null;
     const k = exploded ? 1 : 0;
-    const target = new Vector3(...spec.at).addScaledVector(new Vector3(...spec.shift), k);
-    const dir = new Vector3(...spec.dir);
-    return {
-      position: target.clone().addScaledVector(dir, product.closeUp * (exploded ? 1.15 : 1)),
-      target,
-    };
+    const shift = new Vector3(...spec.shift);
+    const at = new Vector3(...spec.at).addScaledVector(shift, k);
+    // Small parts keep some of their surroundings in frame.
+    const [lo, hi] = product.bounds;
+    const room = Math.hypot(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]) * 0.3;
+    const corners = [...boxCorners(spec.box, shift, k), at];
+    for (const sign of [-1, 1]) corners.push(at.clone().addScalar(sign * room));
+    return fitAlong(new Vector3(...spec.dir), corners, camera.aspect, FIT_CLOSE, CLOSE_BIAS);
   }
   function flyTo(view) {
     if (!view) return;
@@ -268,6 +355,7 @@ export function productWidget(ctx) {
       card.append(title);
       if (hotspot.spec.description) {
         const note = document.createElement('span');
+        note.className = 'ak-product-detail-note';
         note.textContent = hotspot.spec.description;
         card.append(note);
       }
@@ -375,7 +463,8 @@ export function productWidget(ctx) {
       world.set(...spec.at).addScaledVector(projected.set(...spec.shift), explodeK);
       // A pin on the far side of the product dims, so the near ones read first.
       toCamera.copy(camera.position).sub(world);
-      const facing = toCamera.dot(projected.set(...spec.normal)) >= 0;
+      const facing =
+        !(spec.inner && explodeK < 0.5) && toCamera.dot(projected.set(...spec.normal)) >= 0;
       projected.copy(world).project(camera);
       const inside =
         projected.z < 1 && Math.abs(projected.x) <= 1.02 && Math.abs(projected.y) <= 1.02;
@@ -426,10 +515,11 @@ export function productWidget(ctx) {
   }
 
   // The fog falls off behind the product, never across it, in either view.
-  const reach = Math.hypot(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]) * product.spread;
+  const [elo, ehi] = product.explodedBounds;
+  const reach = Math.hypot(ehi[0] - elo[0], ehi[1] - elo[1], ehi[2] - elo[2]);
   function fitFog() {
     if (!ctx.scene.fog) return;
-    const distance = home.position.distanceTo(home.target) * product.spread;
+    const distance = home.position.distanceTo(home.target) * 1.5;
     ctx.scene.fog.near = distance + reach;
     ctx.scene.fog.far = distance + reach * 5;
   }
@@ -450,6 +540,7 @@ export function productWidget(ctx) {
   explodeK = intro ? INTRO_SPREAD : explodeK;
   placeParts();
   let pendingView = null;
+  let initialShown = false;
   const initialHotspot = product.bind ? api.readPath(product.bind) : null;
   if (typeof initialHotspot === 'string' && byId.has(initialHotspot)) {
     render(initialHotspot);
@@ -516,60 +607,17 @@ export function productWidget(ctx) {
     annotate,
     /** Home framing at this stage aspect: the product's box fills the frame along the compiled bearing. */
     frame(aspect) {
-      const probeCamera = camera.clone();
-      probeCamera.aspect = aspect;
-      probeCamera.updateProjectionMatrix();
-      const dir = home.position.clone().sub(home.target).normalize();
-      const corners = [];
-      for (const x of [lo[0], hi[0]])
-        for (const y of [lo[1], hi[1]])
-          for (const z of [lo[2], hi[2]]) corners.push(new Vector3(x, y, z));
-      for (const h of product.hotspots) corners.push(new Vector3(...h.at));
-      const aim = center.clone();
-      const point = new Vector3();
-      const extent = (distance) => {
-        probeCamera.position.copy(aim).addScaledVector(dir, distance);
-        probeCamera.lookAt(aim);
-        probeCamera.updateMatrixWorld();
-        let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity];
-        for (const corner of corners) {
-          point.copy(corner).project(probeCamera);
-          x0 = Math.min(x0, point.x);
-          x1 = Math.max(x1, point.x);
-          y0 = Math.min(y0, point.y);
-          y1 = Math.max(y1, point.y);
-        }
-        return [x0, y0, x1, y1];
-      };
-      let distance = home.position.distanceTo(home.target);
-      for (let pass = 0; pass < 3; pass += 1) {
-        let near = distance * 0.2;
-        let far = distance * 5;
-        for (let i = 0; i < 32; i += 1) {
-          const mid = (near + far) / 2;
-          const [x0, y0, x1, y1] = extent(mid);
-          if (x0 < -0.8 || x1 > 0.8 || y0 < -0.78 || y1 > 0.74) near = mid;
-          else far = mid;
-        }
-        distance = far;
-        const [x0, y0, x1, y1] = extent(distance);
-        const halfH = Math.tan((probeCamera.fov * Math.PI) / 360) * distance;
-        const right = new Vector3().setFromMatrixColumn(probeCamera.matrixWorld, 0);
-        const up = new Vector3().setFromMatrixColumn(probeCamera.matrixWorld, 1);
-        aim.addScaledVector(right, ((x0 + x1) / 2) * halfH * aspect);
-        // Sit the product a touch low, leaving the card room under it and air above.
-        aim.addScaledVector(up, ((y0 + y1) / 2 + 0.02) * halfH);
-      }
-      home.target.copy(aim);
-      home.position.copy(aim).addScaledVector(dir, distance);
+      const fit = fitAlong(homeDir, assembledCorners, aspect, FIT_HOME);
+      home.position.copy(fit.position);
+      home.target.copy(fit.target);
       fitFog();
-      // A bound hotspot or exploded state shows once the scene has taken its home framing.
-      if (pendingView || exploded) {
+      // A bound hotspot or exploded state shows once, after the scene takes its first framing.
+      if (!initialShown) {
+        initialShown = true;
         const id = pendingView;
-        pendingView = null;
-        queueMicrotask(() => flyTo(id ? viewOf(id) : homeView()));
+        if (id || exploded) queueMicrotask(() => flyTo(id ? viewOf(id) : homeView()));
       }
-      return { position: home.position.toArray(), target: home.target.toArray() };
+      return { position: fit.position.toArray(), target: fit.target.toArray() };
     },
     sync() {
       if (product.variantBind) {
@@ -591,11 +639,32 @@ export function productWidget(ctx) {
     },
     /** A pick on the canvas chooses the first hotspot on that part. */
     pick(partId) {
-      const hotspot = hotspots.find((h) => h.spec.part === partId);
-      if (hotspot) choose(hotspot.spec.id);
-    },
-    /** Canvas keys: Enter, space and n/p cycle hotspots; Home, 0 and Escape reset; e explodes. */
+      const own = hotspots.find((h) => h.spec.part === partId);
+      if (own) {
+        choose(own.spec.id);
+        return;
+      }
+      // A part with no hotspot of its own chooses the nearest one.
+      const part = parts.get(partId);
+      if (!part || !hotspots.length) return;
+      const at = part.object.getWorldPosition(new Vector3());
+      let best = null;
+      let bestDistance = Infinity;
+      for (const h of hotspots) {
+        const d = world
+          .set(...h.spec.at)
+          .addScaledVector(projected.set(...h.spec.shift), explodeK)
+          .distanceTo(at);
+        if (d < bestDistance) {
+          bestDistance = d;
+          best = h;
+        }
+      }
+      if (best) choose(best.spec.id);
+    } /** Canvas keys: Enter, space and n/p cycle hotspots; Home, 0 and Escape reset; e explodes. */,
     key(event) {
+      // Browser and system shortcuts pass through untouched.
+      if (event.ctrlKey || event.metaKey || event.altKey) return false;
       const key = event.key;
       if (key === 'Enter' || key === ' ' || key === 'n' || key === 'p') {
         if (!hotspots.length) return false;

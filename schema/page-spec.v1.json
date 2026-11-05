@@ -8086,8 +8086,6 @@
                   "torus-knot",
                   "plane",
                   "icosahedron",
-                  "rounded-box",
-                  "capsule",
                   "group"
                 ]
               },
@@ -9175,14 +9173,6 @@
                 "maxLength": 2000,
                 "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
               },
-              "label": {
-                "type": "string",
-                "maxLength": 200
-              },
-              "description": {
-                "type": "string",
-                "maxLength": 300
-              },
               "shape": {
                 "type": "string",
                 "maxLength": 2000,
@@ -9192,12 +9182,10 @@
                   "cylinder",
                   "cone",
                   "torus",
-                  "torus-knot",
-                  "plane",
                   "icosahedron",
+                  "group",
                   "rounded-box",
-                  "capsule",
-                  "group"
+                  "capsule"
                 ]
               },
               "parent": {
@@ -9420,7 +9408,7 @@
           "$ref": "#/$defs/motion"
         }
       },
-      "description": "Product 3D: parts, finish dropdown, numbered hotspots with camera moves, exploded view."
+      "description": "Product 3D: finishes, numbered hotspots, exploded view."
     }
   }
 }

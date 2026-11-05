@@ -34,15 +34,22 @@ import {
   type Vec3,
   vec,
 } from './scene-fallback.js';
-import { checkScene, MATERIALS, objectSchema, objectsOf, TONES, vec3 } from './scene-ir.js';
+import { checkScene, MATERIALS, objectSchema, objectsOf, SHAPES, TONES, vec3 } from './scene-ir.js';
 
 export const MAX_PARTS = 64;
 export const MAX_VARIANTS = 12;
 export const MAX_HOTSPOTS = 24;
 /** Theme tones plus the darker and lighter of the page's ink and paper, for neutral finishes. */
 export const FINISH_TONES = [...TONES, 'dark', 'light'] as const;
-/** How far the camera stands from a hotspot, as a share of the home distance. */
-const CLOSE_UP = 0.74;
+/**
+ * Scene shapes a product is built from, plus a rounded box and a capsule (as tall as its size,
+ * half as wide). A plane and a torus knot are left out: neither is a product part.
+ */
+export const PRODUCT_SHAPES = [
+  ...SHAPES.filter((shape) => shape !== 'plane' && shape !== 'torus-knot'),
+  'rounded-box',
+  'capsule',
+] as const;
 /** How much a hotspot close-up turns from the home view toward the hotspot's own side. */
 const TURN = 0.45;
 const DEG = Math.PI / 180;
@@ -55,11 +62,13 @@ const finishTone = (description: string) => enumStr(FINISH_TONES, { description 
 /** A scene object plus the offset it moves by in the exploded view. */
 function partSchema(): PropSchema {
   const base = objectSchema() as PropSchema & { fields: Record<string, PropSchema> };
+  // Hotspots carry every reader-facing name and note, so a part has neither of its own.
+  const { description: _description, label: _label, ...fields } = base.fields;
   return obj({
-    ...base.fields,
-    label: str({
-      maxLength: 200,
-      description: 'Part name; optional, since hotspots carry the reader-facing names.',
+    ...fields,
+    shape: enumStr(PRODUCT_SHAPES, {
+      default: 'box',
+      description: 'group draws nothing and only transforms its children.',
     }),
     tone: finishTone('Color before any variant applies; `dark` and `light` are neutral finishes.'),
     explode: vec3(
@@ -221,20 +230,32 @@ function placeHotspots(node: IrNode): PlacedHotspot[] {
   });
 }
 
-/** Half extents of a part along its own axes, after its scale. */
-function halfExtents(part: Row): Vec3 {
-  const size = typeof part.size === 'number' ? part.size : 1;
-  const s = vec(part.scale, [1, 1, 1]);
-  const shape = part.shape;
-  // A capsule is half as wide as it is tall; a torus is flat on its local z.
-  const k: Vec3 =
-    shape === 'capsule'
-      ? [0.25, 0.5, 0.25]
-      : shape === 'torus'
-        ? [0.67, 0.67, 0.17]
-        : [0.5, 0.5, 0.5];
-  if (shape === 'plane') k[2] = 0;
-  return [size * s[0] * k[0], size * s[1] * k[1], size * s[2] * k[2]];
+/** Unit-size sample points on a shape's surface, whose hull is the shape's outline from any side. */
+function outline(shape: JsonValue | undefined): Vec3[] {
+  const ring = (radius: number, y: number, n = 24): Vec3[] =>
+    Array.from({ length: n }, (_, i) => {
+      const t = (i / n) * Math.PI * 2;
+      return [radius * Math.cos(t), y, radius * Math.sin(t)];
+    });
+  const ball = (radius: number, y: number): Vec3[] =>
+    [-0.95, -0.7, -0.35, 0, 0.35, 0.7, 0.95].flatMap((s) =>
+      ring(radius * Math.sqrt(1 - s * s), y + radius * s, 16),
+    );
+  if (shape === 'cylinder') return [...ring(0.5, -0.5), ...ring(0.5, 0.5)];
+  if (shape === 'cone') return [...ring(0.5, -0.5), [0, 0.5, 0]];
+  if (shape === 'sphere' || shape === 'icosahedron') return ball(0.5, 0);
+  // A capsule is as tall as its size and half as wide.
+  if (shape === 'capsule') return [...ball(0.25, -0.25), ...ball(0.25, 0.25)];
+  // A torus lies in its local xy plane: the outer rim and the tube's top and bottom.
+  if (shape === 'torus')
+    return [...ring(0.667, 0), ...ring(0.5, 0.167), ...ring(0.5, -0.167)].map(
+      ([x, y, z]) => [x, z, y] as Vec3,
+    );
+  const corners: Vec3[] = [];
+  const depth = shape === 'plane' ? 0 : 0.5;
+  for (const x of [-0.5, 0.5])
+    for (const y of [-0.5, 0.5]) for (const z of [-depth, depth]) corners.push([x, y, z]);
+  return corners;
 }
 
 /** Euler XYZ rotation in degrees, matching Three.js. */
@@ -247,23 +268,38 @@ function rotate(p: Vec3, r: Vec3): Vec3 {
   return [x, y, z];
 }
 
-/** The eight corners of each drawn part's own box, in world space; groups draw nothing. */
-function partCorners(parts: readonly Row[]): { part: Row; corners: Vec3[] }[] {
+interface PartShape {
+  part: Row;
+  center: Vec3;
+  /** Surface sample points in world space. */
+  corners: Vec3[];
+  box: [Vec3, Vec3];
+}
+
+/** Each drawn part's outline points and box in world space; groups draw nothing. */
+function partCorners(parts: readonly Row[]): PartShape[] {
   const placed = new Map(placeObjects(parts).map((p) => [p.id, p.world]));
   return parts
     .filter((part) => part.shape !== 'group')
     .map((part) => {
-      const [hx, hy, hz] = halfExtents(part);
+      const size = typeof part.size === 'number' ? part.size : 1;
+      const s = vec(part.scale, [1, 1, 1]);
       const rotation = vec(part.rotation, [0, 0, 0]);
       const center = placed.get(String(part.id)) ?? [0, 0, 0];
-      const corners: Vec3[] = [];
-      for (const x of [-hx, hx])
-        for (const y of [-hy, hy])
-          for (const z of [-hz, hz]) corners.push(add(center, rotate([x, y, z], rotation)));
-      return { part, corners };
+      const corners = outline(part.shape).map(([x, y, z]) =>
+        add(center, rotate([x * size * s[0], y * size * s[1], z * size * s[2]], rotation)),
+      );
+      return { part, center, corners, box: boundsOf(corners) };
     });
 }
 
+/** True when box a lies wholly inside box b: a part hidden within another. */
+function within(a: [Vec3, Vec3], b: [Vec3, Vec3]): boolean {
+  return (
+    a !== b &&
+    ([0, 1, 2] as const).every((i) => a[0][i] >= b[0][i] - 1e-6 && a[1][i] <= b[1][i] + 1e-6)
+  );
+}
 /** Tiny marker objects at given points, for framing a camera on exact extents. */
 const markers = (points: readonly Vec3[]): Row[] =>
   points.map((point, i) => ({ id: `__p${i}`, shape: 'sphere', size: 0.001, position: point }));
@@ -298,7 +334,9 @@ export function productModel(node: IrNode, state: Record<string, JsonValue>): Pr
   const parts = finishedParts(node, variant);
   const raw = objectsOf(node, 'parts');
   const hotspots = placeHotspots(node);
-  const assembled = partCorners(parts).flatMap((entry) => entry.corners);
+  const shapes = partCorners(parts);
+  const boxes = new Map(shapes.map((shape) => [String(shape.part.id), shape.box]));
+  const assembled = shapes.flatMap((entry) => entry.corners);
   const exploded = partCorners(explodedParts(raw)).flatMap((entry) => entry.corners);
   const camera = frameCamera(
     placeObjects(markers([...assembled, ...hotspots.map((h) => h.at)])),
@@ -306,18 +344,16 @@ export function productModel(node: IrNode, state: Record<string, JsonValue>): Pr
   );
   const [lo, hi] = boundsOf(assembled);
   const center: Vec3 = scale(add(lo, hi), 0.5);
-  const [elo, ehi] = boundsOf(exploded);
-  // The exploded view stands back by how much the product's extent grows.
-  const spread = Math.max(1, length(sub(ehi, elo)) / (length(sub(hi, lo)) || 1));
-  const home = sub(camera.position, camera.target);
-  const homeDir = unit(home);
-  const distance = length(home);
+  const homeDir = unit(sub(camera.position, camera.target));
   const views = hotspots.map((hotspot) => {
     const outward = sub(hotspot.at, center);
     const side = length(outward) > 1e-6 ? unit(outward) : homeDir;
     const blend = unit(add(scale(homeDir, 1 - TURN), scale(side, TURN)));
     // Keep a close-up above the floor and below the zenith.
     const dir = unit([blend[0], Math.min(0.8, Math.max(0.12, blend[1])), blend[2]]);
+    const box = boxes.get(hotspot.part) ?? [hotspot.at, hotspot.at];
+    // A pin on a part sealed inside another reads as behind until the product comes apart.
+    const inner = [...boxes.values()].some((other) => within(box, other));
     return {
       id: hotspot.id,
       label: hotspot.label,
@@ -327,11 +363,14 @@ export function productModel(node: IrNode, state: Record<string, JsonValue>): Pr
       shift: rounded(hotspot.shift),
       normal: rounded(side),
       dir: rounded(dir),
+      box: [rounded(box[0]), rounded(box[1])],
+      ...(inner ? { inner: true } : {}),
     };
   });
   const explode: Row = {};
   for (const part of raw)
     if (Array.isArray(part.explode)) explode[String(part.id)] = vec(part.explode, [0, 0, 0]);
+  const [elo, ehi] = boundsOf(exploded);
   const config: Record<string, JsonValue> = {
     objects: parts,
     camera: { position: camera.position, target: camera.target, fov: camera.fov },
@@ -351,10 +390,9 @@ export function productModel(node: IrNode, state: Record<string, JsonValue>): Pr
       hotspots: views,
       explode,
       exploded: isExploded(stateValue(node, 'explodeBind', state)),
-      spread: round(spread),
-      closeUp: round(distance * CLOSE_UP),
       center: rounded(center),
       bounds: [rounded(lo), rounded(hi)],
+      explodedBounds: [rounded(elo), rounded(ehi)],
       ...Object.fromEntries(
         (['bind', 'variantBind', 'explodeBind'] as const)
           .filter((key) => typeof node.props[key] === 'string')
@@ -369,53 +407,58 @@ const W = 640;
 const H = 360;
 const r1 = (n: number) => Math.round(n * 10) / 10;
 
-/** The labelled plan: each part's projected outline, back to front, under numbered pins. */
+interface Point {
+  x: number;
+  y: number;
+}
+
+/** Convex hull of screen points (monotone chain); deterministic. */
+function hull(points: readonly Point[]): Point[] {
+  const sorted = [...points].sort((a, b) => a.x - b.x || a.y - b.y);
+  if (sorted.length < 3) return sorted;
+  const cross = (o: Point, a: Point, b: Point) =>
+    (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+  const chain = (list: typeof sorted) => {
+    const out: typeof sorted = [];
+    for (const p of list) {
+      while (out.length >= 2) {
+        const [o, a] = out.slice(-2) as [Point, Point];
+        if (cross(o, a, p) > 0) break;
+        out.pop();
+      }
+      out.push(p);
+    }
+    out.pop();
+    return out;
+  };
+  return [...chain(sorted), ...chain([...sorted].reverse())];
+}
+
+/** The plan: each visible part's projected silhouette, back to front, under numbered pins. */
 export function productPoster(model: ProductModel, label: string): string {
   const { camera } = model;
-  const boxes = partCorners(model.parts).map((entry) => ({
-    ...entry,
-    box: boundsOf(entry.corners),
-  }));
-  // A part wholly inside another (a battery in its cabinet) is not visible from outside.
-  const inside = (a: [Vec3, Vec3], b: [Vec3, Vec3]) =>
-    a !== b && ([0, 1, 2] as const).every((i) => a[0][i] >= b[0][i] && a[1][i] <= b[1][i]);
-  const drawn = boxes
-    .filter((entry) => !boxes.some((other) => inside(entry.box, other.box)))
-    .map(({ part, corners }) => {
+  const shapes = partCorners(model.parts);
+  const drawn = shapes
+    // A part wholly inside another (a battery in its cabinet) is not visible from outside.
+    .filter((entry) => !shapes.some((other) => within(entry.box, other.box)))
+    .flatMap(({ part, center, corners }) => {
       const points = corners.map((c) => project(c, camera)).filter((p) => p !== null);
-      if (points.length === 0) return null;
-      const xs = points.map((p) => p.x);
-      const ys = points.map((p) => p.y);
-      const depth = points.reduce((sum, p) => sum + p.depth, 0) / points.length;
-      return {
-        part,
-        x0: Math.min(...xs),
-        x1: Math.max(...xs),
-        y0: Math.min(...ys),
-        y1: Math.max(...ys),
-        depth,
-      };
+      const middle = project(center, camera);
+      if (points.length === 0 || middle === null) return [];
+      return [{ part, outline: hull(points), depth: middle.depth }];
     })
-    .filter((entry) => entry !== null)
     .sort((a, b) => b.depth - a.depth || String(a.part.id).localeCompare(String(b.part.id)));
-  const shapes = drawn
-    .map(({ part, x0, x1, y0, y1 }) => {
-      const w = x1 - x0;
-      const h = y1 - y0;
-      const round = ['sphere', 'cylinder', 'torus', 'capsule', 'icosahedron', 'cone'].includes(
-        String(part.shape),
-      );
-      const rx = round
-        ? Math.min(w, h) / 2
-        : part.shape === 'rounded-box'
-          ? Math.min(w, h) * 0.18
-          : 2;
-      return `<rect class="ak-3d-mark ak-product-part" data-tone="${escapeAttribute(String(part.tone ?? 'accent'))}" x="${r1(x0)}" y="${r1(y0)}" width="${r1(w)}" height="${r1(h)}" rx="${r1(rx)}"/>`;
-    })
+  const marks = drawn
+    .map(
+      ({ part, outline: points }) =>
+        `<polygon class="ak-3d-mark ak-product-part" data-tone="${escapeAttribute(String(part.tone ?? 'accent'))}" points="${points
+          .map((p) => `${r1(p.x)},${r1(p.y)}`)
+          .join(' ')}"/>`,
+    )
     .join('');
   // A soft contact shadow under the product's footprint.
-  const xs = drawn.flatMap((d) => [d.x0, d.x1]);
-  const ys = drawn.map((d) => d.y1);
+  const xs = drawn.flatMap((d) => d.outline.map((p) => p.x));
+  const ys = drawn.flatMap((d) => d.outline.map((p) => p.y));
   const shadow =
     xs.length > 0
       ? `<ellipse class="ak-product-shadow" cx="${r1((Math.min(...xs) + Math.max(...xs)) / 2)}" cy="${r1(Math.max(...ys))}" rx="${r1((Math.max(...xs) - Math.min(...xs)) * 0.55)}" ry="12"/>`
@@ -429,9 +472,8 @@ export function productPoster(model: ProductModel, label: string): string {
     .join('');
   return `<svg class="ak-3d-poster ak-product-poster" viewBox="0 0 ${W} ${H}" role="img" aria-label="${escapeAttribute(
     label,
-  )}" preserveAspectRatio="xMidYMid meet">${shadow}${shapes}${pins}</svg>`;
+  )}" preserveAspectRatio="xMidYMid meet">${shadow}${marks}${pins}</svg>`;
 }
-
 function variantControl(node: IrNode, current: string): string {
   const variants = rows(node, 'variants');
   if (variants.length === 0) return '';
@@ -540,8 +582,7 @@ export const product3dBlock: BlockModule = {
     tags: ['3d', 'webgl', 'product', 'hotspots', 'interactive'],
     useCases: ['showcase a product with finishes', 'explain parts with an exploded view'],
     purpose: 'Studio-lit product from typed parts: finish variants, hotspots and an exploded view.',
-    summary:
-      'Product 3D: parts, finish dropdown, numbered hotspots with camera moves, exploded view.',
+    summary: 'Product 3D: finishes, numbered hotspots, exploded view.',
     props: PRODUCT_PROPS,
     runtimeFeatures: ['three'],
     actions: ['set-value'],
