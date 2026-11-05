@@ -255,6 +255,14 @@ const THREE_D_SHOWCASE = {
     'Particle presets',
     'Nebula, fountain, snow, fireflies, vortex and a custom mix, each from a seed and a few typed fields.',
   ],
+  'text-3d-hero': [
+    'Extruded headline',
+    'Bevelled lettering from a bundled OFL font rises letter by letter, then floats; the poster draws the same words.',
+  ],
+  'text-3d-materials': [
+    '3D text finishes',
+    'Satin, metal, chrome, glass and neon lettering with wave, spin and float motion by character or word.',
+  ],
   'product-3d-speaker': [
     'Studio speaker',
     'A studio-lit speaker in four finishes, with numbered hotspots and an exploded view.',

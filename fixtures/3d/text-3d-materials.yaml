@@ -1,0 +1,42 @@
+version: 1
+meta:
+  title: Text 3D materials
+blocks:
+  - type: text-3d
+    id: satin
+    title: Satin
+    text: Satin
+    material: satin
+    animation: none
+  - type: text-3d
+    id: metal
+    title: Metal
+    text: Metal
+    material: metal
+    tone: warning
+    animation: wave
+  - type: text-3d
+    id: chrome
+    title: Chrome
+    text: Chrome
+    font: serif
+    material: chrome
+    tone: info
+    animation: spin
+  - type: text-3d
+    id: glass
+    title: Glass
+    text: Glass
+    material: glass
+    tone: info
+    animation: float
+    split: word
+  - type: text-3d
+    id: neon
+    title: Neon
+    text: "Open\nlate"
+    material: neon
+    tone: danger
+    bevel: none
+    animation: wave
+    split: word
