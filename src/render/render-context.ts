@@ -5,6 +5,7 @@
  * randomness, no module-level mutable state.
  */
 
+import type { ResolvedModelAsset } from '../assets/model-assets.js';
 import type { Diagnostic } from '../diagnostics.js';
 import type { DiagramAdapter } from '../diagram/adapter.js';
 import type { IconCollector } from '../icons/icon-render.js';
@@ -36,6 +37,8 @@ export interface RenderContext {
    */
   renderSlot(node: IrNode, key: string): string;
   byId(id: string): IrNode | undefined;
+  /** Resolved model sources by node id, for model blocks; set by `compile`. */
+  models?: ReadonlyMap<string, ResolvedModelAsset>;
 }
 
 /**

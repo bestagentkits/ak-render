@@ -484,10 +484,10 @@ export const bars3dBlock: BlockModule = {
   definition: define({
     type: 'bars-3d',
     category: 'data',
-    tags: ['3d', 'webgl', 'three', 'chart', 'bars', 'interactive'],
+    tags: ['3d', 'chart'],
     useCases: ['compare series per category', 'stacked totals with negatives'],
-    purpose: 'Grouped or stacked 3D bars on a zero baseline, with axes, filter and pick.',
-    summary: 'Bars 3D: categories x series matrix; grouped or stacked; pick writes state.',
+    purpose: 'Grouped or stacked 3D bars on a zero baseline.',
+    summary: 'Grouped or stacked 3D bars.',
     props: BARS_PROPS,
     runtimeFeatures: ['three'],
     actions: ['set-value'],

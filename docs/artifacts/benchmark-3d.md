@@ -19,35 +19,35 @@ and fails when draw calls or triangles drift from this baseline.
 
 | Fixture | Viewport | Profile | Frame p50 / p95 ms | Render p50 / p95 ms | Draws | Triangles | Context loss | 10-cycle leak |
 | --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- |
-| scene-3d-basic | mobile 375 | low@1 | 16.7 / 16.7 | 0.2 / 0.3 | 5 | 2,434 | lost → ready | no |
+| scene-3d-basic | mobile 375 | low@1 | 16.7 / 16.7 | 0.3 / 0.4 | 5 | 2,434 | lost → ready | no |
 | scene-3d-basic | tablet 768 | low@1 | 16.7 / 16.7 | 0.2 / 0.3 | 5 | 2,434 | lost → ready | no |
-| scene-3d-basic | desktop 1440 | high@1 | 16.7 / 33.4 | 0.3 / 0.4 | 5 | 2,434 | lost → ready | no |
-| scene-3d-basic | desktop-2x 1440 | high@2 | 66.6 / 83.3 | 0.3 / 0.5 | 5 | 2,434 | lost → ready | no |
-| scene-3d-dense | mobile 375 | low@1 | 16.7 / 16.7 | 0.3 / 0.6 | 49 | 44,802 | lost → ready | no |
-| scene-3d-dense | tablet 768 | low@1 | 16.7 / 33.4 | 0.3 / 0.5 | 49 | 44,802 | lost → ready | no |
-| scene-3d-dense | desktop 1440 | high@1 | 33.4 / 50.1 | 0.6 / 0.9 | 49 | 44,802 | lost → ready | no |
-| scene-3d-dense | desktop-2x 1440 | high@2 | 100.1 / 150.0 | 0.6 / 1.0 | 49 | 44,802 | lost → ready | no |
-| network-3d-basic | mobile 375 | low@1 | 16.7 / 16.7 | 0.0 / 0.0 | 4 | 3,242 | lost → ready | no |
+| scene-3d-basic | desktop 1440 | high@1 | 16.7 / 33.3 | 0.2 / 0.4 | 5 | 2,434 | lost → ready | no |
+| scene-3d-basic | desktop-2x 1440 | high@2 | 50.1 / 66.7 | 0.3 / 0.5 | 5 | 2,434 | lost → ready | no |
+| scene-3d-dense | mobile 375 | low@1 | 16.7 / 33.3 | 0.4 / 0.6 | 49 | 44,802 | lost → ready | no |
+| scene-3d-dense | tablet 768 | low@1 | 16.7 / 33.4 | 0.4 / 0.6 | 49 | 44,802 | lost → ready | no |
+| scene-3d-dense | desktop 1440 | high@1 | 50.0 / 50.1 | 0.7 / 1.0 | 49 | 44,802 | lost → ready | no |
+| scene-3d-dense | desktop-2x 1440 | high@2 | 83.3 / 100.0 | 0.4 / 0.7 | 49 | 44,802 | lost → ready | no |
+| network-3d-basic | mobile 375 | low@1 | 16.7 / 16.8 | 0.0 / 0.0 | 4 | 3,242 | lost → ready | no |
 | network-3d-basic | tablet 768 | low@1 | 16.7 / 16.7 | 0.0 / 0.0 | 4 | 3,242 | lost → ready | no |
 | network-3d-basic | desktop 1440 | high@1 | 16.7 / 16.8 | 0.0 / 0.0 | 4 | 5,762 | lost → ready | no |
 | network-3d-basic | desktop-2x 1440 | high@2 | 16.7 / 16.8 | 0.0 / 0.0 | 4 | 5,762 | lost → ready | no |
 | network-3d-stress | mobile 375 | low@1 | 16.7 / 16.7 | 0.0 / 0.0 | 3 | 180,000 | lost → ready | no |
-| network-3d-stress | tablet 768 | low@1 | 16.7 / 16.8 | 0.0 / 0.0 | 3 | 180,000 | lost → ready | no |
-| network-3d-stress | desktop 1440 | high@1 | 16.7 / 16.7 | 0.0 / 0.0 | 3 | 320,000 | lost → ready | no |
+| network-3d-stress | tablet 768 | low@1 | 16.7 / 16.7 | 0.0 / 0.0 | 3 | 180,000 | lost → ready | no |
+| network-3d-stress | desktop 1440 | high@1 | 16.7 / 16.8 | 0.0 / 0.0 | 3 | 320,000 | lost → ready | no |
 | network-3d-stress | desktop-2x 1440 | high@2 | 16.7 / 16.8 | 0.0 / 0.0 | 3 | 320,000 | lost → ready | no |
-| bars-3d-dense | mobile 375 | low@1 | 16.7 / 16.8 | 1.8 / 3.7 | 501 | 5,958 | lost → ready | no |
-| bars-3d-dense | tablet 768 | low@1 | 16.7 / 16.8 | 1.7 / 4.0 | 501 | 5,958 | lost → ready | no |
-| bars-3d-dense | desktop 1440 | high@1 | 16.7 / 16.8 | 0.0 / 0.0 | 501 | 5,958 | lost → ready | no |
+| bars-3d-dense | mobile 375 | low@1 | 16.7 / 16.8 | 2.1 / 2.8 | 501 | 5,958 | lost → ready | no |
+| bars-3d-dense | tablet 768 | low@1 | 16.7 / 16.8 | 2.8 / 3.8 | 501 | 5,958 | lost → ready | no |
+| bars-3d-dense | desktop 1440 | high@1 | 16.7 / 16.7 | 3.0 / 3.0 | 501 | 5,958 | lost → ready | no |
 | bars-3d-dense | desktop-2x 1440 | high@2 | 16.7 / 16.7 | 0.0 / 0.0 | 501 | 5,958 | lost → ready | no |
 
 Agent cost is assumed, not measured: spec tokens are bytes / 4 and a page task is 2 calls (render, export). User tokens are not measured here; `pnpm bench:agent` measures live-model tokens.
 
 | Fixture | Spec bytes | Spec tokens (assumed) | Round-trips (assumed) | HTML bytes | PNG export ok | Export p50 ms | Export max ms (n=5) |
 | --- | ---: | ---: | ---: | ---: | --- | ---: | ---: |
-| scene-3d-basic | 1,276 | 319 | 2 | 681,066 | 5/5 | 1324.1 | 1334.0 |
-| scene-3d-dense | 5,409 | 1,352 | 2 | 698,374 | 5/5 | 1316.1 | 1367.3 |
-| network-3d-basic | 4,416 | 1,104 | 2 | 716,859 | 5/5 | 1599.5 | 1791.7 |
-| network-3d-stress | 37,484 | 9,371 | 2 | 1,204,171 | 5/5 | 1887.8 | 2225.4 |
-| bars-3d-dense | 6,080 | 1,520 | 2 | 952,938 | 5/5 | 1840.6 | 2126.7 |
+| scene-3d-basic | 1,276 | 319 | 2 | 772,743 | 5/5 | 1375.5 | 1686.7 |
+| scene-3d-dense | 5,409 | 1,352 | 2 | 790,051 | 5/5 | 1306.7 | 1427.9 |
+| network-3d-basic | 4,416 | 1,104 | 2 | 808,536 | 5/5 | 1548.3 | 1977.2 |
+| network-3d-stress | 37,484 | 9,371 | 2 | 1,295,848 | 5/5 | 1836.2 | 2037.8 |
+| bars-3d-dense | 6,080 | 1,520 | 2 | 1,044,615 | 5/5 | 1577.0 | 1609.1 |
 
 Export time includes launching the browser.

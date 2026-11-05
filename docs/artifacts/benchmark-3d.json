@@ -1,7 +1,7 @@
 {
   "artifact": "benchmark-3d",
   "producer": "tests/browser/bench-3d.spec.ts",
-  "measuredAt": "2026-11-05T14:27:34.185Z",
+  "measuredAt": "2026-11-05T14:39:04.711Z",
   "compiler": {
     "name": "@bestagentkits/render",
     "version": "0.3.0"
@@ -18,7 +18,7 @@
   "fixtures": [
     {
       "fixture": "scene-3d-basic",
-      "htmlBytes": 681066,
+      "htmlBytes": 772743,
       "agent": {
         "specBytes": 1276,
         "specTokensEstimate": 319,
@@ -36,8 +36,8 @@
             "p95": 16.7
           },
           "renderMs": {
-            "p50": 0.2,
-            "p95": 0.3
+            "p50": 0.3,
+            "p95": 0.4
           },
           "calls": 5,
           "triangles": 2434,
@@ -83,10 +83,10 @@
           "profile": "high@1",
           "frameMs": {
             "p50": 16.7,
-            "p95": 33.4
+            "p95": 33.3
           },
           "renderMs": {
-            "p50": 0.3,
+            "p50": 0.2,
             "p95": 0.4
           },
           "calls": 5,
@@ -107,8 +107,8 @@
           "dpr": 2,
           "profile": "high@2",
           "frameMs": {
-            "p50": 66.6,
-            "p95": 83.3
+            "p50": 50.1,
+            "p95": 66.7
           },
           "renderMs": {
             "p50": 0.3,
@@ -133,15 +133,15 @@
         "runs": 5,
         "ok": 5,
         "ms": {
-          "p50": 1324.1,
-          "max": 1334
+          "p50": 1375.5,
+          "max": 1686.7
         },
         "errors": []
       }
     },
     {
       "fixture": "scene-3d-dense",
-      "htmlBytes": 698374,
+      "htmlBytes": 790051,
       "agent": {
         "specBytes": 5409,
         "specTokensEstimate": 1352,
@@ -156,10 +156,10 @@
           "profile": "low@1",
           "frameMs": {
             "p50": 16.7,
-            "p95": 16.7
+            "p95": 33.3
           },
           "renderMs": {
-            "p50": 0.3,
+            "p50": 0.4,
             "p95": 0.6
           },
           "calls": 49,
@@ -184,8 +184,8 @@
             "p95": 33.4
           },
           "renderMs": {
-            "p50": 0.3,
-            "p95": 0.5
+            "p50": 0.4,
+            "p95": 0.6
           },
           "calls": 49,
           "triangles": 44802,
@@ -205,12 +205,12 @@
           "dpr": 1,
           "profile": "high@1",
           "frameMs": {
-            "p50": 33.4,
+            "p50": 50,
             "p95": 50.1
           },
           "renderMs": {
-            "p50": 0.6,
-            "p95": 0.9
+            "p50": 0.7,
+            "p95": 1
           },
           "calls": 49,
           "triangles": 44802,
@@ -230,12 +230,12 @@
           "dpr": 2,
           "profile": "high@2",
           "frameMs": {
-            "p50": 100.1,
-            "p95": 150
+            "p50": 83.3,
+            "p95": 100
           },
           "renderMs": {
-            "p50": 0.6,
-            "p95": 1
+            "p50": 0.4,
+            "p95": 0.7
           },
           "calls": 49,
           "triangles": 44802,
@@ -256,15 +256,15 @@
         "runs": 5,
         "ok": 5,
         "ms": {
-          "p50": 1316.1,
-          "max": 1367.3
+          "p50": 1306.7,
+          "max": 1427.9
         },
         "errors": []
       }
     },
     {
       "fixture": "network-3d-basic",
-      "htmlBytes": 716859,
+      "htmlBytes": 808536,
       "agent": {
         "specBytes": 4416,
         "specTokensEstimate": 1104,
@@ -279,7 +279,7 @@
           "profile": "low@1",
           "frameMs": {
             "p50": 16.7,
-            "p95": 16.7
+            "p95": 16.8
           },
           "renderMs": {
             "p50": 0,
@@ -379,15 +379,15 @@
         "runs": 5,
         "ok": 5,
         "ms": {
-          "p50": 1599.5,
-          "max": 1791.7
+          "p50": 1548.3,
+          "max": 1977.2
         },
         "errors": []
       }
     },
     {
       "fixture": "network-3d-stress",
-      "htmlBytes": 1204171,
+      "htmlBytes": 1295848,
       "agent": {
         "specBytes": 37484,
         "specTokensEstimate": 9371,
@@ -427,7 +427,7 @@
           "profile": "low@1",
           "frameMs": {
             "p50": 16.7,
-            "p95": 16.8
+            "p95": 16.7
           },
           "renderMs": {
             "p50": 0,
@@ -452,7 +452,7 @@
           "profile": "high@1",
           "frameMs": {
             "p50": 16.7,
-            "p95": 16.7
+            "p95": 16.8
           },
           "renderMs": {
             "p50": 0,
@@ -502,15 +502,15 @@
         "runs": 5,
         "ok": 5,
         "ms": {
-          "p50": 1887.8,
-          "max": 2225.4
+          "p50": 1836.2,
+          "max": 2037.8
         },
         "errors": []
       }
     },
     {
       "fixture": "bars-3d-dense",
-      "htmlBytes": 952938,
+      "htmlBytes": 1044615,
       "agent": {
         "specBytes": 6080,
         "specTokensEstimate": 1520,
@@ -528,8 +528,8 @@
             "p95": 16.8
           },
           "renderMs": {
-            "p50": 1.8,
-            "p95": 3.7
+            "p50": 2.1,
+            "p95": 2.8
           },
           "calls": 501,
           "triangles": 5958,
@@ -553,8 +553,8 @@
             "p95": 16.8
           },
           "renderMs": {
-            "p50": 1.7,
-            "p95": 4
+            "p50": 2.8,
+            "p95": 3.8
           },
           "calls": 501,
           "triangles": 5958,
@@ -575,11 +575,11 @@
           "profile": "high@1",
           "frameMs": {
             "p50": 16.7,
-            "p95": 16.8
+            "p95": 16.7
           },
           "renderMs": {
-            "p50": 0,
-            "p95": 0
+            "p50": 3,
+            "p95": 3
           },
           "calls": 501,
           "triangles": 5958,
@@ -625,8 +625,8 @@
         "runs": 5,
         "ok": 5,
         "ms": {
-          "p50": 1840.6,
-          "max": 2126.7
+          "p50": 1577,
+          "max": 1609.1
         },
         "errors": []
       }
