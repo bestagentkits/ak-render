@@ -364,7 +364,7 @@ export const timeline3dBlock: BlockModule = {
   definition: define({
     type: 'timeline-3d',
     category: 'media',
-    tags: ['3d', 'webgl', 'timeline', 'narrative', 'interactive'],
+    tags: ['3d', 'webgl', 'milestones', 'narrative', 'interactive'],
     useCases: ['tell a history as a path through space', 'step through milestones in order'],
     purpose:
       'Milestones in order along a path in space, with a flying camera, step and scrub controls and a narrative card.',

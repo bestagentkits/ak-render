@@ -8,6 +8,7 @@ import {
   milestonePoints,
   overviewDir,
   resolveLayout,
+  type Vec3,
 } from '../../src/blocks/three/timeline-layout.js';
 import { compile } from '../../src/render/render.js';
 import { normalizeSpec } from '../../src/spec/normalize.js';
@@ -121,8 +122,8 @@ describe('timeline-3d layout', () => {
   it('spaces spiral milestones evenly and never overlapping', () => {
     const points = milestonePoints('spiral', 100);
     for (let i = 1; i < points.length; i += 1) {
-      const [a, b] = [points[i - 1] as number[], points[i] as number[]];
-      const gap = Math.hypot(a[0] - (b[0] as number), a[2] - (b[2] as number));
+      const [a, b] = [points[i - 1] as Vec3, points[i] as Vec3];
+      const gap = Math.hypot(a[0] - b[0], a[2] - b[2]);
       expect(gap).toBeGreaterThan(1.1);
       expect(gap).toBeLessThan(1.4);
     }
@@ -133,8 +134,8 @@ describe('timeline-3d layout', () => {
     expect(fitDistance(points, [0, 0, 0], overviewDir('ribbon'), 16 / 9)).toBeGreaterThan(5);
     const view = milestoneCamera(points, 3, 'ribbon');
     const home = overviewDir('ribbon');
-    const dir = view.position.map((p, i) => p - (view.target[i] as number));
-    expect(dir[0] * home[0] + dir[2] * home[2]).toBeGreaterThan(0);
+    const [dx, , dz] = view.position.map((p, i) => p - (view.target[i] as number)) as Vec3;
+    expect(dx * home[0] + dz * home[2]).toBeGreaterThan(0);
   });
 
   it('orders ISO-like dates and ignores free text', () => {
