@@ -76,7 +76,8 @@ export function milestonePoints(layout: Layout, count: number): Vec3[] {
 
 /** Direction from the scene to the overview camera. */
 export function overviewDir(layout: Layout): Vec3 {
-  return norm(layout === 'spiral' ? [0.42, 0.78, 1] : [-0.5, 0.72, 1]);
+  // The ribbon is seen from well along its length, so its sway and climb fill the frame's height.
+  return norm(layout === 'spiral' ? [0.42, 0.64, 1] : [-0.9, 0.62, 1]);
 }
 
 /** The overview look-at point: the middle of the milestones' bounds. */
@@ -98,6 +99,8 @@ export function fitDistance(
   dir: Vec3,
   aspect: number,
   margin = 0.92,
+  /** Points that bound the frame vertically only, such as the stems' feet under the markers. */
+  below: readonly Vec3[] = [],
 ): number {
   const forward: Vec3 = [-dir[0], -dir[1], -dir[2]];
   const right = norm(cross(forward, [0, 1, 0]));
@@ -106,14 +109,19 @@ export function fitDistance(
   const tanH = tanV * aspect;
   const pad = MARKER * 1.4;
   let distance = 1;
+  const offset = (p: Vec3): Vec3 => [p[0] - center[0], p[1] - center[1], p[2] - center[2]];
   for (const p of points) {
-    const d: Vec3 = [p[0] - center[0], p[1] - center[1], p[2] - center[2]];
+    const d = offset(p);
     const depth = dot(d, forward);
     distance = Math.max(
       distance,
       (Math.abs(dot(d, right)) + pad) / tanH - depth,
       (Math.abs(dot(d, up)) + pad) / tanV - depth,
     );
+  }
+  for (const p of below) {
+    const d = offset(p);
+    distance = Math.max(distance, Math.abs(dot(d, up)) / tanV - dot(d, forward));
   }
   return distance;
 }
@@ -126,12 +134,31 @@ export interface Camera {
 
 /** The overview camera at an aspect: the whole path in frame along the layout's bearing. */
 export function overviewCamera(points: readonly Vec3[], layout: Layout, aspect: number): Camera {
-  const center = centerOf(points);
+  let center = centerOf(points);
   const dir = overviewDir(layout);
   // The stems' feet frame too, so no stem runs off the stage.
   const ground = Math.min(...points.map((p) => p[1])) - MARKER / 2;
   const feet = points.map(([x, , z]): Vec3 => [x, ground, z]);
-  const distance = fitDistance([...points, ...feet], center, dir, aspect);
+  let distance = fitDistance(points, center, dir, aspect, undefined, feet);
+  // Perspective pulls an oblique path off centre: aim at the middle of its projected extent, then refit.
+  const forward: Vec3 = [-dir[0], -dir[1], -dir[2]];
+  const right = norm(cross(forward, [0, 1, 0]));
+  const up = cross(right, forward);
+  for (let pass = 0; pass < 2; pass += 1) {
+    const eye = center.map((c, i) => c + (dir[i] as number) * distance) as Vec3;
+    const screen = (p: Vec3) => {
+      const d: Vec3 = [p[0] - eye[0], p[1] - eye[1], p[2] - eye[2]];
+      const depth = dot(d, forward);
+      return [dot(d, right) / depth, dot(d, up) / depth] as const;
+    };
+    const xs = points.map((p) => screen(p)[0]);
+    const ys = [...points, ...feet].map((p) => screen(p)[1]);
+    const sx = ((Math.min(...xs) + Math.max(...xs)) / 2) * distance;
+    const sy = ((Math.min(...ys) + Math.max(...ys)) / 2) * distance;
+    center = center.map((c, i) => c + (right[i] as number) * sx + (up[i] as number) * sy) as Vec3;
+    distance = fitDistance(points, center, dir, aspect, undefined, feet);
+  }
+  center = center.map(round) as Vec3;
   return {
     position: center.map((c, i) => round(c + (dir[i] as number) * distance)) as Vec3,
     target: center,

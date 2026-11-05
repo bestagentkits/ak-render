@@ -22,6 +22,21 @@ const stats = (page: Page) =>
       ).akRender3d.stats().timelineResources,
   );
 
+/**
+ * A close-up looks straight at its milestone, so after a jump the current tag
+ * sits over the stage's centre, just above the marker, in the new view.
+ */
+async function expectTagOnMarker(page: Page): Promise<void> {
+  const stage = await page.locator('.ak-tl .ak-3d-stage').boundingBox();
+  const tag = await page.locator('.ak-tl-tag-live[data-ak-current]').boundingBox();
+  if (!stage || !tag) throw new Error('stage or current tag not laid out');
+  const markerX = stage.x + stage.width / 2;
+  const markerY = stage.y + stage.height / 2;
+  expect(Math.abs(tag.x + tag.width / 2 - markerX)).toBeLessThan(40);
+  expect(markerY - (tag.y + tag.height)).toBeGreaterThanOrEqual(0);
+  expect(markerY - (tag.y + tag.height)).toBeLessThanOrEqual(60);
+}
+
 test.describe('timeline-3d', { tag: '@gl' }, () => {
   test('100 milestones: keyboard, scrubber, list and state step in order, offline', async ({
     page,
@@ -45,6 +60,7 @@ test.describe('timeline-3d', { tag: '@gl' }, () => {
     await page.locator('.ak-3d-canvas').focus();
     await page.keyboard.press('End');
     await expect(current(page)).toHaveAttribute('data-ak-tl-current', 's100');
+    await expectTagOnMarker(page);
     await page.keyboard.press('ArrowLeft');
     await expect(current(page)).toHaveAttribute('data-ak-tl-current', 's099');
     // The list is one tab stop; arrows move within it.
@@ -54,6 +70,7 @@ test.describe('timeline-3d', { tag: '@gl' }, () => {
     await page.keyboard.press('Home');
     await expect(current(page)).toHaveAttribute('data-ak-tl-current', 's001');
     await expect(page.locator('[data-ak-tl-milestone="s001"]')).toBeFocused();
+    await expectTagOnMarker(page);
     // Touch-style scrubbing and tapping a list item.
     await page.locator('[data-ak-tl-scrub]').fill('42');
     await expect(current(page)).toHaveAttribute('data-ak-tl-current', 's042');

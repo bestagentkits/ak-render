@@ -22,7 +22,7 @@ import {
   TubeGeometry,
   Vector3,
 } from 'three';
-import { centerOf, floorY, overviewCamera } from '../timeline-layout.ts';
+import { centerOf, floorY, MARKER, overviewCamera } from '../timeline-layout.ts';
 import { resolvedColor } from './product.js';
 
 /** Path segments per milestone gap, and the path's radius. */
@@ -32,6 +32,8 @@ const TUBE = 0.045;
 const LIFTED = 1.45;
 /** How far a path or marker after the current one fades toward the page. */
 const FADE = 0.45;
+/** Pixels between a tag's bottom edge and the top of its marker; the CSS offset matches it. */
+const TAG_GAP = 8;
 
 /** Live timeline geometries and materials not yet disposed; the disposal check reads it. */
 let live = 0;
@@ -398,22 +400,43 @@ export function timelineWidget(ctx) {
         tag.remove();
         tags.delete(i);
       }
+    // The camera may have moved since the last render; project with its current matrices.
+    camera.updateMatrixWorld();
     const width = stage.clientWidth;
     const height = stage.clientHeight;
-    for (const i of wanted) {
+    // The current tag goes first, so an end tag that would collide with it is the one dropped.
+    const placed = [];
+    for (const i of [current, ...[...wanted].filter((k) => k !== current)]) {
       const m = milestones[i];
       const tag = tagFor(i);
       const isCurrent = i === current;
       tag.toggleAttribute('data-ak-current', isCurrent);
       const text = isCurrent && m.date ? `${m.date} · ${m.label}` : m.date || m.label;
       if (tag.textContent !== text) tag.textContent = text;
-      projected.copy(markers[i].position).project(camera);
+      // The tag stands on the top of its marker, whatever the marker's size on screen.
+      projected.copy(markers[i].position);
+      projected.y += (MARKER / 2) * markers[i].scale.y;
+      projected.project(camera);
       const visible =
         projected.z < 1 && Math.abs(projected.x) < 1.05 && Math.abs(projected.y) < 1.05;
       tag.hidden = !visible;
       if (!visible) continue;
-      const x = Math.min(width - 8, Math.max(8, ((projected.x + 1) / 2) * width));
+      // Keep the whole pill inside the stage.
+      const half = tag.offsetWidth / 2 + 6;
+      const x = Math.min(width - half, Math.max(half, ((projected.x + 1) / 2) * width));
       const y = ((1 - projected.y) / 2) * height;
+      const top = y - TAG_GAP - tag.offsetHeight;
+      const box = { left: x - half, right: x + half, top, bottom: top + tag.offsetHeight };
+      const collides = placed.some(
+        (other) =>
+          box.left < other.right &&
+          other.left < box.right &&
+          box.top < other.bottom + 4 &&
+          other.top < box.bottom + 4,
+      );
+      tag.hidden = collides;
+      if (collides) continue;
+      placed.push(box);
       tag.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`;
     }
   }
