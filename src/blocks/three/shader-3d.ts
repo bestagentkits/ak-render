@@ -296,10 +296,23 @@ export function shaderPoster(params: ShaderParams, label: string, uid: string): 
       const view = unit(sub(eye, centre));
       if (!showBack && dot(normal, view) < 0) continue;
       const q = avg(ids.map((id) => domain[id] as V3) as [V3, V3, V3, V3]);
-      const shade = shadeAt(params, normal, view, centre[1], q, POSTER_TIME);
-      if (shade.alpha < 0) continue;
-      const total = shade.a + shade.b;
-      const tone = total > 0 ? shade.b / total : 0;
+      // Each corner is shaded and the four averaged, as the GPU interpolates across a facet,
+      // so neighbouring facets meet without a step; a facet mostly cut away is dropped.
+      const corner = ids.map((id) => {
+        const p = world[id] as V3;
+        let n = normals[id] as V3;
+        if (dot(n, normal) < 0) n = [-n[0], -n[1], -n[2]];
+        return shadeAt(params, n, unit(sub(eye, p)), p[1], domain[id] as V3, POSTER_TIME);
+      });
+      const kept = corner.filter((c) => c.alpha >= 0);
+      if (kept.length < 2 || shadeAt(params, normal, view, centre[1], q, POSTER_TIME).alpha < 0)
+        continue;
+      const mean = (key: 'a' | 'b' | 'w' | 'alpha') =>
+        kept.reduce((sum, c) => sum + c[key], 0) / kept.length;
+      const shade = { a: mean('a'), b: mean('b'), w: mean('w'), alpha: mean('alpha') };
+      // The live frame is written out in sRGB; the poster's light level takes the same curve.
+      const total = (shade.a + shade.b) ** (1 / 2.2);
+      const tone = shade.a + shade.b > 0 ? shade.b / (shade.a + shade.b) : 0;
       // Light past full strength turns toward white, as the live tone mapper does.
       const white = shade.w + Math.max(0, total - 1) * 0.5;
       const cls = `k${level(tone, 8)} s${level(total, 40)} w${level(white, 8, 0.6)}${
@@ -367,7 +380,7 @@ export function shaderPoster(params: ShaderParams, label: string, uid: string): 
   }
   if (post.includes('vignette')) {
     defs.push(
-      `<radialGradient id="ak-sh-vig-${uid}" cx="50%" cy="50%" r="72%"><stop offset="0.45" stop-opacity="0"/><stop offset="1" stop-opacity="0.7"/></radialGradient>`,
+      `<radialGradient id="ak-sh-vig-${uid}" cx="50%" cy="50%" r="72%"><stop offset="0.45" stop-opacity="0"/><stop offset="1" stop-opacity="0.55"/></radialGradient>`,
     );
     overlays.push(
       `<rect class="ak-sh-vig" width="${W}" height="${H}" fill="url(#ak-sh-vig-${uid})"/>`,

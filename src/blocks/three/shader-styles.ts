@@ -45,8 +45,8 @@ const steps = [
  */
 export function shaderSchemeVars(scheme: 'light' | 'dark'): string {
   return scheme === 'dark'
-    ? '--ak-sh-night:color-mix(in oklab,var(--ak-color-background) 90%,var(--ak-color-accent));--ak-sh-ink:var(--ak-color-text);--ak-sh-lift-a:0%;--ak-sh-lift-b:0%'
-    : '--ak-sh-night:color-mix(in oklab,var(--ak-color-text) 90%,var(--ak-color-info));--ak-sh-ink:var(--ak-color-background);--ak-sh-lift-a:15%;--ak-sh-lift-b:40%';
+    ? '--ak-sh-night:color-mix(in oklab,var(--ak-color-background) 97%,var(--ak-color-accent));--ak-sh-ink:var(--ak-color-text);--ak-sh-lift-a:0%;--ak-sh-lift-b:0%'
+    : '--ak-sh-night:color-mix(in oklab,var(--ak-color-text) 97%,var(--ak-color-info));--ak-sh-ink:var(--ak-color-background);--ak-sh-lift-a:15%;--ak-sh-lift-b:40%';
 }
 
 export const SHADER_CSS = `
@@ -57,12 +57,12 @@ ${steps}
 :root[data-theme="dark"] .ak-sh{${shaderSchemeVars('dark')}}
 .ak-sh .ak-3d-stage,${P}{background:radial-gradient(60% 65% at 50% 50%,color-mix(in oklab,var(--ak-sh-a) 7%,transparent),transparent 75%),var(--ak-sh-night)}
 .ak-sh .ak-3d-stage{border-color:color-mix(in oklab,var(--ak-sh-night) 80%,var(--ak-color-border))}
-.ak-sh-mesh path{--ak-sh-f:color-mix(in oklab,color-mix(in oklab,var(--ak-sh-t) var(--ak-sh-s),var(--ak-sh-night)) calc(100% - var(--ak-sh-w)),#fff);fill:var(--ak-sh-f);stroke:var(--ak-sh-f);stroke-width:.9;stroke-linejoin:round}
+.ak-sh-mesh path{--ak-sh-f:color-mix(in oklab,color-mix(in oklab,var(--ak-sh-t) var(--ak-sh-s),#000) calc(100% - var(--ak-sh-w)),#fff);fill:var(--ak-sh-f);stroke:var(--ak-sh-f);stroke-width:.9;stroke-linejoin:round}
 .ak-sh-additive path{mix-blend-mode:screen}
 .ak-sh-lines{opacity:.42}
 ${P} pattern rect{fill:var(--ak-sh-night)}
 .ak-sh-grain{opacity:.06;mix-blend-mode:overlay}
-${P} defs stop{stop-color:var(--ak-sh-night)}
+${P} defs stop{stop-color:#000}
 .ak-sh-meta{display:block;margin-top:2px;color:var(--ak-color-text-muted);font-size:.85em;font-variant-numeric:tabular-nums}
 .ak-sh .ak-3d-canvas{cursor:grab}
 .ak-sh-controls{display:grid;grid-template-columns:max-content minmax(96px,1fr) 4ch;align-items:center;gap:calc(var(--ak-space-unit)*1) calc(var(--ak-space-unit)*1.5);max-width:520px}

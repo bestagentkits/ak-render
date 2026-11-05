@@ -398,7 +398,7 @@ export const LIVE_GRID: Record<ShaderShape, [number, number]> = {
 export const POSTER_GRID: Record<ShaderShape, [number, number]> = {
   sphere: [64, 40],
   torus: [112, 36],
-  'torus-knot': [300, 20],
+  'torus-knot': [420, 28],
   plane: [64, 36],
 };
 
