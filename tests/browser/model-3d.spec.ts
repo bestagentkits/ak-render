@@ -163,6 +163,10 @@ test.describe('model-3d', () => {
     await p.mouse.wheel(0, -200);
     await p.keyboard.up('Control');
     await expect.poll(frame).not.toBe(before);
+    const zoomed = await frame();
+    await canvas.focus();
+    await p.mouse.wheel(0, 300);
+    await expect.poll(frame).not.toBe(zoomed);
   });
 
   test('a compressed model fails at compile time with the decoder diagnostic', () => {

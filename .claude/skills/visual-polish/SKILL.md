@@ -55,7 +55,7 @@ finding: `ID | blocker|minor | fix | DoD with a measurable threshold`.
 ## Defaults that held up
 
 Start from these instead of searching again: camera fov 30, subject fill
-0.84 of the frame (`visual:check` fill ≥ 0.6 on the stage), centre offset
+0.84 of the frame (`visual:check` fill ≥ 0.6 on the stage, or fillY ≥ 0.7 with\nmarginY ≥ 0.06 when a wide stage fills by height; fit a loaded model in the\nruntime with the real aspect, centring its projected box), centre offset
 ≤ 0.05, shadow radius 9 with 16 blur samples, exposure 0.8 dark / 1 light,
 metal metalness 0.85 roughness 0.32.
 

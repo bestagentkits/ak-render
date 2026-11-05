@@ -141,35 +141,14 @@ function framingObjects(node: IrNode, info: ModelInfo | undefined): Record<strin
   return [...corners, ...points];
 }
 
-/**
- * Hotspots pull the framed centre off the model; aim at the model's bounds and
- * move in so it fills the stage like a scene does. An authored position is kept.
- */
-const MODEL_DOLLY = 0.88;
-const MODEL_DROP = 0.12;
-function tighten(
-  camera: ReturnType<typeof frameCamera>,
-  authored: JsonValue | undefined,
-  { center, size }: { center: Vec3; size: number },
-) {
-  if (
-    authored !== null &&
-    typeof authored === 'object' &&
-    !Array.isArray(authored) &&
-    Array.isArray(authored.position)
-  )
-    return camera;
-  // Aim a little under the centre so the contact shadow keeps its margin.
-  const aim: Vec3 = [center[0], center[1] - size * MODEL_DROP, center[2]];
-  const position = [0, 1, 2].map(
-    (axis) =>
-      Math.round(
-        ((aim[axis] ?? 0) +
-          ((camera.position[axis] ?? 0) - (camera.target[axis] ?? 0)) * MODEL_DOLLY) *
-          1000,
-      ) / 1000,
-  ) as Vec3;
-  return { ...camera, position, target: aim };
+/** An authored camera position or target is kept as written; the runtime does not refit it. */
+function authoredCamera(camera: JsonValue | undefined): boolean {
+  return (
+    camera !== null &&
+    typeof camera === 'object' &&
+    !Array.isArray(camera) &&
+    (Array.isArray(camera.position) || Array.isArray(camera.target))
+  );
 }
 
 function controls(kind: 'clip' | 'variant', names: readonly string[], current: string): string {
@@ -208,11 +187,7 @@ export function renderModel(node: IrNode, context: RenderContext): string {
   const asset: ResolvedModelAsset | undefined = context.models?.get(node.id);
   const info = asset?.kind === 'inline' ? asset.info : undefined;
   const placed = placeObjects(planObjects(node, info));
-  const camera = tighten(
-    frameCamera(placeObjects(framingObjects(node, info)), node.props.camera),
-    node.props.camera,
-    extentOf(info),
-  );
+  const camera = frameCamera(placeObjects(framingObjects(node, info)), node.props.camera);
   const summary = stringProp(node, 'summary');
   const state = context.ir.state;
   const clips = info?.clips ?? [];
@@ -231,6 +206,7 @@ export function renderModel(node: IrNode, context: RenderContext): string {
     variants,
   };
   if (clip !== '') config.clip = clip;
+  if (authoredCamera(node.props.camera)) config.cameraAuthored = true;
   for (const key of ['lighting', 'bind', 'clipBind', 'variantBind'] as const) {
     const value = node.props[key];
     if (value !== undefined) config[key] = value;

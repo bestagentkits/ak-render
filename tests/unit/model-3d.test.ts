@@ -65,6 +65,19 @@ describe('model-3d compile', () => {
   });
 });
 
+describe('model-3d camera', () => {
+  it('keeps an authored target and marks it so the runtime does not refit', () => {
+    const spec = base.replace(
+      '    src: models/crate.glb\n',
+      '    src: models/crate.glb\n    camera: { target: [0, 1, 0] }\n',
+    );
+    const config = scene(compile(spec, { modelResolver: resolver() }).html);
+    expect(config.camera.target).toEqual([0, 1, 0]);
+    expect(config.cameraAuthored).toBe(true);
+    expect(scene(compile(base, { modelResolver: resolver() }).html).cameraAuthored).toBeUndefined();
+  });
+});
+
 describe('model-3d CSP', () => {
   it('opens connect-src to data: and blob:, and img-src to blob:, only on a model page', () => {
     const html = compile(base, { modelResolver: resolver() }).html;
@@ -98,5 +111,11 @@ describe('describeGltf', () => {
     const json = JSON.parse(readFileSync(join(fixtures, 'models/crate.gltf'), 'utf8'));
     for (const clip of json.animations) delete clip.name;
     expect(describeGltf(json).clips).toEqual(['animation_0', 'animation_1']);
+  });
+
+  it('keeps repeated clip names apart', () => {
+    const json = JSON.parse(readFileSync(join(fixtures, 'models/crate.gltf'), 'utf8'));
+    for (const clip of json.animations) clip.name = 'Move';
+    expect(describeGltf(json).clips).toEqual(['Move', 'Move (2)']);
   });
 });

@@ -212,8 +212,8 @@ export function mountModel(el, kit) {
       if (request === variantRequest) variant = previous;
       return;
     }
-    applied = name;
     if (request !== variantRequest) return;
+    applied = name;
     variantMeshes.forEach((entry, i) => {
       entry.mesh.material = materials[i];
     });
@@ -365,12 +365,75 @@ export function mountModel(el, kit) {
   canvas.addEventListener('contextmenu', onMenu);
   canvas.addEventListener('keydown', onKey);
 
+  // Fit the real model with the stage's real aspect: the compiler only guessed both.
+  let fitBox = null;
+  const corner = new Vector3();
+  /** The model's projected extent in NDC from this camera, or null when it is behind. */
+  function extent(center, direction, distance) {
+    camera.position.copy(center).addScaledVector(direction, distance);
+    camera.lookAt(center);
+    camera.updateMatrixWorld();
+    const out = { x0: 1, x1: -1, y0: 1, y1: -1 };
+    for (let i = 0; i < 8; i += 1) {
+      corner.set(
+        i & 1 ? fitBox.max.x : fitBox.min.x,
+        i & 2 ? fitBox.max.y : fitBox.min.y,
+        i & 4 ? fitBox.max.z : fitBox.min.z,
+      );
+      corner.project(camera);
+      if (corner.z > 1) return null;
+      out.x0 = Math.min(out.x0, corner.x);
+      out.x1 = Math.max(out.x1, corner.x);
+      out.y0 = Math.min(out.y0, corner.y);
+      out.y1 = Math.max(out.y1, corner.y);
+    }
+    return out;
+  }
+  // Centre the projected model, then move in until it reaches the margin; twice, since each step moves the other.
+  function fitHome() {
+    if (!fitBox || config.cameraAuthored) return;
+    const atHome =
+      camera.position.distanceTo(home.position) < 1e-6 && target.distanceTo(home.target) < 1e-6;
+    if (!atHome) return;
+    const direction = home.position.clone().sub(home.target).normalize();
+    const center = fitBox.getCenter(new Vector3());
+    const right = new Vector3();
+    const up = new Vector3();
+    let distance = fitBox.getSize(new Vector3()).length() * 2;
+    for (let pass = 0; pass < 3; pass += 1) {
+      let near = 0;
+      let far = distance * 20;
+      for (let k = 0; k < 40; k += 1) {
+        const mid = (near + far) / 2;
+        const e = extent(center, direction, mid);
+        if (e && e.x0 >= -0.9 && e.x1 <= 0.9 && e.y0 >= -0.86 && e.y1 <= 0.86) far = mid;
+        else near = mid;
+      }
+      distance = far;
+      const e = extent(center, direction, distance);
+      if (!e) break;
+      const halfH = distance * Math.tan(MathUtils.degToRad(camera.fov / 2));
+      right.setFromMatrixColumn(camera.matrixWorld, 0);
+      up.setFromMatrixColumn(camera.matrixWorld, 1);
+      center
+        .addScaledVector(right, ((e.x0 + e.x1) / 2) * halfH * camera.aspect)
+        .addScaledVector(up, ((e.y0 + e.y1) / 2) * halfH);
+    }
+    home.target.copy(center);
+    home.position.copy(center).addScaledVector(direction, distance);
+    target.copy(home.target);
+    camera.position.copy(home.position);
+    camera.lookAt(target);
+    readSpherical();
+  }
+
   function resize() {
     const width = stage.clientWidth || 640;
     const height = stage.clientHeight || 360;
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
+    fitHome();
     requestRender();
   }
   const resizeObserver = window.ResizeObserver ? new ResizeObserver(resize) : null;
@@ -523,6 +586,10 @@ export function mountModel(el, kit) {
     const box = new Box3().setFromObject(model);
     if (!box.isEmpty()) {
       const size = box.getSize(new Vector3()).length();
+      // Leave room under the model for its contact shadow.
+      fitBox = box.clone();
+      fitBox.min.y -= size * 0.03;
+      fitHome();
       reach.min = size * 0.15;
       reach.max = size * 20;
       if (renderer.shadowMap.enabled) {

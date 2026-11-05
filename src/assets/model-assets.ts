@@ -715,11 +715,17 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function names(list: unknown, fallback: (index: number) => string): string[] {
   if (!Array.isArray(list)) return [];
-  return list.map((item, index) =>
-    isRecord(item) && typeof item.name === 'string' && item.name !== ''
-      ? item.name.slice(0, 64)
-      : fallback(index),
-  );
+  // A repeated name gets its index so every clip or variant stays selectable.
+  const seen = new Set<string>();
+  return list.map((item, index) => {
+    const given =
+      isRecord(item) && typeof item.name === 'string' && item.name !== ''
+        ? item.name.slice(0, 64)
+        : fallback(index);
+    const name = seen.has(given) ? `${given} (${index + 1})` : given;
+    seen.add(name);
+    return name;
+  });
 }
 
 type Matrix = number[];
