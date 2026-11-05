@@ -514,6 +514,9 @@
           "$ref": "#/$defs/block-morph-3d"
         },
         {
+          "$ref": "#/$defs/block-point-cloud-3d"
+        },
+        {
           "$ref": "#/$defs/block-timeline-3d"
         },
         {
@@ -10010,6 +10013,207 @@
         }
       },
       "description": "Morph: shape targets, easing, timeline, state."
+    },
+    "block-point-cloud-3d": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "summary"
+      ],
+      "properties": {
+        "type": {
+          "const": "point-cloud-3d"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 600,
+          "description": "What the cloud shows, in words; the caption and the text alternative."
+        },
+        "src": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": -1000000000000,
+                "maximum": 1000000000000
+              },
+              "maxItems": 20000
+            },
+            "y": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": -1000000000000,
+                "maximum": 1000000000000
+              },
+              "maxItems": 20000
+            },
+            "z": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": -1000000000000,
+                "maximum": 1000000000000
+              },
+              "maxItems": 20000
+            },
+            "intensity": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": -1000000000000,
+                "maximum": 1000000000000
+              },
+              "maxItems": 20000
+            },
+            "id": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "maxItems": 20000
+            }
+          },
+          "additionalProperties": false
+        },
+        "axes": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "unit": {
+                  "type": "string",
+                  "maxLength": 24
+                },
+                "min": {
+                  "type": "number"
+                },
+                "max": {
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "label"
+              ]
+            },
+            "y": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "unit": {
+                  "type": "string",
+                  "maxLength": 24
+                },
+                "min": {
+                  "type": "number"
+                },
+                "max": {
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "label"
+              ]
+            },
+            "z": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "unit": {
+                  "type": "string",
+                  "maxLength": 24
+                },
+                "min": {
+                  "type": "number"
+                },
+                "max": {
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "label"
+              ]
+            },
+            "intensity": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "unit": {
+                  "type": "string",
+                  "maxLength": 24
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "label"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "up": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "z",
+            "y"
+          ]
+        },
+        "budget": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 100000
+        },
+        "bind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "on": {
+          "description": "Bindings fired with `{ value }`: the point id on `select`.",
+          "$ref": "#/$defs/actionMap"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
+        }
+      },
+      "description": "Point cloud, clip and pick."
     },
     "block-timeline-3d": {
       "type": "object",

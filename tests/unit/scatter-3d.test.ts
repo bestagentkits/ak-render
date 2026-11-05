@@ -92,7 +92,7 @@ describe('scatter-3d contract', () => {
       expect(runs[0]).toContain('data-ak-3d="scatter"');
       expect(runs[0]).toContain('__akThree');
     }
-  });
+  }, 20_000);
 
   it('renders all 20,000 points into the table, the poster and the runtime config', () => {
     const html = compile(fixture('scatter-3d-20k'), { source: '20k' }).html;

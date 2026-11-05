@@ -1,0 +1,20 @@
+# Stress fixture: 100,000 points from a local .xyz file, metres, z up. The clip
+# box cuts the water tank's dome above 11 m, so the page counts hidden points,
+# and a 60,000-point budget makes the live view state how many it draws.
+version: 1
+meta:
+  title: Depot survey, 100,000 points
+state:
+  point: p99999
+blocks:
+  - type: point-cloud-3d
+    id: depot
+    summary: One hundred thousand laser returns over an 80 by 60 metre depot, coloured by return intensity, clipped at 11 metres elevation.
+    src: point-cloud/depot-100k.xyz
+    bind: state.point
+    budget: 60000
+    axes:
+      x: { label: Easting, unit: m }
+      y: { label: Northing, unit: m }
+      z: { label: Elevation, unit: m, max: 11 }
+      intensity: { label: Intensity }

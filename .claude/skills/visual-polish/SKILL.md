@@ -116,6 +116,30 @@ metal metalness 0.85 roughness 0.32.
   iridescence and sheen under the studio environment make a plain primitive
   look designed; blend the target tones with the shape so colour tells the
   reader which state is arriving.
+- **Point clouds: one spacing wide.** Size points to about the cloud's own
+  spacing (world diameter near 5 / sqrt(drawn points)) and nearly flat
+  (a dome of at most 0.08) so surfaces read as surfaces, not beads; fade far
+  points toward the background for depth instead of lighting them. Keep one
+  uniform scale on all axes, fit the projected box corners to about 0.84 by
+  0.8 of the frame centred 3% below the middle (refit for the real aspect),
+  and sit ticks close to the box edges with at least 6 px between labels and
+  one tick per shared corner.
+- **Point clouds: eye-dome lighting gives depth without normals.** Render the
+  points into a target with a depth texture, then darken each pixel by
+  `exp(-30 * mean(max(0, log2 depth - log2 neighbour depth)))` over an
+  8-neighbour ring; roofs and crowns get outlines against what lies behind
+  them. In the same pass, fill an empty pixel when 5 of the 8 inner or 6 of
+  the 8 outer (3 px) neighbours hold points, with the nearest one's colour,
+  so the ground never shows the stage through it. Draw the selection marker
+  after the pass so it is never shaded.
+- **Point clouds: the ramp's lightness runs one way.** Take hues from the
+  theme's info, success, warning and danger tones, set them to one lightness
+  with a chroma floor, then mix toward the text colour (up to 40%) in oklab
+  and lower chroma to fit the gamut instead of clipping. A ramp through the
+  accent token reads olive-khaki on a light page.
+- **Point clouds: the static sample is dense enough to read.** About 5,000
+  points in level-of-detail order at radius 0.0085 x focal / depth draws
+  roofs, crowns and lane lines; fewer reads as noise.
 
 ## Done means
 

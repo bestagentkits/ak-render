@@ -17,6 +17,7 @@ import { GLOBE_CSS } from './globe-styles.js';
 import { MORPH_CSS } from './morph-styles.js';
 import { NETWORK_CSS } from './network-styles.js';
 import { PARTICLES_CSS, particleSchemeVars } from './particles-styles.js';
+import { POINT_CLOUD_CSS } from './point-cloud-styles.js';
 import { PRODUCT_CSS } from './product-styles.js';
 import { SCATTER_CSS } from './scatter-styles.js';
 import { SHADER_CSS, shaderSchemeVars } from './shader-styles.js';
@@ -70,6 +71,8 @@ export function export3dPosterSvg(spec: unknown, options: PosterSvgOptions = {})
   const globe = /^<svg[^>]*\bclass="[^"]*\bak-globe-poster\b/u.test(svg);
   // A morph drawing needs its shade steps and floor shadow.
   const morph = /^<svg[^>]*\bclass="[^"]*\bak-mo-poster\b/u.test(svg);
+  // A point cloud needs its intensity ramp and frame.
+  const cloud = /^<svg[^>]*\bclass="[^"]*\bak-pc-poster\b/u.test(svg);
   // A timeline drawing needs its path, stems, shadows, halo and tags.
   const timeline = /^<svg[^>]*\bclass="[^"]*\bak-tl-poster\b/u.test(svg);
   // A terrain drawing needs its contour runs, pins and floor shadow.
@@ -88,7 +91,7 @@ export function export3dPosterSvg(spec: unknown, options: PosterSvgOptions = {})
     scheme === 'auto'
       ? `${palette('light')}@media (prefers-color-scheme:dark){${palette('dark')}}`
       : palette(scheme);
-  const style = `${colours}${THREE_CSS}${NETWORK_CSS}${SCATTER_CSS}${particles ? PARTICLES_CSS : ''}${shader ? SHADER_CSS : ''}${product ? PRODUCT_CSS : ''}${lettering ? TEXT_CSS : ''}${morph ? MORPH_CSS : ''}${globe ? GLOBE_CSS : ''}${terrain ? TERRAIN_CSS : ''}${timeline ? TIMELINE_CSS : ''}${labels ? '' : 'text{display:none}'}`;
+  const style = `${colours}${THREE_CSS}${NETWORK_CSS}${SCATTER_CSS}${particles ? PARTICLES_CSS : ''}${shader ? SHADER_CSS : ''}${product ? PRODUCT_CSS : ''}${lettering ? TEXT_CSS : ''}${morph ? MORPH_CSS : ''}${globe ? GLOBE_CSS : ''}${terrain ? TERRAIN_CSS : ''}${timeline ? TIMELINE_CSS : ''}${cloud ? POINT_CLOUD_CSS : ''}${labels ? '' : 'text{display:none}'}`;
   return `<?xml version="1.0" encoding="UTF-8"?>\n${svg.replace(
     /^<svg([^>]*)>/u,
     `<svg xmlns="http://www.w3.org/2000/svg"$1><style>${style}</style>`,

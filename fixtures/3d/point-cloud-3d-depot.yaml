@@ -1,0 +1,18 @@
+# A LiDAR-style survey of a small depot: 30,000 points read from a local .xyz
+# file (see scripts/generate-point-cloud-fixtures.mjs), metres, z up.
+version: 1
+meta:
+  title: Depot survey
+state:
+  point: p2
+blocks:
+  - type: point-cloud-3d
+    id: depot
+    summary: Thirty thousand laser returns over an 80 by 60 metre depot, coloured by return intensity. Painted road lines, the shed roof, the water tank and the parked cars return brightest; tree crowns and asphalt return weakest.
+    src: point-cloud/depot-30k.xyz
+    bind: state.point
+    axes:
+      x: { label: Easting, unit: m }
+      y: { label: Northing, unit: m }
+      z: { label: Elevation, unit: m }
+      intensity: { label: Intensity }

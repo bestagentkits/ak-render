@@ -11,6 +11,8 @@ import { network3dBlock } from './network-3d.js';
 import { NETWORK_CSS } from './network-styles.js';
 import { particles3dBlock } from './particles-3d.js';
 import { PARTICLES_CSS } from './particles-styles.js';
+import { pointCloud3dBlock } from './point-cloud-3d.js';
+import { POINT_CLOUD_CSS } from './point-cloud-styles.js';
 import { product3dBlock } from './product-3d.js';
 import { PRODUCT_CSS } from './product-styles.js';
 import { scatter3dBlock } from './scatter-3d.js';
@@ -56,6 +58,7 @@ export const THREE_GROUP: BlockGroup = {
     product3dBlock,
     globe3dBlock,
     morph3dBlock,
+    pointCloud3dBlock,
     timeline3dBlock,
     terrain3dBlock,
   ],
@@ -73,6 +76,7 @@ export const THREE_GROUP: BlockGroup = {
         TEXT_CSS +
         GLOBE_CSS +
         MORPH_CSS +
+        POINT_CLOUD_CSS +
         TIMELINE_CSS +
         TERRAIN_CSS,
       script: { code: `${THREE_RUNTIME}\n${THREE_BOOT}`, boot: 'wireThree();' },

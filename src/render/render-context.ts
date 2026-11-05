@@ -6,6 +6,7 @@
  */
 
 import type { ResolvedModelAsset } from '../assets/model-assets.js';
+import type { PointCloudColumns } from '../assets/point-cloud-assets.js';
 import type { Diagnostic } from '../diagnostics.js';
 import type { DiagramAdapter } from '../diagram/adapter.js';
 import type { IconCollector } from '../icons/icon-render.js';
@@ -39,6 +40,8 @@ export interface RenderContext {
   byId(id: string): IrNode | undefined;
   /** Resolved model sources by node id, for model blocks; set by `compile`. */
   models?: ReadonlyMap<string, ResolvedModelAsset>;
+  /** Point clouds read from a block's `src` file, by node id; set by `compile`. */
+  pointClouds?: ReadonlyMap<string, PointCloudColumns>;
 }
 
 /**

@@ -52,6 +52,7 @@ import { mountModel } from './model.js';
 import { liveMorphResources, morphValid, morphWidget } from './morph.js';
 import { mountNetwork } from './network.js';
 import { liveParticleResources, mountParticles } from './particles.js';
+import { mountPointCloud } from './point-cloud.js';
 import { productWidget } from './product.js';
 import { mountScatter } from './scatter.js';
 import { liveShaderResources, mountShader } from './shader.js';
@@ -807,6 +808,7 @@ const WIDGETS = {
   network: mountNetwork,
   scatter: mountScatter,
   particles: mountParticles,
+  pointcloud: mountPointCloud,
   shader: mountShader,
   text: mountText,
   globe: mountGlobe,

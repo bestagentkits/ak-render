@@ -68,7 +68,7 @@ const PICKED = 2;
 const HIDDEN = 3;
 
 /** Mix two linear-sRGB colours in oklab, matching the CSS `color-mix(in oklab, ...)` legend swatches. */
-function mixOklab(a, b, t) {
+export function mixOklab(a, b, t) {
   const lab = (c) => {
     const l = Math.cbrt(0.4122214708 * c.r + 0.5363325363 * c.g + 0.0514459929 * c.b);
     const m = Math.cbrt(0.2119034982 * c.r + 0.6806995451 * c.g + 0.1073969566 * c.b);
