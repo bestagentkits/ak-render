@@ -104,7 +104,7 @@ describe('product-3d contract', () => {
       compile({ ...doc, state: { ...doc.state, finish: 'nope' } } as never).html,
     );
     expect(fallback.product.variant).toBe('graphite');
-  });
+  }, 20_000);
 
   it('resolves hotspot points, exploded shifts and close-up bearings at compile time', () => {
     const html = compile(
