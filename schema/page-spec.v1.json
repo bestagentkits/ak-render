@@ -478,6 +478,9 @@
         },
         {
           "$ref": "#/$defs/block-editorial-layout"
+        },
+        {
+          "$ref": "#/$defs/block-scene-3d"
         }
       ]
     },
@@ -7974,6 +7977,285 @@
         }
       },
       "description": "Editorial layout: `lead`, `secondary` and `aside` block lists; three columns wide, one when narrow."
+    },
+    "block-scene-3d": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "summary",
+        "objects"
+      ],
+      "properties": {
+        "type": {
+          "const": "scene-3d"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 600,
+          "description": "What the scene shows, in words; the caption and the text alternative."
+        },
+        "objects": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 2000,
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 300
+              },
+              "shape": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "box",
+                  "sphere",
+                  "cylinder",
+                  "cone",
+                  "torus",
+                  "torus-knot",
+                  "plane",
+                  "icosahedron",
+                  "group"
+                ]
+              },
+              "parent": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "size": {
+                "type": "number",
+                "minimum": 0.01,
+                "maximum": 100
+              },
+              "position": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": -1000,
+                  "maximum": 1000
+                },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "rotation": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": -360,
+                  "maximum": 360
+                },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "scale": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": 0.01,
+                  "maximum": 100
+                },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "material": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "standard",
+                  "matte",
+                  "metal",
+                  "glass",
+                  "wireframe",
+                  "emissive"
+                ]
+              },
+              "tone": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "accent",
+                  "neutral",
+                  "success",
+                  "warning",
+                  "danger",
+                  "info"
+                ]
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "label"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 200
+        },
+        "lighting": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "studio",
+            "soft",
+            "dramatic",
+            "night"
+          ]
+        },
+        "camera": {
+          "type": "object",
+          "properties": {
+            "position": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": -1000,
+                "maximum": 1000
+              },
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "target": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": -1000,
+                "maximum": 1000
+              },
+              "minItems": 3,
+              "maxItems": 3
+            }
+          },
+          "additionalProperties": false
+        },
+        "timeline": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "target": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "property": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "rotation",
+                  "position",
+                  "scale"
+                ]
+              },
+              "to": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": -1000,
+                  "maximum": 1000
+                },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "duration": {
+                "type": "number",
+                "minimum": 100,
+                "maximum": 60000
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "target",
+              "property",
+              "to"
+            ]
+          },
+          "maxItems": 32
+        },
+        "views": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "camera": {
+                "type": "object",
+                "properties": {
+                  "position": {
+                    "type": "array",
+                    "items": {
+                      "type": "number",
+                      "minimum": -1000,
+                      "maximum": 1000
+                    },
+                    "minItems": 3,
+                    "maxItems": 3
+                  },
+                  "target": {
+                    "type": "array",
+                    "items": {
+                      "type": "number",
+                      "minimum": -1000,
+                      "maximum": 1000
+                    },
+                    "minItems": 3,
+                    "maxItems": 3
+                  }
+                },
+                "additionalProperties": false
+              },
+              "focus": {
+                "type": "string",
+                "maxLength": 64
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "value"
+            ]
+          },
+          "maxItems": 12
+        },
+        "bind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "viewBind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "on": {
+          "description": "Bindings fired with `{ value }` (the object id) when an object is selected.",
+          "$ref": "#/$defs/actionMap"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
+        }
+      },
+      "description": "Scene 3D: nested primitives, materials, lighting, camera, views; pick writes state."
     }
   }
 }
