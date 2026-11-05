@@ -175,6 +175,11 @@ export function barsWidget(ctx) {
     addLabel(value, new Vector3(left, y, z1 + 0.3), Math.abs(y) < 1e-6 ? 'zero' : 'tick');
   for (const [x, name] of bars.categories) addLabel(name, new Vector3(x, floor, z1 + 0.5), 'cat');
   for (const [z, name] of bars.rows) addLabel(name, new Vector3(x1 + 0.5, 0, z), 'row');
+  const groups = ['tick', 'cat', 'row'].map((kind) =>
+    labels.filter((label) =>
+      kind === 'tick' ? label.kind !== 'cat' && label.kind !== 'row' : label.kind === kind,
+    ),
+  );
   // What framing fits: the bars and zero plane, the back wall's gridlines and the left wall's.
   // Labels use the margin left over.
   const top = Math.max(0, ...bars.layouts[''].map((pair) => pair[1]));
@@ -202,31 +207,82 @@ export function barsWidget(ctx) {
       }
       measured = true;
     }
+    // Each group keeps every nth label, with the smallest n at which none crowds another.
     const kept = [];
-    for (const label of labels) {
-      projected.copy(label.at).project(camera);
-      const px = ((projected.x + 1) / 2) * width;
-      const py = ((1 - projected.y) / 2) * height;
-      // Ticks end at their gridline, categories hang under the chart, rows start right of it.
-      const x =
-        label.kind === 'cat' ? px - label.w / 2 : label.kind === 'row' ? px + 4 : px - label.w - 6;
-      const y = label.kind === 'cat' ? py + 4 : py - label.h / 2;
-      const rect = [x, y, x + label.w, y + label.h];
-      const inside =
-        projected.z < 1 && rect[0] >= 0 && rect[1] >= 0 && rect[2] <= width && rect[3] <= height;
-      const clear =
-        inside &&
-        kept.every(
-          (other) =>
-            rect[2] + LABEL_GAP <= other[0] ||
-            other[2] + LABEL_GAP <= rect[0] ||
-            rect[3] + LABEL_GAP / 2 <= other[1] ||
-            other[3] + LABEL_GAP / 2 <= rect[1],
+    const overlaps = (rect, other) =>
+      !(
+        rect[2] + LABEL_GAP <= other[0] ||
+        other[2] + LABEL_GAP <= rect[0] ||
+        rect[3] + LABEL_GAP / 2 <= other[1] ||
+        other[3] + LABEL_GAP / 2 <= rect[1]
+      );
+    for (const group of groups) {
+      const placed = group.map((label) => {
+        projected.copy(label.at).project(camera);
+        const px = ((projected.x + 1) / 2) * width;
+        const py = ((1 - projected.y) / 2) * height;
+        // Ticks end at their gridline, categories hang under the chart, rows start right of it.
+        const x =
+          label.kind === 'cat'
+            ? px - label.w / 2
+            : label.kind === 'row'
+              ? px + 4
+              : px - label.w - 6;
+        const y = label.kind === 'cat' ? py + 4 : py - label.h / 2;
+        label.x = Math.round(x);
+        label.y = Math.round(y);
+        const rect = [x, y, x + label.w, y + label.h];
+        const inside =
+          projected.z < 1 && rect[0] >= 0 && rect[1] >= 0 && rect[2] <= width && rect[3] <= height;
+        return { label, rect, inside };
+      });
+      let chosen = [];
+      for (let stride = 1; stride <= placed.length; stride += 1) {
+        chosen = placed.filter((item, i) => i % stride === 0 && item.inside);
+        const clear = chosen.every(
+          (item, a) =>
+            kept.every((other) => !overlaps(item.rect, other)) &&
+            chosen.every((other, b) => a === b || !overlaps(item.rect, other.rect)),
         );
-      label.node.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
-      label.node.hidden = !clear;
-      if (clear) kept.push(rect);
+        if (clear) break;
+        chosen = [];
+      }
+      for (const item of placed) {
+        const show = chosen.includes(item);
+        item.label.node.style.transform = `translate(${item.label.x}px, ${item.label.y}px)`;
+        item.label.node.hidden = !show;
+        item.label.shown = show;
+      }
+      for (const item of chosen) kept.push(item.rect);
     }
+  }
+
+  /** The frozen frame with the axis labels painted in, so print and export keep them. */
+  function annotate(canvas) {
+    const width = stage.clientWidth;
+    if (!width) return null;
+    placeLabels();
+    const copy = document.createElement('canvas');
+    copy.width = canvas.width;
+    copy.height = canvas.height;
+    const g = copy.getContext('2d');
+    if (!g) return null;
+    g.drawImage(canvas, 0, 0);
+    g.scale(canvas.width / width, canvas.height / stage.clientHeight);
+    g.textBaseline = 'top';
+    g.lineJoin = 'round';
+    for (const label of labels) {
+      if (!label.shown) continue;
+      const style = getComputedStyle(label.node);
+      g.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+      g.strokeStyle = getComputedStyle(stage).getPropertyValue('--ak-color-surface') || '#fff';
+      g.lineWidth = 3;
+      const top = label.y + (label.h - parseFloat(style.fontSize)) / 2;
+      g.strokeText(label.node.textContent, label.x, top);
+      g.fillStyle = style.color;
+      g.fillText(label.node.textContent, label.x, top);
+    }
+    return copy;
   }
 
   // The scene's fog starts at the chart's near edge, not inside it.
@@ -346,6 +402,7 @@ export function barsWidget(ctx) {
       return moving;
     },
     settle,
+    annotate,
     /** Camera position and target that frame the chart at this stage aspect. */
     frame(aspect) {
       return fitBox(camera, ctx.target, corners, aspect);

@@ -35,26 +35,15 @@ export const THREE_CSS = `
 .ak-bars-legend button[aria-pressed="true"]:not([disabled]){border-color:var(--ak-color-accent);box-shadow:inset 0 0 0 1px var(--ak-color-accent)}
 .ak-bars-legend button:focus-visible{outline:2px solid var(--ak-color-accent);outline-offset:2px}
 .ak-bars-swatch{display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--ak-3d-tone,var(--ak-color-accent))}
-.ak-bars .ak-3d-mark[data-series="0"]{--ak-3d-tone:oklch(from var(--ak-color-accent) clamp(.52,l,.7) max(c,.14) calc(h + 0))}
-.ak-bars .ak-3d-mark[data-series="1"]{--ak-3d-tone:oklch(from var(--ak-color-accent) clamp(.52,l,.7) max(c,.14) calc(h + 180))}
-.ak-bars .ak-3d-mark[data-series="2"]{--ak-3d-tone:oklch(from var(--ak-color-accent) clamp(.52,l,.7) max(c,.14) calc(h + 60))}
-.ak-bars .ak-3d-mark[data-series="3"]{--ak-3d-tone:oklch(from var(--ak-color-accent) clamp(.52,l,.7) max(c,.14) calc(h + 240))}
-.ak-bars .ak-3d-mark[data-series="4"]{--ak-3d-tone:oklch(from var(--ak-color-accent) clamp(.52,l,.7) max(c,.14) calc(h + 120))}
-.ak-bars .ak-3d-mark[data-series="5"]{--ak-3d-tone:oklch(from var(--ak-color-accent) clamp(.52,l,.7) max(c,.14) calc(h + 300))}
-.ak-bars .ak-3d-mark[data-series="6"]{--ak-3d-tone:oklch(from var(--ak-color-accent) clamp(.52,l,.7) max(c,.14) calc(h + 30))}
-.ak-bars .ak-3d-mark[data-series="7"]{--ak-3d-tone:oklch(from var(--ak-color-accent) clamp(.52,l,.7) max(c,.14) calc(h + 210))}
-.ak-bars .ak-3d-mark[data-series="8"]{--ak-3d-tone:oklch(from var(--ak-color-accent) clamp(.52,l,.7) max(c,.14) calc(h + 90))}
-.ak-bars .ak-3d-mark[data-series="9"]{--ak-3d-tone:oklch(from var(--ak-color-accent) clamp(.52,l,.7) max(c,.14) calc(h + 270))}
-.ak-bars .ak-3d-mark[data-series="10"]{--ak-3d-tone:oklch(from var(--ak-color-accent) clamp(.52,l,.7) max(c,.14) calc(h + 150))}
-.ak-bars .ak-3d-mark[data-series="11"]{--ak-3d-tone:oklch(from var(--ak-color-accent) clamp(.52,l,.7) max(c,.14) calc(h + 330))}
+@supports (color:oklch(from red l c h)){.ak-bars .ak-3d-mark[data-series="0"]{--ak-3d-tone:oklch(from var(--ak-color-accent) clamp(.5,l,.62) max(c,.14) calc(h + 0))}.ak-bars .ak-3d-mark[data-series="1"]{--ak-3d-tone:oklch(from var(--ak-color-accent) clamp(.5,l,.62) max(c,.14) calc(h + 180))}.ak-bars .ak-3d-mark[data-series="2"]{--ak-3d-tone:oklch(from var(--ak-color-accent) clamp(.5,l,.62) max(c,.14) calc(h + 60))}.ak-bars .ak-3d-mark[data-series="3"]{--ak-3d-tone:oklch(from var(--ak-color-accent) clamp(.5,l,.62) max(c,.14) calc(h + 240))}.ak-bars .ak-3d-mark[data-series="4"]{--ak-3d-tone:oklch(from var(--ak-color-accent) clamp(.5,l,.62) max(c,.14) calc(h + 120))}.ak-bars .ak-3d-mark[data-series="5"]{--ak-3d-tone:oklch(from var(--ak-color-accent) clamp(.5,l,.62) max(c,.14) calc(h + 300))}.ak-bars .ak-3d-mark[data-series="6"]{--ak-3d-tone:oklch(from var(--ak-color-accent) calc(clamp(.5,l,.62) + .14) max(c,.14) calc(h + 30))}.ak-bars .ak-3d-mark[data-series="7"]{--ak-3d-tone:oklch(from var(--ak-color-accent) calc(clamp(.5,l,.62) + .14) max(c,.14) calc(h + 210))}.ak-bars .ak-3d-mark[data-series="8"]{--ak-3d-tone:oklch(from var(--ak-color-accent) calc(clamp(.5,l,.62) + .14) max(c,.14) calc(h + 90))}.ak-bars .ak-3d-mark[data-series="9"]{--ak-3d-tone:oklch(from var(--ak-color-accent) calc(clamp(.5,l,.62) + .14) max(c,.14) calc(h + 270))}.ak-bars .ak-3d-mark[data-series="10"]{--ak-3d-tone:oklch(from var(--ak-color-accent) calc(clamp(.5,l,.62) + .14) max(c,.14) calc(h + 150))}.ak-bars .ak-3d-mark[data-series="11"]{--ak-3d-tone:oklch(from var(--ak-color-accent) calc(clamp(.5,l,.62) + .14) max(c,.14) calc(h + 330))}}
 .ak-bars-labels{position:absolute;inset:0;pointer-events:none;overflow:hidden;visibility:hidden}
-.ak-3d[data-ak-3d-state="ready"] .ak-bars-labels,.ak-3d[data-ak-3d-state="frozen"] .ak-bars-labels{visibility:visible}
-.ak-bars-label{position:absolute;left:0;top:0;white-space:nowrap;font:500 12px/1.2 var(--ak-font-body,inherit);color:var(--ak-color-text-muted);font-variant-numeric:tabular-nums;text-shadow:0 0 3px var(--ak-color-surface),0 0 6px var(--ak-color-surface)}
+.ak-3d[data-ak-3d-state="ready"] .ak-bars-labels{visibility:visible}
+.ak-bars-label{position:absolute;left:0;top:0;white-space:nowrap;font:500 12px/1.2 var(--ak-font-body,inherit);color:var(--ak-color-text-muted);font-variant-numeric:lining-nums tabular-nums;text-shadow:0 0 3px var(--ak-color-surface),0 0 6px var(--ak-color-surface)}
 .ak-bars-label-zero{color:var(--ak-color-text);font-weight:600}
 .ak-bars-label-row{color:var(--ak-color-text)}
 .ak-bars-grid{stroke:var(--ak-color-border);stroke-width:1}
 .ak-bars-zero{stroke:var(--ak-color-text);stroke-width:1.5}
-.ak-bars-tick{fill:var(--ak-color-text-muted);font:12px var(--ak-font-body,inherit);text-anchor:end;font-variant-numeric:tabular-nums}
+.ak-bars-tick{fill:var(--ak-color-text-muted);font:12px var(--ak-font-body,inherit);text-anchor:end;font-variant-numeric:lining-nums tabular-nums}
 .ak-bars-cat{fill:var(--ak-color-text-muted);font:12px var(--ak-font-body,inherit);text-anchor:middle}
 .ak-bars-poster .ak-3d-mark{stroke:none;fill-opacity:.9}
 .ak-bars-data{max-height:22rem;overflow:auto}
@@ -63,6 +52,6 @@ export const THREE_CSS = `
 .ak-bars-data td button:not([disabled]):hover{background:color-mix(in oklab,var(--ak-color-accent) 10%,transparent)}
 .ak-bars-data td button[aria-pressed="true"]{background:color-mix(in oklab,var(--ak-color-accent) 18%,transparent);box-shadow:inset 0 0 0 1px var(--ak-color-accent)}
 .ak-bars-data td button:focus-visible{outline:2px solid var(--ak-color-accent);outline-offset:1px}
-@media print{.ak-bars-data{max-height:none;overflow:visible}.ak-bars-labels{display:none}.ak-bars-legend [data-ak-bars-filter=""]{display:none}.ak-bars-legend button[aria-pressed="true"]{box-shadow:none;border-color:var(--ak-color-border)}}
+@media print{.ak-bars-data{max-height:none;overflow:visible}.ak-bars-labels{display:none}.ak-bars-legend [data-ak-bars-filter=""]{display:none}.ak-bars-legend button[aria-pressed="true"]:not([disabled]){box-shadow:none;border-color:var(--ak-color-border)}}
 @media print{.ak-3d[data-ak-3d-state="ready"] .ak-3d-poster{visibility:visible}.ak-3d-canvas{display:none}}
 `;

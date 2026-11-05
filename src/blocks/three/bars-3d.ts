@@ -397,18 +397,18 @@ export function barsTable(
 /** A series without a tone takes its hue slot, so a dozen series stay apart in color. */
 const hueOf = (entry: Entry) => (entry.hue === undefined ? '' : ` data-series="${entry.hue}"`);
 
-function legend(series: Entry[]): string {
+function legend(series: Entry[], active: string): string {
   const items = series
     .map(
       (entry) =>
         `<button type="button" disabled data-ak-bars-filter="${escapeAttribute(
           entry.id,
-        )}" aria-pressed="false"><span class="ak-3d-mark ak-bars-swatch" data-tone="${escapeAttribute(
+        )}" aria-pressed="${entry.id === active ? 'true' : 'false'}"><span class="ak-3d-mark ak-bars-swatch" data-tone="${escapeAttribute(
           entry.tone,
         )}"${hueOf(entry)}></span>${escapeText(entry.label)}</button>`,
     )
     .join('');
-  return `<div class="ak-bars-legend" role="group" aria-label="Series"><button type="button" disabled data-ak-bars-filter="" aria-pressed="true">All</button>${items}</div>`;
+  return `<div class="ak-bars-legend" role="group" aria-label="Series"><button type="button" disabled data-ak-bars-filter="" aria-pressed="${series.some((entry) => entry.id === active) ? 'false' : 'true'}">All</button>${items}</div>`;
 }
 
 function renderBars(node: IrNode, context: RenderContext): string {
@@ -417,6 +417,10 @@ function renderBars(node: IrNode, context: RenderContext): string {
   const unit = stringProp(node, 'unit');
   const bind = stringProp(node, 'bind');
   const initial = bind.startsWith('state.') ? context.ir.state[bind.slice(6)] : undefined;
+  const filterBind = stringProp(node, 'filterBind');
+  const filter = filterBind.startsWith('state.')
+    ? context.ir.state[filterBind.slice(6)]
+    : undefined;
   return element(
     'figure',
     nodeAttributes(node, {
@@ -427,7 +431,7 @@ function renderBars(node: IrNode, context: RenderContext): string {
     }),
     [
       titleHeader(node),
-      legend(model.series),
+      legend(model.series, typeof filter === 'string' ? filter : ''),
       `<div class="ak-3d-stage">${barsPoster(model, summary, unit)}</div>`,
       `<figcaption class="ak-3d-caption">${escapeText(summary)}</figcaption>`,
       barsTable(model, summary, unit, typeof initial === 'string' ? initial : ''),

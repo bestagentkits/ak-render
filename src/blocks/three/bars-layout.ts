@@ -49,14 +49,14 @@ export function valueDomain(extents: readonly Extent[][]): Extent {
   return [lo, hi];
 }
 
-/** Round step ticks (1, 2 or 5 times a power of ten) that cover the domain and include zero. */
+/** Round step ticks (1, 2, 2.5 or 5 times a power of ten) that cover the domain and include zero. */
 export function niceTicks(domain: Extent, count = 5): number[] {
   const [lo, hi] = domain;
   const span = hi - lo;
   if (span <= 0) return [0];
   const raw = span / count;
   const power = 10 ** Math.floor(Math.log10(raw));
-  const step = [1, 2, 5, 10].map((m) => m * power).find((s) => s >= raw) ?? 10 * power;
+  const step = [1, 2, 2.5, 5, 10].map((m) => m * power).find((s) => s >= raw) ?? 10 * power;
   const ticks: number[] = [];
   const first = Math.floor(lo / step + 1e-9);
   const last = Math.ceil(hi / step - 1e-9);

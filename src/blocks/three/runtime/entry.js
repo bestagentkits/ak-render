@@ -549,7 +549,6 @@ function mount(el) {
     spherical.r *= event.deltaY > 0 ? 1.1 : 0.9;
     applySpherical();
   };
-  const order = pickable.map((object) => object.userData.id);
   const onKey = (event) => {
     const key = event.key;
     if (key === 'ArrowLeft') spherical.theta -= 0.15;
@@ -558,7 +557,10 @@ function mount(el) {
     else if (key === 'ArrowDown') spherical.phi += 0.15;
     else if (key === '+' || key === '=') spherical.r *= 0.9;
     else if (key === '-') spherical.r *= 1.1;
-    else if ((key === 'Enter' || key === ' ' || key === 'n' || key === 'p') && order.length) {
+    else if (key === 'Enter' || key === ' ' || key === 'n' || key === 'p') {
+      // Bars a filter hid are skipped, as they are for the pointer.
+      const order = pickable.filter((object) => object.visible).map((object) => object.userData.id);
+      if (!order.length) return;
       const at = order.indexOf(selected);
       const step = key === 'p' ? -1 : 1;
       select(order[(at + step + order.length) % order.length]);
@@ -669,7 +671,7 @@ function mount(el) {
       const frame = document.createElement('img');
       frame.className = 'ak-3d-frame';
       frame.alt = '';
-      frame.src = canvas.toDataURL('image/png');
+      frame.src = (widget?.annotate?.(canvas) || canvas).toDataURL('image/png');
       canvas.after(frame);
       el.setAttribute('data-ak-3d-state', 'frozen');
       return { width: canvas.width, height: canvas.height };
