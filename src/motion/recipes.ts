@@ -130,6 +130,10 @@ export const MOTION_KEYFRAMES: Readonly<Record<string, string>> = {
   'ak-m-roll': '@keyframes ak-m-roll{from{opacity:0;translate:0 .45em}}',
   'ak-m-pop-in': '@keyframes ak-m-pop-in{from{opacity:0;scale:.96;translate:0 6px}}',
   'ak-m-pop-out': '@keyframes ak-m-pop-out{to{opacity:0;scale:.98;translate:0 4px}}',
+  'ak-m-draw': '@keyframes ak-m-draw{from{stroke-dashoffset:1}}',
+  'ak-m-relay':
+    '@keyframes ak-m-relay{from{stroke-dashoffset:.14;opacity:1}80%{opacity:1}to{stroke-dashoffset:-.86;opacity:0}}',
+  'ak-m-activate': '@keyframes ak-m-activate{from{opacity:.25;scale:.92}}',
 };
 
 const at = (id: string) => `[data-ak-motion="${id}"]`;
@@ -149,6 +153,30 @@ function staggerDelays(item: string): string {
 const STAGGER_ITEMS = `${at('stagger')}[data-ak-inview]>:is(.ak-stats,.ak-steps,.ak-timeline,.ak-list,.ak-grid)>*`;
 
 const TAB_LIST = `${at('tabs-slide')}>[role="tablist"]`;
+
+/** A run step's delay: one step of the scale per item, capped by the governor. */
+const DM_DELAY = (step: string) =>
+  `animation-delay:calc(var(--ak-motion-${step}) * var(--ak-dm-i,0))`;
+
+const DIAGRAM_EXAMPLE = (motion: string) => ({
+  type: 'diagram-panel',
+  title: 'Request flow',
+  spec: {
+    components: [
+      { id: 'client', label: 'Client' },
+      { id: 'api', label: 'API' },
+      { id: 'db', label: 'Database' },
+    ],
+    connections: [
+      { from: 'client', to: 'api' },
+      { from: 'api', to: 'db' },
+    ],
+  },
+  motion,
+});
+
+const DIAGRAM_NOTES =
+  'Needs a diagram adapter on contract 2; without one the text description shows and nothing moves. One governor per page plays one diagram at a time and stops on hide, theme switch and print.';
 
 const ACCORDION_CONTENT = `${at('accordion-expand')}>details::details-content`;
 
@@ -379,6 +407,116 @@ export const MOTION_RECIPES: readonly MotionRecipe[] = deepFreeze<MotionRecipe[]
     example: { type: 'dialog', title: 'Confirm', text: 'Publish this page?', motion: 'dialog-pop' },
     css: {
       guarded: `dialog${at('dialog-pop')}[open]{animation:ak-m-pop-in var(--ak-motion-relaxed) var(--ak-ease-enter)}dialog${at('dialog-pop')}[open]::backdrop{animation:ak-m-fade calc(var(--ak-motion-duration) * 1.5) var(--ak-motion-easing)}dialog${at('dialog-pop')}[data-ak-leaving]{animation:ak-m-pop-out var(--ak-motion-fast) var(--ak-ease-exit) forwards}dialog${at('dialog-pop')}[data-ak-leaving]::backdrop{animation:ak-m-fade-out calc(var(--ak-motion-duration) * .75) var(--ak-motion-easing) forwards}`,
+    },
+  },
+  {
+    id: 'edge-trace',
+    version: 1,
+    states: ['full'],
+    role: 'decoration',
+    purpose:
+      'Relationships draw themselves in order when the diagram arrives, and the selected route draws again.',
+    aliases: [
+      'draw edges',
+      'line draw',
+      'trace',
+      'connector animation',
+      'diagram reveal',
+      'path draw',
+    ],
+    targets: ['diagram-panel'],
+    triggers: ['on-enter', 'state-change'],
+    phases: ['enter', 'change'],
+    duration: 'emphasis',
+    easing: 'enter',
+    properties: ['stroke-dashoffset'],
+    runtime: 'lifecycle',
+    keyframes: ['ak-m-draw'],
+    reduced: 'Every relationship drawn in place.',
+    notes: DIAGRAM_NOTES,
+    example: DIAGRAM_EXAMPLE('edge-trace'),
+    css: {
+      guarded: `${at('edge-trace')} :is([data-ak-dm-on] path,path[data-ak-dm-on]){stroke-dasharray:1;animation:ak-m-draw var(--ak-motion-emphasis) var(--ak-ease-enter) backwards;${DM_DELAY('micro')}}`,
+    },
+  },
+  {
+    id: 'signal-relay',
+    version: 1,
+    states: ['full'],
+    role: 'decoration',
+    purpose:
+      'A pulse travels along the relationships in order, once, like a request moving through.',
+    aliases: ['data flow', 'packet', 'pulse', 'signal', 'request flow', 'flowing edges'],
+    targets: ['diagram-panel'],
+    triggers: ['on-enter', 'state-change'],
+    phases: ['enter', 'change'],
+    duration: 'relaxed',
+    easing: 'standard',
+    properties: ['stroke-dashoffset', 'opacity'],
+    runtime: 'lifecycle',
+    keyframes: ['ak-m-relay'],
+    reduced: 'No pulse; the relationships are unchanged.',
+    notes: `${DIAGRAM_NOTES} The pulse rides on a temporary copy of each line, so the line itself never changes.`,
+    example: DIAGRAM_EXAMPLE('signal-relay'),
+    css: {
+      plain: '[data-ak-dm-pulse]{pointer-events:none}',
+      guarded: `${at('signal-relay')} [data-ak-dm-pulse]{fill:none;stroke:var(--ak-color-accent);stroke-width:3;stroke-linecap:round;stroke-dasharray:.14 .86;animation:ak-m-relay var(--ak-motion-relaxed) var(--ak-ease-standard) both;${DM_DELAY('fast')}}`,
+      print: '[data-ak-dm-pulse]{display:none}',
+    },
+  },
+  {
+    id: 'node-activation',
+    version: 1,
+    states: ['full'],
+    role: 'decoration',
+    purpose:
+      'Nodes light up one after another as the diagram arrives, and the selected node and its neighbours as they are chosen.',
+    aliases: ['node pop', 'highlight nodes', 'activate', 'boxes appear', 'component reveal'],
+    targets: ['diagram-panel'],
+    triggers: ['on-enter', 'state-change'],
+    phases: ['enter', 'change'],
+    duration: 'normal',
+    easing: 'emphasis',
+    properties: ['opacity', 'scale'],
+    runtime: 'lifecycle',
+    keyframes: ['ak-m-activate'],
+    reduced: 'Every node shown in place.',
+    notes: DIAGRAM_NOTES,
+    example: DIAGRAM_EXAMPLE('node-activation'),
+    css: {
+      guarded: `${at('node-activation')} [data-ak-node][data-ak-dm-on]{transform-box:fill-box;transform-origin:center;animation:ak-m-activate var(--ak-motion-normal) var(--ak-ease-emphasis) backwards;${DM_DELAY('micro')}}`,
+    },
+  },
+  {
+    id: 'sequence-playback',
+    version: 1,
+    states: ['full'],
+    role: 'decoration',
+    purpose:
+      'The reader plays or steps through the relationships in authored order, one at a time.',
+    aliases: [
+      'step through',
+      'walkthrough',
+      'play sequence',
+      'sequence diagram',
+      'storyboard',
+      'stepper',
+    ],
+    targets: ['diagram-panel'],
+    triggers: ['state-change'],
+    phases: ['change'],
+    duration: 'fast',
+    easing: 'standard',
+    properties: ['opacity'],
+    runtime: 'lifecycle',
+    keyframes: [],
+    reduced: 'No autoplay; Next step still walks the sequence without transitions.',
+    notes: `${DIAGRAM_NOTES} Never starts by itself. Each step names its relationship in a status line.`,
+    example: DIAGRAM_EXAMPLE('sequence-playback'),
+    css: {
+      plain: `.ak-dm-bar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ak-space-unit);margin-bottom:calc(var(--ak-space-unit) * 1.5)}.ak-dm-bar[hidden],.ak-dm-bar [hidden]{display:none}.ak-dm-status{flex:1 1 12rem;font-size:.8125rem;color:var(--ak-color-text-muted)}${at('sequence-playback')} [data-ak-dm-seq] :is([data-ak-node],[data-ak-edge],[data-ak-group]):not([data-ak-dm-step]){opacity:.4}${at('sequence-playback')} [data-ak-dm-step]{filter:drop-shadow(0 0 .3rem var(--ak-color-accent))}`,
+      guarded: `${at('sequence-playback')} :is([data-ak-node],[data-ak-edge],[data-ak-group]){transition:opacity var(--ak-motion-fast) var(--ak-ease-standard)}`,
+      print: `.ak-dm-bar{display:none!important}${at('sequence-playback')} [data-ak-dm-seq] :is([data-ak-node],[data-ak-edge],[data-ak-group]){opacity:1!important;filter:none!important}`,
     },
   },
 ]);
