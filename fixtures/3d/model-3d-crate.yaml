@@ -1,0 +1,28 @@
+version: 1
+meta:
+  title: Shipping crate
+state:
+  part: latch
+  clip: Spin
+  finish: oak
+blocks:
+  - type: model-3d
+    id: crate
+    title: Crate, in three finishes
+    summary: A shipping crate with a lid that spins and lifts; pick a finish or a numbered detail.
+    src: models/crate.glb
+    bind: state.part
+    clipBind: state.clip
+    variantBind: state.finish
+    hotspots:
+      - { id: latch, label: Latch, description: Holds the lid shut in transit., position: [0, 0.55, 0.46] }
+      - { id: corner, label: Corner guard, description: Takes the knocks when stacked., position: [0.8, 0.25, 0.8] }
+      - { id: base, label: Pallet base, description: Forklift-ready skids., position: [-0.8, -0.1, 0.81] }
+  - type: select
+    id: finish-pick
+    label: Finish
+    bind: state.finish
+    options:
+      - { value: oak, label: Oak }
+      - { value: graphite, label: Graphite }
+      - { value: coral, label: Coral }

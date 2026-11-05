@@ -44,6 +44,7 @@ import {
   WebGLRenderer,
 } from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { mountModel } from './model.js';
 
 const TONE_VARS = {
   accent: '--ak-color-accent',
@@ -702,11 +703,31 @@ function mount(el) {
   return record;
 }
 
+/** What a block-specific mount shares with this loop: lifecycle, lights, theme reads. */
+function kit() {
+  return {
+    api,
+    mounts,
+    schedule,
+    qualityProfile,
+    webgl2Available,
+    isDark,
+    toneColor,
+    shadowMaterial,
+    RIGS,
+    trio,
+    v3,
+  };
+}
+const MOUNTERS = { model: mountModel };
+
 function mountAll() {
   for (const el of document.querySelectorAll('[data-ak-3d]')) {
     if ([...mounts].some((m) => m.el === el)) continue;
     try {
-      mount(el);
+      const custom = MOUNTERS[el.getAttribute('data-ak-3d')];
+      if (custom) custom(el, kit());
+      else mount(el);
     } catch (_error) {
       // A scene that cannot be built reports it; the page and its other scenes keep working.
       el.setAttribute('data-ak-3d-state', 'error');
@@ -742,7 +763,8 @@ export function boot(pageApi) {
     },
     ready() {
       return [...document.querySelectorAll('[data-ak-3d]')].every(
-        (el) => el.getAttribute('data-ak-3d-state') !== 'static' || !el.isConnected,
+        (el) =>
+          !['static', 'loading'].includes(el.getAttribute('data-ak-3d-state')) || !el.isConnected,
       );
     },
   };

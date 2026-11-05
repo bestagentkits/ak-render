@@ -28,5 +28,21 @@ export const THREE_CSS = `
 .ak-3d-objects button:focus-visible{outline:2px solid var(--ak-color-accent);outline-offset:2px}
 .ak-3d-objects .ak-3d-name{font-weight:600}
 .ak-3d-note{color:var(--ak-color-text-muted);font-size:.875em}
-@media print{.ak-3d[data-ak-3d-state="ready"] .ak-3d-poster{visibility:visible}.ak-3d-canvas{display:none}}
+.ak-3d-pins{position:absolute;inset:0;pointer-events:none}
+.ak-3d-pin{position:absolute;left:0;top:0;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;border:2px solid var(--ak-color-surface);background:var(--ak-color-accent);color:var(--ak-color-accent-contrast);font:700 12px/1 var(--ak-font-body,inherit);display:grid;place-items:center;cursor:pointer;pointer-events:auto;box-shadow:0 2px 10px color-mix(in oklab,var(--ak-color-text) 28%,transparent),0 0 0 4px color-mix(in oklab,var(--ak-color-accent) 22%,transparent)}
+.ak-3d-pin[aria-pressed="true"]{background:var(--ak-color-text);color:var(--ak-color-surface);box-shadow:0 2px 10px color-mix(in oklab,var(--ak-color-text) 28%,transparent),0 0 0 6px color-mix(in oklab,var(--ak-color-accent) 45%,transparent)}
+.ak-3d-pin[hidden]{display:none}
+.ak-3d[data-ak-3d-state="frozen"] .ak-3d-pins{visibility:visible}
+.ak-3d-controls{display:flex;flex-wrap:wrap;gap:calc(var(--ak-space-unit)*1.5) calc(var(--ak-space-unit)*3)}
+.ak-3d-control{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ak-space-unit)}
+.ak-3d-control-label{font-size:.8125em;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ak-color-text-muted);margin-right:calc(var(--ak-space-unit)*.5)}
+.ak-3d-control button{font:inherit;font-size:.9375em;min-height:44px;padding:0 calc(var(--ak-space-unit)*1.5);border-radius:999px;border:var(--ak-border-width) solid var(--ak-color-border);background:var(--ak-color-surface);color:var(--ak-color-text);text-transform:capitalize}
+.ak-3d-control button:not([disabled]){cursor:pointer}
+.ak-3d-control button[aria-pressed="true"]{background:var(--ak-color-accent);border-color:var(--ak-color-accent);color:var(--ak-color-accent-contrast)}
+.ak-3d-control button:focus-visible{outline:2px solid var(--ak-color-accent);outline-offset:2px}
+.ak-3d-hotspots .ak-3d-name{display:flex;align-items:center;gap:calc(var(--ak-space-unit)*.75)}
+.ak-3d-num{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--ak-color-accent);color:var(--ak-color-accent-contrast);font-size:.75em;font-weight:700;flex:none}
+.ak-3d-error{position:absolute;left:50%;bottom:calc(var(--ak-space-unit)*2);transform:translateX(-50%);margin:0;padding:calc(var(--ak-space-unit)*.75) calc(var(--ak-space-unit)*1.5);border-radius:var(--ak-radius-small);background:var(--ak-color-surface);border:var(--ak-border-width) solid var(--ak-color-danger);color:var(--ak-color-text);font-size:.875em}
+img.ak-3d-poster{object-fit:contain}
+@media print{.ak-3d-pins{display:none}.ak-3d[data-ak-3d-state="ready"] .ak-3d-poster{visibility:visible}.ak-3d-canvas{display:none}}
 `;

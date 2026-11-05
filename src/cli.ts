@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 /**
  * `ak-render` command-line entry point.
  *
@@ -15,6 +16,7 @@ import { homedir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { stringify } from 'yaml';
+import { createModelResolver } from './assets/model-assets.js';
 import { auditUi, type UiAuditOptions } from './audit/ui-audit.js';
 import { type UiAuditReport, type UiFinding, uiAuditFails } from './audit/ui-audit-report.js';
 import { UI_AUDIT_PRESETS, UI_SEVERITIES, type UiAuditPreset } from './audit/ui-audit-rules.js';
@@ -227,6 +229,11 @@ function repairCommand(args: string[], io: CliIo, flags: Flags): number {
   return result.ok ? 0 : 1;
 }
 
+/** Where a spec's relative assets live: beside the file, or the working directory for stdin. */
+function specDir(file: string): string {
+  return file === STDIN_PATH ? process.cwd() : dirname(resolve(file));
+}
+
 function compileCommand(args: string[], io: CliIo, flags: Flags): number {
   const file = args[0];
   if (file === undefined) {
@@ -239,6 +246,7 @@ function compileCommand(args: string[], io: CliIo, flags: Flags): number {
   try {
     const result = compile(text, {
       source: sourceLabel(file),
+      modelResolver: createModelResolver(specDir(file)),
       themeCatalog: themeCatalogFor(flags, io),
       ...(flags.theme === undefined ? {} : { theme: flags.theme }),
     });
@@ -766,6 +774,7 @@ async function exportCommand(args: string[], io: CliIo, flags: Flags): Promise<n
   try {
     const result = compile(text, {
       source: sourceLabel(file),
+      modelResolver: createModelResolver(specDir(file)),
       ...(flags.theme === undefined ? {} : { theme: flags.theme }),
       themeCatalog: themeCatalogFor(flags, io),
     });

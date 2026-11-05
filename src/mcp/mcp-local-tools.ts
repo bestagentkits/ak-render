@@ -11,6 +11,7 @@
 
 import { mkdirSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
+import { createModelResolver } from '../assets/model-assets.js';
 import { auditUi } from '../audit/ui-audit.js';
 import { compile } from '../render/render.js';
 import { patchSpecFile } from '../spec/patch-file.js';
@@ -75,6 +76,8 @@ const LOCAL_RENDER_TOOL: McpTool<McpContext> = {
     const result = compile(args.spec, {
       source: '<spec>',
       themeCatalog: themeCatalogFor(context),
+      // Local models resolve against the server working directory, like audit-ui assets.
+      modelResolver: createModelResolver(context.cwd),
       ...(theme === undefined ? {} : { theme }),
     });
     mkdirSync(dirname(out), { recursive: true });
@@ -113,6 +116,7 @@ const LOCAL_COMPOSE_TOOL: McpTool<McpContext> = {
     const result = compile(step.composed.spec, {
       source: '<composed spec>',
       themeCatalog: themeCatalogFor(context),
+      modelResolver: createModelResolver(context.cwd),
     });
     mkdirSync(dirname(out), { recursive: true });
     writeFileSync(out, result.html, 'utf8');

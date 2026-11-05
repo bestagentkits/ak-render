@@ -482,6 +482,9 @@
         },
         {
           "$ref": "#/$defs/block-scene-3d"
+        },
+        {
+          "$ref": "#/$defs/block-model-3d"
         }
       ]
     },
@@ -8257,6 +8260,139 @@
         }
       },
       "description": "Scene 3D: nested primitives, materials, lighting, camera, views; pick writes state."
+    },
+    "block-model-3d": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "summary",
+        "src"
+      ],
+      "properties": {
+        "type": {
+          "const": "model-3d"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 600,
+          "description": "What the model shows, in words; the caption and the text alternative."
+        },
+        "src": {
+          "type": "string",
+          "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+        },
+        "poster": {
+          "type": "string",
+          "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+        },
+        "hotspots": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 2000,
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 300
+              },
+              "position": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": -1000,
+                  "maximum": 1000
+                },
+                "minItems": 3,
+                "maxItems": 3
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "label",
+              "position"
+            ]
+          },
+          "maxItems": 24
+        },
+        "lighting": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "studio",
+            "soft",
+            "dramatic",
+            "night"
+          ]
+        },
+        "camera": {
+          "type": "object",
+          "properties": {
+            "position": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": -1000,
+                "maximum": 1000
+              },
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "target": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": -1000,
+                "maximum": 1000
+              },
+              "minItems": 3,
+              "maxItems": 3
+            }
+          },
+          "additionalProperties": false
+        },
+        "bind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "clipBind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "variantBind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "on": {
+          "description": "Bindings fired with `{ value }` (the hotspot id) when a hotspot is chosen.",
+          "$ref": "#/$defs/actionMap"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
+        }
+      },
+      "description": "Model 3D: a local or allowed .glb/.gltf; clips, variants and hotspots bind to state."
     }
   }
 }
