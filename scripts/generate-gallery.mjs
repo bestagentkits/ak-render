@@ -259,6 +259,14 @@ const THREE_D_SHOWCASE = {
     'Studio speaker',
     'A studio-lit speaker in four finishes, with numbered hotspots and an exploded view.',
   ],
+  'globe-3d-routes': [
+    'Global network',
+    'Twenty-four offices on a dotted globe with a night side; scrub the years or pick an office to fly to it.',
+  ],
+  'globe-3d-stress': [
+    'Five hundred sites',
+    'Five hundred observation sites and two hundred links, clustered into counts until you zoom in.',
+  ],
   'network-3d-stress': [
     'A thousand-node graph',
     'A large force-laid graph that shows the network widget holding up at scale.',
