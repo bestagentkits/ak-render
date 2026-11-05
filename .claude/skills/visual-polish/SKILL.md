@@ -15,12 +15,14 @@ slab to a framed, lit subject; it applies to any block.
    at 1440, 768 and 375 in light and dark, plus print/PDF:
 
    ```bash
-   node dist/cli.js export fixtures/<x>.yaml --format png --out out/s-1440-light.png --scheme light --width 1440 --scale 1
-   node dist/cli.js export fixtures/<x>.yaml --format pdf --out out/page.pdf
-   pdftoppm -r 60 -png -f 1 -l 1 out/page.pdf out/pdf
+   pnpm build && pnpm visual:check fixtures/<x>.yaml --out out/vc
    ```
 
-   Look at every image. Never judge from code or a description.
+   It writes all six captures, `page.pdf` and one thumbnail `sheet.png`, and
+   prints `{frames:[{fill, offsetX, offsetY}]}` for each 3D frame. Read the
+   sheet first; open a full capture only to inspect a detail. Never judge from
+   code or a description. Rasterise the PDF with
+   `pdftoppm -r 60 -png -f 1 -l 1 out/vc/page.pdf out/vc/pdf` when print changed.
 2. **Name what is wrong in designer words**, one line each, with the image it
    shows in: loose framing, subject off centre, muddy or glaring surface, colour
    off the theme palette, flat light, duplicated hierarchy, dead space,
@@ -30,11 +32,32 @@ slab to a framed, lit subject; it applies to any block.
    title, a caption that describes something not drawn).
 4. **Re-render and compare** before and after side by side. Keep a change
    only if it is visibly better in both schemes and at phone width.
-5. **Run the gates** (`pnpm verify`, `snapshots:check`, `gallery:check`, the
-   browser tests) and regenerate snapshots and gallery for intended changes.
+5. **Run `pnpm qa:pre`** (verify, snapshot, gallery and schema checks, browser
+   tests). Regenerate snapshots and gallery for intended changes first. QA only
+   ever sees a tree that passes it, so it spends its time on design.
 6. **Score it.** Spawn the QA subagent described in `AGENTS.md`. While it runs,
    keep working; fold its findings in when the report lands and re-score until
    it scores 8 or above.
+
+## QA prompt template
+
+Give the QA subagent fixed inputs so it does not explore the repo:
+
+```text
+Score this round /10, engineering and design weighted equally. Budget 10 min.
+Inputs: diff `git diff <last-qa-commit>..HEAD`, contact sheet <path>/sheet.png,
+metrics <visual:check JSON>, qa:pre = green, open DoD from last round: <list>.
+Round 1: review all. Later rounds: check open DoD and the new diff only.
+Output, max 300 words: `Score: x/10 (eng y, design z)` then one line per
+finding: `ID | blocker|minor | fix | DoD with a measurable threshold`.
+```
+
+## Defaults that held up
+
+Start from these instead of searching again: camera fov 30, subject fill
+0.84 of the frame (`visual:check` fill ≥ 0.6 on the stage), centre offset
+≤ 0.05, shadow radius 9 with 16 blur samples, exposure 0.8 dark / 1 light,
+metal metalness 0.85 roughness 0.32.
 
 ## Rules of taste that held up
 
