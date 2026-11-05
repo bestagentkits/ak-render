@@ -24,6 +24,8 @@ import { text3dBlock } from './text-3d.js';
 import { TEXT_CSS } from './text-styles.js';
 import { THREE_RUNTIME } from './three-runtime.generated.js';
 import { THREE_CSS } from './three-styles.js';
+import { timeline3dBlock } from './timeline-3d.js';
+import { TIMELINE_CSS } from './timeline-styles.js';
 
 /**
  * Hands the bundled runtime the page's own helpers, and chains it onto
@@ -54,6 +56,7 @@ export const THREE_GROUP: BlockGroup = {
     product3dBlock,
     globe3dBlock,
     morph3dBlock,
+    timeline3dBlock,
     terrain3dBlock,
   ],
   features: [
@@ -70,6 +73,7 @@ export const THREE_GROUP: BlockGroup = {
         TEXT_CSS +
         GLOBE_CSS +
         MORPH_CSS +
+        TIMELINE_CSS +
         TERRAIN_CSS,
       script: { code: `${THREE_RUNTIME}\n${THREE_BOOT}`, boot: 'wireThree();' },
     },

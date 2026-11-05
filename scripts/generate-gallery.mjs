@@ -291,6 +291,14 @@ const THREE_D_SHOWCASE = {
     'Ring to knot',
     'A ring ties itself into a trefoil knot, then twists into a square band, all on one wrapped surface.',
   ],
+  'timeline-3d-space': [
+    'Road to orbit',
+    'Twelve spaceflight milestones on a path in space; step, scrub or click and the camera flies to each one.',
+  ],
+  'timeline-3d-hundred': [
+    'A hundred sprints',
+    'One hundred milestones coiled into a rising spiral, still in order and one keystroke apart.',
+  ],
   'terrain-3d-alpine': [
     'Alpine flyover',
     'A 256 x 256 heightmap of twin peaks and a glacial valley, with contours, an elevation legend and a flyover of four places.',

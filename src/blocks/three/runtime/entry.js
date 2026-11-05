@@ -57,12 +57,14 @@ import { mountScatter } from './scatter.js';
 import { liveShaderResources, mountShader } from './shader.js';
 import { liveTerrainResources, terrainValid, terrainWidget } from './terrain.js';
 import { liveTextResources, mountText } from './text.js';
+import { liveTimelineResources, timelineWidget } from './timeline.js';
 
 /** Data widgets that add marks and transitions on top of the shared scene, by `data-ak-3d` kind. */
 const SCENE_WIDGETS = {
   bars: barsWidget,
   product: productWidget,
   morph: morphWidget,
+  timeline: timelineWidget,
   terrain: terrainWidget,
 };
 
@@ -871,6 +873,8 @@ function stats() {
     textResources: liveTextResources(),
     /** Morph geometries and materials still alive; zero once every morph is unmounted. */
     morphResources: liveMorphResources(),
+    /** Timeline paths, stems, halos and marker materials still alive; zero once every timeline is unmounted. */
+    timelineResources: liveTimelineResources(),
     /** Terrain geometries and materials still alive; zero once every terrain is unmounted. */
     terrainResources: liveTerrainResources(),
   };

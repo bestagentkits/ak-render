@@ -514,6 +514,9 @@
           "$ref": "#/$defs/block-morph-3d"
         },
         {
+          "$ref": "#/$defs/block-timeline-3d"
+        },
+        {
           "$ref": "#/$defs/block-terrain-3d"
         }
       ]
@@ -10007,6 +10010,103 @@
         }
       },
       "description": "Morph: shape targets, easing, timeline, state."
+    },
+    "block-timeline-3d": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "summary",
+        "milestones"
+      ],
+      "properties": {
+        "type": {
+          "const": "timeline-3d"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 600,
+          "description": "What the timeline shows, in words; the caption and the text alternative."
+        },
+        "milestones": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 2000,
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "date": {
+                "type": "string",
+                "maxLength": 40
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 400
+              },
+              "tone": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "accent",
+                  "neutral",
+                  "success",
+                  "warning",
+                  "danger",
+                  "info"
+                ]
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "label"
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 200
+        },
+        "layout": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "auto",
+            "ribbon",
+            "spiral",
+            "line"
+          ]
+        },
+        "bind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "on": {
+          "description": "Bindings fired with `{ value }` (the milestone id) when the reader chooses one.",
+          "$ref": "#/$defs/actionMap"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
+        }
+      },
+      "description": "Timeline: spatial milestones, camera path, steps, state."
     },
     "block-terrain-3d": {
       "type": "object",

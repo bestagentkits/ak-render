@@ -23,6 +23,7 @@ import { SHADER_CSS, shaderSchemeVars } from './shader-styles.js';
 import { TERRAIN_CSS } from './terrain-styles.js';
 import { TEXT_CSS } from './text-styles.js';
 import { THREE_CSS } from './three-styles.js';
+import { TIMELINE_CSS } from './timeline-styles.js';
 
 export interface PosterSvgOptions extends RenderOptions {
   /** The 3D block's `id`; the first 3D block on the page when omitted. */
@@ -69,6 +70,8 @@ export function export3dPosterSvg(spec: unknown, options: PosterSvgOptions = {})
   const globe = /^<svg[^>]*\bclass="[^"]*\bak-globe-poster\b/u.test(svg);
   // A morph drawing needs its shade steps and floor shadow.
   const morph = /^<svg[^>]*\bclass="[^"]*\bak-mo-poster\b/u.test(svg);
+  // A timeline drawing needs its path, stems, shadows, halo and tags.
+  const timeline = /^<svg[^>]*\bclass="[^"]*\bak-tl-poster\b/u.test(svg);
   // A terrain drawing needs its contour runs, pins and floor shadow.
   const terrain = /^<svg[^>]*\bclass="[^"]*\bak-tr-poster\b/u.test(svg);
   const palette = (which: 'light' | 'dark'): string => {
@@ -85,7 +88,7 @@ export function export3dPosterSvg(spec: unknown, options: PosterSvgOptions = {})
     scheme === 'auto'
       ? `${palette('light')}@media (prefers-color-scheme:dark){${palette('dark')}}`
       : palette(scheme);
-  const style = `${colours}${THREE_CSS}${NETWORK_CSS}${SCATTER_CSS}${particles ? PARTICLES_CSS : ''}${shader ? SHADER_CSS : ''}${product ? PRODUCT_CSS : ''}${lettering ? TEXT_CSS : ''}${morph ? MORPH_CSS : ''}${globe ? GLOBE_CSS : ''}${terrain ? TERRAIN_CSS : ''}${labels ? '' : 'text{display:none}'}`;
+  const style = `${colours}${THREE_CSS}${NETWORK_CSS}${SCATTER_CSS}${particles ? PARTICLES_CSS : ''}${shader ? SHADER_CSS : ''}${product ? PRODUCT_CSS : ''}${lettering ? TEXT_CSS : ''}${morph ? MORPH_CSS : ''}${globe ? GLOBE_CSS : ''}${terrain ? TERRAIN_CSS : ''}${timeline ? TIMELINE_CSS : ''}${labels ? '' : 'text{display:none}'}`;
   return `<?xml version="1.0" encoding="UTF-8"?>\n${svg.replace(
     /^<svg([^>]*)>/u,
     `<svg xmlns="http://www.w3.org/2000/svg"$1><style>${style}</style>`,
