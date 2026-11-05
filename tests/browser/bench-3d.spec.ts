@@ -1,63 +1,73 @@
-import { mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { arch, cpus, platform, release, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, type Page, test } from '@playwright/test';
-import { exportPage } from '../../src/export/page-export.js';
+import { ExportError, exportPage, pickBrowser } from '../../src/export/page-export.js';
 import { compile, VERSION } from '../../src/index.js';
 import { browserWorkspace } from './browser-workspace.js';
 
-// Frame time, draw calls, context loss, disposal and export reliability for
-// the 3D runtime. `pnpm bench:3d` writes the versioned baseline under
-// docs/artifacts; a plain browser test run only checks that the numbers hold.
+// Frame time, render time, draw calls, context loss, disposal and export
+// reliability for the 3D runtime. Tagged @bench, so only `pnpm bench:3d` runs
+// it: that compares draws against the committed baseline, and
+// `pnpm bench:3d:update` (Playwright's --update-snapshots) rewrites it.
 
 const FIXTURES = ['scene-3d-basic', 'scene-3d-dense'] as const;
 const VIEWPORTS = [
-  { name: 'mobile', width: 375, height: 812, isMobile: true, hasTouch: true },
-  { name: 'tablet', width: 768, height: 1024, isMobile: true, hasTouch: true },
-  { name: 'desktop', width: 1440, height: 900, isMobile: false, hasTouch: false },
+  { name: 'mobile', width: 375, height: 812, scale: 1, isMobile: true, hasTouch: true },
+  { name: 'tablet', width: 768, height: 1024, scale: 1, isMobile: true, hasTouch: true },
+  { name: 'desktop', width: 1440, height: 900, scale: 1, isMobile: false, hasTouch: false },
+  { name: 'desktop-2x', width: 1440, height: 900, scale: 2, isMobile: false, hasTouch: false },
 ] as const;
 const FRAMES = 120;
 const EXPORT_RUNS = 5;
-const writeBaseline = process.env.npm_lifecycle_event === 'bench:3d';
+/** Agent calls a 3D page task takes: render the spec, export the still. Assumed, not measured. */
+const ROUND_TRIPS = 2;
 
 const fixtureDir = fileURLToPath(new URL('../../fixtures/3d/', import.meta.url));
-const artifactDir = writeBaseline
-  ? fileURLToPath(new URL('../../docs/artifacts/', import.meta.url))
-  : join(tmpdir(), 'ak-render-bench-3d');
+const baselineDir = fileURLToPath(new URL('../../docs/artifacts/', import.meta.url));
 const workspace = browserWorkspace('bench-3d');
 
 interface ViewportRun {
   viewport: string;
   width: number;
+  dpr: number;
+  profile: string;
   frameMs: { p50: number; p95: number };
+  renderMs: { p50: number; p95: number };
   calls: number;
   triangles: number;
   contextLoss: { lostState: string; restoredState: string };
-  disposal: { cyclesLeak: boolean; emptyAfterUnmount: boolean };
+  disposal: { cyclesLeak: boolean; emptyAfterUnmount: boolean; remountState: string };
 }
 
 interface FixtureRun {
   fixture: string;
-  specBytes: number;
-  specTokensEstimate: number;
   htmlBytes: number;
+  agent: { specBytes: number; specTokensEstimate: number; roundTrips: number; source: 'assumed' };
   viewports: ViewportRun[];
-  export: { format: 'png'; runs: number; ok: number; ms: { p50: number; p95: number } };
+  export: {
+    format: 'png';
+    browser: string;
+    runs: number;
+    ok: number;
+    ms: { p50: number; max: number };
+    errors: { code: string; message: string }[];
+  };
 }
 
-function quantile(sorted: number[], q: number): number {
+const round1 = (n: number) => Math.round(n * 10) / 10;
+const thousands = (n: number) => n.toLocaleString('en-US');
+const ms = (n: number) => n.toFixed(1);
+
+function quantile(values: number[], q: number): number {
+  const sorted = [...values].sort((a, b) => a - b);
   if (sorted.length === 0) return 0;
-  const value = sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))] ?? 0;
-  return Math.round(value * 100) / 100;
+  return round1(sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))] ?? 0);
 }
 
-function source(name: string): string {
-  return readFileSync(join(fixtureDir, `${name}.yaml`), 'utf8');
-}
-
-async function measureFrames(page: Page): Promise<{ p50: number; p95: number }> {
-  const deltas = await page.evaluate(
+async function frameDeltas(page: Page): Promise<number[]> {
+  return page.evaluate(
     (count) =>
       new Promise<number[]>((resolve) => {
         const out: number[] = [];
@@ -72,23 +82,20 @@ async function measureFrames(page: Page): Promise<{ p50: number; p95: number }> 
       }),
     FRAMES,
   );
-  const sorted = [...deltas].sort((a, b) => a - b);
-  return { p50: quantile(sorted, 0.5), p95: quantile(sorted, 0.95) };
 }
 
 type Api = Record<'stats' | 'unmountAll' | 'mountAll', () => unknown>;
-
-async function stats(page: Page) {
-  return page.evaluate(
-    () =>
-      (window as unknown as { akRender3d: Api }).akRender3d.stats() as {
-        mounts: number;
-        geometries: number;
-        calls: number;
-        triangles: number;
-      },
-  );
+interface Stats {
+  mounts: number;
+  geometries: number;
+  calls: number;
+  triangles: number;
+  profile: string;
+  renderMs: number[];
 }
+
+const stats = (page: Page) =>
+  page.evaluate(() => (window as unknown as { akRender3d: Api }).akRender3d.stats() as Stats);
 
 async function contextLoss(page: Page) {
   return page.evaluate(async () => {
@@ -116,7 +123,7 @@ async function contextLoss(page: Page) {
 }
 
 async function disposal(page: Page) {
-  return page.evaluate(() => {
+  const result = await page.evaluate(() => {
     const api = (window as unknown as { akRender3d: Api }).akRender3d;
     const count = () => {
       const { mounts, geometries } = api.stats() as { mounts: number; geometries: number };
@@ -129,8 +136,13 @@ async function disposal(page: Page) {
     }
     const after = count();
     api.unmountAll();
-    return { cyclesLeak: after !== warm, emptyAfterUnmount: count() === '0/0' };
+    const empty = count() === '0/0';
+    api.mountAll();
+    return { cyclesLeak: after !== warm, emptyAfterUnmount: empty };
   });
+  await expect(page.locator('[data-ak-3d]')).toHaveAttribute('data-ak-3d-state', 'ready');
+  const remountState = (await page.locator('[data-ak-3d]').getAttribute('data-ak-3d-state')) ?? '';
+  return { ...result, remountState };
 }
 
 async function gpuInfo(page: Page): Promise<string> {
@@ -142,53 +154,65 @@ async function gpuInfo(page: Page): Promise<string> {
   });
 }
 
-function markdown(artifact: { meta: Record<string, string>; fixtures: FixtureRun[] }): string {
+interface Artifact {
+  meta: Record<string, string | boolean>;
+  fixtures: FixtureRun[];
+}
+
+function markdown(artifact: Artifact): string {
+  const { meta } = artifact;
   const lines = [
     '# 3D benchmark',
     '',
-    'Produced by `pnpm bench:3d` (`tests/browser/bench-3d.spec.ts`). Frame time is measured over',
-    `${FRAMES} animation frames per viewport; draw calls come from \`renderer.info\`, which counts`,
-    'calls and triangles, not GPU memory. Spec tokens are an estimate (bytes / 4), not a model count.',
+    'Produced by `pnpm bench:3d:update` (`tests/browser/bench-3d.spec.ts`); `pnpm bench:3d` re-runs it',
+    'and fails when draw calls or triangles drift from this baseline.',
     '',
-    Object.entries(artifact.meta)
+    `- **Frame ms** is the gap between ${FRAMES} animation frames. It is vsync-capped (16.7 ms at 60 Hz), so it shows dropped frames, not headroom.`,
+    '- **Render ms** times `renderer.render` alone on the CPU side of the call; it is the cost to compare.',
+    '- **Draws** and **triangles** come from `renderer.info`; they are not a GPU memory measurement.',
+    '- **Profile** is the runtime quality tier and device pixel ratio: `low` (coarse pointer) has no shadows or antialiasing, so rows with different profiles are not comparable.',
+    meta.softwareGpu
+      ? '- **Software renderer.** This baseline ran on a software GPU (SwiftShader), headless; real hardware is faster. Compare runs on the same machine only.'
+      : '- Hardware GPU.',
+    '',
+    Object.entries(meta)
       .map(([key, value]) => `- ${key}: ${value}`)
       .join('\n'),
     '',
-    '| Fixture | Viewport | Frame p50 ms | Frame p95 ms | Draw calls | Triangles | Context loss | 10-cycle leak |',
-    '| --- | --- | ---: | ---: | ---: | ---: | --- | --- |',
+    '| Fixture | Viewport | Profile | Frame p50 / p95 ms | Render p50 / p95 ms | Draws | Triangles | Context loss | 10-cycle leak |',
+    '| --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- |',
   ];
   for (const fixture of artifact.fixtures) {
     for (const run of fixture.viewports) {
       lines.push(
-        `| ${fixture.fixture} | ${run.viewport} ${run.width} | ${run.frameMs.p50} | ${run.frameMs.p95} | ${run.calls} | ${run.triangles} | ${run.contextLoss.lostState} → ${run.contextLoss.restoredState} | ${run.disposal.cyclesLeak ? 'yes' : 'no'} |`,
+        `| ${fixture.fixture} | ${run.viewport} ${run.width} | ${run.profile} | ${ms(run.frameMs.p50)} / ${ms(run.frameMs.p95)} | ${ms(run.renderMs.p50)} / ${ms(run.renderMs.p95)} | ${thousands(run.calls)} | ${thousands(run.triangles)} | ${run.contextLoss.lostState} → ${run.contextLoss.restoredState} | ${run.disposal.cyclesLeak ? 'yes' : 'no'} |`,
       );
     }
   }
   lines.push(
     '',
-    '| Fixture | Spec bytes | Spec tokens (est.) | Agent round-trips | HTML bytes | PNG export ok | Export p50 ms | Export p95 ms |',
+    `Agent cost is assumed, not measured: spec tokens are bytes / 4 and a page task is ${ROUND_TRIPS} calls (render, export). User tokens are not measured here; \`pnpm bench:agent\` measures live-model tokens.`,
+    '',
+    `| Fixture | Spec bytes | Spec tokens (assumed) | Round-trips (assumed) | HTML bytes | PNG export ok | Export p50 ms | Export max ms (n=${EXPORT_RUNS}) |`,
     '| --- | ---: | ---: | ---: | ---: | --- | ---: | ---: |',
   );
   for (const f of artifact.fixtures) {
     lines.push(
-      `| ${f.fixture} | ${f.specBytes} | ${f.specTokensEstimate} | 2 (render, export) | ${f.htmlBytes} | ${f.export.ok}/${f.export.runs} | ${f.export.ms.p50} | ${f.export.ms.p95} |`,
+      `| ${f.fixture} | ${thousands(f.agent.specBytes)} | ${thousands(f.agent.specTokensEstimate)} | ${f.agent.roundTrips} | ${thousands(f.htmlBytes)} | ${f.export.ok}/${f.export.runs} | ${ms(f.export.ms.p50)} | ${ms(f.export.ms.max)} |`,
     );
   }
+  lines.push('', 'Export time includes launching the browser.');
   return `${lines.join('\n')}\n`;
 }
 
-test.describe.configure({ mode: 'serial' });
-
-test('3D benchmark: frame time, draw calls, context loss, disposal and export', async ({
-  browser,
-  browserName,
-}) => {
-  test.setTimeout(300_000);
+test('3D benchmark @bench', async ({ browser, browserName }, testInfo) => {
+  test.setTimeout(400_000);
   const results: FixtureRun[] = [];
   let gpu = '';
+  const exportBrowser = (await pickBrowser()).path;
 
   for (const name of FIXTURES) {
-    const spec = source(name);
+    const spec = readFileSync(join(fixtureDir, `${name}.yaml`), 'utf8');
     const html = compile(spec, { source: name }).html;
     const url = `file://${workspace.write(name, html)}`;
     const viewports: ViewportRun[] = [];
@@ -196,6 +220,7 @@ test('3D benchmark: frame time, draw calls, context loss, disposal and export', 
     for (const viewport of VIEWPORTS) {
       const context = await browser.newContext({
         viewport: { width: viewport.width, height: viewport.height },
+        deviceScaleFactor: viewport.scale,
         isMobile: viewport.isMobile,
         hasTouch: viewport.hasTouch,
       });
@@ -204,12 +229,15 @@ test('3D benchmark: frame time, draw calls, context loss, disposal and export', 
       await page.locator('[data-ak-3d]').scrollIntoViewIfNeeded();
       await expect(page.locator('[data-ak-3d]')).toHaveAttribute('data-ak-3d-state', 'ready');
       if (gpu === '') gpu = await gpuInfo(page);
-      const frameMs = await measureFrames(page);
-      const { calls, triangles } = await stats(page);
+      const deltas = await frameDeltas(page);
+      const { calls, triangles, profile, renderMs } = await stats(page);
       viewports.push({
         viewport: viewport.name,
         width: viewport.width,
-        frameMs,
+        dpr: viewport.scale,
+        profile,
+        frameMs: { p50: quantile(deltas, 0.5), p95: quantile(deltas, 0.95) },
+        renderMs: { p50: quantile(renderMs, 0.5), p95: quantile(renderMs, 0.95) },
         calls,
         triangles,
         contextLoss: await contextLoss(page),
@@ -219,7 +247,7 @@ test('3D benchmark: frame time, draw calls, context loss, disposal and export', 
     }
 
     const times: number[] = [];
-    let ok = 0;
+    const errors: { code: string; message: string }[] = [];
     const outDir = join(tmpdir(), 'ak-render-bench-3d-export');
     mkdirSync(outDir, { recursive: true });
     for (let run = 0; run < EXPORT_RUNS; run += 1) {
@@ -232,25 +260,33 @@ test('3D benchmark: frame time, draw calls, context loss, disposal and export', 
           out: join(outDir, `${name}-${run}.png`),
           scale: 1,
         });
-        ok += 1;
-      } catch {
-        // A failed run counts against reliability; the table reports it.
+      } catch (error) {
+        errors.push({
+          code: error instanceof ExportError ? error.code : 'unknown',
+          message: error instanceof Error ? error.message : String(error),
+        });
       }
       times.push(performance.now() - start);
     }
-    times.sort((a, b) => a - b);
 
+    const specBytes = Buffer.byteLength(spec);
     results.push({
       fixture: name,
-      specBytes: Buffer.byteLength(spec),
-      specTokensEstimate: Math.round(Buffer.byteLength(spec) / 4),
       htmlBytes: Buffer.byteLength(html),
+      agent: {
+        specBytes,
+        specTokensEstimate: Math.round(specBytes / 4),
+        roundTrips: ROUND_TRIPS,
+        source: 'assumed',
+      },
       viewports,
       export: {
         format: 'png',
+        browser: exportBrowser,
         runs: EXPORT_RUNS,
-        ok,
-        ms: { p50: quantile(times, 0.5), p95: quantile(times, 0.95) },
+        ok: EXPORT_RUNS - errors.length,
+        ms: { p50: quantile(times, 0.5), max: round1(Math.max(...times)) },
+        errors,
       },
     });
   }
@@ -262,25 +298,48 @@ test('3D benchmark: frame time, draw calls, context loss, disposal and export', 
     compiler: { name: '@bestagentkits/render', version: VERSION },
     meta: {
       browser: `${browserName} ${browser.version()}`,
+      headless: testInfo.project.use.headless !== false,
       gpu,
+      softwareGpu: /swiftshader|llvmpipe|software/i.test(gpu),
       os: `${platform()} ${release()} ${arch()}`,
       cpu: `${cpus()[0]?.model ?? 'unknown'} x${cpus().length}`,
-      emulation: '375 and 768 use mobile + touch emulation in desktop Chromium, not real devices',
+      emulation: '375 and 768 use mobile and touch emulation in desktop Chromium, not real devices',
     },
     fixtures: results,
   };
-  mkdirSync(artifactDir, { recursive: true });
-  writeFileSync(join(artifactDir, 'benchmark-3d.json'), `${JSON.stringify(artifact, null, 2)}\n`);
-  writeFileSync(join(artifactDir, 'benchmark-3d.md'), markdown(artifact));
-  expect(statSync(join(artifactDir, 'benchmark-3d.json')).size).toBeGreaterThan(0);
+
+  const update = ['all', 'changed'].includes(testInfo.config.updateSnapshots);
+  const baselinePath = join(baselineDir, 'benchmark-3d.json');
+  const outDir = update ? baselineDir : join(tmpdir(), 'ak-render-bench-3d');
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(join(outDir, 'benchmark-3d.json'), `${JSON.stringify(artifact, null, 2)}\n`);
+  writeFileSync(join(outDir, 'benchmark-3d.md'), markdown(artifact));
 
   for (const fixture of results) {
-    expect(fixture.export.ok, `${fixture.fixture} export reliability`).toBe(fixture.export.runs);
+    expect(fixture.export.errors, `${fixture.fixture} export`).toEqual([]);
     for (const run of fixture.viewports) {
-      expect(run.calls, `${fixture.fixture} ${run.viewport} draws`).toBeGreaterThan(0);
-      expect(run.disposal.cyclesLeak, `${fixture.fixture} ${run.viewport} leak`).toBe(false);
-      expect(run.disposal.emptyAfterUnmount).toBe(true);
-      expect(run.contextLoss.restoredState).not.toBe('lost');
+      const label = `${fixture.fixture} ${run.viewport}`;
+      expect(run.calls, `${label} draws`).toBeGreaterThan(0);
+      expect(run.contextLoss, `${label} context loss`).toEqual({
+        lostState: 'lost',
+        restoredState: 'ready',
+      });
+      expect(run.disposal, `${label} disposal`).toEqual({
+        cyclesLeak: false,
+        emptyAfterUnmount: true,
+        remountState: 'ready',
+      });
     }
+  }
+
+  if (!update && existsSync(baselinePath)) {
+    const baseline = JSON.parse(readFileSync(baselinePath, 'utf8')) as Artifact;
+    const draws = (fixtures: FixtureRun[]) =>
+      fixtures.flatMap((f) =>
+        f.viewports.map((v) => `${f.fixture} ${v.viewport}: ${v.calls} calls, ${v.triangles} tris`),
+      );
+    expect(draws(results), 'draws drifted; run pnpm bench:3d:update if intended').toEqual(
+      draws(baseline.fixtures),
+    );
   }
 });

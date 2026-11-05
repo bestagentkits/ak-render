@@ -85,7 +85,8 @@
     "verify": "pnpm lint && pnpm typecheck && pnpm fonts:check && pnpm recipes:check && pnpm three:check && pnpm icons:check && pnpm test && pnpm build",
     "qa:pre": "pnpm verify && pnpm snapshots:check && pnpm gallery:check && pnpm schema:check && playwright test --workers 2",
     "visual:check": "node scripts/visual-check.mjs",
-    "bench:3d": "playwright test tests/browser/bench-3d.spec.ts --workers 1"
+    "bench:3d": "playwright test tests/browser/bench-3d.spec.ts --workers 1",
+    "bench:3d:update": "playwright test tests/browser/bench-3d.spec.ts --workers 1 --update-snapshots"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

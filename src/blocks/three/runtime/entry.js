@@ -176,6 +176,8 @@ function materialFor(kind, color) {
 }
 
 /** Low on coarse-pointer or few-core devices: lower pixel ratio, no shadows. */
+const RENDER_SAMPLES = 240;
+
 function qualityProfile() {
   const coarse = window.matchMedia?.('(pointer: coarse)').matches;
   const cores = navigator.hardwareConcurrency || 4;
@@ -583,6 +585,8 @@ function mount(el) {
     animating: motion && tweens.length > 0,
     started: 0,
     frames: 0,
+    /** The most recent render durations, for the benchmark; a fixed ring. */
+    renderMs: [],
     tick(now) {
       if (!record.started) record.started = now;
       const elapsed = now - record.started;
@@ -600,7 +604,9 @@ function mount(el) {
           );
         }
       }
+      const begin = performance.now();
       renderer.render(scene, camera);
+      record.renderMs[record.frames % RENDER_SAMPLES] = performance.now() - begin;
       record.frames += 1;
       if (record.frames === 1) {
         el.setAttribute('data-ak-3d-state', 'ready');
@@ -608,7 +614,12 @@ function mount(el) {
       }
     },
     info() {
-      return { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
+      return {
+        calls: renderer.info.render.calls,
+        triangles: renderer.info.render.triangles,
+        quality,
+        dpr: renderer.getPixelRatio(),
+      };
     },
     /** Stop motion and pin the current frame as an image, so print and export carry the live scene. */
     freeze() {
@@ -717,11 +728,23 @@ function mountAll() {
 function stats() {
   let calls = 0;
   let triangles = 0;
+  const renderMs = [];
+  const profiles = new Set();
   for (const record of mounts) {
-    calls += record.info().calls;
-    triangles += record.info().triangles;
+    const info = record.info();
+    calls += info.calls;
+    triangles += info.triangles;
+    profiles.add(`${info.quality}@${info.dpr}`);
+    renderMs.push(...record.renderMs);
   }
-  return { mounts: mounts.size, geometries: geometries.size, calls, triangles };
+  return {
+    mounts: mounts.size,
+    geometries: geometries.size,
+    calls,
+    triangles,
+    profile: [...profiles].join(','),
+    renderMs,
+  };
 }
 
 export function boot(pageApi) {
