@@ -1,0 +1,50 @@
+version: 1
+meta:
+  title: Quarterly cash flow
+state:
+  bar: q3/ops
+  flow: all
+blocks:
+  - type: bars-3d
+    id: flow
+    title: Cash flow by source
+    summary: Operating cash builds every quarter while capital spend pulls the stack below zero in Q2 and Q4.
+    mode: stacked
+    unit: ' M'
+    bind: state.bar
+    filterBind: state.flow
+    categories:
+      - { id: q1, label: Q1 }
+      - { id: q2, label: Q2 }
+      - { id: q3, label: Q3 }
+      - { id: q4, label: Q4 }
+      - { id: q5, label: Q1 next }
+      - { id: q6, label: Q2 next }
+    series:
+      - { id: ops, label: Operations }
+      - { id: invest, label: Investing }
+      - { id: finance, label: Financing }
+    values:
+      - [42, -12, 8]
+      - [38, -46, 14]
+      - [51, -18, -9]
+      - [47, -52, 20]
+      - [56, -15, -6]
+      - [60, -40, 12]
+  - type: select
+    id: pick
+    label: Selected bar
+    bind: state.bar
+    options:
+      - { value: q3/ops, label: Q3 operations }
+      - { value: q2/invest, label: Q2 investing }
+      - { value: q4/finance, label: Q4 financing }
+  - type: select
+    id: flow-pick
+    label: Show
+    bind: state.flow
+    options:
+      - { value: all, label: All sources }
+      - { value: ops, label: Operations }
+      - { value: invest, label: Investing }
+      - { value: finance, label: Financing }
