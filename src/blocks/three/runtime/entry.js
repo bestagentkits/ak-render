@@ -44,6 +44,7 @@ import {
   WebGLRenderer,
 } from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { mountNetwork } from './network.js';
 
 const TONE_VARS = {
   accent: '--ak-color-accent',
@@ -715,11 +716,29 @@ function mount(el) {
   return record;
 }
 
+/** Widgets with their own runtime module, keyed by `data-ak-3d`; the rest mount as a scene. */
+const WIDGETS = { network: mountNetwork };
+/** What a widget module needs from the shared runtime. */
+const kit = {
+  api: () => api,
+  motionAllowed: () => api.motionAllowed(),
+  mounts,
+  schedule,
+  toneColor,
+  cssColor,
+  isDark,
+  qualityProfile,
+  webgl2Available,
+  RENDER_SAMPLES,
+};
+
 function mountAll() {
   for (const el of document.querySelectorAll('[data-ak-3d]')) {
     if ([...mounts].some((m) => m.el === el)) continue;
     try {
-      mount(el);
+      const widget = WIDGETS[el.getAttribute('data-ak-3d')];
+      if (widget) widget(el, kit);
+      else mount(el);
     } catch (_error) {
       // A scene that cannot be built reports it; the page and its other scenes keep working.
       el.setAttribute('data-ak-3d-state', 'error');
