@@ -65,7 +65,7 @@ const THEME_FIELDS: readonly string[] = ['preset', 'extends', 'tokens', 'dark', 
 /** Length caps of the `meta` strings a page title and summary fill. */
 export const META_LIMITS = { title: 200, description: 400 } as const;
 const META_FIELDS: readonly string[] = ['title', 'description', 'locale', 'slug'];
-export const NETWORK_CAPABILITIES = ['media', 'fonts', 'images'] as const;
+export const NETWORK_CAPABILITIES = ['media', 'fonts', 'images', 'models'] as const;
 
 interface BuildContext {
   bag: DiagnosticBag;

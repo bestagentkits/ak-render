@@ -76,11 +76,17 @@
     "snapshots:check": "node scripts/generate-theme-snapshots.mjs --check",
     "site:build": "pnpm build && node scripts/build-site.mjs",
     "site:deploy": "pnpm site:build && wrangler deploy --config site/wrangler.jsonc",
+    "three:generate": "node scripts/generate-three-runtime.mjs",
+    "three:check": "node scripts/generate-three-runtime.mjs --check",
     "recipes:generate": "node scripts/generate-recipes-module.mjs",
     "recipes:check": "node scripts/generate-recipes-module.mjs --check",
     "plugin:chatgpt": "node scripts/build-chatgpt-plugin.mjs",
     "plugin:chatgpt:check": "node scripts/build-chatgpt-plugin.mjs --check",
-    "verify": "pnpm lint && pnpm typecheck && pnpm fonts:check && pnpm recipes:check && pnpm icons:check && pnpm test && pnpm build"
+    "verify": "pnpm lint && pnpm typecheck && pnpm fonts:check && pnpm recipes:check && pnpm three:check && pnpm icons:check && pnpm test && pnpm build",
+    "qa:pre": "pnpm verify && pnpm snapshots:check && pnpm gallery:check && pnpm schema:check && playwright test --workers 2",
+    "visual:check": "node scripts/visual-check.mjs",
+    "bench:3d": "playwright test tests/browser/bench-3d.spec.ts --workers 1",
+    "bench:3d:update": "playwright test tests/browser/bench-3d.spec.ts --workers 1 --update-snapshots"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
@@ -93,10 +99,15 @@
     "@playwright/test": "^1.56.0",
     "@types/node": "^22.15.0",
     "ajv": "^8.17.1",
+    "esbuild": "0.24.0",
+    "three": "0.170.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.5"
   },
   "dependencies": {
     "yaml": "^2.8.3"
+  },
+  "optionalDependencies": {
+    "playwright-core": "1.63.0"
   }
 }

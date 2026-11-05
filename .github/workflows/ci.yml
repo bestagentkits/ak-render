@@ -84,7 +84,9 @@ jobs:
       - run: pnpm fonts:check
       - run: pnpm schema:check
       - run: pnpm snapshots:check
-      - run: pnpm gallery:check
+      # The gallery script imports TypeScript test fixtures, which needs Node 22.
+      - if: matrix.node != '20.x'
+        run: pnpm gallery:check
 
   # Ubuntu on Node 22 is already covered by the unit job.
   cross-platform:

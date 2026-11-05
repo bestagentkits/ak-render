@@ -490,6 +490,7 @@ ak-render motions [search <terms...>|describe <id...> [--compact]]
 ak-render motion audit <spec|page.html|-> [--fail-on <severity>] [--baseline <report.json>]
 ak-render motion studio <spec> [--port <n>]  # local motion dashboard
 ak-render audit-ui <spec|page.html|-> [--preset <quick|publication>] [--fail-on <severity>]
+ak-render export <spec|-> --format <png|pdf> --out <file>  # local browser, 3D captured live
 ak-render recipes
 ak-render recipe <name>                   # YAML by default
 ak-render themes

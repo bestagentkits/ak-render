@@ -172,7 +172,8 @@
                     "enum": [
                       "media",
                       "fonts",
-                      "images"
+                      "images",
+                      "models"
                     ]
                   }
                 }
@@ -478,6 +479,18 @@
         },
         {
           "$ref": "#/$defs/block-editorial-layout"
+        },
+        {
+          "$ref": "#/$defs/block-scene-3d"
+        },
+        {
+          "$ref": "#/$defs/block-model-3d"
+        },
+        {
+          "$ref": "#/$defs/block-network-3d"
+        },
+        {
+          "$ref": "#/$defs/block-scatter-3d"
         }
       ]
     },
@@ -2926,12 +2939,12 @@
           "$ref": "#/$defs/condition"
         },
         "motion": {
-          "$ref": "#/$defs/motion-reveal-soft-edge-trace-signal-relay-node-activation-sequence-playback"
+          "$ref": "#/$defs/motion-reveal-soft-edge-trace-signal-relay-edge-flow-node-activation-sequence-playback"
         }
       },
       "description": "DiagramPanel: embeds trusted output from a diagram adapter (ak:diagram when installed)."
     },
-    "motion-reveal-soft-edge-trace-signal-relay-node-activation-sequence-playback": {
+    "motion-reveal-soft-edge-trace-signal-relay-edge-flow-node-activation-sequence-playback": {
       "description": "A compiler-owned motion recipe, named by id; a spec cannot supply CSS or script.",
       "oneOf": [
         {
@@ -2941,6 +2954,7 @@
             "fade-swap",
             "edge-trace",
             "signal-relay",
+            "edge-flow",
             "node-activation",
             "sequence-playback"
           ]
@@ -2959,6 +2973,7 @@
                 "fade-swap",
                 "edge-trace",
                 "signal-relay",
+                "edge-flow",
                 "node-activation",
                 "sequence-playback"
               ]
@@ -8010,6 +8025,862 @@
         }
       },
       "description": "Editorial layout: `lead`, `secondary` and `aside` block lists; three columns wide, one when narrow."
+    },
+    "block-scene-3d": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "summary",
+        "objects"
+      ],
+      "properties": {
+        "type": {
+          "const": "scene-3d"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 600,
+          "description": "What the scene shows, in words; the caption and the text alternative."
+        },
+        "objects": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 2000,
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 300
+              },
+              "shape": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "box",
+                  "sphere",
+                  "cylinder",
+                  "cone",
+                  "torus",
+                  "torus-knot",
+                  "plane",
+                  "icosahedron",
+                  "group"
+                ]
+              },
+              "parent": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "size": {
+                "type": "number",
+                "minimum": 0.01,
+                "maximum": 100
+              },
+              "position": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": -1000,
+                  "maximum": 1000
+                },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "rotation": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": -360,
+                  "maximum": 360
+                },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "scale": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": 0.01,
+                  "maximum": 100
+                },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "material": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "standard",
+                  "matte",
+                  "metal",
+                  "glass",
+                  "wireframe",
+                  "emissive"
+                ]
+              },
+              "tone": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "accent",
+                  "neutral",
+                  "success",
+                  "warning",
+                  "danger",
+                  "info"
+                ]
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "label"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 200
+        },
+        "lighting": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "studio",
+            "soft",
+            "dramatic",
+            "night"
+          ]
+        },
+        "camera": {
+          "type": "object",
+          "properties": {
+            "position": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": -1000,
+                "maximum": 1000
+              },
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "target": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": -1000,
+                "maximum": 1000
+              },
+              "minItems": 3,
+              "maxItems": 3
+            }
+          },
+          "additionalProperties": false
+        },
+        "timeline": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "target": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "property": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "rotation",
+                  "position",
+                  "scale"
+                ]
+              },
+              "to": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": -1000,
+                  "maximum": 1000
+                },
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "duration": {
+                "type": "number",
+                "minimum": 100,
+                "maximum": 60000
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "target",
+              "property",
+              "to"
+            ]
+          },
+          "maxItems": 32
+        },
+        "views": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "camera": {
+                "type": "object",
+                "properties": {
+                  "position": {
+                    "type": "array",
+                    "items": {
+                      "type": "number",
+                      "minimum": -1000,
+                      "maximum": 1000
+                    },
+                    "minItems": 3,
+                    "maxItems": 3
+                  },
+                  "target": {
+                    "type": "array",
+                    "items": {
+                      "type": "number",
+                      "minimum": -1000,
+                      "maximum": 1000
+                    },
+                    "minItems": 3,
+                    "maxItems": 3
+                  }
+                },
+                "additionalProperties": false
+              },
+              "focus": {
+                "type": "string",
+                "maxLength": 64
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "value"
+            ]
+          },
+          "maxItems": 12
+        },
+        "bind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "viewBind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "on": {
+          "description": "Bindings fired with `{ value }` (the object id) when an object is selected.",
+          "$ref": "#/$defs/actionMap"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
+        }
+      },
+      "description": "Scene 3D: nested primitives, materials, lighting, camera, views; pick writes state."
+    },
+    "block-model-3d": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "summary",
+        "src"
+      ],
+      "properties": {
+        "type": {
+          "const": "model-3d"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 600,
+          "description": "What the model shows, in words; the caption and the text alternative."
+        },
+        "src": {
+          "type": "string",
+          "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+        },
+        "poster": {
+          "type": "string",
+          "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+        },
+        "hotspots": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 2000,
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 300
+              },
+              "position": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": -1000,
+                  "maximum": 1000
+                },
+                "minItems": 3,
+                "maxItems": 3
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "label",
+              "position"
+            ]
+          },
+          "maxItems": 24
+        },
+        "lighting": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "studio",
+            "soft",
+            "dramatic",
+            "night"
+          ]
+        },
+        "camera": {
+          "type": "object",
+          "properties": {
+            "position": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": -1000,
+                "maximum": 1000
+              },
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "target": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": -1000,
+                "maximum": 1000
+              },
+              "minItems": 3,
+              "maxItems": 3
+            }
+          },
+          "additionalProperties": false
+        },
+        "bind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "clipBind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "variantBind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "on": {
+          "description": "Bindings fired with `{ value }` (the hotspot id) when a hotspot is chosen.",
+          "$ref": "#/$defs/actionMap"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
+        }
+      },
+      "description": "Model 3D: a local or allowed .glb/.gltf; clips, variants and hotspots bind to state."
+    },
+    "block-network-3d": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "summary"
+      ],
+      "properties": {
+        "type": {
+          "const": "network-3d"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 600,
+          "description": "What the graph shows, in words; the caption and the text alternative."
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 2000,
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "group": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "weight": {
+                "type": "number",
+                "minimum": 0.1,
+                "maximum": 10
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 300
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "id"
+            ]
+          },
+          "maxItems": 200
+        },
+        "nodeList": {
+          "type": "string",
+          "maxLength": 48000,
+          "description": "Compact nodes, one per line: `id [group] [label…]`. Use it for large graphs; it adds to `nodes`."
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "to": {
+                "type": "string",
+                "maxLength": 64
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "from",
+              "to"
+            ]
+          },
+          "maxItems": 200
+        },
+        "edgeList": {
+          "type": "string",
+          "maxLength": 48000,
+          "description": "Compact links as `from>to` tokens separated by spaces or new lines; adds to `edges`."
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "tone": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "accent",
+                  "neutral",
+                  "success",
+                  "warning",
+                  "danger",
+                  "info"
+                ]
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "id"
+            ]
+          },
+          "maxItems": 24
+        },
+        "layout": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "force",
+            "hierarchical",
+            "radial"
+          ]
+        },
+        "root": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "directed": {
+          "type": "boolean"
+        },
+        "bind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "filterBind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "on": {
+          "description": "Bindings fired with `{ value }` (the node id) when a node is selected.",
+          "$ref": "#/$defs/actionMap"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
+        }
+      },
+      "description": "Network 3D: nodes, edges, groups; force, hierarchical or radial layout; pick, neighbours, filter."
+    },
+    "block-scatter-3d": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "summary",
+        "axes",
+        "data"
+      ],
+      "properties": {
+        "type": {
+          "const": "scatter-3d"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 600,
+          "description": "What the points show, in words; the caption and the text alternative."
+        },
+        "axes": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "unit": {
+                  "type": "string",
+                  "maxLength": 24
+                },
+                "min": {
+                  "type": "number"
+                },
+                "max": {
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "label"
+              ]
+            },
+            "y": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "unit": {
+                  "type": "string",
+                  "maxLength": 24
+                },
+                "min": {
+                  "type": "number"
+                },
+                "max": {
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "label"
+              ]
+            },
+            "z": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "unit": {
+                  "type": "string",
+                  "maxLength": 24
+                },
+                "min": {
+                  "type": "number"
+                },
+                "max": {
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "label"
+              ]
+            },
+            "size": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "unit": {
+                  "type": "string",
+                  "maxLength": 24
+                },
+                "min": {
+                  "type": "number"
+                },
+                "max": {
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "label"
+              ]
+            },
+            "color": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "unit": {
+                  "type": "string",
+                  "maxLength": 24
+                },
+                "min": {
+                  "type": "number"
+                },
+                "max": {
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "label"
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "x",
+            "y",
+            "z"
+          ]
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": -1000000000000,
+                "maximum": 1000000000000
+              },
+              "minItems": 1,
+              "maxItems": 20000
+            },
+            "y": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": -1000000000000,
+                "maximum": 1000000000000
+              },
+              "minItems": 1,
+              "maxItems": 20000
+            },
+            "z": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": -1000000000000,
+                "maximum": 1000000000000
+              },
+              "minItems": 1,
+              "maxItems": 20000
+            },
+            "size": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": -1000000000000,
+                "maximum": 1000000000000
+              },
+              "maxItems": 20000
+            },
+            "value": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": -1000000000000,
+                "maximum": 1000000000000
+              },
+              "maxItems": 20000
+            },
+            "group": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "maxItems": 20000
+            },
+            "id": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "maxItems": 20000
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "x",
+            "y",
+            "z"
+          ]
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "tone": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "accent",
+                  "neutral",
+                  "success",
+                  "warning",
+                  "danger",
+                  "info"
+                ]
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "value"
+            ]
+          },
+          "maxItems": 9
+        },
+        "bind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "filterBind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "on": {
+          "description": "Bindings fired with `{ value }`: the point id on `select`, the brushed count on `brush`.",
+          "$ref": "#/$defs/actionMap"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion"
+        }
+      },
+      "description": "3D scatter, pick and brush."
     }
   }
 }

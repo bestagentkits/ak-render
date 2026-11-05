@@ -101,7 +101,7 @@ const diagramShowcase = {
   meta: {
     title: 'Diagram showcase',
     description:
-      'Contract 2 diagrams drawn by the reference adapter: search, focus and trace in the viewer, four motion recipes under one page governor, and a standalone SVG export.',
+      'Contract 2 diagrams drawn by the reference adapter: search, focus and trace in the viewer, flowing edges and four more motion recipes under one page governor, and a standalone SVG export.',
   },
   theme: { preset: 'blueprint' },
   blocks: [
@@ -115,24 +115,56 @@ const diagramShowcase = {
     },
     {
       type: 'diagram-panel',
+      id: 'pipeline',
+      title: 'Deploy pipeline · edge flow',
+      spec: {
+        diagram_type: 'architecture',
+        components: [
+          { id: 'github', label: 'GitHub', description: 'git push · webhook' },
+          { id: 'cli', label: 'CLI', description: 'ak deploy' },
+          { id: 'api', label: 'API', description: 'REST · tokens' },
+          { id: 'agent', label: 'Agent', description: 'MCP · --json' },
+          { id: 'control', label: 'Control plane', description: 'queue · policy', status: 'live' },
+          { id: 'build', label: 'Build', description: 'buildpacks · OCI' },
+          { id: 'cluster', label: 'Kubernetes', description: 'rolling · 3 pods' },
+          { id: 'domain', label: 'Domain + SSL', description: 'TLS · edge cache' },
+        ],
+        connections: [
+          { from: 'github', to: 'control' },
+          { from: 'cli', to: 'control' },
+          { from: 'api', to: 'control' },
+          { from: 'agent', to: 'control' },
+          { from: 'control', to: 'build', label: 'image' },
+          { from: 'control', to: 'cluster', label: 'rollout' },
+          { from: 'control', to: 'domain', label: 'route' },
+        ],
+        boundaries: [
+          { id: 'sources', label: 'Sources', components: ['github', 'cli', 'api', 'agent'] },
+          { id: 'runtime', label: 'Runtime', components: ['build', 'cluster', 'domain'] },
+        ],
+      },
+      motion: 'edge-flow',
+    },
+    {
+      type: 'diagram-panel',
       id: 'boundaries',
-      title: 'Nested boundaries · edge trace',
+      title: 'Nested boundaries · edge flow',
       spec: golden('nested-boundaries'),
-      motion: 'edge-trace',
+      motion: 'edge-flow',
     },
     {
       type: 'diagram-panel',
       id: 'dataflow',
-      title: 'Dataflow stages · signal relay',
+      title: 'Dataflow stages · edge flow',
       spec: golden('dataflow-stages'),
-      motion: 'signal-relay',
+      motion: 'edge-flow',
     },
     {
       type: 'diagram-panel',
       id: 'diamond',
-      title: 'Diamond · node activation',
+      title: 'Diamond · edge flow',
       spec: golden('diamond'),
-      motion: 'node-activation',
+      motion: 'edge-flow',
     },
     {
       type: 'diagram-panel',
@@ -144,8 +176,9 @@ const diagramShowcase = {
     {
       type: 'diagram-panel',
       id: 'dense',
-      title: 'Two-level tree · search and focus',
+      title: 'Two-level tree · search, focus and flow',
       spec: golden('two-level-tree'),
+      motion: 'edge-flow',
     },
     {
       type: 'cta',
@@ -164,7 +197,7 @@ const diagramShowcase = {
   written.set('diagram-showcase.html', result.html);
   written.set(
     'diagram-showcase.svg',
-    exportDiagramSvg(diagramShowcase, { diagramAdapter, blockId: 'boundaries' }),
+    exportDiagramSvg(diagramShowcase, { diagramAdapter, blockId: 'pipeline' }),
   );
   entries.push({
     slug: 'diagram-showcase',

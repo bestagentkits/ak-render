@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 /**
  * `ak-render` command-line entry point.
  *
@@ -15,12 +16,22 @@ import { homedir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { stringify } from 'yaml';
+import { createModelResolver } from './assets/model-assets.js';
 import { auditUi, type UiAuditOptions } from './audit/ui-audit.js';
 import { type UiAuditReport, type UiFinding, uiAuditFails } from './audit/ui-audit-report.js';
 import { UI_AUDIT_PRESETS, UI_SEVERITIES, type UiAuditPreset } from './audit/ui-audit-rules.js';
 import { COMPOSE_INTENTS, compose, composeIntents } from './compose/compose.js';
 import type { Diagnostic } from './diagnostics.js';
 import { isRenderError, type RenderError } from './errors.js';
+import {
+  DEFAULT_EXPORT_TIMEOUT_MS,
+  EXPORT_FORMATS,
+  ExportError,
+  type ExportFormat,
+  exportDoctor,
+  exportPage,
+  MAX_EXPORT_TIMEOUT_MS,
+} from './export/page-export.js';
 import {
   describeIcon,
   iconPackSummaries,
@@ -94,6 +105,10 @@ interface Flags {
   timeout?: string;
   chromium?: string;
   baseHash?: string;
+  format?: string;
+  scheme?: string;
+  width?: string;
+  scale?: string;
   out?: string;
   theme?: string;
   themeFile?: string;
@@ -214,6 +229,11 @@ function repairCommand(args: string[], io: CliIo, flags: Flags): number {
   return result.ok ? 0 : 1;
 }
 
+/** Where a spec's relative assets live: beside the file, or the working directory for stdin. */
+function specDir(file: string): string {
+  return file === STDIN_PATH ? process.cwd() : dirname(resolve(file));
+}
+
 function compileCommand(args: string[], io: CliIo, flags: Flags): number {
   const file = args[0];
   if (file === undefined) {
@@ -226,6 +246,7 @@ function compileCommand(args: string[], io: CliIo, flags: Flags): number {
   try {
     const result = compile(text, {
       source: sourceLabel(file),
+      modelResolver: createModelResolver(specDir(file)),
       themeCatalog: themeCatalogFor(flags, io),
       ...(flags.theme === undefined ? {} : { theme: flags.theme }),
     });
@@ -679,6 +700,134 @@ async function auditUiCommand(args: string[], io: CliIo, flags: Flags): Promise<
   return failed ? 1 : 0;
 }
 
+async function exportCommand(args: string[], io: CliIo, flags: Flags): Promise<number> {
+  const fail = (code: string, message: string, extraFields: Record<string, unknown> = {}) => {
+    if (flags.json)
+      io.stdout(`${JSON.stringify({ ok: false, code, message, ...extraFields }, null, 2)}\n`);
+    else io.stderr(`ak-render: export failed (${code}): ${message}\n`);
+  };
+  /** A usage problem: exit 2, and JSON on stdout when --json asked for it. */
+  const bad = (message: string): number => {
+    if (flags.json) fail('usage', message);
+    else io.stderr(`ak-render: ${message}\n`);
+    return 2;
+  };
+  const timeoutMs = flags.timeout === undefined ? DEFAULT_EXPORT_TIMEOUT_MS : Number(flags.timeout);
+  if (!Number.isInteger(timeoutMs) || timeoutMs <= 0 || timeoutMs > MAX_EXPORT_TIMEOUT_MS) {
+    return bad(
+      `--timeout must be a whole number of milliseconds from 1 to ${MAX_EXPORT_TIMEOUT_MS}`,
+    );
+  }
+  if (args[0] === 'doctor' && args.length === 1) {
+    const report = await exportDoctor(flags.chromium, timeoutMs);
+    if (flags.json) io.stdout(`${JSON.stringify(report, null, 2)}\n`);
+    else {
+      for (const c of report.candidates)
+        io.stdout(`${c.exists ? 'found  ' : 'missing'} ${c.source}: ${c.path}\n`);
+      io.stdout(
+        `driver: ${report.driver ? 'playwright-core found' : 'missing (npm i playwright-core)'}\n`,
+      );
+      io.stdout(
+        report.chosen === undefined
+          ? `no usable browser: ${report.problem ?? 'unknown'}\n`
+          : `export uses ${report.chosen.path} ${report.version ?? ''}; WebGL 2: ${report.webgl2 ? report.renderer : `no (${report.problem ?? 'unknown'})`}\n`,
+      );
+    }
+    return report.webgl2 ? 0 : 1;
+  }
+  const [file, ...extra] = args;
+  const format = flags.format;
+  if (file === undefined || extra.length > 0 || flags.out === undefined || format === undefined) {
+    return bad(`usage: ${COMMANDS.export?.usage ?? 'ak-render export <spec>'}`);
+  }
+  if (!(EXPORT_FORMATS as readonly string[]).includes(format)) {
+    return bad(`--format must be one of ${EXPORT_FORMATS.join(', ')}`);
+  }
+  if (flags.scheme !== undefined && flags.scheme !== 'light' && flags.scheme !== 'dark') {
+    return bad('--scheme must be light or dark');
+  }
+  const width = flags.width === undefined ? 1440 : Number(flags.width);
+  if (!Number.isInteger(width) || width < 320 || width > 3840) {
+    return bad('--width must be a whole number of pixels from 320 to 3840');
+  }
+  const scale = flags.scale === undefined ? 2 : Number(flags.scale);
+  if (!Number.isFinite(scale) || scale < 1 || scale > 3) {
+    return bad('--scale must be a number from 1 to 3');
+  }
+  if (HTML_INPUT.test(file)) {
+    return bad('export takes a spec; only compiler output runs in the export browser');
+  }
+  const unread: string[] = [];
+  const text = readSpecFile(file, flags.json ? { ...io, stderr: (line) => unread.push(line) } : io);
+  if (text === undefined) {
+    if (!flags.json) return 2;
+    fail(
+      'invalid-input',
+      unread
+        .join('')
+        .replace(/^ak-render: /u, '')
+        .trim(),
+    );
+    return 2;
+  }
+  let html: string;
+  try {
+    const result = compile(text, {
+      source: sourceLabel(file),
+      modelResolver: createModelResolver(specDir(file)),
+      ...(flags.theme === undefined ? {} : { theme: flags.theme }),
+      themeCatalog: themeCatalogFor(flags, io),
+    });
+    html = result.html;
+    for (const warning of result.warnings)
+      io.stderr(`warning: ${warning.path}: ${warning.message}\n`);
+  } catch (error) {
+    if (!isRenderError(error)) throw error;
+    const renderError = error as RenderError;
+    const diagnostics = Array.isArray(renderError.details?.diagnostics)
+      ? (renderError.details.diagnostics as {
+          severity: string;
+          path: string;
+          nodeId?: string;
+          message: string;
+        }[])
+      : [];
+    fail('invalid-spec', `${renderError.message} (${renderError.path ?? '$'})`, { diagnostics });
+    if (!flags.json) reportDiagnostics(io, diagnostics);
+    return 1;
+  }
+  try {
+    const receipt = await exportPage({
+      html,
+      format: format as ExportFormat,
+      out: resolve(flags.out),
+      // A spec read from stdin resolves its relative assets against the working directory.
+      baseDir: file === STDIN_PATH ? process.cwd() : dirname(resolve(file)),
+      timeoutMs,
+      viewport: { width, height: 900 },
+      scale,
+      ...(flags.scheme === undefined ? {} : { colorScheme: flags.scheme as 'light' | 'dark' }),
+      ...(flags.chromium === undefined ? {} : { executablePath: flags.chromium }),
+    });
+    if (receipt.missingAssets > 0)
+      io.stderr(`warning: ${receipt.missingAssets} asset(s) were not found next to the spec\n`);
+    if (flags.json) io.stdout(`${JSON.stringify({ ok: true, ...receipt }, null, 2)}\n`);
+    else {
+      const issues = [
+        receipt.missingAssets > 0 ? `${receipt.missingAssets} missing asset(s)` : '',
+        receipt.blockedRequests > 0 ? `${receipt.blockedRequests} blocked request(s)` : '',
+      ].filter(Boolean);
+      io.stdout(
+        `${receipt.out}: ${receipt.format} ${receipt.bytes} bytes in ${receipt.ms}ms, ${receipt.scenes} 3D scene(s) live on ${receipt.renderer || 'no WebGL'} (${receipt.browser.source} ${receipt.browser.version})${issues.length > 0 ? `; ${issues.join(', ')}` : ''}\n`,
+      );
+    }
+    return 0;
+  } catch (error) {
+    if (!(error instanceof ExportError)) throw error;
+    fail(error.code, error.message);
+    return 1;
+  }
+}
 /**
  * Start the loopback Motion Studio for one spec file. The server keeps the
  * process alive until it is interrupted; a failed start sets the exit code.
@@ -1059,6 +1208,13 @@ const COMMANDS: Record<string, Command> = {
       'ak-render audit-ui <spec|page.html|-> [--preset <quick|publication>] [--fail-on <error|warning|info|none>] [--evidence-dir <dir>] [--timeout <ms>] [--chromium <path>] [--theme <preset>] [--json]',
     run: auditUiCommand,
   },
+  export: {
+    summary:
+      'Export a spec to PNG or PDF through a local Chrome, Edge or Playwright Chromium (never downloaded); 3D scenes must draw a live WebGL frame. `export doctor` reports the browser and its WebGL 2 support.',
+    usage:
+      'ak-render export <spec|-> --format <png|pdf> --out <file> [--scheme <light|dark>] [--width <px>] [--scale <1-3>] [--chromium <path>] [--timeout <ms>] [--theme <preset>] [--json]\n  ak-render export doctor [--chromium <path>] [--json]',
+    run: exportCommand,
+  },
   mcp: {
     summary:
       'Serve the catalog, describe, icon, motion, recipe, validate, repair, patch, audit-motion, audit-ui, render and themes tools over MCP stdio.',
@@ -1140,6 +1296,10 @@ const VALUE_FLAGS = [
   '--timeout',
   '--chromium',
   '--base-hash',
+  '--format',
+  '--scheme',
+  '--width',
+  '--scale',
 ] as const;
 
 /** Build the preset catalog for this invocation from flags and discovery. */
@@ -1206,6 +1366,10 @@ function parseArgs(args: string[]): ParsedArgs | { error: string } {
       else if (valueFlag === '--timeout') flags.timeout = value;
       else if (valueFlag === '--chromium') flags.chromium = value;
       else if (valueFlag === '--base-hash') flags.baseHash = value;
+      else if (valueFlag === '--format') flags.format = value;
+      else if (valueFlag === '--scheme') flags.scheme = value;
+      else if (valueFlag === '--width') flags.width = value;
+      else if (valueFlag === '--scale') flags.scale = value;
       else flags.themeFile = value;
       index += 1;
       continue;
