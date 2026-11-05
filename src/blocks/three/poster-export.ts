@@ -13,6 +13,7 @@
 import { RenderError } from '../../errors.js';
 import { escapeAttribute } from '../../render/escape.js';
 import { compile, type RenderOptions } from '../../render/render.js';
+import { MORPH_CSS } from './morph-styles.js';
 import { NETWORK_CSS } from './network-styles.js';
 import { PARTICLES_CSS, particleSchemeVars } from './particles-styles.js';
 import { PRODUCT_CSS } from './product-styles.js';
@@ -62,6 +63,8 @@ export function export3dPosterSvg(spec: unknown, options: PosterSvgOptions = {})
   const lettering = /^<svg[^>]*\bclass="[^"]*\bak-tx-poster\b/u.test(svg);
   // A product plan needs its neutral finishes, pins and contact shadow.
   const product = /^<svg[^>]*\bclass="[^"]*\bak-product-poster\b/u.test(svg);
+  // A morph drawing needs its shade steps and floor shadow.
+  const morph = /^<svg[^>]*\bclass="[^"]*\bak-mo-poster\b/u.test(svg);
   const palette = (which: 'light' | 'dark'): string => {
     const tokens = result.theme[which] as Record<string, string | undefined>;
     const variables = Object.keys(tokens)
@@ -76,7 +79,7 @@ export function export3dPosterSvg(spec: unknown, options: PosterSvgOptions = {})
     scheme === 'auto'
       ? `${palette('light')}@media (prefers-color-scheme:dark){${palette('dark')}}`
       : palette(scheme);
-  const style = `${colours}${THREE_CSS}${NETWORK_CSS}${SCATTER_CSS}${particles ? PARTICLES_CSS : ''}${shader ? SHADER_CSS : ''}${product ? PRODUCT_CSS : ''}${lettering ? TEXT_CSS : ''}${labels ? '' : 'text{display:none}'}`;
+  const style = `${colours}${THREE_CSS}${NETWORK_CSS}${SCATTER_CSS}${particles ? PARTICLES_CSS : ''}${shader ? SHADER_CSS : ''}${product ? PRODUCT_CSS : ''}${lettering ? TEXT_CSS : ''}${morph ? MORPH_CSS : ''}${labels ? '' : 'text{display:none}'}`;
   return `<?xml version="1.0" encoding="UTF-8"?>\n${svg.replace(
     /^<svg([^>]*)>/u,
     `<svg xmlns="http://www.w3.org/2000/svg"$1><style>${style}</style>`,

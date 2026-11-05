@@ -40,7 +40,7 @@ const ease = (k) => (k < 0.5 ? 4 * k * k * k : 1 - (-2 * k + 2) ** 3 / 2);
 const easeOut = (k) => 1 - (1 - k) ** 3;
 
 /** Any CSS colour (oklch and color-mix included), read back as one painted pixel. */
-function resolvedColor(css, probe) {
+export function resolvedColor(css, probe) {
   probe.clearRect(0, 0, 1, 1);
   probe.fillStyle = '#000';
   probe.fillStyle = css;

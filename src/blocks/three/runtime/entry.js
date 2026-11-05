@@ -48,6 +48,7 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { barsWidget } from './bars.js';
 import { mountModel } from './model.js';
+import { liveMorphResources, morphValid, morphWidget } from './morph.js';
 import { mountNetwork } from './network.js';
 import { liveParticleResources, mountParticles } from './particles.js';
 import { productWidget } from './product.js';
@@ -56,7 +57,7 @@ import { liveShaderResources, mountShader } from './shader.js';
 import { liveTextResources, mountText } from './text.js';
 
 /** Data widgets that add marks and transitions on top of the shared scene, by `data-ak-3d` kind. */
-const SCENE_WIDGETS = { bars: barsWidget, product: productWidget };
+const SCENE_WIDGETS = { bars: barsWidget, product: productWidget, morph: morphWidget };
 
 const TONE_VARS = {
   accent: '--ak-color-accent',
@@ -244,6 +245,11 @@ function mount(el) {
   try {
     config = JSON.parse(el.getAttribute('data-ak-scene') || '{}');
   } catch (_error) {
+    el.setAttribute('data-ak-3d-state', 'error');
+    return null;
+  }
+  // A morph whose targets cannot share one surface keeps its drawing and says so.
+  if (el.getAttribute('data-ak-3d') === 'morph' && !morphValid(config)) {
     el.setAttribute('data-ak-3d-state', 'error');
     return null;
   }
@@ -574,6 +580,8 @@ function mount(el) {
       event.preventDefault();
       return;
     }
+    // Browser and system shortcuts pass through untouched.
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
     const key = event.key;
     if (key === 'ArrowLeft') spherical.theta -= 0.15;
     else if (key === 'ArrowRight') spherical.theta += 0.15;
@@ -848,6 +856,8 @@ function stats() {
     shaderResources: liveShaderResources(),
     /** Text geometries, materials and environment maps still alive; zero once every scene is unmounted. */
     textResources: liveTextResources(),
+    /** Morph geometries and materials still alive; zero once every morph is unmounted. */
+    morphResources: liveMorphResources(),
   };
 }
 
