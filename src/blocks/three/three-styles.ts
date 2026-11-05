@@ -13,7 +13,9 @@ export const THREE_CSS = `
 .ak-3d-mark[data-tone="info"]{--ak-3d-tone:var(--ak-color-info)}
 .ak-3d-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
 .ak-3d-canvas:focus-visible{outline:2px solid var(--ak-color-accent);outline-offset:-2px}
-.ak-3d[data-ak-3d-state="ready"] .ak-3d-poster{visibility:hidden}
+.ak-3d[data-ak-3d-state="ready"] .ak-3d-poster,.ak-3d[data-ak-3d-state="frozen"] .ak-3d-poster{visibility:hidden}
+.ak-3d-frame{position:absolute;inset:0;width:100%;height:100%;display:block}
+.ak-3d[data-ak-3d-state="frozen"] .ak-3d-canvas{visibility:hidden}
 .ak-3d-caption{color:var(--ak-color-text-muted)}
 .ak-3d-objects{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:var(--ak-space-unit)}
 .ak-3d-objects li{display:flex}

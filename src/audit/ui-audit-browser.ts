@@ -174,6 +174,7 @@ export const OFFLINE_CHROMIUM_ARGS: readonly string[] = [
 export async function launchPlaywrightChromium(
   executablePath?: string,
   timeoutMs?: number,
+  extraArgs: readonly string[] = [],
 ): Promise<BrowserLike> {
   let chromium: ChromiumLike | undefined;
   let reason = 'neither playwright-core nor playwright is installed';
@@ -191,7 +192,7 @@ export async function launchPlaywrightChromium(
   if (chromium === undefined) throw new Error(reason);
   return chromium.launch({
     headless: true,
-    args: [...OFFLINE_CHROMIUM_ARGS],
+    args: [...OFFLINE_CHROMIUM_ARGS, ...extraArgs],
     ...(timeoutMs === undefined ? {} : { timeout: timeoutMs }),
     ...(executablePath === undefined ? {} : { executablePath }),
   });
@@ -245,7 +246,10 @@ function within(root: string, target: string): boolean {
 }
 
 /** A local asset under `baseDir`, or undefined when the path leaves it. */
-function readAsset(baseDir: string, pathname: string): { body: Buffer; type: string } | undefined {
+export function readAsset(
+  baseDir: string,
+  pathname: string,
+): { body: Buffer; type: string } | undefined {
   let decoded: string;
   try {
     decoded = decodeURIComponent(pathname).replace(/^\/+/u, '');

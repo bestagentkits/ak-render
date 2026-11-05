@@ -505,6 +505,19 @@ function mount(el) {
     info() {
       return { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
     },
+    /** Stop motion and pin the current frame as an image, so print and export carry the live scene. */
+    freeze() {
+      if (record.lost || record.frames === 0) return false;
+      record.animating = false;
+      renderer.render(scene, camera);
+      const frame = document.createElement('img');
+      frame.className = 'ak-3d-frame';
+      frame.alt = '';
+      frame.src = canvas.toDataURL('image/png');
+      canvas.after(frame);
+      el.setAttribute('data-ak-3d-state', 'frozen');
+      return true;
+    },
     sync() {
       if (config.bind) {
         const value = api.readPath(config.bind);
@@ -604,6 +617,9 @@ export function boot(pageApi) {
       for (const record of [...mounts]) record.unmount();
     },
     stats,
+    freeze() {
+      return [...mounts].filter((record) => record.freeze()).length;
+    },
     sync() {
       for (const record of mounts) record.sync();
     },

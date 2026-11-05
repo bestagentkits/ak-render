@@ -22,6 +22,14 @@ import { COMPOSE_INTENTS, compose, composeIntents } from './compose/compose.js';
 import type { Diagnostic } from './diagnostics.js';
 import { isRenderError, type RenderError } from './errors.js';
 import {
+  DEFAULT_EXPORT_TIMEOUT_MS,
+  EXPORT_FORMATS,
+  ExportError,
+  type ExportFormat,
+  exportDoctor,
+  exportPage,
+} from './export/page-export.js';
+import {
   describeIcon,
   iconPackSummaries,
   isIconProblem,
@@ -94,6 +102,7 @@ interface Flags {
   timeout?: string;
   chromium?: string;
   baseHash?: string;
+  format?: string;
   out?: string;
   theme?: string;
   themeFile?: string;
@@ -679,6 +688,73 @@ async function auditUiCommand(args: string[], io: CliIo, flags: Flags): Promise<
   return failed ? 1 : 0;
 }
 
+async function exportCommand(args: string[], io: CliIo, flags: Flags): Promise<number> {
+  const timeoutMs = flags.timeout === undefined ? DEFAULT_EXPORT_TIMEOUT_MS : Number(flags.timeout);
+  if (!Number.isInteger(timeoutMs) || timeoutMs <= 0) {
+    io.stderr('ak-render: --timeout must be a positive number of milliseconds\n');
+    return 2;
+  }
+  if (args[0] === 'doctor' && args.length === 1) {
+    const report = await exportDoctor(flags.chromium, timeoutMs);
+    if (flags.json) io.stdout(`${JSON.stringify(report, null, 2)}\n`);
+    else {
+      for (const c of report.candidates)
+        io.stdout(`${c.exists ? 'found  ' : 'missing'} ${c.source}: ${c.path}\n`);
+      io.stdout(
+        report.chosen === undefined
+          ? `no usable browser: ${report.problem ?? 'unknown'}\n`
+          : `export uses ${report.chosen.path} ${report.version ?? ''}; WebGL 2: ${report.webgl2 ? report.renderer : `no (${report.problem ?? 'unknown'})`}\n`,
+      );
+    }
+    return report.webgl2 ? 0 : 1;
+  }
+  const [file, ...extra] = args;
+  const format = flags.format;
+  if (file === undefined || extra.length > 0 || flags.out === undefined || format === undefined) {
+    io.stderr(`ak-render: usage: ${COMMANDS.export?.usage ?? 'ak-render export <spec>'}\n`);
+    return 2;
+  }
+  if (!(EXPORT_FORMATS as readonly string[]).includes(format)) {
+    io.stderr(`ak-render: --format must be one of ${EXPORT_FORMATS.join(', ')}\n`);
+    return 2;
+  }
+  if (HTML_INPUT.test(file)) {
+    io.stderr('ak-render: export takes a spec; only compiler output runs in the export browser\n');
+    return 2;
+  }
+  const text = readSpecFile(file, io);
+  if (text === undefined) return 2;
+  const { html } = compile(text, {
+    source: sourceLabel(file),
+    ...(flags.theme === undefined ? {} : { theme: flags.theme }),
+    themeCatalog: themeCatalogFor(flags, io),
+  });
+  try {
+    const receipt = await exportPage({
+      html,
+      format: format as ExportFormat,
+      out: resolve(flags.out),
+      baseDir: file === STDIN_PATH ? process.cwd() : dirname(resolve(file)),
+      timeoutMs,
+      ...(flags.chromium === undefined ? {} : { executablePath: flags.chromium }),
+    });
+    if (flags.json) io.stdout(`${JSON.stringify({ ok: true, ...receipt }, null, 2)}\n`);
+    else
+      io.stdout(
+        `${receipt.out}: ${receipt.format} ${receipt.bytes} bytes in ${receipt.ms}ms, ${receipt.scenes} 3D scene(s) live on ${receipt.renderer || 'no WebGL'} (${receipt.browser.source} ${receipt.browser.version})\n`,
+      );
+    return 0;
+  } catch (error) {
+    if (!(error instanceof ExportError)) throw error;
+    if (flags.json)
+      io.stdout(
+        `${JSON.stringify({ ok: false, code: error.code, message: error.message }, null, 2)}\n`,
+      );
+    else io.stderr(`ak-render: export failed (${error.code}): ${error.message}\n`);
+    return 1;
+  }
+}
+
 /**
  * Start the loopback Motion Studio for one spec file. The server keeps the
  * process alive until it is interrupted; a failed start sets the exit code.
@@ -1059,6 +1135,13 @@ const COMMANDS: Record<string, Command> = {
       'ak-render audit-ui <spec|page.html|-> [--preset <quick|publication>] [--fail-on <error|warning|info|none>] [--evidence-dir <dir>] [--timeout <ms>] [--chromium <path>] [--theme <preset>] [--json]',
     run: auditUiCommand,
   },
+  export: {
+    summary:
+      'Export a spec to PNG or PDF through a local Chrome, Edge or Playwright Chromium (never downloaded); 3D scenes must draw a live WebGL frame. `export doctor` reports the browser and its WebGL 2 support.',
+    usage:
+      'ak-render export <spec|-> --format <png|pdf> --out <file> [--chromium <path>] [--timeout <ms>] [--theme <preset>] [--json]\n  ak-render export doctor [--chromium <path>] [--json]',
+    run: exportCommand,
+  },
   mcp: {
     summary:
       'Serve the catalog, describe, icon, motion, recipe, validate, repair, patch, audit-motion, audit-ui, render and themes tools over MCP stdio.',
@@ -1140,6 +1223,7 @@ const VALUE_FLAGS = [
   '--timeout',
   '--chromium',
   '--base-hash',
+  '--format',
 ] as const;
 
 /** Build the preset catalog for this invocation from flags and discovery. */
@@ -1206,6 +1290,7 @@ function parseArgs(args: string[]): ParsedArgs | { error: string } {
       else if (valueFlag === '--timeout') flags.timeout = value;
       else if (valueFlag === '--chromium') flags.chromium = value;
       else if (valueFlag === '--base-hash') flags.baseHash = value;
+      else if (valueFlag === '--format') flags.format = value;
       else flags.themeFile = value;
       index += 1;
       continue;
