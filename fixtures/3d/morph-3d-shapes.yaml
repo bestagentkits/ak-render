@@ -1,0 +1,25 @@
+version: 1
+meta:
+  title: Morph shapes
+state:
+  shape: sphere
+blocks:
+  - type: morph-3d
+    id: morph
+    title: One form, three states
+    summary: A glossy surface that breathes from a sphere into a rounded cube and then a twelve-point star, looping until you pick a shape.
+    bind: state.shape
+    easing: spring
+    duration: 1400
+    targets:
+      - { id: sphere, label: Sphere, shape: sphere, tone: accent, description: Idle and at rest. }
+      - { id: cube, label: Cube, shape: cube, tone: info, description: Structured and stable. }
+      - { id: star, label: Star, shape: star, tone: warning, description: Burst of activity. }
+  - type: select
+    id: shape-pick
+    label: Shape
+    bind: state.shape
+    options:
+      - { value: sphere, label: Sphere }
+      - { value: cube, label: Cube }
+      - { value: star, label: Star }

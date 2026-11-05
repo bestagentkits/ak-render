@@ -99,6 +99,15 @@ metal metalness 0.85 roughness 0.32.
 - **Products: close-ups keep context.** A hotspot camera stands about three
   quarters of the home distance away, turned partly toward the hotspot's side;
   any closer and an exploded part fills the frame.
+- **Morphs: soft shading, sharp outline.** A shaded SVG drawing of a smooth
+  surface bands badly at 8 steps. Use about two dozen shade steps, then draw
+  the faces once crisp and once blurred (stdDeviation about 4) under an alpha
+  mask of the faces themselves: gradients read smooth and the silhouette stays
+  sharp. Blurring the whole drawing looks out of focus.
+- **Morphs: one material, glossy.** Clearcoat 1, roughness about 0.26, a little
+  iridescence and sheen under the studio environment make a plain primitive
+  look designed; blend the target tones with the shape so colour tells the
+  reader which state is arriving.
 
 ## Done means
 

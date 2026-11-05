@@ -47,6 +47,18 @@ describe('export3dPosterSvg', () => {
     expect(export3dPosterSvg(fixture('network-3d-basic'))).not.toContain('.ak-product-pin');
   });
 
+  it('carries a morph drawing its shade steps and a soft, sharp-edged surface', () => {
+    const svg = export3dPosterSvg(fixture('morph-3d-shapes'), { scheme: 'auto' });
+    expect(svg).toContain('class="ak-3d-poster ak-mo-poster"');
+    expect(svg).toContain('.ak-mo-surface [data-l="0"]{fill:');
+    expect(svg).toContain('.ak-mo-outline{mask-type:alpha}');
+    expect(svg).toContain('<use href="#ak-mo-faces-morph" filter="url(#ak-mo-soft-morph)"/>');
+    // The target buttons' drawings stay with the page, not the poster.
+    expect(svg).not.toContain('class="ak-mo-glyph"');
+    expect(svg).not.toMatch(/<[a-z]+(?:\s+[a-z-]+="[^"]*")*\s+[a-z-]+[\s/>]/u);
+    expect(export3dPosterSvg(fixture('network-3d-basic'))).not.toContain('.ak-mo-surface');
+  });
+
   it('draws a box as shaded faces', () => {
     const svg = export3dPosterSvg(fixture('scene-3d-basic'));
     expect(svg).toContain('class="ak-3d-face"');

@@ -3,6 +3,8 @@
 import type { BlockGroup } from '../../registry/block-module.js';
 import { bars3dBlock } from './bars-3d.js';
 import { model3dBlock } from './model-3d.js';
+import { morph3dBlock } from './morph-3d.js';
+import { MORPH_CSS } from './morph-styles.js';
 import { network3dBlock } from './network-3d.js';
 import { NETWORK_CSS } from './network-styles.js';
 import { particles3dBlock } from './particles-3d.js';
@@ -40,12 +42,13 @@ export const THREE_GROUP: BlockGroup = {
     bars3dBlock,
     particles3dBlock,
     product3dBlock,
+    morph3dBlock,
   ],
   features: [
     {
       name: 'three',
       marker: '.ak-3d{',
-      css: THREE_CSS + NETWORK_CSS + SCATTER_CSS + PARTICLES_CSS + PRODUCT_CSS,
+      css: THREE_CSS + NETWORK_CSS + SCATTER_CSS + PARTICLES_CSS + PRODUCT_CSS + MORPH_CSS,
       script: { code: `${THREE_RUNTIME}\n${THREE_BOOT}`, boot: 'wireThree();' },
     },
   ],
