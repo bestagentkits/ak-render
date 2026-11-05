@@ -89,24 +89,31 @@ function stateValue(node: IrNode, prop: string, state: Record<string, JsonValue>
 }
 
 /** The model's extent: its bounds when the compiler read them, else a unit cube. */
-function extentOf(info: ModelInfo | undefined): { center: Vec3; size: number } {
+function extentOf(info: ModelInfo | undefined): { center: Vec3; size: number; extent: Vec3 } {
   const bounds = info?.bounds;
-  if (bounds === undefined) return { center: [0, 0.5, 0], size: 1 };
+  if (bounds === undefined) return { center: [0, 0.5, 0], size: 1, extent: [1, 1, 1] };
   const center = [0, 1, 2].map(
     (axis) => ((bounds.min[axis] ?? 0) + (bounds.max[axis] ?? 0)) / 2,
   ) as Vec3;
-  const size = Math.max(
-    ...[0, 1, 2].map((axis) => (bounds.max[axis] ?? 0) - (bounds.min[axis] ?? 0)),
-    1e-3,
-  );
-  return { center, size };
+  const extent = [0, 1, 2].map((axis) =>
+    Math.max((bounds.max[axis] ?? 0) - (bounds.min[axis] ?? 0), 1e-3),
+  ) as Vec3;
+  return { center, size: Math.max(...extent), extent };
 }
 
 /** The plan objects: the model's bounding volume and one marker per hotspot. */
 function planObjects(node: IrNode, info: ModelInfo | undefined): Record<string, JsonValue>[] {
-  const { center, size } = extentOf(info);
+  const { center, size, extent } = extentOf(info);
   return [
-    { id: '__model', label: '', shape: 'box', size, position: center, tone: 'neutral' },
+    {
+      id: '__model',
+      label: '',
+      shape: 'box',
+      size,
+      position: center,
+      tone: 'neutral',
+      extent,
+    },
     ...hotspotsOf(node).map((hotspot, index) => ({
       id: String(hotspot.id),
       label: `${index + 1}`,

@@ -19,6 +19,8 @@ export type {
 export { UI_FINDINGS_PER_RULE, uiAuditFails } from './audit/ui-audit-report.js';
 export type { UiAuditPreset, UiRule, UiSeverity } from './audit/ui-audit-rules.js';
 export { UI_AUDIT_PRESETS, UI_RULE_IDS, UI_RULES } from './audit/ui-audit-rules.js';
+export type { PosterSvgOptions } from './blocks/three/poster-export.js';
+export { export3dPosterSvg } from './blocks/three/poster-export.js';
 export type {
   ComposeInput,
   ComposeIntent,

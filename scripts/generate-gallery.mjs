@@ -40,12 +40,18 @@ const galleryAssetsDir = join(galleryDir, 'assets');
 let compile;
 let VERSION;
 let exportDiagramSvg;
+let export3dPosterSvg;
 let builtinThemeCatalog;
 let themePresetNames;
 try {
-  ({ compile, exportDiagramSvg, VERSION, builtinThemeCatalog, themePresetNames } = await import(
-    new URL('../dist/index.js', import.meta.url)
-  ));
+  ({
+    compile,
+    exportDiagramSvg,
+    export3dPosterSvg,
+    VERSION,
+    builtinThemeCatalog,
+    themePresetNames,
+  } = await import(new URL('../dist/index.js', import.meta.url)));
 } catch {
   console.error('generate-gallery: dist/ is missing; run "pnpm build" first');
   process.exit(1);
@@ -211,6 +217,88 @@ const diagramShowcase = {
   });
 }
 
+// 3D showcase: the most striking fixture per 3D widget plus one stress demo.
+// The model fixture references a glTF beside it, so it compiles with a model
+// resolver rooted at fixtures/3d; the model is inlined into the page.
+const threeDir = join(repoRoot, 'fixtures/3d');
+const { createModelResolver } = await import(
+  new URL('../dist/assets/model-assets.js', import.meta.url)
+);
+const modelResolver = createModelResolver(threeDir);
+// Showcase title and blurb per fixture; the fixtures keep their test titles.
+const THREE_D_SHOWCASE = {
+  'scene-3d-dense': [
+    'Server room',
+    'A lit rack field of forty-eight shaped nodes you can orbit, select and read as a list.',
+  ],
+  'network-3d-basic': [
+    'Service mesh',
+    'Eighteen services in four tiers; pick one to light up what it calls and what calls it.',
+  ],
+  'model-3d-crate': [
+    'Shipping crate',
+    'An inlined glTF crate with animation clips, three finishes and numbered hotspots.',
+  ],
+  'scatter-3d-basic': [
+    'City metrics',
+    'Cities plotted on three metrics, with axis labels, groups and a readable data table.',
+  ],
+  'bars-3d-dense': [
+    'Weekly margin by region',
+    'A dense field of bars by region and week, with the full table beside it.',
+  ],
+  'network-3d-stress': [
+    'A thousand-node graph',
+    'A large force-laid graph that shows the network widget holding up at scale.',
+  ],
+};
+
+const threeEntries = Object.entries(THREE_D_SHOWCASE).map(([name, [title, description]]) => {
+  const source = readFileSync(join(threeDir, `${name}.yaml`), 'utf8');
+  const result = compile(source, { source: `${name}.yaml`, modelResolver });
+  const file = `3d-${name}.html`;
+  written.set(file, result.html);
+  // A label-free thumbnail of the widget's own poster that follows the
+  // reader's colour scheme; tiny text would be unreadable at card size.
+  written.set(
+    `3d-${name}.svg`,
+    export3dPosterSvg(source, { modelResolver, scheme: 'auto', labels: false }),
+  );
+  return {
+    slug: `3d-${name}`,
+    file,
+    poster: `3d-${name}.svg`,
+    title,
+    description,
+    bytes: result.bytes,
+  };
+});
+
+/** One linked card per artifact, so the gallery is navigable without a script. */
+const artifactCard = (entry) => ({
+  type: 'card',
+  title: entry.title,
+  text: entry.description === '' ? entry.file : entry.description,
+  blocks: [
+    {
+      type: 'text',
+      variant: 'caption',
+      text: `${entry.nodes} nodes · ${(entry.bytes / 1024).toFixed(1)} kB`,
+    },
+    { type: 'link', label: `Open ${entry.file}`, href: entry.file },
+  ],
+});
+
+/** A 3D card leads with the widget's static poster, the same plan the page draws first. */
+const threeCard = (entry) => ({
+  type: 'card',
+  title: entry.title,
+  text: entry.description,
+  blocks: [
+    { type: 'image', src: entry.poster, alt: `Static preview of ${entry.title}` },
+    { type: 'link', label: `Open ${entry.title}`, href: entry.file },
+  ],
+});
 // One compiled page per built-in preset, plus the dropdown viewer over them.
 for (const [file, html] of buildThemePreview({
   compile,
@@ -238,6 +326,10 @@ const indexSpec = {
       description:
         'Each artifact below was compiled from a Page Spec in fixtures/pages and opens directly from disk with zero external requests.',
       align: 'center',
+      actions: [
+        { label: 'See the 3D widgets', href: '#ak-sec-widgets-3d', variant: 'primary' },
+        { label: 'Preview every theme', href: 'themes/index.html' },
+      ],
       src: 'assets/shot-components.webp',
       alt: 'The all-components fixture in the swiss-clean theme, opening on its hero and layout section',
       address: 'all-components.html',
@@ -266,8 +358,21 @@ const indexSpec = {
       type: 'stats',
       items: [
         { label: 'Fixtures', value: String(entries.length) },
+        { label: '3D demos', value: String(threeEntries.length) },
         { label: 'Compiler', value: VERSION },
         { label: 'Network', value: 'denied' },
+      ],
+    },
+    {
+      type: 'section',
+      id: 'widgets-3d',
+      title: '3D widgets',
+      blocks: [
+        {
+          type: 'text',
+          text: 'Scenes, networks, models, scatter clouds and bar fields rendered with WebGL from a Page Spec. Each one keeps a readable summary for print, screenshots and no-JS readers.',
+        },
+        { type: 'grid', columns: 3, blocks: threeEntries.map(threeCard) },
       ],
     },
     // One card per artifact: what it is, what it costs, and a link to open it,
@@ -279,19 +384,7 @@ const indexSpec = {
         {
           type: 'grid',
           columns: 3,
-          blocks: entries.map((entry) => ({
-            type: 'card',
-            title: entry.title,
-            text: entry.description === '' ? entry.file : entry.description,
-            blocks: [
-              {
-                type: 'text',
-                variant: 'caption',
-                text: `${entry.nodes} nodes · ${(entry.bytes / 1024).toFixed(1)} kB`,
-              },
-              { type: 'link', label: `Open ${entry.file}`, href: entry.file },
-            ],
-          })),
+          blocks: entries.map(artifactCard),
         },
       ],
     },
@@ -377,5 +470,6 @@ if (checkMode) {
   for (const entry of entries) {
     console.log(`  ${entry.file}: ${entry.bytes} bytes, ${entry.nodes} nodes`);
   }
+  for (const entry of threeEntries) console.log(`  ${entry.file}: ${entry.bytes} bytes`);
   console.log(`  index.html: ${index.bytes} bytes`);
 }
