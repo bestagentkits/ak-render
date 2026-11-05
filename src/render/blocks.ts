@@ -698,7 +698,13 @@ const RENDERERS: Record<string, Renderer> = {
             adapterResult.adapter,
           )}" role="region" aria-label="${escapeAttribute(diagramTitle)}" tabindex="0"><div class="ak-diagram-canvas" data-ak-diagram-scope="${escapeAttribute(
             adapterResult.scope ?? '',
-          )}">${adapterResult.markup}</div></div><details class="ak-diagram-details" data-ak-diagram-fallback><summary>Text description</summary><div class="ak-diagram-fallback">${description}</div></details>`
+          )}"${
+            adapterResult.contract === 2
+              ? ` data-ak-diagram-contract="2" data-ak-diagram-capabilities="${escapeAttribute(
+                  (adapterResult.capabilities ?? []).join(' '),
+                )}"`
+              : ''
+          }>${adapterResult.markup}</div></div><details class="ak-diagram-details" data-ak-diagram-fallback><summary>Text description</summary><div class="ak-diagram-fallback">${description}</div></details>`
         : `<div class="ak-diagram-fallback" data-ak-diagram-fallback>${description}<p class="ak-caption">Rendered as a structured fallback because no diagram adapter is configured.</p></div>`,
       figureCaption(caption),
       '</figure>',
