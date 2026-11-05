@@ -37,7 +37,9 @@ const MAX_GROUPS = 24;
 /**
  * Groups without a tone take these in order, so neighbouring clusters contrast.
  * Warning is left out: it sits too close to accent in most themes. Past one
- * round, a shade (1-4) mixes the tone toward the text or the background color.
+ * round, shade 1 blends the tone with a partner tone and steps it toward the
+ * background; shades 2-4 mix toward the
+ * background or the text color.
  */
 const TONE_CYCLE = ['accent', 'info', 'success', 'danger', 'neutral'] as const;
 const FOV = 30;
@@ -216,10 +218,17 @@ function prepare(node: IrNode): Prepared {
     layout,
     typeof node.props.root === 'string' ? node.props.root : undefined,
   );
-  // A force layout is a ball; widen it on the floor plane so it fills a 16:9 stage.
+  // A force layout is a ball; widen it on the floor plane until it is about
+  // twice as wide as tall, so it fills a 16:9 stage after perspective.
+  const spread = (axis: 0 | 1 | 2) => Math.max(0.01, ...laid.map((q) => Math.abs(q[axis])));
+  const widen = Math.min(2.6, Math.max(1, (2 * spread(1)) / Math.max(spread(0), spread(2))));
   const positions: Vec3[] =
     layout === 'force'
-      ? laid.map(([x, y, z]) => [Math.round(x * 140) / 100, y, Math.round(z * 140) / 100])
+      ? laid.map(([x, y, z]) => [
+          Math.round(x * widen * 100) / 100,
+          y,
+          Math.round(z * widen * 100) / 100,
+        ])
       : laid;
   // Smaller graphs get larger nodes, so twelve nodes do not float as specks.
   const base = Math.min(0.45, Math.max(0.08, 1.1 / Math.cbrt(ids.length)));

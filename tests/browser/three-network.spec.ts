@@ -181,6 +181,49 @@ test.describe('network-3d', () => {
     expect(overflow).toBe('none');
   });
 
+  for (const colorScheme of ['light', 'dark'] as const) {
+    test(`eight groups get clearly distinct colors (${colorScheme})`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme });
+      await page.goto(stress());
+      const rgb = await page.locator('.ak-net-legend .ak-net-swatch').evaluateAll((swatches) => {
+        const context = document
+          .createElement('canvas')
+          .getContext('2d') as CanvasRenderingContext2D;
+        return swatches.map((swatch) => {
+          context.fillStyle = getComputedStyle(swatch).backgroundColor;
+          context.fillRect(0, 0, 1, 1);
+          return [...context.getImageData(0, 0, 1, 1).data.slice(0, 3)];
+        });
+      });
+      const oklab = ([r, g, b]: number[]) => {
+        const lin = (byte = 0) => {
+          const v = byte / 255;
+          return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+        };
+        const [R, G, B] = [lin(r), lin(g), lin(b)];
+        const l = Math.cbrt(0.4122 * R + 0.5363 * G + 0.0514 * B);
+        const m = Math.cbrt(0.2119 * R + 0.6807 * G + 0.1074 * B);
+        const s = Math.cbrt(0.0883 * R + 0.2817 * G + 0.63 * B);
+        return [
+          0.2105 * l + 0.7936 * m - 0.0041 * s,
+          1.978 * l - 2.4286 * m + 0.4506 * s,
+          0.0259 * l + 0.7828 * m - 0.8087 * s,
+        ];
+      };
+      const labs = rgb.map(oklab);
+      expect(labs).toHaveLength(8);
+      let closest = Infinity;
+      for (let i = 0; i < labs.length; i += 1)
+        for (let j = i + 1; j < labs.length; j += 1)
+          closest = Math.min(
+            closest,
+            Math.hypot(...(labs[i] as number[]).map((v, k) => v - ((labs[j] as number[])[k] ?? 0))),
+          );
+      // OKLab ΔE 0.07 is several just-noticeable steps apart, even in muted themes.
+      expect(closest).toBeGreaterThanOrEqual(0.07);
+    });
+  }
+
   test('the 1000-node stress graph mounts in a handful of draw calls', async ({ page }) => {
     test.setTimeout(60_000);
     await page.goto(stress());

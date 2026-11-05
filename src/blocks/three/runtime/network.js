@@ -122,11 +122,34 @@ export function mountNetwork(el, kit) {
   // Nodes: one instanced icosphere, colored per group.
   // Shades past the first round mix toward text or background, as the poster CSS does.
   const textTone = kit.cssColor(el, '--ak-color-text', '#222222');
-  const SHADES = [null, [textTone, 0.4], [background, 0.45], [textTone, 0.62], [background, 0.62]];
+  const SHADES = [null, null, [background, 0.45], [textTone, 0.62], [background, 0.62]];
+  // The first extra round blends each tone with a partner tone, for a new hue.
+  // Steps differ per tone so the blended round also spreads in lightness.
+  const STEP = { accent: 0.25, info: 0.38, success: 0.5, danger: 0.38, neutral: 0.25 };
+  const PARTNER = {
+    accent: 'danger',
+    info: 'danger',
+    success: 'warning',
+    danger: 'neutral',
+    neutral: 'accent',
+  };
   const toneColors = groups.map((g) => {
-    const c = kit.toneColor(el, g.tone || 'accent');
-    const mix = SHADES[g.shade || 0];
-    return mix ? c.clone().lerp(mix[0], mix[1]) : c;
+    const tone = g.tone || 'accent';
+    let c = kit.toneColor(el, tone);
+    if (g.shade === 1)
+      c = mixOklab(
+        mixOklab(c, kit.toneColor(el, PARTNER[tone] || 'danger'), 0.5),
+        background,
+        STEP[tone] || 0.3,
+      );
+    else if (SHADES[g.shade || 0]) c = mixOklab(c, SHADES[g.shade][0], SHADES[g.shade][1]);
+    // Dark themes ship pastel tones; lift chroma so lit nodes read as color, not white.
+    if (dark) {
+      const hsl = {};
+      c.getHSL(hsl);
+      c.setHSL(hsl.h, Math.min(1, hsl.s * 1.35), hsl.l * 0.9);
+    }
+    return c;
   });
   const baseColor = ids.map((_, i) => toneColors[groupOf[i]] || toneColors[0] || new Color());
   const mutedTone = kit.cssColor(el, '--ak-color-text-muted', '#888888');
@@ -134,7 +157,7 @@ export function mountNetwork(el, kit) {
     c
       .clone()
       .lerp(mutedTone, dark ? 0.25 : 0.15)
-      .lerp(background, dark ? 0.5 : 0.34),
+      .lerp(background, dark ? 0.5 : 0.26),
   );
   const nodeGeometry = new IcosahedronGeometry(1, quality === 'high' ? 3 : 2);
   const nodeMaterial = new MeshStandardMaterial({
@@ -704,4 +727,22 @@ function haloTexture() {
   g.fillStyle = gradient;
   g.fillRect(0, 0, size, size);
   return new CanvasTexture(canvas);
+}
+
+/** Mix like CSS `color-mix(in oklab, a, b w)`, so runtime and poster colors agree. */
+function mixOklab(a, b, w) {
+  const lab = (c) => {
+    const l = Math.cbrt(0.4122214708 * c.r + 0.5363325363 * c.g + 0.0514459929 * c.b);
+    const m = Math.cbrt(0.2119034982 * c.r + 0.6806995451 * c.g + 0.1073969566 * c.b);
+    const s = Math.cbrt(0.0883024619 * c.r + 0.2817188376 * c.g + 0.6299787005 * c.b);
+    return [l, m, s];
+  };
+  const p = lab(a);
+  const q = lab(b);
+  const [l, m, s] = p.map((v, i) => (v + (q[i] - v) * w) ** 3);
+  return new Color().setRGB(
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
+  );
 }
