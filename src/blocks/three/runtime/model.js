@@ -591,7 +591,7 @@ export function mountModel(el, kit) {
       fitBox.min.y -= size * 0.03;
       for (const hotspot of hotspots) fitBox.expandByPoint(hotspot.at);
       // Clip planes follow the model's scale, so a large model never falls past far.
-      camera.near = size * 1e-3;
+      camera.near = size * 1e-2;
       camera.far = size * 1e3;
       camera.updateProjectionMatrix();
       fitHome();
