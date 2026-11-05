@@ -15,6 +15,7 @@ import {
   AmbientLight,
   Box3,
   BoxGeometry,
+  CapsuleGeometry,
   Color,
   ConeGeometry,
   CylinderGeometry,
@@ -44,14 +45,16 @@ import {
   WebGLRenderer,
 } from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { barsWidget } from './bars.js';
 import { mountModel } from './model.js';
 import { mountNetwork } from './network.js';
 import { liveParticleResources, mountParticles } from './particles.js';
+import { productWidget } from './product.js';
 import { mountScatter } from './scatter.js';
 
 /** Data widgets that add marks and transitions on top of the shared scene, by `data-ak-3d` kind. */
-const SCENE_WIDGETS = { bars: barsWidget };
+const SCENE_WIDGETS = { bars: barsWidget, product: productWidget };
 
 const TONE_VARS = {
   accent: '--ak-color-accent',
@@ -105,6 +108,9 @@ function geometryFor(shape, size) {
   else if (shape === 'torus-knot') geometry = new TorusKnotGeometry(s / 3, s / 10, 128, 16);
   else if (shape === 'plane') geometry = new PlaneGeometry(s, s);
   else if (shape === 'icosahedron') geometry = new IcosahedronGeometry(s / 2, 0);
+  else if (shape === 'rounded-box') geometry = new RoundedBoxGeometry(s, s, s, 6, s * 0.14);
+  // A capsule is as tall as its size and half as wide.
+  else if (shape === 'capsule') geometry = new CapsuleGeometry(s / 4, s / 2, 12, 32);
   else geometry = new BoxGeometry(s, s, s);
   geometry.userData.refs = 1;
   geometry.userData.key = key;
@@ -428,6 +434,8 @@ function mount(el) {
       motion,
       api,
       requestRender: () => requestRender(),
+      /** The widget moved the camera: orbit continues from where it now stands. */
+      oriented: () => readSpherical(),
       animate() {
         record.animating = true;
         schedule();
@@ -467,6 +475,11 @@ function mount(el) {
     requestRender();
   }
   function select(id) {
+    // A widget with its own selection (hotspots, not parts) takes the pick.
+    if (widget?.pick) {
+      widget.pick(id);
+      return;
+    }
     if (!nodes.has(id) || id === selected) return;
     highlight(id);
     api.fire(el, 'select', { value: id });
@@ -506,6 +519,7 @@ function mount(el) {
   let downAt = null;
   let pinch = 0;
   const onPointerDown = (event) => {
+    widget?.interrupt?.();
     canvas.setPointerCapture?.(event.pointerId);
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     downAt = { x: event.clientX, y: event.clientY };
@@ -554,6 +568,10 @@ function mount(el) {
     applySpherical();
   };
   const onKey = (event) => {
+    if (widget?.key?.(event)) {
+      event.preventDefault();
+      return;
+    }
     const key = event.key;
     if (key === 'ArrowLeft') spherical.theta -= 0.15;
     else if (key === 'ArrowRight') spherical.theta += 0.15;
