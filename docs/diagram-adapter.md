@@ -27,13 +27,14 @@ interface DiagramRenderRequest {
   readonly spec: JsonValue;   // the block's spec, exactly as authored
   readonly title: string;
   readonly nodeId: string;    // stable, usable as a cache key
-  readonly contractVersion: 1;
+  readonly contractVersion: 1 | 2; // the adapter's `contract`, or 1
 }
 
 interface DiagramAdapter {
   readonly name: string;
   readonly version: string;
-  render(request: DiagramRenderRequest): string | undefined;
+  readonly contract?: 1 | 2;
+  render(request: DiagramRenderRequest): string | DiagramRenderResult | undefined;
 }
 ```
 
@@ -43,6 +44,67 @@ outside its own figure.
 
 Returning `undefined`, or throwing, means "fall back". Neither fails the
 compile: a broken or absent adapter degrades the page.
+
+## Contract 2: semantic manifest
+
+An adapter that declares `contract: 2` receives `contractVersion: 2` and may
+return a result instead of a bare string (a string still works and is treated
+as contract 1 output):
+
+```ts
+const akDiagram: DiagramAdapter = {
+  name: 'ak-diagram',
+  version: '3.1.0',
+  contract: 2,
+  render({ spec, title }) {
+    const out = akDiagramCompiler.compile(spec, { title });
+    if (!out.ok) return undefined;
+    return {
+      svg: out.svg,
+      manifest: {
+        version: 2,
+        // No `element`: matched by `data-node-id` / `data-edge-id`, which
+        // ak:diagram already writes.
+        nodes: out.nodes.map((node) => ({ id: node.id })),
+        edges: out.edges.map((edge) => ({ from: edge.source, to: edge.target, id: edge.id })),
+        groups: out.frames.map((frame) => ({ id: frame.id, element: frame.elementId })),
+      },
+      capabilities: { focus: true, trace: true, zoom: true, search: true },
+    };
+  },
+};
+```
+
+| Field | Meaning |
+| --- | --- |
+| `nodes[].id` | A node id the spec declares. |
+| `edges[].from`, `to` | A relationship the spec declares. Two declared relationships between the same pair may be drawn twice; a third may not. |
+| `groups[].id` | A boundary, lane or stage id the spec declares. |
+| `element` | The drawn element's `id`. Without it, a node binds the element whose `data-node-id` is its id, a relationship the element whose `data-edge-id` is its `id`, a group the element whose `data-group-id` is its id. |
+| `capabilities` | Any of `focus`, `trace`, `zoom`, `search` set to `true`. Other keys are ignored. |
+
+The compiler checks the result in this order, and any failure emits the
+semantic fallback with a warning naming the reason:
+
+1. the SVG passes the [trust boundary](#trust-boundary) exactly like contract 1
+   markup;
+2. the manifest has the shape above, at most 400 nodes, 1200 relationships and
+   100 groups, and element references are plain tokens;
+3. every node, relationship and group is one the spec declares
+   (`semantic-graph.ts`) and none is listed twice, so a drawing can never claim
+   a relationship the spec does not state;
+4. every entry binds exactly one element.
+
+Then it writes its own hooks onto the bound elements: `data-ak-node`,
+`data-ak-edge` with `data-ak-from` and `data-ak-to`, `data-ak-group` with
+`data-ak-members`, and a `data-ak-label` taken from the spec, never from the
+adapter. Every `id` in the drawing, and every `href="#…"`, `url(#…)` and
+`aria-labelledby`/`aria-describedby` reference to one, is prefixed with the
+panel scope, so two diagrams on a page never share an id. Style a contract 2
+drawing by class, not by `#id` selector. The canvas carries
+`data-ak-diagram-contract="2"` and the declared capabilities, which the
+compiler-owned viewer and diagram motion read. A manifest may list only part
+of the drawing; what it leaves out stays static.
 
 ## Trust boundary
 

@@ -11,6 +11,15 @@ Release mechanics and the compatibility contract live in
 
 ### Added
 
+- Diagram adapter contract 2. An adapter that declares `contract: 2` may
+  return `{ svg, manifest, capabilities }`: the manifest names which drawn
+  element is which node, relationship and group of the spec, and the
+  capabilities say which viewer interactions the drawing supports. The
+  compiler rejects a manifest that names anything the spec does not declare,
+  writes its own `data-ak-*` hooks with labels taken from the spec, and
+  prefixes every id in the drawing with the panel scope. Contract 1 adapters
+  are unchanged. See [docs/diagram-adapter.md](./docs/diagram-adapter.md#contract-2-semantic-manifest).
+
 - ChatGPT plugin package. `packaging/chatgpt/` connects ChatGPT to the hosted
   MCP server at `https://render.agentkit.best/mcp` with AgentKit OAuth, so no
   Node or npm is needed; the local stdio manifests are unchanged.
