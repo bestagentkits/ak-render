@@ -86,6 +86,7 @@
     "qa:pre": "pnpm verify && pnpm snapshots:check && pnpm gallery:check && pnpm schema:check && playwright test --workers 2",
     "visual:check": "node scripts/visual-check.mjs",
     "bench:3d": "playwright test tests/browser/bench-3d.spec.ts --workers 1",
+    "export:matrix": "pnpm build && node scripts/export-matrix.mjs",
     "bench:3d:update": "playwright test tests/browser/bench-3d.spec.ts --workers 1 --update-snapshots"
   },
   "devDependencies": {
