@@ -6,26 +6,10 @@ import { createModelResolver } from '../../src/assets/model-assets.js';
 import { createPointCloudResolver } from '../../src/assets/point-cloud-assets.js';
 import { compile } from '../../src/index.js';
 import { browserWorkspace } from './browser-workspace.js';
+import { THREE_FIXTURES as FIXTURES } from './three-fixtures.js';
 
 // Without WebGL 2 every 3D widget must stop at `unsupported` and leave its
-// static content (table, list, image or SVG) readable. One representative
-// fixture per widget, the same set the bench uses.
-const FIXTURES = [
-  'scene-3d-basic',
-  'network-3d-basic',
-  'scatter-3d-20k',
-  'bars-3d-dense',
-  'model-3d-crate',
-  'globe-3d-routes',
-  'product-3d-speaker',
-  'particles-3d-galaxy',
-  'shader-3d-controls',
-  'text-3d-hero',
-  'point-cloud-3d-basic',
-  'timeline-3d-space',
-  'morph-3d-shapes',
-  'terrain-3d-alpine',
-] as const;
+// static content (table, list, image or SVG) readable.
 
 const fixtureDir = fileURLToPath(new URL('../../fixtures/3d/', import.meta.url));
 const workspace = browserWorkspace('three-no-webgl');

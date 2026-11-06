@@ -207,6 +207,23 @@ test.describe('scatter-3d', { tag: '@gl' }, () => {
       });
     }
 
+  test('reduced motion settles on a still frame with no running loop', async ({ browser }) => {
+    const context = await browser.newContext({ reducedMotion: 'reduce' });
+    const page = await context.newPage();
+    await page.goto(pageUrl('scatter-3d-basic'));
+    await ready(page);
+    const frames = () =>
+      page.evaluate(
+        () =>
+          (window as unknown as { akRender3d: { stats(): { frames: number } } }).akRender3d.stats()
+            .frames,
+      );
+    const held = await frames();
+    await page.waitForTimeout(400);
+    expect(await frames()).toBe(held);
+    await context.close();
+  });
+
   test('without JavaScript every value is in the table under the poster', async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();

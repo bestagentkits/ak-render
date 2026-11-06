@@ -184,6 +184,20 @@ test.describe('particles-3d', { tag: '@gl' }, () => {
     expect((await stats(page)).particleResources).toBe(12);
   });
 
+  test('the pause control takes keyboard focus, and Enter and Space toggle it', async ({
+    page,
+  }) => {
+    await page.goto(pageUrl('particles-3d-galaxy'));
+    await allReady(page);
+    const pause = page.locator('.ak-pt-pause');
+    await pause.focus();
+    await expect(pause).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(pause).toHaveAttribute('aria-pressed', 'true');
+    await page.keyboard.press('Space');
+    await expect(pause).toHaveAttribute('aria-pressed', 'false');
+  });
+
   test('without JavaScript the poster and the summary carry the page', async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
