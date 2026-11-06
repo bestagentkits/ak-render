@@ -194,6 +194,20 @@ test.describe('shader-3d', { tag: '@gl' }, () => {
     expect((await stats(page)).shaderResources).toBe(6);
   });
 
+  test('the pause control takes keyboard focus, and Enter and Space toggle it', async ({
+    page,
+  }) => {
+    await page.goto(pageUrl('shader-3d-controls'));
+    await allReady(page);
+    const pause = page.locator('.ak-sh-pause');
+    await pause.focus();
+    await expect(pause).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(pause).toHaveAttribute('aria-pressed', 'true');
+    await page.keyboard.press('Space');
+    await expect(pause).toHaveAttribute('aria-pressed', 'false');
+  });
+
   test('without JavaScript the poster, summary and disabled controls carry the page', async ({
     browser,
   }) => {

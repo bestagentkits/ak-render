@@ -155,6 +155,23 @@ test.describe('network-3d', { tag: '@gl' }, () => {
     await page.keyboard.press('Escape');
   });
 
+  test('reduced motion settles on a still frame with no running loop', async ({ browser }) => {
+    const context = await browser.newContext({ reducedMotion: 'reduce' });
+    const page = await context.newPage();
+    await page.goto(basic);
+    await ready(page);
+    const frames = () =>
+      page.evaluate(
+        () =>
+          (window as unknown as { akRender3d: { stats(): { frames: number } } }).akRender3d.stats()
+            .frames,
+      );
+    const held = await frames();
+    await page.waitForTimeout(400);
+    expect(await frames()).toBe(held);
+    await context.close();
+  });
+
   test('without JavaScript the plan and the node and link table carry the graph', async ({
     browser,
   }) => {

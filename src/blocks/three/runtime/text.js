@@ -420,6 +420,8 @@ export function mountText(el, kit) {
       return {
         calls: renderer.info.render.calls,
         triangles: renderer.info.render.triangles,
+        geometries: renderer.info.memory.geometries,
+        textures: renderer.info.memory.textures,
         quality,
         dpr: renderer.getPixelRatio(),
         motion,

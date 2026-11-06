@@ -703,6 +703,8 @@ function mount(el) {
       return {
         calls: renderer.info.render.calls,
         triangles: renderer.info.render.triangles,
+        geometries: renderer.info.memory.geometries,
+        textures: renderer.info.memory.textures,
         quality,
         dpr: renderer.getPixelRatio(),
       };
@@ -849,12 +851,16 @@ function stats() {
   let calls = 0;
   let triangles = 0;
   let frames = 0;
+  let gpuGeometries = 0;
+  let gpuTextures = 0;
   const renderMs = [];
   const profiles = new Set();
   for (const record of mounts) {
     const info = record.info();
     calls += info.calls;
     triangles += info.triangles;
+    gpuGeometries += info.geometries;
+    gpuTextures += info.textures;
     frames += record.frames;
     profiles.add(`${info.quality}@${info.dpr}`);
     renderMs.push(...record.renderMs);
@@ -862,6 +868,9 @@ function stats() {
   return {
     mounts: mounts.size,
     geometries: geometries.size,
+    /** Geometries and textures the live renderers report via renderer.info.memory. */
+    gpuGeometries,
+    gpuTextures,
     calls,
     triangles,
     profile: [...profiles].join(','),
