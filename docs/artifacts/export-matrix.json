@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-05T21:04:50.910Z",
+  "generatedAt": "2026-11-06T01:12:42.962Z",
   "compilerVersion": "0.3.0",
-  "commit": "22a4c7883ac5b59ce22df1e1ec4d5ec39f1621e4",
+  "commit": "unknown",
   "environment": {
     "os": "win32 10.0.26200 x64",
     "cpu": "Intel(R) Core(TM) i7-14700K x28",
@@ -11,7 +11,7 @@
     "localBrowserSource": "installed",
     "localRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Ti (0x00002D04) Direct3D11 vs_5_0 ps_5_0, D3D11)",
     "softwareGpu": false,
-    "cloud": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+    "cloud": "Cloudflare Browser Run Quick Actions"
   },
   "thresholds": {
     "minFrameColors": 6,
@@ -25,9 +25,9 @@
       "total": 28
     },
     "cloud": {
-      "passed": 0,
-      "failed": 0,
-      "blocked": 28,
+      "passed": 27,
+      "failed": 1,
+      "blocked": 0,
       "total": 28
     },
     "repeats": [
@@ -55,23 +55,23 @@
       {
         "backend": "cloud",
         "fixture": "scene-3d-basic",
-        "passed": 0,
+        "passed": 20,
         "runs": 20,
-        "status": "blocked"
+        "status": "pass"
       },
       {
         "backend": "cloud",
         "fixture": "product-3d-speaker",
-        "passed": 0,
+        "passed": 20,
         "runs": 20,
-        "status": "blocked"
+        "status": "pass"
       },
       {
         "backend": "cloud",
         "fixture": "globe-3d-routes",
-        "passed": 0,
+        "passed": 20,
         "runs": 20,
-        "status": "blocked"
+        "status": "pass"
       }
     ]
   },
@@ -82,7 +82,7 @@
       "format": "png",
       "backend": "local",
       "status": "pass",
-      "ms": 1345,
+      "ms": 1458,
       "bytes": 1341543,
       "sha256": "886cbdb462a765815e403b6da20ce2420a92d298eb9591f81ac77b7758206105",
       "image": {
@@ -106,8 +106,15 @@
       "fixture": "scene-3d-basic",
       "format": "png",
       "backend": "cloud",
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "status": "pass",
+      "ms": 12075,
+      "bytes": 1988403,
+      "sha256": "91df9431205b47d85f358e448bbc1267993d70ba37f1acc2599889e1be5aff67",
+      "image": {
+        "width": 2880,
+        "height": 2552
+      },
+      "scenes": 1
     },
     {
       "widget": "scene-3d",
@@ -115,7 +122,7 @@
       "format": "pdf",
       "backend": "local",
       "status": "pass",
-      "ms": 873,
+      "ms": 892,
       "bytes": 255719,
       "scenes": 1,
       "frames": [
@@ -134,8 +141,10 @@
       "fixture": "scene-3d-basic",
       "format": "pdf",
       "backend": "cloud",
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "status": "pass",
+      "ms": 4054,
+      "bytes": 242252,
+      "scenes": 1
     },
     {
       "widget": "model-3d",
@@ -143,7 +152,7 @@
       "format": "png",
       "backend": "local",
       "status": "pass",
-      "ms": 1246,
+      "ms": 1304,
       "bytes": 1923444,
       "sha256": "68dfb1f4d5c4910991538fdd1a770d7246ea784751165e39ac8e04b3189f71c8",
       "image": {
@@ -167,8 +176,9 @@
       "fixture": "model-3d-crate",
       "format": "png",
       "backend": "cloud",
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "status": "fail",
+      "code": "webgl-unavailable",
+      "detail": "the page settled as webgl-unavailable (states: loading); the static plan is not exported as success"
     },
     {
       "widget": "model-3d",
@@ -176,7 +186,7 @@
       "format": "pdf",
       "backend": "local",
       "status": "pass",
-      "ms": 950,
+      "ms": 967,
       "bytes": 850917,
       "scenes": 1,
       "frames": [
@@ -195,8 +205,10 @@
       "fixture": "model-3d-crate",
       "format": "pdf",
       "backend": "cloud",
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "status": "pass",
+      "ms": 5229,
+      "bytes": 815504,
+      "scenes": 1
     },
     {
       "widget": "product-3d",
@@ -204,7 +216,7 @@
       "format": "png",
       "backend": "local",
       "status": "pass",
-      "ms": 1398,
+      "ms": 1441,
       "bytes": 1749606,
       "sha256": "52f234f2a14978b13bbca1fc25456417363385f5968c11ebb1486bb3db27dc89",
       "image": {
@@ -228,8 +240,15 @@
       "fixture": "product-3d-speaker",
       "format": "png",
       "backend": "cloud",
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "status": "pass",
+      "ms": 14443,
+      "bytes": 2417482,
+      "sha256": "f9e053ad8d5cc253df2e7b67277849d6feba3f68d26c425cdbdc5c913bde31ba",
+      "image": {
+        "width": 2880,
+        "height": 3282
+      },
+      "scenes": 1
     },
     {
       "widget": "product-3d",
@@ -237,7 +256,7 @@
       "format": "pdf",
       "backend": "local",
       "status": "pass",
-      "ms": 1047,
+      "ms": 1060,
       "bytes": 309583,
       "scenes": 1,
       "frames": [
@@ -256,8 +275,10 @@
       "fixture": "product-3d-speaker",
       "format": "pdf",
       "backend": "cloud",
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "status": "pass",
+      "ms": 9922,
+      "bytes": 290725,
+      "scenes": 1
     },
     {
       "widget": "particles-3d",
@@ -265,7 +286,7 @@
       "format": "png",
       "backend": "local",
       "status": "pass",
-      "ms": 1174,
+      "ms": 1192,
       "bytes": 2348357,
       "sha256": "b8d4d2b88fefbfe6221dc2e644d84a359f3ae4080b9d3ddddc3a389e695ff4aa",
       "image": {
@@ -289,8 +310,15 @@
       "fixture": "particles-3d-galaxy",
       "format": "png",
       "backend": "cloud",
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "status": "pass",
+      "ms": 5518,
+      "bytes": 2846754,
+      "sha256": "1e5989b11048bcaa9106dc5b9fb7866a21c0449301167db585575f5cf2046a49",
+      "image": {
+        "width": 2880,
+        "height": 2232
+      },
+      "scenes": 1
     },
     {
       "widget": "particles-3d",
@@ -298,7 +326,7 @@
       "format": "pdf",
       "backend": "local",
       "status": "pass",
-      "ms": 858,
+      "ms": 908,
       "bytes": 933651,
       "scenes": 1,
       "frames": [
@@ -317,8 +345,10 @@
       "fixture": "particles-3d-galaxy",
       "format": "pdf",
       "backend": "cloud",
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "status": "pass",
+      "ms": 8334,
+      "bytes": 927497,
+      "scenes": 1
     },
     {
       "widget": "text-3d",
@@ -326,7 +356,7 @@
       "format": "png",
       "backend": "local",
       "status": "pass",
-      "ms": 1381,
+      "ms": 1215,
       "bytes": 1258274,
       "sha256": "2d7056bc54e5e9a9eb3f306bf6c9d1df936dfc65140762e7b9092c16404660de",
       "image": {
@@ -350,8 +380,15 @@
       "fixture": "text-3d-hero",
       "format": "png",
       "backend": "cloud",
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "status": "pass",
+      "ms": 9822,
+      "bytes": 1836147,
+      "sha256": "50b55e72c2a2d9a7a8458ab16be1ac1db772be01a6819a1f26a7fd4761b5ad32",
+      "image": {
+        "width": 2880,
+        "height": 2046
+      },
+      "scenes": 1
     },
     {
       "widget": "text-3d",
@@ -359,7 +396,7 @@
       "format": "pdf",
       "backend": "local",
       "status": "pass",
-      "ms": 1086,
+      "ms": 1041,
       "bytes": 324355,
       "scenes": 1,
       "frames": [
@@ -378,8 +415,10 @@
       "fixture": "text-3d-hero",
       "format": "pdf",
       "backend": "cloud",
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "status": "pass",
+      "ms": 9789,
+      "bytes": 308290,
+      "scenes": 1
     },
     {
       "widget": "shader-3d",
@@ -387,9 +426,9 @@
       "format": "png",
       "backend": "local",
       "status": "pass",
-      "ms": 4061,
-      "bytes": 9573931,
-      "sha256": "3a5ab0d22ba60e13a608ef5c32bf87b4680d63cbfba10dae7e26eedc899d2fd9",
+      "ms": 4100,
+      "bytes": 9573917,
+      "sha256": "b27653505c8639e6aed78062412601b5c634c7a1a6be0d7698d7eef033fd2d82",
       "image": {
         "width": 2880,
         "height": 8570
@@ -435,8 +474,15 @@
       "fixture": "shader-3d-presets",
       "format": "png",
       "backend": "cloud",
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "status": "pass",
+      "ms": 16939,
+      "bytes": 8260510,
+      "sha256": "a6df92bf872a036bf0a2143c4b759622aa2abf1117eb1328724f691db485ada0",
+      "image": {
+        "width": 2880,
+        "height": 8570
+      },
+      "scenes": 5
     },
     {
       "widget": "shader-3d",
@@ -444,8 +490,8 @@
       "format": "pdf",
       "backend": "local",
       "status": "pass",
-      "ms": 3902,
-      "bytes": 12784852,
+      "ms": 3924,
+      "bytes": 12784847,
       "scenes": 5,
       "frames": [
         {
@@ -487,8 +533,10 @@
       "fixture": "shader-3d-presets",
       "format": "pdf",
       "backend": "cloud",
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "status": "pass",
+      "ms": 18093,
+      "bytes": 11076123,
+      "scenes": 5
     },
     {
       "widget": "morph-3d",
@@ -496,7 +544,7 @@
       "format": "png",
       "backend": "local",
       "status": "pass",
-      "ms": 1479,
+      "ms": 1555,
       "bytes": 1584393,
       "sha256": "409cfbd797974c80f88a36eb756b413de9b7df4e0e3758c10212a502976780ba",
       "image": {
@@ -520,8 +568,15 @@
       "fixture": "morph-3d-shapes",
       "format": "png",
       "backend": "cloud",
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "status": "pass",
+      "ms": 10050,
+      "bytes": 2160126,
+      "sha256": "468372bac5a05d661aeeb6bc8c3ccf556af42f8bb7e5238d5ee48bb14fab2108",
+      "image": {
+        "width": 2880,
+        "height": 2606
+      },
+      "scenes": 1
     },
     {
       "widget": "morph-3d",
@@ -529,7 +584,7 @@
       "format": "pdf",
       "backend": "local",
       "status": "pass",
-      "ms": 1209,
+      "ms": 1227,
       "bytes": 587286,
       "scenes": 1,
       "frames": [
@@ -548,8 +603,10 @@
       "fixture": "morph-3d-shapes",
       "format": "pdf",
       "backend": "cloud",
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "status": "pass",
+      "ms": 6534,
+      "bytes": 358918,
+      "scenes": 1
     },
     {
       "widget": "network-3d",
@@ -557,7 +614,7 @@
       "format": "png",
       "backend": "local",
       "status": "pass",
-      "ms": 1414,
+      "ms": 1421,
       "bytes": 2215523,
       "sha256": "2a7f590b2ac76f59646876330662a9b06bc57c0b331eb77ff08798689ff32438",
       "image": {
@@ -581,8 +638,15 @@
       "fixture": "network-3d-basic",
       "format": "png",
       "backend": "cloud",
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "status": "pass",
+      "ms": 5973,
+      "bytes": 3076338,
+      "sha256": "9c42bf9a308f45e1939558b034ae301e2513bb3c880c1e76f206f09d7d8956ef",
+      "image": {
+        "width": 2880,
+        "height": 4162
+      },
+      "scenes": 1
     },
     {
       "widget": "network-3d",
@@ -590,7 +654,7 @@
       "format": "pdf",
       "backend": "local",
       "status": "pass",
-      "ms": 937,
+      "ms": 953,
       "bytes": 458665,
       "scenes": 1,
       "frames": [
@@ -609,8 +673,10 @@
       "fixture": "network-3d-basic",
       "format": "pdf",
       "backend": "cloud",
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "status": "pass",
+      "ms": 4098,
+      "bytes": 511093,
+      "scenes": 1
     },
     {
       "widget": "scatter-3d",
@@ -618,7 +684,7 @@
       "format": "png",
       "backend": "local",
       "status": "pass",
-      "ms": 1113,
+      "ms": 1149,
       "bytes": 1845656,
       "sha256": "316814850c04eb7d1f70c0070c23fa37a01caba07b3d3a38ce0d4b052033f20c",
       "image": {
@@ -642,8 +708,15 @@
       "fixture": "scatter-3d-basic",
       "format": "png",
       "backend": "cloud",
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "status": "pass",
+      "ms": 5261,
+      "bytes": 2566017,
+      "sha256": "0abb958ef19995c895f2e97432161418bfdb097eb49e6cfce8ba6a953c36fc22",
+      "image": {
+        "width": 2880,
+        "height": 3226
+      },
+      "scenes": 1
     },
     {
       "widget": "scatter-3d",
@@ -651,7 +724,7 @@
       "format": "pdf",
       "backend": "local",
       "status": "pass",
-      "ms": 953,
+      "ms": 785,
       "bytes": 348870,
       "scenes": 1,
       "frames": [
@@ -670,8 +743,10 @@
       "fixture": "scatter-3d-basic",
       "format": "pdf",
       "backend": "cloud",
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "status": "pass",
+      "ms": 1930,
+      "bytes": 417588,
+      "scenes": 1
     },
     {
       "widget": "bars-3d",
@@ -679,7 +754,7 @@
       "format": "png",
       "backend": "local",
       "status": "pass",
-      "ms": 1274,
+      "ms": 1280,
       "bytes": 1664805,
       "sha256": "dc784635ca42123383ad9a33bc7b84597d221b7bf960e7f3abd71e721def8dab",
       "image": {
@@ -703,8 +778,15 @@
       "fixture": "bars-3d-stacked",
       "format": "png",
       "backend": "cloud",
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "status": "pass",
+      "ms": 10833,
+      "bytes": 2411472,
+      "sha256": "e52b28e6adf476e5783b35a0728e693c84012f5558b746a85128b5db1fa36dd7",
+      "image": {
+        "width": 2880,
+        "height": 3422
+      },
+      "scenes": 1
     },
     {
       "widget": "bars-3d",
@@ -712,7 +794,7 @@
       "format": "pdf",
       "backend": "local",
       "status": "pass",
-      "ms": 945,
+      "ms": 954,
       "bytes": 272609,
       "scenes": 1,
       "frames": [
@@ -731,8 +813,10 @@
       "fixture": "bars-3d-stacked",
       "format": "pdf",
       "backend": "cloud",
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "status": "pass",
+      "ms": 7602,
+      "bytes": 268375,
+      "scenes": 1
     },
     {
       "widget": "globe-3d",
@@ -740,7 +824,7 @@
       "format": "png",
       "backend": "local",
       "status": "pass",
-      "ms": 1450,
+      "ms": 1487,
       "bytes": 2671301,
       "sha256": "4c384312807ecbbaf73e86e3ffa2bb6a68841129d7d30ec03cadb78c979232ab",
       "image": {
@@ -764,8 +848,15 @@
       "fixture": "globe-3d-routes",
       "format": "png",
       "backend": "cloud",
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "status": "pass",
+      "ms": 8570,
+      "bytes": 3586699,
+      "sha256": "cf8ce95fec945ceb5e27bcc081cd91dd6d9c10c869f309f65f98c1a8275a9d1a",
+      "image": {
+        "width": 2880,
+        "height": 5054
+      },
+      "scenes": 1
     },
     {
       "widget": "globe-3d",
@@ -773,8 +864,8 @@
       "format": "pdf",
       "backend": "local",
       "status": "pass",
-      "ms": 920,
-      "bytes": 612705,
+      "ms": 977,
+      "bytes": 612701,
       "scenes": 1,
       "frames": [
         {
@@ -792,8 +883,10 @@
       "fixture": "globe-3d-routes",
       "format": "pdf",
       "backend": "cloud",
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "status": "pass",
+      "ms": 6181,
+      "bytes": 721510,
+      "scenes": 1
     },
     {
       "widget": "point-cloud-3d",
@@ -801,7 +894,7 @@
       "format": "png",
       "backend": "local",
       "status": "pass",
-      "ms": 1149,
+      "ms": 1173,
       "bytes": 1915477,
       "sha256": "fdb9eb9ada132778d60d23cab6b9955155affcfcedad6fa8d5985bc911996855",
       "image": {
@@ -825,8 +918,15 @@
       "fixture": "point-cloud-3d-basic",
       "format": "png",
       "backend": "cloud",
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "status": "pass",
+      "ms": 6481,
+      "bytes": 2745671,
+      "sha256": "3944a5c60c413b65584b96c805e8a728ae54f38c2ed6023d7010915906f2a734",
+      "image": {
+        "width": 2880,
+        "height": 3554
+      },
+      "scenes": 1
     },
     {
       "widget": "point-cloud-3d",
@@ -834,7 +934,7 @@
       "format": "pdf",
       "backend": "local",
       "status": "pass",
-      "ms": 827,
+      "ms": 945,
       "bytes": 345641,
       "scenes": 1,
       "frames": [
@@ -853,8 +953,10 @@
       "fixture": "point-cloud-3d-basic",
       "format": "pdf",
       "backend": "cloud",
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "status": "pass",
+      "ms": 3177,
+      "bytes": 510387,
+      "scenes": 1
     },
     {
       "widget": "terrain-3d",
@@ -862,7 +964,7 @@
       "format": "png",
       "backend": "local",
       "status": "pass",
-      "ms": 1343,
+      "ms": 1360,
       "bytes": 1821139,
       "sha256": "063210f78ffca33df6a06760d205ad341b118f5009d2d76275d066b83c5157f3",
       "image": {
@@ -886,8 +988,15 @@
       "fixture": "terrain-3d-alpine",
       "format": "png",
       "backend": "cloud",
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "status": "pass",
+      "ms": 8388,
+      "bytes": 2420380,
+      "sha256": "b97874042939a3cb74128afa290428a3bb7e317feb4462454628412aa201e342",
+      "image": {
+        "width": 2880,
+        "height": 2786
+      },
+      "scenes": 1
     },
     {
       "widget": "terrain-3d",
@@ -895,7 +1004,7 @@
       "format": "pdf",
       "backend": "local",
       "status": "pass",
-      "ms": 1047,
+      "ms": 1312,
       "bytes": 741275,
       "scenes": 1,
       "frames": [
@@ -914,8 +1023,10 @@
       "fixture": "terrain-3d-alpine",
       "format": "pdf",
       "backend": "cloud",
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "status": "pass",
+      "ms": 25993,
+      "bytes": 719875,
+      "scenes": 1
     },
     {
       "widget": "timeline-3d",
@@ -923,7 +1034,7 @@
       "format": "png",
       "backend": "local",
       "status": "pass",
-      "ms": 1379,
+      "ms": 1417,
       "bytes": 1797426,
       "sha256": "2951ff56716215b2e3c6d649d90ba1047d10cbb8f38f2745da49415dfc29ad7b",
       "image": {
@@ -947,8 +1058,15 @@
       "fixture": "timeline-3d-space",
       "format": "png",
       "backend": "cloud",
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "status": "pass",
+      "ms": 6805,
+      "bytes": 2535874,
+      "sha256": "8ada9fc88d1ceee4a937aa5ad9e84cd7d7bf190f1fb649eb58200bfb648c5a05",
+      "image": {
+        "width": 2880,
+        "height": 2898
+      },
+      "scenes": 1
     },
     {
       "widget": "timeline-3d",
@@ -956,8 +1074,8 @@
       "format": "pdf",
       "backend": "local",
       "status": "pass",
-      "ms": 1063,
-      "bytes": 355857,
+      "ms": 1090,
+      "bytes": 355854,
       "scenes": 1,
       "frames": [
         {
@@ -975,8 +1093,10 @@
       "fixture": "timeline-3d-space",
       "format": "pdf",
       "backend": "cloud",
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "status": "pass",
+      "ms": 10104,
+      "bytes": 344165,
+      "scenes": 1
     }
   ],
   "repeats": [
@@ -986,8 +1106,8 @@
       "runs": 20,
       "passed": 20,
       "status": "pass",
-      "msP50": 1109,
-      "msP95": 1149,
+      "msP50": 1155,
+      "msP95": 1280,
       "distinctPng": 1
     },
     {
@@ -996,8 +1116,8 @@
       "runs": 20,
       "passed": 20,
       "status": "pass",
-      "msP50": 1419,
-      "msP95": 1485,
+      "msP50": 1433,
+      "msP95": 1767,
       "distinctPng": 2
     },
     {
@@ -1006,33 +1126,39 @@
       "runs": 20,
       "passed": 20,
       "status": "pass",
-      "msP50": 1484,
-      "msP95": 1576,
-      "distinctPng": 11
+      "msP50": 1446,
+      "msP95": 1510,
+      "distinctPng": 6
     },
     {
       "backend": "cloud",
       "fixture": "scene-3d-basic",
       "runs": 20,
-      "passed": 0,
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "passed": 20,
+      "status": "pass",
+      "msP50": 7679,
+      "msP95": 17324,
+      "distinctPng": 20
     },
     {
       "backend": "cloud",
       "fixture": "product-3d-speaker",
       "runs": 20,
-      "passed": 0,
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "passed": 20,
+      "status": "pass",
+      "msP50": 8794,
+      "msP95": 16300,
+      "distinctPng": 2
     },
     {
       "backend": "cloud",
       "fixture": "globe-3d-routes",
       "runs": 20,
-      "passed": 0,
-      "status": "blocked",
-      "detail": "blocked: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are not set"
+      "passed": 20,
+      "status": "pass",
+      "msP50": 5175,
+      "msP95": 10839,
+      "distinctPng": 1
     }
   ],
   "cases": [
@@ -1107,7 +1233,722 @@
       "code": "cloud-unauthorized",
       "status": "pass",
       "detail": "Browser Run answered 401; 10000: Authentication error; the token needs the account permission \"Browser Rendering - Edit\""
+    },
+    {
+      "id": "cloud-gpu-probe",
+      "backend": "cloud",
+      "expected": [
+        "ready"
+      ],
+      "code": "ready",
+      "status": "pass",
+      "detail": "{\"states\":[\"ready\"],\"renderer\":\"ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)\",\"frames\":[{\"width\":2108,\"height\":1184}],\"signals\":[{\"colors\":257,\"lit\":0.247}]}"
     }
   ],
-  "approvals": []
+  "approvals": [
+    {
+      "page": "scene-3d-basic",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1040838,
+      "sha256": "f6bdce2b4cba794fe42d6f81a51d07cfd3ace55cbc4b8bb78f8b165bd51b96f7",
+      "scenes": 1
+    },
+    {
+      "page": "scene-3d-basic",
+      "format": "pdf",
+      "name": "page.html",
+      "bytes": 1040838,
+      "sha256": "f6bdce2b4cba794fe42d6f81a51d07cfd3ace55cbc4b8bb78f8b165bd51b96f7",
+      "scenes": 1
+    },
+    {
+      "page": "model-3d-crate",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1045845,
+      "sha256": "666a898f9a89300b34a1383337a523d228aa05bf379f33eb592898499dd56172",
+      "scenes": 1
+    },
+    {
+      "page": "model-3d-crate",
+      "format": "pdf",
+      "name": "page.html",
+      "bytes": 1045845,
+      "sha256": "666a898f9a89300b34a1383337a523d228aa05bf379f33eb592898499dd56172",
+      "scenes": 1
+    },
+    {
+      "page": "product-3d-speaker",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1052660,
+      "sha256": "6778dc9d34221602740f40fe00c6607300950b1463f449ce55d48090d2ecad6d",
+      "scenes": 1
+    },
+    {
+      "page": "product-3d-speaker",
+      "format": "pdf",
+      "name": "page.html",
+      "bytes": 1052660,
+      "sha256": "6778dc9d34221602740f40fe00c6607300950b1463f449ce55d48090d2ecad6d",
+      "scenes": 1
+    },
+    {
+      "page": "particles-3d-galaxy",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1166391,
+      "sha256": "a61190bfbe022d404450360adc472b5b85e1e43de13c58cad42d56b205f22f68",
+      "scenes": 1
+    },
+    {
+      "page": "particles-3d-galaxy",
+      "format": "pdf",
+      "name": "page.html",
+      "bytes": 1166391,
+      "sha256": "a61190bfbe022d404450360adc472b5b85e1e43de13c58cad42d56b205f22f68",
+      "scenes": 1
+    },
+    {
+      "page": "text-3d-hero",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1038480,
+      "sha256": "2647630502216dea1d2fd73a3b57f0bcaee5303afae169b8e28aa3ca860167b0",
+      "scenes": 1
+    },
+    {
+      "page": "text-3d-hero",
+      "format": "pdf",
+      "name": "page.html",
+      "bytes": 1038480,
+      "sha256": "2647630502216dea1d2fd73a3b57f0bcaee5303afae169b8e28aa3ca860167b0",
+      "scenes": 1
+    },
+    {
+      "page": "shader-3d-presets",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 2856522,
+      "sha256": "927625c57ecd42af527156f78bb31cc085f9ec27aca2f302bbe9da78b9a7555d",
+      "scenes": 5
+    },
+    {
+      "page": "shader-3d-presets",
+      "format": "pdf",
+      "name": "page.html",
+      "bytes": 2856522,
+      "sha256": "927625c57ecd42af527156f78bb31cc085f9ec27aca2f302bbe9da78b9a7555d",
+      "scenes": 5
+    },
+    {
+      "page": "morph-3d-shapes",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1105288,
+      "sha256": "7679bc59c951bfd127080cb5c70baadd6864426bb5b13589846d6dda401cee0c",
+      "scenes": 1
+    },
+    {
+      "page": "morph-3d-shapes",
+      "format": "pdf",
+      "name": "page.html",
+      "bytes": 1105288,
+      "sha256": "7679bc59c951bfd127080cb5c70baadd6864426bb5b13589846d6dda401cee0c",
+      "scenes": 1
+    },
+    {
+      "page": "network-3d-basic",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1075609,
+      "sha256": "0cb077825bfb6632350b81986c7751b34890634fc5b01d0ace0038ed091f64b2",
+      "scenes": 1
+    },
+    {
+      "page": "network-3d-basic",
+      "format": "pdf",
+      "name": "page.html",
+      "bytes": 1075609,
+      "sha256": "0cb077825bfb6632350b81986c7751b34890634fc5b01d0ace0038ed091f64b2",
+      "scenes": 1
+    },
+    {
+      "page": "scatter-3d-basic",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1051423,
+      "sha256": "ecf0b69ff759f8c77c96f8c39168666ce5f49e1e4f3b7adf5e5cfcf95cc399a1",
+      "scenes": 1
+    },
+    {
+      "page": "scatter-3d-basic",
+      "format": "pdf",
+      "name": "page.html",
+      "bytes": 1051423,
+      "sha256": "ecf0b69ff759f8c77c96f8c39168666ce5f49e1e4f3b7adf5e5cfcf95cc399a1",
+      "scenes": 1
+    },
+    {
+      "page": "bars-3d-stacked",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1049429,
+      "sha256": "a9cdc3b518a42f6e1b5a31b4a81140947d207fe7437b7d6bf5da4eabe9cc9c53",
+      "scenes": 1
+    },
+    {
+      "page": "bars-3d-stacked",
+      "format": "pdf",
+      "name": "page.html",
+      "bytes": 1049429,
+      "sha256": "a9cdc3b518a42f6e1b5a31b4a81140947d207fe7437b7d6bf5da4eabe9cc9c53",
+      "scenes": 1
+    },
+    {
+      "page": "globe-3d-routes",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1141221,
+      "sha256": "094aa13d2795e8a10ce3e3085078c069654d4376a151f75747c29034907a4e32",
+      "scenes": 1
+    },
+    {
+      "page": "globe-3d-routes",
+      "format": "pdf",
+      "name": "page.html",
+      "bytes": 1141221,
+      "sha256": "094aa13d2795e8a10ce3e3085078c069654d4376a151f75747c29034907a4e32",
+      "scenes": 1
+    },
+    {
+      "page": "point-cloud-3d-basic",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1106343,
+      "sha256": "7e3259250bb2f0040b2a43b1ca299685656f17f438944f1bc75209f727621f23",
+      "scenes": 1
+    },
+    {
+      "page": "point-cloud-3d-basic",
+      "format": "pdf",
+      "name": "page.html",
+      "bytes": 1106343,
+      "sha256": "7e3259250bb2f0040b2a43b1ca299685656f17f438944f1bc75209f727621f23",
+      "scenes": 1
+    },
+    {
+      "page": "terrain-3d-alpine",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1572564,
+      "sha256": "01cb79fc8ee5a9cd76bdd545bc83e9e361eabc8537945599c34377c1019b997f",
+      "scenes": 1
+    },
+    {
+      "page": "terrain-3d-alpine",
+      "format": "pdf",
+      "name": "page.html",
+      "bytes": 1572564,
+      "sha256": "01cb79fc8ee5a9cd76bdd545bc83e9e361eabc8537945599c34377c1019b997f",
+      "scenes": 1
+    },
+    {
+      "page": "timeline-3d-space",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1054569,
+      "sha256": "f27fb6cbbda5b1b510946f7ae0b9e6ee7895f0e4f5030c4f585d08343adf1954",
+      "scenes": 1
+    },
+    {
+      "page": "timeline-3d-space",
+      "format": "pdf",
+      "name": "page.html",
+      "bytes": 1054569,
+      "sha256": "f27fb6cbbda5b1b510946f7ae0b9e6ee7895f0e4f5030c4f585d08343adf1954",
+      "scenes": 1
+    },
+    {
+      "page": "scene-3d-basic",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1040838,
+      "sha256": "f6bdce2b4cba794fe42d6f81a51d07cfd3ace55cbc4b8bb78f8b165bd51b96f7",
+      "scenes": 1
+    },
+    {
+      "page": "scene-3d-basic",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1040838,
+      "sha256": "f6bdce2b4cba794fe42d6f81a51d07cfd3ace55cbc4b8bb78f8b165bd51b96f7",
+      "scenes": 1
+    },
+    {
+      "page": "scene-3d-basic",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1040838,
+      "sha256": "f6bdce2b4cba794fe42d6f81a51d07cfd3ace55cbc4b8bb78f8b165bd51b96f7",
+      "scenes": 1
+    },
+    {
+      "page": "scene-3d-basic",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1040838,
+      "sha256": "f6bdce2b4cba794fe42d6f81a51d07cfd3ace55cbc4b8bb78f8b165bd51b96f7",
+      "scenes": 1
+    },
+    {
+      "page": "scene-3d-basic",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1040838,
+      "sha256": "f6bdce2b4cba794fe42d6f81a51d07cfd3ace55cbc4b8bb78f8b165bd51b96f7",
+      "scenes": 1
+    },
+    {
+      "page": "scene-3d-basic",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1040838,
+      "sha256": "f6bdce2b4cba794fe42d6f81a51d07cfd3ace55cbc4b8bb78f8b165bd51b96f7",
+      "scenes": 1
+    },
+    {
+      "page": "scene-3d-basic",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1040838,
+      "sha256": "f6bdce2b4cba794fe42d6f81a51d07cfd3ace55cbc4b8bb78f8b165bd51b96f7",
+      "scenes": 1
+    },
+    {
+      "page": "scene-3d-basic",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1040838,
+      "sha256": "f6bdce2b4cba794fe42d6f81a51d07cfd3ace55cbc4b8bb78f8b165bd51b96f7",
+      "scenes": 1
+    },
+    {
+      "page": "scene-3d-basic",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1040838,
+      "sha256": "f6bdce2b4cba794fe42d6f81a51d07cfd3ace55cbc4b8bb78f8b165bd51b96f7",
+      "scenes": 1
+    },
+    {
+      "page": "scene-3d-basic",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1040838,
+      "sha256": "f6bdce2b4cba794fe42d6f81a51d07cfd3ace55cbc4b8bb78f8b165bd51b96f7",
+      "scenes": 1
+    },
+    {
+      "page": "scene-3d-basic",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1040838,
+      "sha256": "f6bdce2b4cba794fe42d6f81a51d07cfd3ace55cbc4b8bb78f8b165bd51b96f7",
+      "scenes": 1
+    },
+    {
+      "page": "scene-3d-basic",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1040838,
+      "sha256": "f6bdce2b4cba794fe42d6f81a51d07cfd3ace55cbc4b8bb78f8b165bd51b96f7",
+      "scenes": 1
+    },
+    {
+      "page": "scene-3d-basic",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1040838,
+      "sha256": "f6bdce2b4cba794fe42d6f81a51d07cfd3ace55cbc4b8bb78f8b165bd51b96f7",
+      "scenes": 1
+    },
+    {
+      "page": "scene-3d-basic",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1040838,
+      "sha256": "f6bdce2b4cba794fe42d6f81a51d07cfd3ace55cbc4b8bb78f8b165bd51b96f7",
+      "scenes": 1
+    },
+    {
+      "page": "scene-3d-basic",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1040838,
+      "sha256": "f6bdce2b4cba794fe42d6f81a51d07cfd3ace55cbc4b8bb78f8b165bd51b96f7",
+      "scenes": 1
+    },
+    {
+      "page": "scene-3d-basic",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1040838,
+      "sha256": "f6bdce2b4cba794fe42d6f81a51d07cfd3ace55cbc4b8bb78f8b165bd51b96f7",
+      "scenes": 1
+    },
+    {
+      "page": "scene-3d-basic",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1040838,
+      "sha256": "f6bdce2b4cba794fe42d6f81a51d07cfd3ace55cbc4b8bb78f8b165bd51b96f7",
+      "scenes": 1
+    },
+    {
+      "page": "scene-3d-basic",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1040838,
+      "sha256": "f6bdce2b4cba794fe42d6f81a51d07cfd3ace55cbc4b8bb78f8b165bd51b96f7",
+      "scenes": 1
+    },
+    {
+      "page": "scene-3d-basic",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1040838,
+      "sha256": "f6bdce2b4cba794fe42d6f81a51d07cfd3ace55cbc4b8bb78f8b165bd51b96f7",
+      "scenes": 1
+    },
+    {
+      "page": "scene-3d-basic",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1040838,
+      "sha256": "f6bdce2b4cba794fe42d6f81a51d07cfd3ace55cbc4b8bb78f8b165bd51b96f7",
+      "scenes": 1
+    },
+    {
+      "page": "product-3d-speaker",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1052660,
+      "sha256": "6778dc9d34221602740f40fe00c6607300950b1463f449ce55d48090d2ecad6d",
+      "scenes": 1
+    },
+    {
+      "page": "product-3d-speaker",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1052660,
+      "sha256": "6778dc9d34221602740f40fe00c6607300950b1463f449ce55d48090d2ecad6d",
+      "scenes": 1
+    },
+    {
+      "page": "product-3d-speaker",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1052660,
+      "sha256": "6778dc9d34221602740f40fe00c6607300950b1463f449ce55d48090d2ecad6d",
+      "scenes": 1
+    },
+    {
+      "page": "product-3d-speaker",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1052660,
+      "sha256": "6778dc9d34221602740f40fe00c6607300950b1463f449ce55d48090d2ecad6d",
+      "scenes": 1
+    },
+    {
+      "page": "product-3d-speaker",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1052660,
+      "sha256": "6778dc9d34221602740f40fe00c6607300950b1463f449ce55d48090d2ecad6d",
+      "scenes": 1
+    },
+    {
+      "page": "product-3d-speaker",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1052660,
+      "sha256": "6778dc9d34221602740f40fe00c6607300950b1463f449ce55d48090d2ecad6d",
+      "scenes": 1
+    },
+    {
+      "page": "product-3d-speaker",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1052660,
+      "sha256": "6778dc9d34221602740f40fe00c6607300950b1463f449ce55d48090d2ecad6d",
+      "scenes": 1
+    },
+    {
+      "page": "product-3d-speaker",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1052660,
+      "sha256": "6778dc9d34221602740f40fe00c6607300950b1463f449ce55d48090d2ecad6d",
+      "scenes": 1
+    },
+    {
+      "page": "product-3d-speaker",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1052660,
+      "sha256": "6778dc9d34221602740f40fe00c6607300950b1463f449ce55d48090d2ecad6d",
+      "scenes": 1
+    },
+    {
+      "page": "product-3d-speaker",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1052660,
+      "sha256": "6778dc9d34221602740f40fe00c6607300950b1463f449ce55d48090d2ecad6d",
+      "scenes": 1
+    },
+    {
+      "page": "product-3d-speaker",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1052660,
+      "sha256": "6778dc9d34221602740f40fe00c6607300950b1463f449ce55d48090d2ecad6d",
+      "scenes": 1
+    },
+    {
+      "page": "product-3d-speaker",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1052660,
+      "sha256": "6778dc9d34221602740f40fe00c6607300950b1463f449ce55d48090d2ecad6d",
+      "scenes": 1
+    },
+    {
+      "page": "product-3d-speaker",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1052660,
+      "sha256": "6778dc9d34221602740f40fe00c6607300950b1463f449ce55d48090d2ecad6d",
+      "scenes": 1
+    },
+    {
+      "page": "product-3d-speaker",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1052660,
+      "sha256": "6778dc9d34221602740f40fe00c6607300950b1463f449ce55d48090d2ecad6d",
+      "scenes": 1
+    },
+    {
+      "page": "product-3d-speaker",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1052660,
+      "sha256": "6778dc9d34221602740f40fe00c6607300950b1463f449ce55d48090d2ecad6d",
+      "scenes": 1
+    },
+    {
+      "page": "product-3d-speaker",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1052660,
+      "sha256": "6778dc9d34221602740f40fe00c6607300950b1463f449ce55d48090d2ecad6d",
+      "scenes": 1
+    },
+    {
+      "page": "product-3d-speaker",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1052660,
+      "sha256": "6778dc9d34221602740f40fe00c6607300950b1463f449ce55d48090d2ecad6d",
+      "scenes": 1
+    },
+    {
+      "page": "product-3d-speaker",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1052660,
+      "sha256": "6778dc9d34221602740f40fe00c6607300950b1463f449ce55d48090d2ecad6d",
+      "scenes": 1
+    },
+    {
+      "page": "product-3d-speaker",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1052660,
+      "sha256": "6778dc9d34221602740f40fe00c6607300950b1463f449ce55d48090d2ecad6d",
+      "scenes": 1
+    },
+    {
+      "page": "product-3d-speaker",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1052660,
+      "sha256": "6778dc9d34221602740f40fe00c6607300950b1463f449ce55d48090d2ecad6d",
+      "scenes": 1
+    },
+    {
+      "page": "globe-3d-routes",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1141221,
+      "sha256": "094aa13d2795e8a10ce3e3085078c069654d4376a151f75747c29034907a4e32",
+      "scenes": 1
+    },
+    {
+      "page": "globe-3d-routes",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1141221,
+      "sha256": "094aa13d2795e8a10ce3e3085078c069654d4376a151f75747c29034907a4e32",
+      "scenes": 1
+    },
+    {
+      "page": "globe-3d-routes",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1141221,
+      "sha256": "094aa13d2795e8a10ce3e3085078c069654d4376a151f75747c29034907a4e32",
+      "scenes": 1
+    },
+    {
+      "page": "globe-3d-routes",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1141221,
+      "sha256": "094aa13d2795e8a10ce3e3085078c069654d4376a151f75747c29034907a4e32",
+      "scenes": 1
+    },
+    {
+      "page": "globe-3d-routes",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1141221,
+      "sha256": "094aa13d2795e8a10ce3e3085078c069654d4376a151f75747c29034907a4e32",
+      "scenes": 1
+    },
+    {
+      "page": "globe-3d-routes",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1141221,
+      "sha256": "094aa13d2795e8a10ce3e3085078c069654d4376a151f75747c29034907a4e32",
+      "scenes": 1
+    },
+    {
+      "page": "globe-3d-routes",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1141221,
+      "sha256": "094aa13d2795e8a10ce3e3085078c069654d4376a151f75747c29034907a4e32",
+      "scenes": 1
+    },
+    {
+      "page": "globe-3d-routes",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1141221,
+      "sha256": "094aa13d2795e8a10ce3e3085078c069654d4376a151f75747c29034907a4e32",
+      "scenes": 1
+    },
+    {
+      "page": "globe-3d-routes",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1141221,
+      "sha256": "094aa13d2795e8a10ce3e3085078c069654d4376a151f75747c29034907a4e32",
+      "scenes": 1
+    },
+    {
+      "page": "globe-3d-routes",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1141221,
+      "sha256": "094aa13d2795e8a10ce3e3085078c069654d4376a151f75747c29034907a4e32",
+      "scenes": 1
+    },
+    {
+      "page": "globe-3d-routes",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1141221,
+      "sha256": "094aa13d2795e8a10ce3e3085078c069654d4376a151f75747c29034907a4e32",
+      "scenes": 1
+    },
+    {
+      "page": "globe-3d-routes",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1141221,
+      "sha256": "094aa13d2795e8a10ce3e3085078c069654d4376a151f75747c29034907a4e32",
+      "scenes": 1
+    },
+    {
+      "page": "globe-3d-routes",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1141221,
+      "sha256": "094aa13d2795e8a10ce3e3085078c069654d4376a151f75747c29034907a4e32",
+      "scenes": 1
+    },
+    {
+      "page": "globe-3d-routes",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1141221,
+      "sha256": "094aa13d2795e8a10ce3e3085078c069654d4376a151f75747c29034907a4e32",
+      "scenes": 1
+    },
+    {
+      "page": "globe-3d-routes",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1141221,
+      "sha256": "094aa13d2795e8a10ce3e3085078c069654d4376a151f75747c29034907a4e32",
+      "scenes": 1
+    },
+    {
+      "page": "globe-3d-routes",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1141221,
+      "sha256": "094aa13d2795e8a10ce3e3085078c069654d4376a151f75747c29034907a4e32",
+      "scenes": 1
+    },
+    {
+      "page": "globe-3d-routes",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1141221,
+      "sha256": "094aa13d2795e8a10ce3e3085078c069654d4376a151f75747c29034907a4e32",
+      "scenes": 1
+    },
+    {
+      "page": "globe-3d-routes",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1141221,
+      "sha256": "094aa13d2795e8a10ce3e3085078c069654d4376a151f75747c29034907a4e32",
+      "scenes": 1
+    },
+    {
+      "page": "globe-3d-routes",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1141221,
+      "sha256": "094aa13d2795e8a10ce3e3085078c069654d4376a151f75747c29034907a4e32",
+      "scenes": 1
+    },
+    {
+      "page": "globe-3d-routes",
+      "format": "png",
+      "name": "page.html",
+      "bytes": 1141221,
+      "sha256": "094aa13d2795e8a10ce3e3085078c069654d4376a151f75747c29034907a4e32",
+      "scenes": 1
+    }
+  ]
 }

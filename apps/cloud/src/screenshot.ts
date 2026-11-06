@@ -47,8 +47,7 @@ function exportFailed(message: string): ExportOutcome {
  * capture alike: high-quality profile, and for a 3D page a wait on the
  * export-ready selector, which only appears once every scene drew a measured,
  * non-blank WebGL frame. A scene that fails never becomes ready, so the call
- * fails instead of capturing the static plan. `cacheTTL: 0` keeps Browser Run
- * from caching a caller's page.
+ * fails instead of capturing the static plan.
  */
 function optionsFor(html: string, format: ExportFormat): Record<string, unknown> {
   return browserRunBody(html, format === 'pdf' ? 'pdf' : 'png');
