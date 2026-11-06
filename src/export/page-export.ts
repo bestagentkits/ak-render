@@ -281,7 +281,8 @@ export async function exportPage(options: ExportOptions): Promise<ExportReceipt>
       await page.waitForFunction(
         () =>
           [...document.querySelectorAll('[data-ak-3d]')].every(
-            (el) => el.getAttribute('data-ak-3d-state') !== 'static',
+            (el) =>
+              !['static', 'loading'].includes(el.getAttribute('data-ak-3d-state') ?? 'static'),
           ),
         undefined,
         { timeout: remaining() },

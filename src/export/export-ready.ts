@@ -112,11 +112,15 @@ function settleForExport(
     root.setAttribute('data-ak-export-detail', JSON.stringify(detail));
     root.setAttribute('data-ak-export', code);
   };
+  // `loading` (a model still decoding its GLB) is pending, like `static`;
+  // only a settled state may be judged, or a slow decode reads as no WebGL.
   const step = async (): Promise<void> => {
     const scenes = [...document.querySelectorAll('[data-ak-3d]')];
     const waiting =
       document.fonts.status !== 'loaded' ||
-      scenes.some((el) => (el.getAttribute('data-ak-3d-state') ?? 'static') === 'static');
+      scenes.some((el) =>
+        ['static', 'loading'].includes(el.getAttribute('data-ak-3d-state') ?? 'static'),
+      );
     if (waiting) {
       if (performance.now() - began > budgetMs) {
         finish('timeout', { states: probe().states });
