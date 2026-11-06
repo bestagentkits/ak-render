@@ -293,7 +293,7 @@ function gateRemote(ctx: Context, uri: string, site: Site | undefined): boolean 
     fail(
       ctx,
       'POLICY_VIOLATION',
-      `remote model URI "${uri}" is blocked: ${blockedReason(ctx.options.policy, 'models')}`,
+      `remote model URI "${uri}" is blocked: ${blockedReason(ctx.options.policy, 'models', uri)}`,
       'add "models" to policy.network.allow (and its host to providers, if any), or use a local file',
       { ...site, capability: 'models' },
     );
