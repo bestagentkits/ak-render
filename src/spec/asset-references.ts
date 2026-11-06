@@ -15,6 +15,7 @@ import { isPlainObject, type JsonValue } from '../json.js';
 import type { PropSchema } from '../registry/prop-schema.js';
 import {
   capabilityAllowed,
+  isPrivateHost,
   isRemote,
   type MediaCapability,
   networkAllows,
@@ -112,6 +113,7 @@ export function assetOrigins(
   for (const { reference, capability } of references) {
     if (!capabilities.includes(capability)) continue;
     if (!capabilityAllowed(policy, capability) || !/^https?:/iu.test(reference)) continue;
+    if (isPrivateHost(reference)) continue;
     try {
       origins.push(new URL(reference).origin);
     } catch {
