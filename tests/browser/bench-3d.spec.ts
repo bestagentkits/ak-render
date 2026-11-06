@@ -35,9 +35,7 @@ const FIXTURES = [
  * Fixtures whose runtime does not yet react to WebGL context loss. The bench
  * asserts the gap as it stands, so a fix fails here and must remove the entry.
  */
-const CONTEXT_LOSS_GAPS: Record<string, string> = {
-  'model-3d-crate': 'https://github.com/bestagentkits/ak-render/issues/177',
-};
+const CONTEXT_LOSS_GAPS: Record<string, string> = {};
 const VIEWPORTS = [
   { name: 'mobile', width: 375, height: 812, scale: 1, isMobile: true, hasTouch: true },
   { name: 'tablet', width: 768, height: 1024, scale: 1, isMobile: true, hasTouch: true },

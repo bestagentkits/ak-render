@@ -530,6 +530,8 @@ export function mountModel(el, kit) {
       canvas.removeEventListener('wheel', onWheel);
       canvas.removeEventListener('contextmenu', onMenu);
       canvas.removeEventListener('keydown', onKey);
+      canvas.removeEventListener('webglcontextlost', onLost);
+      canvas.removeEventListener('webglcontextrestored', onRestored);
       mixer?.stopAllAction();
       gltf?.scene.traverse((object) => {
         if (!object.isMesh) return;
@@ -559,6 +561,20 @@ export function mountModel(el, kit) {
       if (record.visible && !record.lost) record.tick(performance.now());
     } else kit.schedule();
   }
+
+  const onLost = (event) => {
+    event.preventDefault();
+    record.lost = true;
+    el.setAttribute('data-ak-3d-state', 'lost');
+  };
+  const onRestored = () => {
+    record.lost = false;
+    record.frames = 0;
+    resize();
+    kit.schedule();
+  };
+  canvas.addEventListener('webglcontextlost', onLost);
+  canvas.addEventListener('webglcontextrestored', onRestored);
 
   let cancelVisibility = () => {};
   if (window.IntersectionObserver) {

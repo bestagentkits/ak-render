@@ -260,6 +260,27 @@ test.describe('model-3d', { tag: '@gl' }, () => {
     await noGl.close();
   });
 
+  test('a lost WebGL context shows lost, then redraws the model once it returns', async ({
+    page: p,
+  }) => {
+    await p.goto(glbPage());
+    await expect(model(p)).toHaveAttribute('data-ak-3d-state', 'ready');
+    await p.evaluate(() => {
+      const canvas = document.querySelector('[data-ak-3d] canvas') as HTMLCanvasElement;
+      const gl = canvas.getContext('webgl2');
+      const ext = gl?.getExtension('WEBGL_lose_context');
+      if (!ext) throw new Error('WEBGL_lose_context unavailable');
+      (window as unknown as { __loseExt: typeof ext }).__loseExt = ext;
+      ext.loseContext();
+    });
+    await expect(model(p)).toHaveAttribute('data-ak-3d-state', 'lost');
+    await p.evaluate(() => {
+      (window as unknown as { __loseExt: WEBGL_lose_context }).__loseExt.restoreContext();
+    });
+    await expect(model(p)).toHaveAttribute('data-ak-3d-state', 'ready');
+    await expect(p.locator('[data-ak-3d="model"] canvas')).toHaveCount(1);
+  });
+
   test.describe('export', () => {
     test.describe.configure({ timeout: 90_000 });
     for (const format of ['png', 'pdf'] as const) {
