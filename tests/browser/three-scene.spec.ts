@@ -112,8 +112,13 @@ test.describe('scene-3d', { tag: '@gl' }, () => {
         }
       ).akRender3d;
       const count = () => {
-        const { mounts, geometries } = api.stats() as { mounts: number; geometries: number };
-        return { mounts, geometries };
+        const { mounts, geometries, gpuGeometries, gpuTextures } = api.stats() as {
+          mounts: number;
+          geometries: number;
+          gpuGeometries: number;
+          gpuTextures: number;
+        };
+        return { mounts, geometries, gpuGeometries, gpuTextures };
       };
       const warm = count();
       for (let i = 0; i < 10; i += 1) {
@@ -125,7 +130,7 @@ test.describe('scene-3d', { tag: '@gl' }, () => {
       return { warm, after, empty: count(), canvases: document.querySelectorAll('canvas').length };
     });
     expect(result.after).toEqual(result.warm);
-    expect(result.empty).toEqual({ mounts: 0, geometries: 0 });
+    expect(result.empty).toEqual({ mounts: 0, geometries: 0, gpuGeometries: 0, gpuTextures: 0 });
     expect(result.canvases).toBe(0);
   });
 

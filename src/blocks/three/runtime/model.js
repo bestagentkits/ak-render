@@ -477,7 +477,12 @@ export function mountModel(el, kit) {
       }
     },
     info() {
-      return { calls: renderer.info.render.calls, triangles: renderer.info.render.triangles };
+      return {
+        calls: renderer.info.render.calls,
+        triangles: renderer.info.render.triangles,
+        geometries: renderer.info.memory.geometries,
+        textures: renderer.info.memory.textures,
+      };
     },
     freeze() {
       if (record.lost || record.frames === 0) return null;

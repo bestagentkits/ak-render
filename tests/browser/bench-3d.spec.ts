@@ -149,9 +149,19 @@ async function disposal(page: Page) {
   const result = await page.evaluate(() => {
     const api = (window as unknown as { akRender3d: Api }).akRender3d;
     const count = () => {
-      const { mounts, geometries } = api.stats() as { mounts: number; geometries: number };
-      return `${mounts}/${geometries}`;
+      const { mounts, geometries, gpuGeometries, gpuTextures } = api.stats() as {
+        mounts: number;
+        geometries: number;
+        gpuGeometries: number;
+        gpuTextures: number;
+      };
+      return `${mounts}/${geometries}/${gpuGeometries}/${gpuTextures}`;
     };
+    // Warm-up: a restored WebGL context re-uploads lazily, so the counts read
+    // right after a context loss sit below the steady state. One full remount
+    // sets the baseline the cycles are compared against.
+    api.unmountAll();
+    api.mountAll();
     const warm = count();
     for (let i = 0; i < 10; i += 1) {
       api.unmountAll();
@@ -159,7 +169,7 @@ async function disposal(page: Page) {
     }
     const after = count();
     api.unmountAll();
-    const empty = count() === '0/0';
+    const empty = count() === '0/0/0/0';
     api.mountAll();
     return { cyclesLeak: after !== warm, emptyAfterUnmount: empty };
   });
