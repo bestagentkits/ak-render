@@ -2,6 +2,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
+import { createModelResolver } from '../../src/assets/model-assets.js';
 import {
   MIN_FRAME_COLORS,
   MIN_FRAME_LIT,
@@ -152,6 +153,29 @@ test.describe('local export', { tag: '@gl' }, () => {
     expect(outcome?.detail.renderer).not.toBe('');
     expect(outcome?.detail.signals?.[0]?.colors).toBeGreaterThanOrEqual(MIN_FRAME_COLORS);
     await expect(page.locator('.ak-3d-frame')).toHaveCount(1);
+  });
+  test('the cloud settle script waits for a model still decoding after load', async ({ page }) => {
+    // A slow worker can still be decoding the GLB when fonts and every other
+    // gate are done; `loading` is pending, never a failure.
+    const modelFixture = fileURLToPath(
+      new URL('../../fixtures/3d/model-3d-crate.yaml', import.meta.url),
+    );
+    const modelHtml = compile(readFileSync(modelFixture, 'utf8'), {
+      source: 'model-3d-crate',
+      modelResolver: createModelResolver(join(modelFixture, '..')),
+    }).html;
+    await page.addInitScript(() => {
+      const fetchNow = window.fetch.bind(window);
+      window.fetch = (...args: Parameters<typeof fetch>) =>
+        new Promise((resolve) => setTimeout(resolve, 1500)).then(() => fetchNow(...args));
+    });
+    const url = `file://${workspace.write('model-export-ready', withExportReadyScript(modelHtml, 30_000))}`;
+    await page.goto(url);
+    await expect(page.locator('[data-ak-3d]')).toHaveAttribute('data-ak-3d-state', 'loading');
+    await expect(page.locator('html')).toHaveAttribute('data-ak-export', 'ready', {
+      timeout: 30_000,
+    });
+    expect(readExportOutcome(await page.content())?.detail.states).toEqual(['ready']);
   });
   test('doctor names the browser and its WebGL 2 renderer', async () => {
     const report = await exportDoctor();
