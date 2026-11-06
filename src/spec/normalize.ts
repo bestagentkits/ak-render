@@ -968,7 +968,7 @@ function postChecks(
       if (!asset.rejectBlocked || assetAllowed(network, asset)) continue;
       bag.add({
         code: 'POLICY_VIOLATION',
-        message: `remote ${asset.field} is not allowed because ${blockedReason(network, asset.capability)}; use a local ${asset.field} file or allow remote ${asset.capability} in policy.network`,
+        message: `remote ${asset.field} is not allowed because ${blockedReason(network, asset.capability, asset.reference)}; use a local ${asset.field} file or allow remote ${asset.capability} in policy.network`,
         path: asset.path,
         nodeId: node.id,
       });
