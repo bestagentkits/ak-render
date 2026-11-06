@@ -105,7 +105,8 @@ describe('export-ready page preparation', () => {
 describe('Browser Run request contract', () => {
   it('waits for the ready selector on a 3D page and matches local capture settings', () => {
     const body = browserRunBody(scenePage(), 'pdf', { timeoutMs: 90_000, scale: 1 });
-    expect(body['cacheTTL']).toBe(0);
+    // Browser Run rejects cacheTTL in the body; the REST client sends it as a query parameter.
+    expect(body).not.toHaveProperty('cacheTTL');
     expect(body['viewport']).toEqual({ width: 1440, height: 900, deviceScaleFactor: 1 });
     // Browser Run caps the selector wait at 60 s.
     expect(body['waitForSelector']).toEqual({ selector: EXPORT_READY_SELECTOR, timeout: 60_000 });
@@ -160,7 +161,7 @@ describe('exportPageCloud', () => {
       fetch,
     });
     expect(calls[0]?.url).toBe(
-      `${BROWSER_RUN_API}/accounts/${ACCOUNT}/browser-rendering/screenshot`,
+      `${BROWSER_RUN_API}/accounts/${ACCOUNT}/browser-rendering/screenshot?cacheTTL=0`,
     );
     expect(calls[0]?.headers['authorization']).toBe('Bearer secret-token');
     expect(calls[0]?.body['html']).toContain('<p>hi</p>');
@@ -183,7 +184,7 @@ describe('exportPageCloud', () => {
       approvedSha256: await approved(plainPage, 'pdf'),
       fetch,
     });
-    expect(calls[0]?.url.endsWith('/browser-rendering/pdf')).toBe(true);
+    expect(calls[0]?.url.endsWith('/browser-rendering/pdf?cacheTTL=0')).toBe(true);
   });
 
   it('maps 401 and 403 to cloud-unauthorized and names the missing permission', async () => {
@@ -228,7 +229,7 @@ describe('exportPageCloud', () => {
       fetch,
     }).catch((caught: unknown) => caught);
     expect((error as ExportError).code).toBe('webgl-unavailable');
-    expect(calls[1]?.url.endsWith('/browser-rendering/content')).toBe(true);
+    expect(calls[1]?.url.endsWith('/browser-rendering/content?cacheTTL=0')).toBe(true);
     expect(calls[1]?.body['waitForSelector']).toMatchObject({ selector: 'html[data-ak-export]' });
   }, 20_000);
 

@@ -114,7 +114,6 @@ export function browserRunBody(
   const scenes = hasScenes(html);
   const body: Record<string, unknown> = {
     html: withExportReadyScript(html, budget),
-    cacheTTL: 0,
     viewport: {
       ...(settings.viewport ?? { width: 1440, height: 900 }),
       deviceScaleFactor: settings.scale ?? 2,
@@ -174,7 +173,8 @@ function endpoint(accountId: string, action: 'screenshot' | 'pdf' | 'content'): 
       'the Cloudflare account id is not a 32-character hex id',
     );
   }
-  return `${BROWSER_RUN_API}/accounts/${accountId}/browser-rendering/${action}`;
+  // The REST API takes cacheTTL as a query parameter and rejects it in the body.
+  return `${BROWSER_RUN_API}/accounts/${accountId}/browser-rendering/${action}?cacheTTL=0`;
 }
 
 async function post(
