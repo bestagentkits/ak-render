@@ -122,7 +122,7 @@ describe('fixture compilation', () => {
       const second = compile(fixture.source, { source: fixture.name });
       expect(first.html).toBe(second.html);
       expect(first.hash).toBe(second.hash);
-      expect(first.bytes).toBe(first.html.length);
+      expect(first.bytes).toBe(Buffer.byteLength(first.html, 'utf8'));
       expect(first.warnings.length).toBeGreaterThanOrEqual(0);
     });
   }

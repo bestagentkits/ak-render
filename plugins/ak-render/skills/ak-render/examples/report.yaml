@@ -1,0 +1,50 @@
+# Example: a written report from a natural-language brief.
+# Every number below is fictional sample data. Replace it with values from the
+# conversation, the repository or tool output before you render for a user.
+version: 1
+meta:
+  title: Checkout reliability report, Q3 (sample)
+  description: Sample report showing how AK Render lays out findings, evidence and next steps.
+theme:
+  preset: executive-report
+datasets:
+  monthly:
+    - { month: Jul, incidents: 7, minutes: 214 }
+    - { month: Aug, incidents: 4, minutes: 96 }
+    - { month: Sep, incidents: 2, minutes: 31 }
+blocks:
+  - type: hero
+    eyebrow: Reliability report · sample data
+    title: Checkout incidents fell by two thirds this quarter
+    description: Retries with idempotency keys and a staged rollout policy removed the two largest causes of failed payments.
+  - type: stats
+    items:
+      - { label: Incidents, value: '13' }
+      - { label: Customer-facing minutes, value: '341' }
+      - { label: Change from Q2, value: '-64%' }
+  - type: section
+    title: What changed
+    blocks:
+      - type: chart
+        kind: bar
+        title: Customer-facing minutes per month
+        dataRef: monthly
+        x: { field: month }
+        y: { field: minutes, label: Minutes, format: integer, min: 0 }
+      - type: timeline
+        items:
+          - { when: Jul 12, title: Idempotency keys on payment retries, text: Duplicate charges stopped after retries became safe to repeat. }
+          - { when: Aug 03, title: Staged rollout policy, text: Deploys reach 5% of traffic for 30 minutes before the rest. }
+          - { when: Sep 18, title: Provider failover drill, text: The secondary payment provider took full traffic in 4 minutes. }
+  - type: section
+    title: Findings
+    blocks:
+      - type: checklist
+        items:
+          - { text: Every payment call carries an idempotency key, done: true }
+          - { text: Rollbacks finish in under 10 minutes, done: true }
+          - { text: Alert on provider latency before errors rise, done: false }
+      - type: callout
+        tone: warning
+        title: Open risk
+        text: Latency alerts still fire only after errors rise, so a slow provider is noticed late.

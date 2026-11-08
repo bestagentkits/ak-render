@@ -39,6 +39,14 @@ a spec.
 
 ### Added
 
+- Claude plugin folder. `plugins/ak-render/` is a self-contained plugin for
+  the Claude plugin directory: a manifest that starts the pinned
+  `@bestagentkits/render` MCP server, a skill written for that version with
+  report, dashboard and architecture review examples, an icon, screenshots, a
+  README with a supported-surface matrix, privacy and support details, and the
+  license. The repository marketplace now installs that folder instead of the
+  repository root. `pnpm test:plugin` smoke-tests it against the published
+  package. See [docs/claude-plugin.md](./docs/claude-plugin.md).
 - `shader-3d` block: five closed shader presets (noise, fresnel, hologram, distortion, dissolve) on a sphere, torus, torus knot or plane, with typed `intensity`, `scale`, `progress` and `speed` dials, theme tones and a seed. Post-processing is a closed chain (bloom, chromatic, scanlines, grain, vignette) checked against each preset. Built-in preset buttons and sliders, and a `bind` map to state, change uniforms live and fire `change`. Shader source is rejected anywhere in a spec; every line of GLSL is compiler-owned. An SVG poster shaded by the same formula covers no-JS, no-WebGL and print, reduced motion holds that frame and a Pause button stops the motion. The gallery's 3D section shows the presets and a live reveal. See [docs/3d-effects.md](./docs/3d-effects.md#shader-3d).
 - `text-3d` block: extruded, bevelled lettering from two bundled SIL OFL fonts (Bricolage Grotesque, Fraunces) with satin, metal, chrome, glass and neon finishes, depth and bevel, and rise, wave, float and spin motion by character or word. Text is NFC-normalized across Latin, Latin Extended and Vietnamese; a character the font lacks draws its box, warns with the code point and is spelled out in the caption. An SVG poster of the same layout covers no-JS, no-WebGL and print, and the gallery's 3D section shows a headline and the finishes. See [docs/3d-scenes.md](./docs/3d-scenes.md#text-3d).
 - `particles-3d` block: seeded particle effects from six presets (galaxy, nebula, fountain, snow, fireflies, vortex) with typed emitter shape, force and noise fields, color and size over life, count and speed overrides. The same seed draws the same frame; a GPU path (up to 20,000 particles) and a bounded CPU path (up to 4,000) share one closed-form simulation, step down by halves when frames run slow, pause offscreen and release every resource on unmount. An SVG poster of the same frame covers no-JS, no-WebGL and print; reduced motion holds it still and a Pause button stops the motion. `export3dPosterSvg` exports that poster with its night sky, and the gallery's 3D section shows the galaxy. See [docs/3d-effects.md](./docs/3d-effects.md#particles-3d).
@@ -336,6 +344,12 @@ a spec.
 
 ### Fixed
 
+- The render summary's `bytes` is the UTF-8 size of the emitted file. It used
+  to count UTF-16 code units, so a page with any non-ASCII character reported
+  fewer bytes than `--out` wrote.
+- A tab panel or `fade-swap` block now fades in even when the main thread is
+  busy right after the change. The fallback that clears the entering mark
+  used to fall due before the first frame and skip the fade.
 - `diagram-panel` without an adapter (including every hosted render) shows typed
   `workflow`, `sequence`, `lifecycle` and `dataflow` diagrams in full. The
   fallback read only `components`, `nodes` and `connections`, so steps,

@@ -1,0 +1,58 @@
+# Example: an architecture review with components, request flow, trade-offs and risks.
+# Every name below is fictional sample data. Replace it with values from the
+# conversation, the repository or tool output before you render for a user.
+version: 1
+meta:
+  title: Order pipeline architecture review (sample)
+  description: Sample architecture review showing components, request flow, trade-offs and risks.
+theme:
+  preset: blueprint
+datasets:
+  components:
+    - { name: Gateway, layer: Edge, owner: Platform, tech: Envoy, status: stable }
+    - { name: Orders API, layer: Service, owner: Commerce, tech: Go, status: stable }
+    - { name: Pricing, layer: Service, owner: Commerce, tech: Kotlin, status: changing }
+    - { name: Event bus, layer: Data, owner: Platform, tech: Kafka, status: stable }
+    - { name: Ledger DB, layer: Data, owner: Finance, tech: Postgres, status: new }
+blocks:
+  - type: hero
+    eyebrow: Architecture review · sample data
+    title: Move order fan-out onto the event bus
+    description: Orders must keep accepting traffic when pricing or the ledger is slow.
+  - type: main-aside
+    blocks:
+      - type: data-table
+        title: Components
+        dataRef: components
+        columns:
+          - { key: name, label: Component }
+          - { key: layer, label: Layer }
+          - { key: owner, label: Owner }
+          - { key: tech, label: Tech }
+          - { key: status, label: Status, type: badge, tones: { stable: success, changing: warning, new: info } }
+      - type: steps
+        title: Request flow
+        items:
+          - { title: Gateway authenticates, text: The edge checks the session token and applies rate limits. }
+          - { title: Orders API validates, text: The order is stored and acknowledged synchronously. }
+          - { title: Event bus fans out, text: Pricing and the ledger consume the order event at their own pace. }
+    aside:
+      - type: key-value
+        title: Review facts
+        items:
+          - { key: Status, value: Draft }
+          - { key: Scope, value: Order write path }
+      - type: callout
+        tone: info
+        title: Out of scope
+        text: Read paths and the search index are reviewed separately.
+  - type: comparison
+    title: Trade-offs
+    left: { label: Chosen — event-driven, items: [A slow consumer no longer blocks checkout, Consumers must handle duplicate events] }
+    right: { label: Rejected — synchronous calls, items: [Simpler to trace end to end, Any slow dependency slows every order] }
+  - type: risk-matrix
+    title: Risks
+    items:
+      - { area: Event ordering, impact: high, likelihood: medium, note: Partition by order id so one order's events stay in order. }
+      - { area: Ledger migration, impact: high, likelihood: low, note: Dual-write for two weeks and compare totals daily. }
+      - { area: Team load, impact: medium, likelihood: medium, note: Platform owns the bus; Commerce owns the consumers. }

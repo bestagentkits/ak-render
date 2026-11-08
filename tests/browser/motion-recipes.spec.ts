@@ -236,6 +236,35 @@ test.describe('motion recipes under full motion', () => {
     await expect(opener).toBeFocused();
   });
 
+  // A slow device can stall the main thread between the click and the next
+  // frame. The fallback that clears the entering mark must not fire first.
+  test('the panel still fades in after the main thread stalls', async ({ page }) => {
+    await open(page);
+    const tabs = block(page, 'plan-tabs');
+    await tabs.scrollIntoViewIfNeeded();
+    await expect(tabs.locator('> [role="tablist"]')).toHaveAttribute('data-ak-indicator-live', '');
+    await recordStarts(page);
+    await page.evaluate(() => {
+      new MutationObserver((records) => {
+        for (const record of records) {
+          const el = record.target as HTMLElement;
+          if (el.getAttribute('role') !== 'tabpanel' || !el.hasAttribute('data-ak-entering'))
+            continue;
+          const end = performance.now() + 700;
+          while (performance.now() < end) {
+            // Busy-wait well past the fade's fallback timeout.
+          }
+        }
+      }).observe(document, { subtree: true, attributeFilter: ['data-ak-entering'] });
+    });
+    await tabs.getByRole('tab', { name: 'Pricing' }).click();
+    await expect.poll(() => starts(page)).toContain('tabpanel:ak-m-fade');
+    await expect(tabs.locator('> [role="tabpanel"]:not([hidden])')).not.toHaveAttribute(
+      'data-ak-entering',
+      /.*/u,
+    );
+  });
+
   test('a reopen during the exit cancels the close', async ({ page }) => {
     await open(page);
     const dialog = page.locator('dialog[data-ak-id="confirm-dialog"]');

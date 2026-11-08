@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
@@ -93,6 +93,8 @@ describe('ak-render compile', () => {
     };
     expect(summary.title).toBe('CLI fixture');
     expect(summary.bytes).toBeGreaterThan(200);
+    // The summary describes the file that was written, not the string length.
+    expect(summary.bytes).toBe(statSync(OUTPUT).size);
     expect(summary.hash).toMatch(/^[a-z0-9]+$/u);
     expect(summary.features).toContain('theme');
     expect(summary.nodes).toBeGreaterThan(1);
