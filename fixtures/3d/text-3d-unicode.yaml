@@ -1,0 +1,23 @@
+version: 1
+meta:
+  title: Text 3D Unicode
+blocks:
+  - type: text-3d
+    id: viet
+    title: Vietnamese
+    text: Tiếng Việt đẹp
+    summary: Precomposed Vietnamese letters with stacked diacritics.
+    animation: none
+  - type: text-3d
+    id: combining
+    title: Combining marks
+    text: "Café Ạ"
+    summary: A base letter plus a combining accent normalizes to the precomposed glyph.
+    font: serif
+    animation: none
+  - type: text-3d
+    id: missing
+    title: Missing glyphs
+    text: "Hi 世界 ✓"
+    summary: The font has no outline for these characters; boxes stand in and the caption spells the text out.
+    animation: none

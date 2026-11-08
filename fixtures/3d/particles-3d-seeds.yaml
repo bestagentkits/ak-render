@@ -1,0 +1,22 @@
+version: 1
+meta:
+  title: Particle seeds
+blocks:
+  - type: particles-3d
+    id: twin-a
+    summary: The first of two clouds with seed 11.
+    preset: nebula
+    count: 2000
+    seed: 11
+  - type: particles-3d
+    id: twin-b
+    summary: The second of two clouds with seed 11.
+    preset: nebula
+    count: 2000
+    seed: 11
+  - type: particles-3d
+    id: other
+    summary: The same cloud with seed 12.
+    preset: nebula
+    count: 2000
+    seed: 12

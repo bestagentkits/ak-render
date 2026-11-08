@@ -9,22 +9,27 @@
  * `render()` is the same pipeline reduced to the HTML string.
  */
 
-import { type Diagnostic, DiagnosticBag } from '../diagnostics.js';
+import type { ModelAssetResult, ResolvedModelAsset } from '../assets/model-assets.js';
+import type { PointCloudColumns, PointCloudResolver } from '../assets/point-cloud-assets.js';
+import { type Diagnostic, DiagnosticBag, pathKey } from '../diagnostics.js';
 import type { DiagramAdapter } from '../diagram/adapter.js';
 import { RenderError } from '../errors.js';
 import { stableHash } from '../hash.js';
 import { ICON_CSS, type IconCollector, renderIconSprite } from '../icons/icon-render.js';
-import type { IrDocument, IrNode } from '../ir.js';
+import type { IrDocument, IrNode, NetworkPolicy } from '../ir.js';
+import { DIAGRAM_CANVAS_V2, DIAGRAM_MOTION_RECIPES } from '../motion/diagram-motion.js';
 import { getMotionRecipe, motionRecipeCss } from '../motion/recipes.js';
 import type { BlockRegistry, FeatureModule } from '../registry/block-module.js';
 import { DEFAULT_REGISTRY } from '../registry/registry.js';
 import type { RuntimeFeature } from '../registry/roster.js';
 import { assetOrigins, assetReferences } from '../spec/asset-references.js';
 import { evaluateCondition } from '../spec/conditions.js';
+import { CONNECT_CAPABILITIES, isRemote, type MediaCapability } from '../spec/network-policy.js';
 import { type NormalizeResult, normalizeSpec } from '../spec/normalize.js';
 import { loadTheme, type ResolvedTheme, resolveTheme } from '../theme/load-theme.js';
 import { builtinThemeCatalog, type ThemeCatalog } from '../theme/theme-catalog.js';
 import { type RenderContext, renderNode } from './blocks.js';
+import { DIAGRAM_VIEWER_MARKUP } from './diagram-viewer.js';
 import { assembleDocument } from './document.js';
 import { renderAttributes } from './escape.js';
 import { embeddedFontCss } from './font-faces.js';
@@ -36,6 +41,9 @@ import { BASE_CSS, FEATURE_CSS } from './styles.js';
 import { inverseSurfaceCss, usesInverseSurface } from './surface-styles.js';
 import { SYNTAX_TOKEN_MARKUP } from './syntax-highlight.js';
 import { verifyDocument, verifyIr } from './verify.js';
+
+/** Capabilities the page displays from a remote origin: `img-src` and `media-src`. */
+const DISPLAY_CAPABILITIES: readonly MediaCapability[] = ['images', 'media'];
 
 export interface RenderOptions {
   /** Theme preset name or typed theme input; defaults to the spec's theme. */
@@ -59,7 +67,27 @@ export interface RenderOptions {
    * supported extension point.
    */
   registry?: BlockRegistry;
+  /**
+   * Resolves a model block's `src`. The CLI and the local MCP server pass one
+   * built on `createModelResolver(baseDir)`, which inlines local GLB/glTF files.
+   * Without it a remote model still loads under the `models` capability, but a
+   * local one fails with a diagnostic: this module never touches the disk.
+   */
+  modelResolver?: ModelResolver;
+  /**
+   * Reads a `point-cloud-3d` block's `src` file. The CLI and the local MCP
+   * server pass `createPointCloudResolver(baseDir)`; without it a `src` cloud
+   * fails with a diagnostic, since this module never touches the disk.
+   */
+  pointCloudResolver?: PointCloudResolver;
 }
+
+/** Resolve one model reference at a JSON path; see `createModelResolver`. */
+export type ModelResolver = (
+  reference: string,
+  path: string,
+  policy: NetworkPolicy,
+) => ModelAssetResult;
 
 export interface CompileResult {
   html: string;
@@ -86,6 +114,7 @@ const FEATURE_ORDER: readonly RuntimeFeature[] = [
   'theme',
   'chart',
   'diagram',
+  'diagram-viewer',
   'media',
   'outline',
   'frame',
@@ -119,13 +148,18 @@ function collectFeatures(ir: IrDocument, includeTheme: boolean): Set<RuntimeFeat
 }
 
 /** Origins of the allowed remote assets, found through each block's `asset` props. */
-function collectOrigins(ir: IrDocument, registry: BlockRegistry): string[] {
+function collectOrigins(
+  ir: IrDocument,
+  registry: BlockRegistry,
+  capabilities: readonly MediaCapability[],
+): string[] {
   return ir.nodes.flatMap((node) => {
     const definition = registry.byType.get(node.type);
     if (definition === undefined) return [];
     return assetOrigins(
       ir.policy.network,
       assetReferences(definition.props, node.props, node.path),
+      capabilities,
     );
   });
 }
@@ -136,6 +170,7 @@ function buildCss(
   theme: ResolvedTheme,
   ir: IrDocument,
   usesIcons: boolean,
+  motionUsed: ReadonlySet<string>,
 ): string {
   const sheets = [BASE_CSS];
   for (const feature of FEATURE_ORDER) {
@@ -150,7 +185,7 @@ function buildCss(
   if (recipes !== '') sheets.push(recipes);
   // Motion recipes are keyed on their own attribute and follow the feature
   // sheets they animate; the theme still overrides their duration.
-  const motion = motionRecipeCss(usedMotionRecipes(ir));
+  const motion = motionRecipeCss(motionUsed);
   if (motion !== '') sheets.push(motion);
   sheets.push(theme.css);
   // The night band redeclares colour tokens, so it must follow the theme sheet.
@@ -160,10 +195,14 @@ function buildCss(
   return applyMotionPolicy(sheets.join('\n'), motionPolicyOf(theme.motionPolicy));
 }
 
-/** Recipe ids the page's blocks opt into. */
-function usedMotionRecipes(ir: IrDocument): Set<string> {
+/**
+ * Recipe ids the page's blocks opt into. Diagram recipes animate a contract 2
+ * drawing; without one on the page they have nothing to move and ship nothing.
+ */
+function usedMotionRecipes(ir: IrDocument, body: string): Set<string> {
   const used = new Set<string>();
   for (const node of ir.nodes) if (node.motion !== undefined) used.add(node.motion.preset);
+  if (!body.includes(DIAGRAM_CANVAS_V2)) for (const id of DIAGRAM_MOTION_RECIPES) used.delete(id);
   return used;
 }
 
@@ -204,6 +243,14 @@ function withMotion(html: string, node: IrNode): string {
   if (node.motion === undefined) return html;
   const recipe = getMotionRecipe(node.motion.preset);
   if (recipe === undefined) return html;
+  // A diagram recipe without a contract 2 drawing has nothing to move: the
+  // block renders still and the compiler has already warned.
+  if (
+    (DIAGRAM_MOTION_RECIPES as readonly string[]).includes(recipe.id) &&
+    !html.includes(DIAGRAM_CANVAS_V2)
+  ) {
+    return html;
+  }
   return html.replace(OPENING_TAG, (_match, open: string, rest: string) => {
     const arrival =
       recipe.runtime === 'in-view' && !/\sdata-ak-animate[\s=>]|\sdata-ak-animate$/u.test(rest)
@@ -237,6 +284,8 @@ function renderBody(
     registry: BlockRegistry;
     diagramAdapter?: DiagramAdapter;
     warnings: Diagnostic[];
+    models: ReadonlyMap<string, ResolvedModelAsset>;
+    pointClouds: ReadonlyMap<string, PointCloudColumns>;
   },
 ): { body: string; usesIcons: boolean } {
   const byId = nodeIndex(ir);
@@ -260,6 +309,8 @@ function renderBody(
     renderChildren: (node) => renderList(node.children),
     renderSlot: (node, key) => renderList(node.slots?.[key] ?? []),
     byId: (id) => byId.get(id),
+    models: renderOptions.models,
+    pointClouds: renderOptions.pointClouds,
   };
   const root = byId.get(ir.rootId);
   if (root === undefined) {
@@ -269,6 +320,103 @@ function renderBody(
   // the `<main>` landmark and the h1 fallback.
   const page = renderNode(root, context);
   return { body: `${page}${renderIconSprite(icons)}`, usesIcons: icons.size > 0 };
+}
+
+/** The prop every model block names its source with. */
+const MODEL_SOURCE = 'src';
+
+/**
+ * Resolve every model block's source before rendering. A remote model without
+ * a resolver passes through: validation already gated it on the `models`
+ * capability. A local one needs the resolver, which only Node callers have.
+ */
+function resolveModels(
+  ir: IrDocument,
+  registry: BlockRegistry,
+  resolver: ModelResolver | undefined,
+): Map<string, ResolvedModelAsset> {
+  const models = new Map<string, ResolvedModelAsset>();
+  const errors: Diagnostic[] = [];
+  for (const node of ir.nodes) {
+    const definition = registry.byType.get(node.type);
+    if (definition?.props[MODEL_SOURCE]?.kind !== 'url') continue;
+    if ((definition.props[MODEL_SOURCE] as { asset?: string }).asset !== 'models') continue;
+    const reference = node.props[MODEL_SOURCE];
+    if (typeof reference !== 'string') continue;
+    const path = pathKey(node.path, MODEL_SOURCE);
+    if (resolver === undefined) {
+      if (isRemote(reference))
+        models.set(node.id, { kind: 'remote', uri: reference, connectOrigins: [] });
+      else
+        errors.push({
+          code: 'SPEC_VALIDATION_ERROR',
+          severity: 'error',
+          path,
+          nodeId: node.id,
+          message: `local model "${reference}" needs a compile from a spec file, which can read it`,
+          details: {
+            fix: 'compile the spec file with the CLI or the local MCP server, or use a remote URL under the models capability',
+          },
+        });
+      continue;
+    }
+    const result = resolver(reference, path, ir.policy.network);
+    for (const diagnostic of result.diagnostics)
+      if (diagnostic.severity === 'error') errors.push({ ...diagnostic, nodeId: node.id });
+    if (result.asset !== undefined) models.set(node.id, result.asset);
+  }
+  const first = errors[0];
+  if (first !== undefined) {
+    throw new RenderError(first.code, first.message, {
+      path: first.path,
+      ...(first.nodeId === undefined ? {} : { nodeId: first.nodeId }),
+      details: { ...(first.details ?? {}), diagnostics: errors },
+    });
+  }
+  return models;
+}
+
+/** Read every `point-cloud-3d` block's `src` file; warnings go to the compile result. */
+function resolvePointClouds(
+  ir: IrDocument,
+  resolver: PointCloudResolver | undefined,
+  warnings: Diagnostic[],
+): Map<string, PointCloudColumns> {
+  const clouds = new Map<string, PointCloudColumns>();
+  const errors: Diagnostic[] = [];
+  for (const node of ir.nodes) {
+    if (node.type !== 'point-cloud-3d' || typeof node.props.src !== 'string') continue;
+    const path = pathKey(node.path, 'src');
+    if (resolver === undefined) {
+      errors.push({
+        code: 'SPEC_VALIDATION_ERROR',
+        severity: 'error',
+        path,
+        nodeId: node.id,
+        message: `point cloud "${node.props.src}" needs a compile from a spec file, which can read it`,
+        details: {
+          fix: 'compile the spec file with the CLI or the local MCP server, or put the points in data columns',
+        },
+      });
+      continue;
+    }
+    const result = resolver(node.props.src, path);
+    for (const diagnostic of result.diagnostics)
+      (diagnostic.severity === 'error' ? errors : warnings).push({
+        ...diagnostic,
+        nodeId: node.id,
+      });
+    if (result.cloud !== undefined) clouds.set(node.id, result.cloud);
+  }
+  const first = errors[0];
+  if (first !== undefined) {
+    throw new RenderError(first.code, first.message, {
+      path: first.path,
+      ...(first.nodeId === undefined ? {} : { nodeId: first.nodeId }),
+      details: { ...(first.details ?? {}), diagnostics: errors },
+    });
+  }
+  return clouds;
 }
 
 /** Run the full pipeline and return everything it produced. */
@@ -319,18 +467,27 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
     });
   }
 
+  const models = resolveModels(ir, registry, options.modelResolver);
   const renderWarnings: Diagnostic[] = [];
+  const pointClouds = resolvePointClouds(ir, options.pointCloudResolver, renderWarnings);
   const { body, usesIcons } = renderBody(ir, resolved, features, {
     registry,
     warnings: renderWarnings,
+    models,
+    pointClouds,
     ...(options.diagramAdapter === undefined ? {} : { diagramAdapter: options.diagramAdapter }),
   });
   // Code panels live in several blocks and nested props, and only some
   // languages are highlighted, so the emitted tokens decide this sheet.
   if (body.includes(SYNTAX_TOKEN_MARKUP)) features.add('syntax');
+  // Only a contract 2 drawing with declared capabilities gets viewer controls.
+  if (body.includes(DIAGRAM_VIEWER_MARKUP)) features.add('diagram-viewer');
   // Faces come first and need the rendered text, which decides their subsets.
+  const motionUsed = usedMotionRecipes(ir, body);
+  // Only diagram recipes with no drawing to move: nothing of motion ships.
+  if (motionUsed.size === 0) features.delete('motion');
   const fonts = embeddedFontCss(resolved, `${ir.meta.title}\n${body}`);
-  const css = [fonts, buildCss(features, moduleFeatures, resolved, ir, usesIcons)]
+  const css = [fonts, buildCss(features, moduleFeatures, resolved, ir, usesIcons, motionUsed)]
     .filter((sheet) => sheet !== '')
     .join('\n');
   const runtimeNeeded = features.size > 0 || bodyNeedsRuntime(body);
@@ -340,7 +497,7 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
         state: ir.state,
         hasBindings: bodyNeedsRuntime(body),
         moduleFeatures,
-        motion: usedMotionRecipes(ir),
+        motion: motionUsed,
         themeAction: usesThemeAction(ir),
       })
     : '';
@@ -351,7 +508,12 @@ export function compile(spec: unknown, options: RenderOptions = {}): CompileResu
     css,
     js,
     body,
-    allowedOrigins: collectOrigins(ir, registry),
+    allowedOrigins: collectOrigins(ir, registry, DISPLAY_CAPABILITIES),
+    connectOrigins: [
+      ...collectOrigins(ir, registry, CONNECT_CAPABILITIES),
+      ...[...models.values()].flatMap((model) => model.connectOrigins),
+    ],
+    modelLoader: models.size > 0,
     themeToggle: includeThemeToggle,
     density: resolved.density,
     motion: motionPolicyOf(resolved.motionPolicy),

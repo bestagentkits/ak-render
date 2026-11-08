@@ -16,6 +16,22 @@ env:
   PNPM_VERSION: 9.15.0
 
 jobs:
+  # Blast radius: which expensive lanes this change needs. Pushes to main/dev
+  # and any path outside the known-safe lists run everything (fail open).
+  scope:
+    name: Change scope
+    runs-on: ubuntu-latest
+    outputs:
+      browser: ${{ steps.scope.outputs.browser }}
+      crossPlatform: ${{ steps.scope.outputs.crossPlatform }}
+      package: ${{ steps.scope.outputs.package }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: scope
+        run: node scripts/ci-scope.mjs ${{ github.event_name == 'pull_request' && format('--base origin/{0}', github.base_ref) || '' }}
+
   lint:
     name: Lint and format
     runs-on: ubuntu-latest
@@ -68,15 +84,20 @@ jobs:
       - run: pnpm fonts:check
       - run: pnpm schema:check
       - run: pnpm snapshots:check
-      - run: pnpm gallery:check
+      # The gallery script imports TypeScript test fixtures, which needs Node 22.
+      - if: matrix.node != '20.x'
+        run: pnpm gallery:check
 
+  # Ubuntu on Node 22 is already covered by the unit job.
   cross-platform:
     name: ${{ matrix.os }} (Node ${{ matrix.node }})
+    needs: scope
+    if: needs.scope.outputs.crossPlatform == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [macos-latest, windows-latest]
         node: [22.x]
     steps:
       - uses: actions/checkout@v4
@@ -96,8 +117,14 @@ jobs:
       - run: pnpm gallery:check
 
   browser:
-    name: Browser tests
+    name: Browser tests (${{ matrix.shard }}/3)
+    needs: scope
+    if: needs.scope.outputs.browser == 'true'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -109,10 +136,15 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm test:browser
+      - run: pnpm test:browser --shard=${{ matrix.shard }}/3
+      - name: Playwright timings
+        if: always()
+        run: node scripts/playwright-timings.mjs --top 25
 
   package:
     name: Build and package smoke
+    needs: scope
+    if: needs.scope.outputs.package == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

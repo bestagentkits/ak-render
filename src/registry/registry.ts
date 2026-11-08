@@ -51,13 +51,40 @@ export interface CatalogEntry {
   tags: string[];
 }
 
+/**
+ * A group of related blocks listed as one entry so the catalog stays within its
+ * byte budget as the group grows. Members stay full blocks in every other surface.
+ */
+export interface CatalogFamily {
+  name: string;
+  summary: string;
+  types: string[];
+}
+
+/** Families keyed by a shared tag, in listing order. */
+const CATALOG_FAMILIES: readonly { name: string; tag: string; summary: string }[] = [
+  {
+    name: '3d',
+    tag: '3d',
+    summary:
+      'WebGL 3D blocks with a static fallback; describe <type> --compact for props, search-catalog 3d to compare.',
+  },
+];
+
+function familyOf(tags: readonly string[]): string | undefined {
+  return CATALOG_FAMILIES.find((family) => tags.includes(family.tag))?.name;
+}
+
 export interface Catalog {
   schemaVersion: number;
   /** Number of blocks in this listing (the category's, when filtered). */
   blockCount: number;
   /** Present only when the listing is filtered to one category. */
   category?: BlockCategory;
+  /** Blocks listed one per entry; members of a family are listed under `families` instead. */
   blocks: CatalogEntry[];
+  /** Block families listed by name only; `describe <type> --compact` has each member's props. */
+  families: CatalogFamily[];
   actions: { type: ActionType; summary: string }[];
 }
 
@@ -94,21 +121,32 @@ export function catalog(options: CatalogOptions = {}): Catalog {
       { path: 'category', details: { category, allowed: [...BLOCK_CATEGORIES] } },
     );
   }
-  const blocks = BLOCK_DEFINITIONS.filter(
+  const listed = BLOCK_DEFINITIONS.filter(
     (definition) => category === undefined || definition.category === category,
-  ).map((definition) => ({
-    type: definition.type,
-    kind: definition.kind,
-    version: definition.version,
-    summary: definition.summary,
-    category: definition.category,
-    tags: [...definition.tags],
-  }));
+  );
+  const families = CATALOG_FAMILIES.map(({ name, summary }) => ({
+    name,
+    summary,
+    types: listed
+      .filter((definition) => familyOf(definition.tags) === name)
+      .map((definition) => definition.type),
+  })).filter((family) => family.types.length > 0);
+  const blocks = listed
+    .filter((definition) => familyOf(definition.tags) === undefined)
+    .map((definition) => ({
+      type: definition.type,
+      kind: definition.kind,
+      version: definition.version,
+      summary: definition.summary,
+      category: definition.category,
+      tags: [...definition.tags],
+    }));
   return {
     schemaVersion: SPEC_SCHEMA_VERSION,
-    blockCount: blocks.length,
+    blockCount: listed.length,
     ...(category === undefined ? {} : { category }),
     blocks,
+    families,
     actions: actionsCatalog(),
   };
 }
@@ -314,7 +352,7 @@ export function buildPageSpecJsonSchema(): Record<string, unknown> {
                     type: 'array',
                     minItems: 1,
                     maxItems: 8,
-                    items: { enum: ['media', 'fonts', 'images'] },
+                    items: { enum: ['media', 'fonts', 'images', 'models'] },
                   },
                 },
               },

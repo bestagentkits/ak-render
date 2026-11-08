@@ -9,6 +9,34 @@ Release mechanics and the compatibility contract live in
 
 ## [Unreleased]
 
+### 3D v1
+
+3D v1 is complete: 14 widgets (`scene-3d`, `model-3d`, `network-3d`,
+`scatter-3d`, `bars-3d`, `globe-3d`, `product-3d`, `particles-3d`, `shader-3d`,
+`text-3d`, `point-cloud-3d`, `timeline-3d`, `morph-3d`, `terrain-3d`), each
+drawn by the shared inlined three.js runtime and backed by a compiler-projected
+static drawing for no-JS, no-WebGL, print and reduced motion. The gallery's 3D
+section shows every widget; the docs hub is [docs/3d.md](./docs/3d.md) with
+[scenes](./docs/3d-scenes.md), [effects](./docs/3d-effects.md) and
+[data](./docs/3d-data.md) recipes. The export matrix records PNG and PDF export
+per widget, and `pnpm bench:3d` now measures one fixture per widget
+([docs/artifacts/benchmark-3d.md](./docs/artifacts/benchmark-3d.md)).
+
+Known limits:
+
+- Cloud export is unverified until Browser Run credentials are available; local
+  export is the verified path.
+- PNG export of `globe-3d` and `product-3d` is not byte-identical across
+  repeated runs (GPU sampling); compiled HTML stays deterministic.
+- Uploading 3D assets to R2 was dropped: pages embed their model, font and data
+  assets, so they stay offline and need no storage.
+- `model-3d` does not yet react to WebGL context loss
+  ([#177](https://github.com/bestagentkits/ak-render/issues/177)).
+
+Migration: no spec changes are needed; existing specs compile unchanged and 3D
+blocks are opt-in. Rollback: pin the previous release, or remove 3D blocks from
+a spec.
+
 ### Added
 
 - Claude plugin folder. `plugins/ak-render/` is a self-contained plugin for
@@ -19,6 +47,42 @@ Release mechanics and the compatibility contract live in
   license. The repository marketplace now installs that folder instead of the
   repository root. `pnpm test:plugin` smoke-tests it against the published
   package. See [docs/claude-plugin.md](./docs/claude-plugin.md).
+- `shader-3d` block: five closed shader presets (noise, fresnel, hologram, distortion, dissolve) on a sphere, torus, torus knot or plane, with typed `intensity`, `scale`, `progress` and `speed` dials, theme tones and a seed. Post-processing is a closed chain (bloom, chromatic, scanlines, grain, vignette) checked against each preset. Built-in preset buttons and sliders, and a `bind` map to state, change uniforms live and fire `change`. Shader source is rejected anywhere in a spec; every line of GLSL is compiler-owned. An SVG poster shaded by the same formula covers no-JS, no-WebGL and print, reduced motion holds that frame and a Pause button stops the motion. The gallery's 3D section shows the presets and a live reveal. See [docs/3d-effects.md](./docs/3d-effects.md#shader-3d).
+- `text-3d` block: extruded, bevelled lettering from two bundled SIL OFL fonts (Bricolage Grotesque, Fraunces) with satin, metal, chrome, glass and neon finishes, depth and bevel, and rise, wave, float and spin motion by character or word. Text is NFC-normalized across Latin, Latin Extended and Vietnamese; a character the font lacks draws its box, warns with the code point and is spelled out in the caption. An SVG poster of the same layout covers no-JS, no-WebGL and print, and the gallery's 3D section shows a headline and the finishes. See [docs/3d-scenes.md](./docs/3d-scenes.md#text-3d).
+- `particles-3d` block: seeded particle effects from six presets (galaxy, nebula, fountain, snow, fireflies, vortex) with typed emitter shape, force and noise fields, color and size over life, count and speed overrides. The same seed draws the same frame; a GPU path (up to 20,000 particles) and a bounded CPU path (up to 4,000) share one closed-form simulation, step down by halves when frames run slow, pause offscreen and release every resource on unmount. An SVG poster of the same frame covers no-JS, no-WebGL and print; reduced motion holds it still and a Pause button stops the motion. `export3dPosterSvg` exports that poster with its night sky, and the gallery's 3D section shows the galaxy. See [docs/3d-effects.md](./docs/3d-effects.md#particles-3d).
+- `globe-3d` block: latitude/longitude markers and great-circle arcs on a dotted globe drawn from bundled Natural Earth land (public domain), with an atmosphere, a sunlit day side and a night side. Markers and arcs sit on layers the reader can hide, a time step filters them (bound to page state), nearby markers merge into counts when zoomed out, and choosing a place writes page state and flies the camera to it. Compact `markerList` and `arcList` lines carry up to 1,000 markers and 500 arcs. A static SVG globe and tables of every place (coordinates, layer, value, time) and route (great-circle distance) carry it without JS, without WebGL and in print. See [docs/3d-data.md](./docs/3d-data.md#globe-3d).
+- `product-3d` block: a studio-lit product from typed parts with a finish dropdown bound to page state, numbered hotspots that fly the camera to them, and an exploded view; a drawn plan with the same pins, the finish list and the hotspot list carry it without JS, without WebGL and in print. Product parts add the `rounded-box` and `capsule` shapes. See [docs/3d-scenes.md](./docs/3d-scenes.md#product-3d).
+- `point-cloud-3d` block: a scanned point cloud at true proportions from a local `.xyz`/`.csv`/`.txt` file (up to 100,000 points, read inside the spec directory) or inline columns (up to 20,000), with intensity or height colour, a clip box from axis `min`/`max`, a compile-time level-of-detail order and a `budget` the status line always reports, spatial picking that writes `bind` and shows the authored coordinates with units, and a `Cut above` section slider. Oversized or malformed files fail with the line number instead of being truncated. A sampled SVG drawing, the selected point, per-column statistics over every point and a data table carry it without JS, without WebGL and in print. See [docs/3d-data.md](./docs/3d-data.md#point-cloud-3d).
+- `timeline-3d` block: up to 200 milestones in order along a lit path in space (a ribbon for a few, a rising spiral for many), with a camera that flies to each one, Prev/Next, a scrubber, a one-tab-stop milestone list, canvas keys, a narrative card and a `bind` state path. Dates out of order are a compile error. A drawing of the path, the card and the ordered list carry it without JS, without WebGL and in print; reduced motion moves the camera at once. See [docs/3d-data.md](./docs/3d-data.md#timeline-3d).
+- `morph-3d` block: one studio-lit surface that morphs between two to six typed target shapes (closed: sphere, cube, capsule, cylinder, cone, gem, blob, star; rings: torus, knot, twist) sampled on one shared grid per topology, with `smooth`, `spring`, `snap` or `linear` easing, a `loop`, `once` or `manual` timeline, and target buttons, canvas keys and a `bind` state path that choose a target. Mixing a closed shape with a ring is a compile error naming the invalid topology. A shaded drawing of the current target and the target list carry it without JS, without WebGL and in print; reduced motion lands every morph at once and a Pause button freezes a playing timeline. See [docs/3d-effects.md](./docs/3d-effects.md#morph-3d).
+- `terrain-3d` block: a heightmap block from rows of elevations (up to 256 x 256) or a seeded relief of typed landforms (peak, ridge, valley, crater, basin), drawn to true scale times a vertical exaggeration when the ground's width is known, with contour lines at a round interval (heavier every fifth), five colour ramps, soil walls and numbered places that list their elevation read from the heightmap. A flyover tours the places with a Pause button; choosing a place (list, pin, canvas keys or a `bind` state path) flies to it and fires `select`. A shaded drawing of the block under the live camera, the elevation legend and the place list carry it without JS, without WebGL and in print. The input bounds let a `heights` grid and its rows reach 256 items. See [docs/3d-data.md](./docs/3d-data.md#terrain-3d).
+- `edge-flow` now flows on every diagram in view and keeps flowing when the reader selects a node; every diagram in the showcase uses it except sequence playback.
+- `edge-flow` diagram motion recipe: dashed relationships march and a glowing pulse travels each one while the diagram is in view, with a Pause flow control; the governor keeps it to one flowing diagram per page and stops it on selection, reduced motion, print and hidden tabs. The diagram showcase opens with a deploy pipeline drawn as dark cards with a mono subtitle, a glowing hub and a status pill.
+
+- `scene-3d` block: a nested 3D scene as typed data (primitive shapes, material
+  and lighting presets, camera, timeline, views) drawn live by a shared, inlined
+  three.js runtime and backed by a compiler-projected SVG plan for no-JS, print
+  and reduced motion. Picking an object writes page state. See [docs/3d.md](./docs/3d.md).
+- `ak-render export <spec> --format png|pdf`: local export through an installed
+  Chrome, Edge or Playwright Chromium (never downloaded) that captures each 3D
+  scene's live WebGL frame and fails with a stable code instead of exporting the
+  static plan. `ak-render export doctor` reports the browser and its WebGL 2 support.
+- `exportDiagramSvg` writes a standalone, deterministic SVG of a contract 2 drawing; `window.akRenderDiagram.freeze()` settles diagram motion for capture; Motion Studio accepts a diagram adapter and inspects the drawing. See [docs/diagram-adapter.md](./docs/diagram-adapter.md#export-and-motion-studio).
+- 22 golden diagram cases with determinism, zero-fabrication, geometry, accessibility, offline, print, no-JS, preset and motion checks, and a recorded compile time, DOM size and memory baseline. See [docs/diagram-adapter.md](./docs/diagram-adapter.md#golden-cases-and-baseline).
+
+- Diagram motion recipes for contract 2 drawings: `edge-trace`, `signal-relay`, `node-activation` and `sequence-playback`. One governor per page plays one diagram at a time, follows the viewer's selection, and stops on hide, theme switch, reduced motion and print; sequence playback never starts itself and names each step in a status line. See [docs/motion.md](./docs/motion.md#diagram-motion-governor).
+
+- Diagram viewer for adapter contract 2 drawings: select a node to see its connections, Shift+select to trace a directed route, show everything downstream, inspect a relationship, find a node (diacritic-insensitive), zoom, fit and pan, with the selection kept in the link. Controls appear only for the capabilities the adapter declares, ship hidden without script and drop out of print.
+
+- Diagram adapter contract 2. An adapter that declares `contract: 2` may
+  return `{ svg, manifest, capabilities }`: the manifest names which drawn
+  element is which node, relationship and group of the spec, and the
+  capabilities say which viewer interactions the drawing supports. The
+  compiler rejects a manifest that names anything the spec does not declare,
+  writes its own `data-ak-*` hooks with labels taken from the spec, and
+  prefixes every id in the drawing with the panel scope. Contract 1 adapters
+  are unchanged. See [docs/diagram-adapter.md](./docs/diagram-adapter.md#contract-2-semantic-manifest).
+
 - ChatGPT plugin package. `packaging/chatgpt/` connects ChatGPT to the hosted
   MCP server at `https://render.agentkit.best/mcp` with AgentKit OAuth, so no
   Node or npm is needed; the local stdio manifests are unchanged.
@@ -258,6 +322,13 @@ Release mechanics and the compatibility contract live in
 
 ### Changed
 
+- An unknown block type in `validate`, `render` and `patch` now reports up to
+  three near types in `details.closest` (typo matches first, then
+  `search-catalog` hits) instead of every registered type in `details.known`,
+  so the diagnostic shrinks from about 1.1 kB to under 300 bytes. Its code,
+  path and fix hints are unchanged; `catalog` and `search-catalog` list every
+  type. Breaking for any client that read `details.known` from this
+  diagnostic.
 - An unsupported `MCP-Protocol-Version` header now answers JSON-RPC `-32022`
   with `data: { supported, requested }` instead of `-32600` (still HTTP 400).
 - The remote MCP instructions name `motions` and `audit-motion`, so every
@@ -279,6 +350,12 @@ Release mechanics and the compatibility contract live in
 - A tab panel or `fade-swap` block now fades in even when the main thread is
   busy right after the change. The fallback that clears the entering mark
   used to fall due before the first frame and skip the fade.
+- `diagram-panel` without an adapter (including every hosted render) shows typed
+  `workflow`, `sequence`, `lifecycle` and `dataflow` diagrams in full. The
+  fallback read only `components`, `nodes` and `connections`, so steps,
+  participants, states, transitions, messages and flows were dropped with no
+  warning. Groups list their members, sequence messages keep their order, and
+  `validate` warns at the exact path of an undeclared reference (#128).
 
 - Charts no longer draw at `NaN` or stop compiling on extreme or near-equal
   numbers. A dataset value such as `1e308` used to pass `validate` while the

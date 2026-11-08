@@ -11,6 +11,7 @@
  * the caller should see.
  */
 
+import { browserRunBody } from '../../../src/export/cloud-export.js';
 import type { Env } from './bindings.js';
 
 export type ExportFormat = 'screenshot' | 'pdf';
@@ -42,24 +43,14 @@ function exportFailed(message: string): ExportOutcome {
 }
 
 /**
- * Quick Action options per format. The page is offline, so no wait tuning is
- * needed. `cacheTTL: 0` keeps Browser Run from caching a caller's page.
+ * Quick Action options per format, shared with the CLI's cloud exporter so both
+ * capture alike: high-quality profile, and for a 3D page a wait on the
+ * export-ready selector, which only appears once every scene drew a measured,
+ * non-blank WebGL frame. A scene that fails never becomes ready, so the call
+ * fails instead of capturing the static plan.
  */
 function optionsFor(html: string, format: ExportFormat): Record<string, unknown> {
-  if (format === 'pdf') {
-    return {
-      html,
-      cacheTTL: 0,
-      viewport: { width: 1280, height: 900 },
-      pdfOptions: { format: 'a4', printBackground: true },
-    };
-  }
-  return {
-    html,
-    cacheTTL: 0,
-    viewport: { width: 1440, height: 900 },
-    screenshotOptions: { fullPage: true, type: 'png' },
-  };
+  return browserRunBody(html, format === 'pdf' ? 'pdf' : 'png');
 }
 
 export async function exportArtifact(

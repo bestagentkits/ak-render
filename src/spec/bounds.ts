@@ -11,6 +11,11 @@ import { DATA_LIMITS } from '../data/dataset-types.js';
 import { type DiagnosticBag, pathIndex, pathKey } from '../diagnostics.js';
 import { isPlainObject } from '../json.js';
 
+/** Paths of the scalar columns that may use `maxColumnValues`: a block's `data.<column>`. */
+const COLUMN_PATH = /\]\.data\.(?:x|y|z|size|value|intensity|group|id)$/u;
+/** Paths of a block's `heights` grid and its rows, which may use `maxGridSide`. */
+const GRID_PATH = /\]\.heights(?:\[\d+\])?$/u;
+
 export const LIMITS = {
   /** Nesting depth of the raw document, root included. */
   maxDepth: 24,
@@ -22,6 +27,17 @@ export const LIMITS = {
   maxSerializedBytes: 1_000_000,
   /** Items in any single list. */
   maxListItems: 200,
+  /**
+   * Items in a block's scalar data column (`data.x`, `data.y`, ...): a list of
+   * only numbers and strings, such as a `scatter-3d` column. Each block's schema
+   * still sets its own maximum; every other list keeps `maxListItems`.
+   */
+  maxColumnValues: 20_000,
+  /**
+   * Rows in a block's `heights` grid, and numbers in each row: a `terrain-3d`
+   * heightmap up to 256 x 256. The block's schema still sets its own maximum.
+   */
+  maxGridSide: 256,
   /** Keys in an open-keyed map such as `state`. */
   maxMapKeys: 200,
   /** Length of a single-line string. */
@@ -70,11 +86,21 @@ function walk(value: unknown, path: string, depth: number, state: WalkState): vo
 
   if (Array.isArray(value)) {
     if (value.length > state.largestList) state.largestList = value.length;
-    if (value.length > LIMITS.maxListItems) {
+    const column =
+      value.length > LIMITS.maxListItems &&
+      COLUMN_PATH.test(path) &&
+      value.every((item) => typeof item === 'number' || typeof item === 'string');
+    const grid =
+      !column &&
+      value.length > LIMITS.maxListItems &&
+      GRID_PATH.test(path) &&
+      value.every((item) => typeof item === 'number' || Array.isArray(item));
+    const limit = column ? LIMITS.maxColumnValues : grid ? LIMITS.maxGridSide : LIMITS.maxListItems;
+    if (value.length > limit) {
       state.bag.add({
         code: 'SPEC_BOUNDS_ERROR',
         path,
-        message: `list has ${value.length} items, limit is ${LIMITS.maxListItems}`,
+        message: `list has ${value.length} items, limit is ${limit}`,
       });
     }
     for (let index = 0; index < value.length; index += 1) {

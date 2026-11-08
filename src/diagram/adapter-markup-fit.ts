@@ -32,14 +32,14 @@ import { filterAdapterStylesheet, scopeAdapterStylesheet } from './adapter-style
 export const ADAPTER_STYLE_MARKER = 'data-ak-adapter-style';
 
 /** HTML whitespace. JavaScript's `\s` also matches characters HTML does not. */
-const WS = '[\\t\\n\\f\\r ]';
+export const WS = '[\\t\\n\\f\\r ]';
 /**
  * An attribute name. It excludes `<`, so an unterminated tag fails at the next
  * `<` instead of rescanning the rest of the markup.
  */
-const ATTRIBUTE_NAME = `[^\\t\\n\\f\\r "'<>/=]+`;
+export const ATTRIBUTE_NAME = `[^\\t\\n\\f\\r "'<>/=]+`;
 /** An optional `=` and a quoted or unquoted attribute value. */
-const ATTRIBUTE_VALUE = `(?:${WS}*=${WS}*(?:"[^"]*"|'[^']*'|[^\\t\\n\\f\\r "'=<>\`]+))?`;
+export const ATTRIBUTE_VALUE = `(?:${WS}*=${WS}*(?:"[^"]*"|'[^']*'|[^\\t\\n\\f\\r "'=<>\`]+))?`;
 /** A start tag at the current position: name, attribute list, self-closing slash. */
 const START_TAG = new RegExp(
   `<([A-Za-z][A-Za-z0-9:-]*)((?:${WS}+${ATTRIBUTE_NAME}${ATTRIBUTE_VALUE})*)${WS}*(\\/?)>`,

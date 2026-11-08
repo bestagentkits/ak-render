@@ -1,6 +1,6 @@
 # Diagram adapter
 
-AK Render does not lay out diagrams. A host that owns a typed diagram compiler —
+AK Render does not lay out diagrams ([ADR 0003](./adr/0003-diagram-layout-without-adapter.md)). A host that owns a typed diagram compiler —
 AgentKit's Engineer install provides `ak:diagram` — registers an adapter, and
 every `diagram-panel` block renders through it. Everything else keeps the
 structured semantic fallback.
@@ -27,13 +27,14 @@ interface DiagramRenderRequest {
   readonly spec: JsonValue;   // the block's spec, exactly as authored
   readonly title: string;
   readonly nodeId: string;    // stable, usable as a cache key
-  readonly contractVersion: 1;
+  readonly contractVersion: 1 | 2; // the adapter's `contract`, or 1
 }
 
 interface DiagramAdapter {
   readonly name: string;
   readonly version: string;
-  render(request: DiagramRenderRequest): string | undefined;
+  readonly contract?: 1 | 2;
+  render(request: DiagramRenderRequest): string | DiagramRenderResult | undefined;
 }
 ```
 
@@ -43,6 +44,69 @@ outside its own figure.
 
 Returning `undefined`, or throwing, means "fall back". Neither fails the
 compile: a broken or absent adapter degrades the page.
+
+## Contract 2: semantic manifest
+
+An adapter that declares `contract: 2` receives `contractVersion: 2` and may
+return a result instead of a bare string (a string still works and is treated
+as contract 1 output):
+
+```ts
+const akDiagram: DiagramAdapter = {
+  name: 'ak-diagram',
+  version: '3.1.0',
+  contract: 2,
+  render({ spec, title }) {
+    const out = akDiagramCompiler.compile(spec, { title });
+    if (!out.ok) return undefined;
+    return {
+      svg: out.svg,
+      manifest: {
+        version: 2,
+        // No `element`: matched by `data-node-id` / `data-edge-id`, which
+        // ak:diagram already writes.
+        nodes: out.nodes.map((node) => ({ id: node.id })),
+        edges: out.edges.map((edge) => ({ from: edge.source, to: edge.target, id: edge.id })),
+        groups: out.frames.map((frame) => ({ id: frame.id, element: frame.elementId })),
+      },
+      capabilities: { focus: true, trace: true, zoom: true, search: true },
+    };
+  },
+};
+```
+
+| Field | Meaning |
+| --- | --- |
+| `nodes[].id` | A node id the spec declares. |
+| `edges[].from`, `to` | A relationship the spec declares. Two declared relationships between the same pair may be drawn twice; a third may not. |
+| `edges[].index` | Optional position of the relationship in the spec's list. Use it when the spec declares several relationships between the same pair with different labels; otherwise they are matched in declaration order. |
+| `groups[].id` | A boundary, lane or stage id the spec declares. |
+| `element` | The drawn element's `id`. Without it, a node binds the element whose `data-node-id` is its id, a relationship the element whose `data-edge-id` is its `id`, a group the element whose `data-group-id` is its id. |
+| `capabilities` | Any of `focus`, `trace`, `zoom`, `search` set to `true`. Other keys are ignored. |
+
+The compiler checks the result in this order, and any failure emits the
+semantic fallback with a warning naming the reason:
+
+1. the SVG passes the [trust boundary](#trust-boundary) exactly like contract 1
+   markup;
+2. the manifest has the shape above, at most 400 nodes, 1200 relationships and
+   100 groups, and element references are plain tokens;
+3. every node, relationship and group is one the spec declares
+   (`semantic-graph.ts`) and none is listed twice, so a drawing can never claim
+   a relationship the spec does not state;
+4. every entry binds exactly one element.
+
+Then it writes its own hooks onto the bound elements: `data-ak-node`,
+`data-ak-edge` with `data-ak-from` and `data-ak-to`, `data-ak-group` with
+`data-ak-members`, and a `data-ak-label` taken from the spec, never from the
+adapter. Every `id` in the drawing, and every `href="#…"`, `url(#…)` and
+`aria-labelledby`/`aria-describedby` reference to one, is prefixed with the
+panel scope, so two diagrams on a page never share an id. Drawn ids must be
+plain tokens (`[A-Za-z][A-Za-z0-9_.:-]*`). Style a contract 2 drawing by class,
+not by `#id` selector: id selectors no longer match once ids are scoped. The canvas carries
+`data-ak-diagram-contract="2"` and the declared capabilities, which the
+compiler-owned viewer and diagram motion read. A manifest may list only part
+of the drawing; what it leaves out stays static.
 
 ## Trust boundary
 
@@ -145,6 +209,25 @@ the print stylesheet opens it through `::details-content`, and where a browser
 lacks that selector the runtime opens it for the print and folds it again
 afterwards.
 
+The description reads every ak:diagram archetype the same way the adapter does
+(`src/diagram/semantic-graph.ts`), and shows only what the spec declares:
+
+| `diagram_type` | Nodes | Relationships (label fields) | Groups |
+| --- | --- | --- | --- |
+| `architecture` | `components` | `connections` (`label`, `protocol`) | `boundaries[].components` |
+| `workflow` | `steps` | `transitions` (`label`, `condition`) | `lanes`, by `step.lane` |
+| `sequence` | `participants` | `messages`, numbered in order (`label`) | — |
+| `dataflow` | `nodes` | `flows` (`label`, `schema_type`) | `stages` by `order`, by `node.stage` |
+| `lifecycle` | `states` | `transitions` (`event`, `action`) | `lanes`, by `state.lane` |
+| none or other | `components`, `nodes` | `connections`, `edges` (`label`) | — |
+
+A simple chain without groups is drawn as a flow; anything else lists the
+groups with their members, then every relationship. `validate` warns at the
+exact spec path when a relationship, lane, stage or boundary member names an
+undeclared id, when a node id repeats or is missing, when a typed diagram has
+no nodes, and when `diagram_type` is not one of the archetypes above. The
+hosted renderer has no adapter, so this description is what its pages show.
+
 ## Size and scrolling
 
 Adapter output is shown at its natural size. A diagram wider than the column is
@@ -163,3 +246,62 @@ typed compiler, embedding only that compiler's output. Core and Marketing
 installs have no adapter and therefore keep the semantic fallback. No paid
 diagram compiler is copied into this package; the dependency direction is that
 AK Render defines the boundary and the host supplies the implementation.
+
+## The viewer
+
+A contract 2 result that declares capabilities gets a viewer. It reads only the hooks the compiler wrote while binding the manifest, never adapter selectors.
+
+| Capability | What the reader gets |
+| --- | --- |
+| `focus` | Select a node (click, Enter or Space) to highlight its neighbours and dim the rest; a details panel lists the connections as buttons and offers everything downstream. Clicking a relationship inspects it. |
+| `trace` | Shift+select a second node to highlight the shortest directed route, or a note that none exists. |
+| `search` | A find box that matches labels and ids, ignoring case and diacritics; Enter selects the first match. |
+| `zoom` | Zoom out, zoom in, Fit and 1:1 buttons, `+`, `-`, `0` and `f` on the focused scroller, Ctrl+wheel, and drag to pan when the drawing is wider than the panel. |
+
+Escape or Clear resets the view. The selection or route is kept in the link as `#<panel>:node:<id>` or `#<panel>:route:<from>:<to>`, so a shared link opens on it. The controls ship hidden and the runtime reveals them, so without script the drawing and its text description read as before; print drops the controls and the dimming. The only transition, the dimming, sits behind the motion guard.
+
+## Golden cases and baseline
+
+`tests/unit/support/diagram-golden.ts` holds 22 diagram shapes: one node, chains, branches, fan-out and fan-in, a diamond, cycles, bidirectional and parallel relationships, a dense graph, disconnected parts, long Vietnamese labels, markup-like labels, empty labels, nested boundaries, a 60-node drawing, and the workflow, sequence, dataflow and lifecycle archetypes. They are drawn with the reference grid adapter.
+
+- `tests/unit/diagram-golden.test.ts` checks each case:
+  - it compiles to the same bytes every time;
+  - every declared node is drawn exactly once;
+  - exactly the declared relationships appear, in spec order, so nothing is fabricated;
+  - ids are unique and labels stay inert;
+  - its canvas digest matches the snapshot.
+
+  It also checks that every built-in preset leaves the drawing unchanged.
+- `tests/browser/diagram-golden.spec.ts` opens each case at 1440 and 375. It checks:
+  - no console errors and no network requests;
+  - no sideways page scroll;
+  - no node outside its drawing and no overlapping nodes;
+  - an accessible name on every node;
+  - node geometry against `tests/browser/diagram-golden.geometry.json`.
+
+  It also covers print, no script, every preset in light and dark, and motion under full, reduced and `none`.
+- `AK_RECORD_DIAGRAM_BASELINE=1 npx playwright test tests/browser/diagram-golden.spec.ts` records the geometry and [docs/artifacts/diagram-baseline.json](./artifacts/diagram-baseline.json). That file holds compile time, HTML bytes, DOM size and JS heap for small to 60-node drawings. It is a baseline for later thresholds, not a threshold.
+
+## Export and Motion Studio
+
+`exportDiagramSvg(spec, { diagramAdapter, blockId?, scheme? })` returns one
+standalone SVG of a contract 2 drawing: the theme colours are written onto the
+root, scoped styles are unwrapped, nonces, scripts and motion state are
+dropped, and the output is deterministic. A page or block with no contract 2
+drawing fails with `SPEC_VALIDATION_ERROR`; there is no fallback picture to
+fake.
+
+Any capture tool can stop diagram motion first: `window.akRenderDiagram.freeze()`
+halts the governor, ends sequence playback and clears every viewer selection, so
+a screenshot shows the settled drawing. It is a capture-only API: motion stays
+stopped until the page reloads.
+
+PNG export waits on the shared page export (`src/export/page-export.ts`), which
+will call this freeze hook; until it lands, render the SVG with any rasteriser.
+WebM recording was investigated and not built: it needs a browser at export
+time, which breaks the offline compile, so it stays an opt-in idea.
+
+Motion Studio takes the same `diagramAdapter`, offers the diagram recipes on a
+`diagram-panel`, and its inspector reports the drawing it previews (nodes,
+relationships, groups and capabilities) or says that nothing is drawn. Export
+and the adapter are library APIs; the CLI has no adapter to pass.

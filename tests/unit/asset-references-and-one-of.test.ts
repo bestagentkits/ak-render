@@ -36,8 +36,10 @@ describe('asset references', () => {
       ['src', 'media', false],
       ['poster', 'images', true],
     ]);
-    expect(assetOrigins({ allow: ['images'] }, refs)).toEqual(['https://img.example.com']);
-    expect(assetOrigins('deny', refs)).toEqual([]);
+    expect(assetOrigins({ allow: ['images'] }, refs, ['images', 'media'])).toEqual([
+      'https://img.example.com',
+    ]);
+    expect(assetOrigins('deny', refs, ['images', 'media'])).toEqual([]);
   });
 
   it('rejects a blocked poster inside a nested slot at its nested path', () => {

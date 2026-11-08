@@ -496,6 +496,7 @@ ak-render motions [search <terms...>|describe <id...> [--compact]]
 ak-render motion audit <spec|page.html|-> [--fail-on <severity>] [--baseline <report.json>]
 ak-render motion studio <spec> [--port <n>]  # local motion dashboard
 ak-render audit-ui <spec|page.html|-> [--preset <quick|publication>] [--fail-on <severity>]
+ak-render export <spec|-> --format <png|pdf> --out <file>  # local browser, 3D captured live
 ak-render recipes
 ak-render recipe <name>                   # YAML by default
 ak-render themes
@@ -548,7 +549,7 @@ pnpm bench:spec      # spec compression for the composition fixtures
 pnpm bench:agent --model <id> --visual  # live-model A/B; skips without a model API key
 pnpm build && pnpm bench:render --agentkit ../agentkit --repeat 9  # committed render artifact
 pnpm site:build      # compile the landing page and gallery into site/dist
-pnpm site:deploy     # build, then deploy site/dist with wrangler
+pnpm site:deploy     # build, then deploy site/dist with wrangler (CI does this on every push to main: .github/workflows/site-deploy.yml)
 node scripts/generate-site-images.mjs  # after pnpm build: redraw site icons and social card
 ```
 

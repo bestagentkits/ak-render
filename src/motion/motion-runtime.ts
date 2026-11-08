@@ -12,6 +12,8 @@
  * time is zero, and the change completes at once.
  */
 
+import { DIAGRAM_MOTION_RECIPES, DIAGRAM_MOTION_RUNTIME } from './diagram-motion.js';
+
 /** Settle and cancel helpers, shared by every lifecycle recipe. */
 export const MOTION_LIFECYCLE = `
 var motionTokens = typeof WeakMap === 'function' ? new WeakMap() : null;
@@ -192,9 +194,15 @@ doc.addEventListener('cancel', function (event) {
 export function motionRuntime(used: ReadonlySet<string>): { code: string[]; boot: string[] } {
   const code: string[] = [];
   const boot: string[] = [];
-  const lifecycle = used.has('tabs-slide') || used.has('fade-swap') || used.has('dialog-pop');
+  const diagram = DIAGRAM_MOTION_RECIPES.some((id) => used.has(id));
+  const lifecycle =
+    used.has('tabs-slide') || used.has('fade-swap') || used.has('dialog-pop') || diagram;
   if (!lifecycle) return { code, boot };
   code.push(MOTION_LIFECYCLE);
+  if (diagram) {
+    code.push(DIAGRAM_MOTION_RUNTIME);
+    boot.push('wireDiagramMotion();');
+  }
   if (used.has('tabs-slide')) {
     code.push(MOTION_TABS);
     boot.push('wireTabMotion();');

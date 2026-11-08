@@ -19,6 +19,8 @@ export type {
 export { UI_FINDINGS_PER_RULE, uiAuditFails } from './audit/ui-audit-report.js';
 export type { UiAuditPreset, UiRule, UiSeverity } from './audit/ui-audit-rules.js';
 export { UI_AUDIT_PRESETS, UI_RULE_IDS, UI_RULES } from './audit/ui-audit-rules.js';
+export type { PosterSvgOptions } from './blocks/three/poster-export.js';
+export { export3dPosterSvg } from './blocks/three/poster-export.js';
 export type {
   ComposeInput,
   ComposeIntent,
@@ -58,6 +60,17 @@ export {
   MAX_DIAGRAM_MARKUP_BYTES,
   runDiagramAdapter,
 } from './diagram/adapter.js';
+export type {
+  DiagramCapability,
+  DiagramManifest,
+  DiagramManifestEdge,
+  DiagramManifestGroup,
+  DiagramManifestNode,
+  DiagramRenderResult,
+} from './diagram/adapter-manifest.js';
+export { DIAGRAM_CAPABILITIES } from './diagram/adapter-manifest.js';
+export type { DiagramSvgOptions } from './diagram/diagram-export.js';
+export { exportDiagramSvg } from './diagram/diagram-export.js';
 export type { RenderErrorCode, RenderErrorOptions } from './errors.js';
 export { isRenderError, RenderError } from './errors.js';
 export type { IconDescription, IconHit, IconPackSummary } from './icons/icon-catalog.js';
@@ -137,7 +150,7 @@ export {
 export type { BlockDefinition, SizingContract, SlotSpec } from './registry/roster.js';
 export { buildContentSecurityPolicy } from './render/document.js';
 export { escapeAttribute, escapeText, escapeUrl, serializeJsonForScript } from './render/escape.js';
-export type { CompileResult, RenderOptions } from './render/render.js';
+export type { CompileResult, ModelResolver, RenderOptions } from './render/render.js';
 export { compile, render } from './render/render.js';
 export type { BoundsReport } from './spec/bounds.js';
 export { LIMITS } from './spec/bounds.js';

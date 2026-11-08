@@ -171,3 +171,38 @@ test.describe('diagram adapter output in the browser', () => {
     await expect(page.locator('.ak-diagram-fallback')).toContainText('Alpha');
   });
 });
+
+test.describe('diagram adapter contract 2 in the browser', () => {
+  test('bound hooks, scoped ids and markers render without policy errors', async ({ page }) => {
+    const { gridDiagramAdapter } = await import('../unit/support/grid-diagram-adapter.js');
+    const spec = `version: 1
+meta: { title: V2 }
+blocks:
+  - type: diagram-panel
+    id: one
+    spec: { components: [{ id: a, label: Alpha }, { id: b, label: Beta }], connections: [{ from: a, to: b }] }
+  - type: diagram-panel
+    id: two
+    spec: { components: [{ id: a, label: Alpha }, { id: b, label: Beta }], connections: [{ from: a, to: b }] }
+`;
+    const target = workspace.write(
+      'v2',
+      compile(spec, { diagramAdapter: gridDiagramAdapter() }).html,
+    );
+    const errors: string[] = [];
+    page.on('console', (message) => {
+      if (message.type() === 'error') errors.push(message.text());
+    });
+    await page.goto(`file://${target}`, { waitUntil: 'load' });
+    await expect(page.locator('[data-ak-node]')).toHaveCount(4);
+    await expect(page.locator('[data-ak-edge]')).toHaveCount(2);
+    const ids = await page
+      .locator('.ak-diagram-canvas [id]')
+      .evaluateAll((all) => all.map((el) => el.id));
+    expect(new Set(ids).size).toBe(ids.length);
+    // The arrowhead marker resolves through its scoped id.
+    const marker = await page.locator('#one-arrow').count();
+    expect(marker).toBe(1);
+    expect(errors).toEqual([]);
+  });
+});

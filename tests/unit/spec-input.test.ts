@@ -116,10 +116,47 @@ describe('bounds', () => {
 
   it('rejects a list beyond the item limit with a positioned path', () => {
     const diagnostics = bag();
-    checkBounds({ items: new Array(LIMITS.maxListItems + 1).fill('x') }, diagnostics);
+    checkBounds({ items: new Array(LIMITS.maxListItems + 1).fill([]) }, diagnostics);
     const error = diagnostics.errors().find((item) => item.message.includes('limit is'));
     expect(error?.path).toBe('$.items');
     expect(error?.code).toBe('SPEC_BOUNDS_ERROR');
+  });
+
+  it('lets a block data column reach the column limit, and no other list', () => {
+    const column = (values: unknown[]) => ({
+      blocks: [{ type: 'scatter-3d', data: { x: values } }],
+    });
+    const ok = bag();
+    checkBounds(column(new Array(LIMITS.maxColumnValues).fill(1)), ok);
+    expect(ok.errors()).toEqual([]);
+    const over = bag();
+    checkBounds(column(new Array(LIMITS.maxColumnValues + 1).fill('a')), over);
+    expect(over.errors()[0]?.message).toContain(`limit is ${LIMITS.maxColumnValues}`);
+    const mixed = bag();
+    checkBounds(column([...new Array(LIMITS.maxListItems).fill(1), {}]), mixed);
+    expect(mixed.errors()[0]?.message).toContain(`limit is ${LIMITS.maxListItems}`);
+    const row = bag();
+    const cells = new Array(LIMITS.maxListItems + 1).fill('cell');
+    checkBounds({ blocks: [{ type: 'table', rows: [cells] }] }, row);
+    expect(row.errors()[0]?.message).toContain(`limit is ${LIMITS.maxListItems}`);
+  });
+
+  it('lets a heights grid and its rows reach the grid side, and no further', () => {
+    const grid = (rows: unknown[]) => ({ blocks: [{ type: 'terrain-3d', heights: rows }] });
+    const side = LIMITS.maxGridSide;
+    const ok = bag();
+    checkBounds(grid(Array.from({ length: side }, () => new Array(side).fill(1))), ok);
+    expect(ok.errors()).toEqual([]);
+    const tall = bag();
+    checkBounds(grid(Array.from({ length: side + 1 }, () => [1, 2])), tall);
+    expect(tall.errors()[0]?.message).toContain(`limit is ${side}`);
+    const wide = bag();
+    checkBounds(grid([new Array(side + 1).fill(1)]), wide);
+    expect(wide.errors()[0]?.path).toBe('$.blocks[0].heights[0]');
+    // Another list of the same length keeps the usual bound.
+    const other = bag();
+    checkBounds({ blocks: [{ type: 'table', rows: new Array(side).fill([]) }] }, other);
+    expect(other.errors()[0]?.message).toContain(`limit is ${LIMITS.maxListItems}`);
   });
 
   it('rejects a document larger than the serialized byte limit', () => {

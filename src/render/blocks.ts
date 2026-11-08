@@ -1,8 +1,14 @@
 import { runDiagramAdapter } from '../diagram/adapter.js';
+import { readDiagramGraph } from '../diagram/semantic-graph.js';
 import type { IconSize } from '../icons/icon-packs.js';
 import { renderIcon } from '../icons/icon-render.js';
 import type { IrNode } from '../ir.js';
 import { isPlainObject, type JsonValue } from '../json.js';
+import {
+  DIAGRAM_MOTION_RECIPES,
+  diagramFlowBar,
+  diagramSequenceBar,
+} from '../motion/diagram-motion.js';
 import type { BlockRegistry } from '../registry/block-module.js';
 import { DEFAULT_REGISTRY } from '../registry/registry.js';
 import { EMBED_PROVIDERS } from '../spec/providers.js';
@@ -23,6 +29,7 @@ import {
   titleHeader,
 } from './block-helpers.js';
 import { renderDiagramFallback } from './diagram-fallback.js';
+import { DIAGRAM_VIEWER_DETAILS, diagramViewerBar } from './diagram-viewer.js';
 import {
   type AttributeValue,
   escapeAttribute,
@@ -646,10 +653,6 @@ const RENDERERS: Record<string, Renderer> = {
 
   'diagram-panel': (node, context) => {
     const spec = isPlainObject(node.props.spec) ? node.props.spec : {};
-    const asObjects = (value: unknown): Record<string, JsonValue>[] =>
-      (Array.isArray(value) ? value.filter(isPlainObject) : []) as Record<string, JsonValue>[];
-    const described = [...asObjects(spec.components), ...asObjects(spec.nodes)];
-    const edges = asObjects(spec.connections);
     const meta = isPlainObject(spec.meta) ? (spec.meta as Record<string, JsonValue>) : {};
     const diagramTitle = str(meta.title, stringProp(node, 'title', 'Diagram'));
     const caption = stringProp(node, 'caption');
@@ -657,7 +660,7 @@ const RENDERERS: Record<string, Renderer> = {
     // The semantic fallback is always available: it is the only rendering when
     // no adapter is installed, and it stays in the document as the accessible
     // description when one is.
-    const fallbackBody = renderDiagramFallback(described, edges);
+    const fallbackBody = renderDiagramFallback(readDiagramGraph(spec as Record<string, JsonValue>));
 
     const adapterResult = runDiagramAdapter(context.diagramAdapter, {
       spec: (node.props.spec ?? null) as JsonValue,
@@ -684,6 +687,18 @@ const RENDERERS: Record<string, Renderer> = {
       adapterResult !== undefined &&
       adapterResult.rejected === undefined &&
       adapterResult.markup !== '';
+    const preset = node.motion?.preset ?? '';
+    if (
+      (DIAGRAM_MOTION_RECIPES as readonly string[]).includes(preset) &&
+      !(accepted && adapterResult.contract === 2)
+    ) {
+      context.warnings?.push({
+        code: 'POLICY_VIOLATION',
+        severity: 'warning',
+        path: `$.blocks.${node.id}.motion`,
+        message: `motion "${preset}" animates a contract 2 diagram drawing; this panel has none (no diagram adapter, or one on contract 1), so nothing moves`,
+      });
+    }
 
     const description = `<p class="ak-diagram-title">${escapeText(diagramTitle)}</p>${fallbackBody}`;
 
@@ -696,12 +711,30 @@ const RENDERERS: Record<string, Renderer> = {
       // repeat the drawing; it stays in the document, prints open, and the
       // static SVG reads without script and in print. The inner canvas is the
       // root the adapter's stylesheets are scoped to.
+      accepted && adapterResult.contract === 2 && node.motion?.preset === 'sequence-playback'
+        ? diagramSequenceBar(diagramTitle)
+        : accepted && adapterResult.contract === 2 && node.motion?.preset === 'edge-flow'
+          ? diagramFlowBar(diagramTitle)
+          : '',
+      accepted && adapterResult.contract === 2
+        ? diagramViewerBar(adapterResult.capabilities ?? [], diagramTitle)
+        : '',
       accepted
         ? `<div class="ak-diagram-rendered" data-ak-diagram-adapter="${escapeAttribute(
             adapterResult.adapter,
           )}" role="region" aria-label="${escapeAttribute(diagramTitle)}" tabindex="0"><div class="ak-diagram-canvas" data-ak-diagram-scope="${escapeAttribute(
             adapterResult.scope ?? '',
-          )}">${adapterResult.markup}</div></div><details class="ak-diagram-details" data-ak-diagram-fallback><summary>Text description</summary><div class="ak-diagram-fallback">${description}</div></details>`
+          )}"${
+            adapterResult.contract === 2
+              ? ` data-ak-diagram-contract="2" data-ak-diagram-capabilities="${escapeAttribute(
+                  (adapterResult.capabilities ?? []).join(' '),
+                )}"`
+              : ''
+          }>${adapterResult.markup}</div></div>${
+            adapterResult.contract === 2 && (adapterResult.capabilities ?? []).length > 0
+              ? DIAGRAM_VIEWER_DETAILS
+              : ''
+          }<details class="ak-diagram-details" data-ak-diagram-fallback><summary>Text description</summary><div class="ak-diagram-fallback">${description}</div></details>`
         : `<div class="ak-diagram-fallback" data-ak-diagram-fallback>${description}<p class="ak-caption">Rendered as a structured fallback because no diagram adapter is configured.</p></div>`,
       figureCaption(caption),
       '</figure>',

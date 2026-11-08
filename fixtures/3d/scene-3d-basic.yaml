@@ -1,0 +1,29 @@
+version: 1
+meta:
+  title: Edge cluster
+state:
+  part: core
+blocks:
+  - type: scene-3d
+    id: cluster
+    title: Topology
+    summary: A core router with three edge nodes around it; pick one to read its role.
+    bind: state.part
+    objects:
+      - { id: base, label: Base plate, shape: plane, size: 6, rotation: [-90, 0, 0], tone: neutral, material: matte }
+      - { id: core, label: Core router, description: Routes all edge traffic., shape: icosahedron, size: 1.4, position: [0, 0.9, 0] }
+      - { id: rig, label: Edge rig, shape: group, position: [0, 0.4, 0] }
+      - { id: edge-a, label: Edge A, parent: rig, shape: box, size: 0.7, position: [2, 0, 0], tone: success }
+      - { id: edge-b, label: Edge B, parent: rig, shape: cylinder, size: 0.7, position: [-1, 0, 1.8], tone: info }
+      - { id: edge-c, label: Edge C, parent: rig, shape: sphere, size: 0.7, position: [-1, 0, -1.8], tone: warning, material: metal }
+    timeline:
+      - { target: core, property: rotation, to: [0, 180, 0], duration: 4000 }
+  - type: select
+    id: pick
+    label: Selected part
+    bind: state.part
+    options:
+      - { value: core, label: Core router }
+      - { value: edge-a, label: Edge A }
+      - { value: edge-b, label: Edge B }
+      - { value: edge-c, label: Edge C }

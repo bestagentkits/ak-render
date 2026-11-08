@@ -1,0 +1,14 @@
+version: 1
+meta:
+  title: Morph rings
+blocks:
+  - type: morph-3d
+    id: rings
+    title: Ring, knot, twist
+    summary: A ring that ties itself into a trefoil knot and then twists into a square band, all on one wrapped surface.
+    easing: smooth
+    timeline: loop
+    targets:
+      - { id: ring, label: Ring, shape: torus, tone: accent }
+      - { id: knot, label: Knot, shape: knot, tone: success }
+      - { id: band, label: Band, shape: twist, tone: info }

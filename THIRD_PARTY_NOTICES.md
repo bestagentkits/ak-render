@@ -17,6 +17,24 @@ uses, as same-document SVG symbols.
 | Pixelarticons | `@iconify-json/pixelarticons` | 1.2.10 | MIT | Gerrit Halfmann |
 | Codicons | `@iconify-json/codicon` | 1.2.74 | CC BY 4.0 | Microsoft Corporation |
 
+## Three.js
+
+Pages that use a 3D block (`scene-3d` and the other `*-3d` blocks) inline the
+shared 3D runtime, which bundles [three.js](https://threejs.org) 0.170.0 (MIT,
+© 2010-2024 three.js authors). `scripts/generate-three-runtime.mjs`
+(`pnpm three:generate`) builds it from the pinned devDependency into
+`src/blocks/three/three-runtime.generated.ts`; each emitted page keeps the
+license line. A page without a 3D block ships none of it. License:
+https://github.com/mrdoob/three.js/blob/dev/LICENSE
+
+## Fonts for 3D text
+
+The `text-3d` block draws glyph outlines from static instances of Bricolage
+Grotesque (800) and Fraunces (700), SIL Open Font License 1.1, taken unmodified
+from their Fontsource packages into `assets/fonts/<family>/outline-*.woff`. The
+licence and copyright are in each family's `OFL.txt`. `pnpm fonts:generate`
+converts them to outline data; the fonts are not sold on their own.
+
 ## Attribution
 
 Codicons Â© Microsoft Corporation, licensed under

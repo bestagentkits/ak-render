@@ -31,7 +31,9 @@ can keep editing with the loop below. See [compose](./compose.md).
 4. **Validate.** `ak-render validate page.yaml --json` returns
    `{ ok, diagnostics[] }`. Each diagnostic has a stable `code` and the JSON
    `path` to fix (for example `$.blocks[0].titl`); an unknown prop lists the
-   allowed ones in `details.allowed`. Exit code 1 means "fix and retry".
+   allowed ones in `details.allowed`, and an unknown block type names up to
+   three near types in `details.closest` (`catalog` and `search-catalog` list
+   the rest). Exit code 1 means "fix and retry".
    Add `--suggest` to get `fixes` on each diagnostic it can fix: RFC 6902
    patches whose first operation is a `test` of the current value, with a
    `rule` id and a `classification`. `safe` fixes keep the author's meaning
