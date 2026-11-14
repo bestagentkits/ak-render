@@ -253,6 +253,19 @@ describe('social-post validation', () => {
     expect(result.diagnostics.filter((diagnostic) => diagnostic.severity === 'error')).toEqual([]);
   });
 
+  it('rejects an empty author name, which would leave the card unnamed', () => {
+    const { diagnostics } = validate(
+      page(`  - type: social-post
+    platform: x
+    url: https://x.com/a/status/1
+    author: { name: '  ' }
+`),
+    );
+    expect(diagnostics.find((item) => item.path === '$.blocks[0].author.name')).toMatchObject({
+      severity: 'error',
+    });
+  });
+
   it('reads supplied dates without a clock', () => {
     expect(parsePostDate('2026-11-13')).toEqual({ datetime: '2026-11-13', label: '2026-11-13' });
     expect(parsePostDate('2026-11-13 09:05+0700')).toEqual({
@@ -261,6 +274,8 @@ describe('social-post validation', () => {
     });
     expect(parsePostDate('2026-02-30')).toBeUndefined();
     expect(parsePostDate('2026-11-13T24:00Z')).toBeUndefined();
+    // HTML datetime takes at most three fraction digits.
+    expect(parsePostDate('2026-11-13T09:05:00.123456Z')).toBeUndefined();
     expect(parsePostDate('2 hours ago')).toBeUndefined();
   });
 });

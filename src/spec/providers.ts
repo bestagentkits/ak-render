@@ -26,7 +26,7 @@ export const EMBED_PROVIDERS: Readonly<Record<string, EmbedProvider>> = {
   youtube: {
     label: 'YouTube',
     hosts: ['youtube.com', 'youtu.be', 'youtube-nocookie.com'],
-    assetHosts: ['ytimg.com', 'ggpht.com'],
+    assetHosts: ['ytimg.com', 'yt3.ggpht.com'],
     description: 'YouTube video page or short link.',
   },
   vimeo: {
@@ -59,7 +59,7 @@ export const EMBED_PROVIDERS: Readonly<Record<string, EmbedProvider>> = {
   bluesky: {
     label: 'Bluesky',
     hosts: ['bsky.app'],
-    assetHosts: ['cdn.bsky.app', 'video.bsky.app'],
+    assetHosts: ['video.bsky.app'],
     description: 'Bluesky post; avatars and media from cdn.bsky.app.',
   },
   linkedin: {
@@ -107,6 +107,7 @@ export function hostMatchesProvider(
   reference: string,
   options: { assets?: boolean } = {},
 ): boolean {
+  if (!Object.hasOwn(EMBED_PROVIDERS, provider)) return false;
   const entry = EMBED_PROVIDERS[provider];
   if (entry === undefined) return false;
   const host = hostOf(reference)?.replace(/\.$/u, '');

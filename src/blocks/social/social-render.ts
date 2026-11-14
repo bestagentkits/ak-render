@@ -44,7 +44,7 @@ const PLATFORM_ICONS: Partial<Record<Platform, string>> = {
 // Dates
 
 const ISO_DATETIME =
-  /^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,9})?)?(Z|[+-]\d{2}:?\d{2})?$/u;
+  /^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,3})?)?(Z|[+-]\d{2}:?\d{2})?$/u;
 
 interface ParsedDate {
   datetime: string;
@@ -320,7 +320,7 @@ function expiringUrl(reference: string): boolean {
 /** The platform whose page hosts own a URL, if any. */
 function platformForUrl(url: string): Platform | undefined {
   return PLATFORMS.find(
-    (platform) => EMBED_PROVIDERS[platform] !== undefined && hostMatchesProvider(platform, url),
+    (platform) => Object.hasOwn(EMBED_PROVIDERS, platform) && hostMatchesProvider(platform, url),
   );
 }
 
@@ -354,7 +354,7 @@ export function checkPost(post: Post, path: string, node: IrNode, context: Check
   const platform = text(post.platform);
   const url = text(post.url);
   if (
-    EMBED_PROVIDERS[platform] !== undefined &&
+    Object.hasOwn(EMBED_PROVIDERS, platform) &&
     isRemote(url) &&
     !hostMatchesProvider(platform, url)
   ) {
@@ -366,6 +366,15 @@ export function checkPost(post: Post, path: string, node: IrNode, context: Check
       `url is not on ${PLATFORM_LABELS[platform as Platform]}${owner === undefined ? '' : `; it looks like ${PLATFORM_LABELS[owner]}`}`,
       owner === undefined ? undefined : [owner],
     );
+  }
+  const author = record(post.author);
+  if (typeof author.name === 'string' && author.name.trim() === '') {
+    context.bag.add({
+      code: 'SPEC_VALIDATION_ERROR',
+      path: `${path}.author.name`,
+      nodeId: node.id,
+      message: 'author.name is empty; the card is named by its author',
+    });
   }
   for (const [key, value] of [
     ['author.handle', record(post.author).handle],

@@ -26,8 +26,6 @@ const SOCIAL_CSS = [
   `.ak-social-post .ak-avatar[data-initials]{display:inline-grid;place-items:center;font-family:var(--ak-font-heading);font-size:.95rem;font-weight:650;letter-spacing:.02em;line-height:1;white-space:nowrap;overflow:hidden;color:var(--ak-color-text);background:radial-gradient(circle at 30% 25%,color-mix(in srgb,var(--ak-color-accent) 24%,var(--ak-color-surface)),color-mix(in srgb,var(--ak-color-accent) 9%,var(--ak-color-surface)))}`,
   `.ak-social-who{display:flex;flex-wrap:wrap;align-items:center;gap:0 .45em;flex:1;min-width:0;margin:0;line-height:1.35}`,
   `.ak-social-name{font-weight:700;color:var(--ak-color-text)}`,
-  `.ak-social-name a{color:inherit;text-decoration:none}`,
-  `.ak-social-name a:hover{text-decoration:underline;text-underline-offset:.15em}`,
   `.ak-social-verified{display:inline-grid;place-items:center;width:1.05em;height:1.05em;border-radius:50%;background:var(--ak-color-accent);color:var(--ak-color-accent-contrast)}`,
   `.ak-social-verified .ak-icon{width:.72em;height:.72em}`,
   `.ak-social-handle{color:${MUTED};font-size:.9em}`,

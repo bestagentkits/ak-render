@@ -9,6 +9,7 @@ import {
 } from '../../src/index.js';
 import { DEFAULT_REGISTRY } from '../../src/registry/registry.js';
 import { renderNode } from '../../src/render/blocks.js';
+import { hostMatchesProvider } from '../../src/spec/providers.js';
 
 const REMOTE_VIDEO = 'https://cdn.example.test/clip.mp4';
 const YOUTUBE = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
@@ -325,5 +326,28 @@ blocks:
     expect(csp).toContain('https://i.ytimg.com');
     expect(html).toContain('src="https://i.ytimg.com/vi/abc/hqdefault.jpg"');
     expect(html).not.toContain('src="https://example.com/a.png"');
+  });
+
+  it('lists no origin for a provider source the page only links to', () => {
+    const { html } = compile(`version: 1
+meta:
+  title: Media
+policy:
+  network:
+    allow: [images, media]
+blocks:
+  - type: video
+    title: Launch talk
+    provider: youtube
+    src: https://www.youtube.com/watch?v=abc
+`);
+    const csp = /http-equiv="Content-Security-Policy" content="([^"]*)"/u.exec(html)?.[1] ?? '';
+    expect(csp).not.toContain('youtube.com');
+    expect(html).toContain('href="https://www.youtube.com/watch?v&#61;abc"');
+  });
+
+  it('never matches a provider name inherited from Object.prototype', () => {
+    expect(hostMatchesProvider('constructor', 'https://x.com/a')).toBe(false);
+    expect(hostMatchesProvider('__proto__', 'https://x.com/a', { assets: true })).toBe(false);
   });
 });

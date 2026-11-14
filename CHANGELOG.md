@@ -54,8 +54,10 @@ a spec.
 - Providers `x`, `threads`, `bluesky`, `linkedin`, `reddit` and `hackernews`
   for `policy.network.providers`. A provider may now declare asset hosts, the
   CDNs its avatars, images and video files come from (`youtube` gains
-  `ytimg.com` and `ggpht.com`); an asset that names no provider passes a
-  declared allowlist from those hosts too. See
+  `ytimg.com` and `yt3.ggpht.com`); an asset that names no provider passes a
+  declared allowlist from those hosts too. The new names are also accepted by
+  the `provider` prop of `video` and `audio`, which link out to the post as
+  they do for every provider. See
   [docs/media-policy.md](./docs/media-policy.md#provider-allowlist).
 - Enum props may declare aliases: a common name for an allowed value is a safe
   `enum/alias` fix that `repair` applies, such as `platform: twitter` to `x`.
@@ -366,8 +368,9 @@ a spec.
 
 - The Content Security Policy no longer lists remote origins the page's
   provider allowlist blocks. `img-src` and `media-src` now take only origins
-  whose references pass the same gate as the renderer
-  ([#187](https://github.com/bestagentkits/ak-render/issues/187)).
+  whose references pass the same gate as the renderer, and a `video` or
+  `audio` source that names a `provider` adds none, since the page only links
+  to it ([#187](https://github.com/bestagentkits/ak-render/issues/187)).
 - The render summary's `bytes` is the UTF-8 size of the emitted file. It used
   to count UTF-16 code units, so a page with any non-ASCII character reported
   fewer bytes than `--out` wrote.

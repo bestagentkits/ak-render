@@ -53,13 +53,13 @@ matches. [`src/spec/providers.ts`](../src/spec/providers.ts) owns the list:
 
 | Provider | Page hosts | Asset hosts |
 | --- | --- | --- |
-| `youtube` | `youtube.com`, `youtu.be`, `youtube-nocookie.com` | `ytimg.com`, `ggpht.com` |
+| `youtube` | `youtube.com`, `youtu.be`, `youtube-nocookie.com` | `ytimg.com`, `yt3.ggpht.com` |
 | `vimeo` | `vimeo.com` | |
 | `spotify` | `open.spotify.com` | |
 | `soundcloud` | `soundcloud.com` | |
 | `x` | `x.com`, `twitter.com` | `twimg.com` |
 | `threads` | `threads.net`, `threads.com` | `cdninstagram.com`, `fbcdn.net` |
-| `bluesky` | `bsky.app` | `cdn.bsky.app`, `video.bsky.app` |
+| `bluesky` | `bsky.app` | `video.bsky.app` (`cdn.bsky.app` is already under `bsky.app`) |
 | `linkedin` | `linkedin.com` | `licdn.com` |
 | `reddit` | `reddit.com`, `redd.it` | `redditmedia.com`, `redditstatic.com` |
 | `hackernews` | `news.ycombinator.com` | |
