@@ -419,6 +419,158 @@ describe('resolvePost', () => {
   });
 });
 
+describe('hostile or failing upstreams', () => {
+  const X_URL = 'https://x.com/a/status/1925591505332576377';
+
+  it('maps a body that stalls past the deadline to FETCH_FAILED', async () => {
+    const fetch: FetchLike = async (_url, init) => {
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('{"html":'));
+          init.signal?.addEventListener('abort', () => controller.error(init.signal?.reason));
+        },
+      });
+      return new Response(body);
+    };
+    const error = await rejection(resolvePost(X_URL, { fetch, now: NOW, timeoutMs: 20 }));
+    expect(error.code).toBe('FETCH_FAILED');
+    expect(error.message).toMatch(/timed out after 20 ms/u);
+  });
+
+  it('maps a socket error mid-body to FETCH_FAILED', async () => {
+    const fetch: FetchLike = async () =>
+      new Response(
+        new ReadableStream({
+          pull(controller) {
+            controller.error(new TypeError('terminated'));
+          },
+        }),
+      );
+    expect((await rejection(resolvePost(X_URL, { fetch, now: NOW }))).code).toBe('FETCH_FAILED');
+  });
+
+  it('refuses a declared Content-Length over the cap before reading', async () => {
+    const { fetch } = stubFetch({
+      'https://publish.twitter.com/': () =>
+        new Response('{}', { headers: { 'content-length': '5000000' } }),
+    });
+    expect((await rejection(resolvePost(X_URL, { fetch, now: NOW }))).code).toBe('BAD_RESPONSE');
+  });
+
+  it('refuses a redirect to another platform endpoint', async () => {
+    const { fetch, calls } = stubFetch({
+      'https://www.reddit.com/': () => redirect('https://publish.x.com/oembed'),
+    });
+    const error = await rejection(
+      resolvePost('https://www.reddit.com/comments/abc123', { fetch, now: NOW }),
+    );
+    expect(error.code).toBe('BLOCKED_REQUEST');
+    expect(calls).toHaveLength(1);
+  });
+
+  it('refuses a malformed Location and follows a relative one on the same host', async () => {
+    const bad = stubFetch({ 'https://publish.twitter.com/': () => redirect('https://[') });
+    expect((await rejection(resolvePost(X_URL, { fetch: bad.fetch, now: NOW }))).code).toBe(
+      'BLOCKED_REQUEST',
+    );
+    let first = true;
+    const relative: FetchLike = async () => {
+      if (first) {
+        first = false;
+        return redirect('/oembed?again=1');
+      }
+      return json(X_OEMBED);
+    };
+    expect((await resolvePost(X_URL, { fetch: relative, now: NOW })).platform).toBe('x');
+  });
+
+  it('drops invalid dates, unverified handles and keeps image alt descriptive', async () => {
+    const { fetch } = stubFetch({
+      'https://public.api.bsky.app/': () =>
+        json({
+          thread: {
+            post: {
+              uri: 'at://did:plc:abc/app.bsky.feed.post/3k',
+              author: { did: 'did:plc:abc', handle: 'handle.invalid' },
+              record: { text: 'Hi', createdAt: 'x'.repeat(60) },
+              embed: {
+                $type: 'app.bsky.embed.images#view',
+                images: [{ fullsize: 'https://cdn.bsky.app/i.jpg' }],
+              },
+            },
+          },
+        }),
+    });
+    const block = await resolvePost('https://bsky.app/profile/did:plc:abc/post/3k', {
+      fetch,
+      now: NOW,
+    });
+    expect(block.date).toBeUndefined();
+    expect(block.url).toBe('https://bsky.app/profile/did:plc:abc/post/3k');
+    expect(block.author).toEqual({ name: 'Bluesky user' });
+    expect(block.media).toEqual([
+      { image: 'https://cdn.bsky.app/i.jpg', alt: 'Image attached to the post' },
+    ]);
+    const spec = `version: 1\nmeta:\n  title: T\nblocks:\n${stringify([block])}`;
+    expect(validate(spec).diagnostics).toEqual([]);
+  });
+
+  it('maps an unresolvable Bluesky handle to NOT_FOUND', async () => {
+    const { fetch } = stubFetch({
+      'https://public.api.bsky.app/': () => new Response('{}', { status: 400 }),
+    });
+    const error = await rejection(
+      resolvePost('https://bsky.app/profile/nobody.example/post/3k', { fetch, now: NOW }),
+    );
+    expect(error.code).toBe('NOT_FOUND');
+  });
+
+  it('does not invent an author for /i/web/status URLs', async () => {
+    const { fetch, calls } = stubFetch({
+      'https://publish.twitter.com/': () => json({ html: '<p>Hi</p>' }),
+    });
+    const block = await resolvePost('https://x.com/i/web/status/1925591505332576377', {
+      fetch,
+      now: NOW,
+    });
+    expect(block.url).toBe('https://x.com/i/status/1925591505332576377');
+    expect(block.author).toEqual({ name: 'X user' });
+    expect(decodeURIComponent(calls[0]?.url ?? '')).toContain('x.com/i/status/');
+  });
+
+  it('ignores an out-of-range epoch instead of throwing', async () => {
+    const { fetch } = stubFetch({
+      'https://hacker-news.firebaseio.com/': () => json({ id: 1, title: 'T', time: 1e13 }),
+    });
+    const block = await resolvePost('https://news.ycombinator.com/item?id=1', { fetch, now: NOW });
+    expect(block.date).toBeUndefined();
+  });
+
+  it('keeps the --json failure shape when the body read fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      (async () =>
+        new Response(
+          new ReadableStream({
+            pull(controller) {
+              controller.error(new TypeError('terminated'));
+            },
+          }),
+        )) satisfies FetchLike,
+    );
+    let out = '';
+    const code = await run(['resolve-post', X_URL, '--json'], {
+      stdout: (text) => {
+        out += text;
+      },
+      stderr: () => undefined,
+    });
+    vi.unstubAllGlobals();
+    expect(code).toBe(1);
+    expect(JSON.parse(out)).toMatchObject({ ok: false, code: 'FETCH_FAILED' });
+  });
+});
+
 describe('resolved fragments compile offline', () => {
   const ROUTES: Record<string, () => Response> = {
     'https://publish.twitter.com/': () => json(X_OEMBED),

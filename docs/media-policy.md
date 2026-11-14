@@ -139,7 +139,8 @@ Threads, LinkedIn and other sites exit non-zero; write their fields by hand.
 
 The post URL is only parsed, never fetched. Each platform maps it to one fixed
 endpoint, and every request and redirect must be https, on that endpoint
-allowlist and not a private host; responses are capped at 1 MB and 10 s
+allowlist and not a private host; each response is capped at 1 MB and the whole
+resolve at 10 s
 (`--timeout`). Returned HTML is reduced to text, never passed through. Reddit
 and X may refuse anonymous requests from some networks; the command then exits
 1 with the HTTP status, and the post has to be written by hand.

@@ -13,7 +13,7 @@
  * is reduced to plain text; markup and scripts never pass through.
  */
 
-import { isHandle } from '../blocks/social/social-render.js';
+import { isHandle, parsePostDate } from '../blocks/social/social-render.js';
 import { isPrivateHost } from '../spec/network-policy.js';
 
 export const RESOLVE_PLATFORMS = ['x', 'youtube', 'bluesky', 'reddit', 'hackernews'] as const;
@@ -47,10 +47,13 @@ export type ResolvePostErrorCode =
 
 export class ResolvePostError extends Error {
   readonly code: ResolvePostErrorCode;
-  constructor(code: ResolvePostErrorCode, message: string) {
+  /** The HTTP status that caused the error, when one did. */
+  readonly status: number | undefined;
+  constructor(code: ResolvePostErrorCode, message: string, status?: number) {
     super(message);
     this.name = 'ResolvePostError';
     this.code = code;
+    this.status = status;
   }
 }
 
@@ -109,10 +112,22 @@ interface Context {
   asOf: string;
   timeoutMs: number;
   maxBytes: number;
+  /** One deadline for the whole resolve, however many requests it takes. */
+  signal: AbortSignal;
+  /** The endpoint hosts this platform may reach, a subset of the allowlist. */
+  hosts: readonly string[];
 }
 
+const PLATFORM_HOSTS: Record<ResolvePlatform, readonly string[]> = {
+  x: ['publish.twitter.com', 'publish.x.com'],
+  youtube: ['www.youtube.com'],
+  bluesky: ['public.api.bsky.app'],
+  reddit: ['www.reddit.com'],
+  hackernews: ['hacker-news.firebaseio.com'],
+};
+
 type Target =
-  | { platform: 'x'; user: string; id: string }
+  | { platform: 'x'; user: string | undefined; id: string }
   | { platform: 'youtube'; id: string }
   | { platform: 'bluesky'; actor: string; rkey: string }
   | { platform: 'reddit'; id: string }
@@ -152,7 +167,9 @@ export function parsePostUrl(input: string): Target {
     const user = parts[index - 1];
     const id = parts[index + 1];
     if (index >= 1 && user !== undefined && id !== undefined && /^\d{1,25}$/u.test(id)) {
-      return { platform: 'x', user, id };
+      // `/i/status/<id>` and `/i/web/status/<id>` name no author.
+      const anonymous = parts[0] === 'i';
+      return { platform: 'x', user: anonymous ? undefined : user, id };
     }
     throw new ResolvePostError(
       'INVALID_URL',
@@ -219,7 +236,10 @@ export function parsePostUrl(input: string): Target {
 }
 
 /** Throw unless `url` is an https request to an allowlisted, public endpoint. */
-export function assertAllowedRequest(url: string): URL {
+export function assertAllowedRequest(
+  url: string,
+  hosts: readonly string[] = RESOLVE_ENDPOINT_HOSTS,
+): URL {
   let parsed: URL;
   try {
     parsed = new URL(url);
@@ -239,7 +259,7 @@ export function assertAllowedRequest(url: string): URL {
   if (isPrivateHost(parsed.href)) {
     throw new ResolvePostError('BLOCKED_REQUEST', `refused request to private host ${host}`);
   }
-  if (!RESOLVE_ENDPOINT_HOSTS.includes(host)) {
+  if (!hosts.includes(host)) {
     throw new ResolvePostError(
       'BLOCKED_REQUEST',
       `refused request to ${host}: not on the endpoint allowlist`,
@@ -276,27 +296,31 @@ async function readCapped(response: Response, maxBytes: number): Promise<string>
   return new TextDecoder().decode(bytes);
 }
 
+function failureReason(context: Context, error: unknown): string {
+  if (context.signal.aborted) return `timed out after ${context.timeoutMs} ms`;
+  return error instanceof Error ? error.message : String(error);
+}
+
 /** GET JSON from an allowlisted endpoint, following at most a few checked redirects. */
 async function getJson(context: Context, url: string): Promise<unknown> {
-  let current = assertAllowedRequest(url);
-  const signal = AbortSignal.timeout(context.timeoutMs);
+  let current = assertAllowedRequest(url, context.hosts);
   for (let hop = 0; ; hop += 1) {
     let response: Response;
     try {
       response = await context.fetch(current.href, {
         method: 'GET',
         redirect: 'manual',
-        signal,
+        signal: context.signal,
         headers: { accept: 'application/json', 'user-agent': 'ak-render-resolve-post' },
       });
     } catch (error) {
-      const reason = error instanceof Error ? error.message : String(error);
       throw new ResolvePostError(
         'FETCH_FAILED',
-        `request to ${current.hostname} failed: ${reason}`,
+        `request to ${current.hostname} failed: ${failureReason(context, error)}`,
       );
     }
     if (response.status >= 300 && response.status < 400) {
+      await response.body?.cancel().catch(() => undefined);
       const location = response.headers.get('location');
       if (location === null || hop >= MAX_REDIRECTS) {
         throw new ResolvePostError(
@@ -304,22 +328,44 @@ async function getJson(context: Context, url: string): Promise<unknown> {
           `too many or empty redirects from ${current.hostname}`,
         );
       }
-      current = assertAllowedRequest(new URL(location, current).href);
+      let next: string;
+      try {
+        next = new URL(location, current).href;
+      } catch {
+        throw new ResolvePostError(
+          'BLOCKED_REQUEST',
+          `refused a malformed redirect from ${current.hostname}`,
+        );
+      }
+      current = assertAllowedRequest(next, context.hosts);
       continue;
     }
     if (response.status === 404 || response.status === 410) {
+      await response.body?.cancel().catch(() => undefined);
       throw new ResolvePostError(
         'NOT_FOUND',
         `post not found (${current.hostname} returned ${response.status})`,
+        response.status,
       );
     }
     if (!response.ok) {
+      await response.body?.cancel().catch(() => undefined);
       throw new ResolvePostError(
         'FETCH_FAILED',
         `${current.hostname} returned HTTP ${response.status}; the post may be private or rate-limited`,
+        response.status,
       );
     }
-    const text = await readCapped(response, context.maxBytes);
+    let text: string;
+    try {
+      text = await readCapped(response, context.maxBytes);
+    } catch (error) {
+      if (error instanceof ResolvePostError) throw error;
+      throw new ResolvePostError(
+        'FETCH_FAILED',
+        `reading the reply from ${current.hostname} failed: ${failureReason(context, error)}`,
+      );
+    }
     try {
       return JSON.parse(text) as unknown;
     } catch {
@@ -368,7 +414,7 @@ export function htmlToText(html: string): string {
     .replace(/<br\s*\/?>/giu, '\n')
     .replace(/<\/p\s*>\s*<p\b[^>]*>/giu, '\n\n')
     .replace(/<p\b[^>]*>/giu, '\n\n')
-    .replace(/<[^>]*>/gu, '');
+    .replace(/<(?:[^>"']|"[^"]*"|'[^']*')*>/gu, '');
   return decodeEntities(text)
     .replace(/[ \t ]+\n/gu, '\n')
     .replace(/\n{3,}/gu, '\n\n')
@@ -405,8 +451,15 @@ function count(value: unknown): number | undefined {
 }
 
 function isoFromEpochSeconds(value: unknown): string | undefined {
-  return typeof value === 'number' && Number.isFinite(value) && value > 0
-    ? new Date(value * 1000).toISOString().replace('.000Z', 'Z')
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return undefined;
+  const date = new Date(value * 1000);
+  return Number.isFinite(date.getTime()) ? date.toISOString().replace('.000Z', 'Z') : undefined;
+}
+
+/** Keep a date only when the block accepts it as ISO; anything else is dropped, not guessed. */
+function postDate(value: string | undefined): string | undefined {
+  return value !== undefined && value.length <= 40 && parsePostDate(value) !== undefined
+    ? value
     : undefined;
 }
 
@@ -509,7 +562,10 @@ function author(
 }
 
 async function resolveX(context: Context, target: Extract<Target, { platform: 'x' }>) {
-  const canonical = `https://x.com/${encodeURIComponent(target.user)}/status/${target.id}`;
+  const canonical =
+    target.user === undefined
+      ? `https://x.com/i/status/${target.id}`
+      : `https://x.com/${encodeURIComponent(target.user)}/status/${target.id}`;
   const endpoint = `https://publish.twitter.com/oembed?url=${encodeURIComponent(canonical)}&omit_script=true&dnt=true`;
   const data = record(await getJson(context, endpoint));
   const html = str(data.html);
@@ -555,6 +611,12 @@ async function resolveYouTube(context: Context, target: Extract<Target, { platfo
   return fields;
 }
 
+/** The AppView reports an unverified handle as `handle.invalid`; treat it as absent. */
+function bskyHandle(value: unknown): string | undefined {
+  const handle = str(value);
+  return handle === undefined || handle === 'handle.invalid' ? undefined : handle;
+}
+
 function bskyPostUrl(handle: string, uri: string): string | undefined {
   const rkey = /\/app\.bsky\.feed\.post\/([\w~.-]+)$/u.exec(uri)?.[1];
   return rkey === undefined || handle === ''
@@ -570,7 +632,9 @@ function bskyMedia(embed: Record<string, unknown>): SocialPostMedia[] {
     return images.flatMap((item) => {
       const image = record(item);
       const src = safeUrl(image.fullsize) ?? safeUrl(image.thumb);
-      return src === undefined ? [] : [{ image: src, alt: clip(str(image.alt), LIMITS.alt) ?? '' }];
+      return src === undefined
+        ? []
+        : [{ image: src, alt: clip(str(image.alt), LIMITS.alt) ?? 'Image attached to the post' }];
     });
   }
   if (type.startsWith('app.bsky.embed.video')) {
@@ -593,7 +657,7 @@ function bskyMedia(embed: Record<string, unknown>): SocialPostMedia[] {
 }
 
 function bskyAuthor(value: Record<string, unknown>): SocialPostAuthor {
-  const handle = str(value.handle);
+  const handle = bskyHandle(value.handle);
   return author(str(value.displayName) ?? handle, 'Bluesky user', {
     handle: handleOf(handle, '@'),
     avatar: safeUrl(value.avatar),
@@ -616,7 +680,7 @@ function bskyQuoted(embed: Record<string, unknown>): QuotedPostFields | undefine
   const quotedAuthor = record(view.author);
   const value = record(view.value);
   const url = bskyPostUrl(
-    str(quotedAuthor.handle) ?? str(quotedAuthor.did) ?? '',
+    bskyHandle(quotedAuthor.handle) ?? str(quotedAuthor.did) ?? '',
     str(view.uri) ?? '',
   );
   if (url === undefined) return undefined;
@@ -626,7 +690,7 @@ function bskyQuoted(embed: Record<string, unknown>): QuotedPostFields | undefine
     url,
     author: bskyAuthor(quotedAuthor),
     text: clip(str(value.text), LIMITS.text),
-    date: str(value.createdAt),
+    date: postDate(str(value.createdAt)),
     media: embeds.flatMap((item) => bskyMedia(record(item))).slice(0, MAX_MEDIA),
   };
 }
@@ -634,12 +698,20 @@ function bskyQuoted(embed: Record<string, unknown>): QuotedPostFields | undefine
 async function resolveBluesky(context: Context, target: Extract<Target, { platform: 'bluesky' }>) {
   let did = target.actor;
   if (!did.startsWith('did:')) {
-    const resolved = record(
-      await getJson(
+    let reply: unknown;
+    try {
+      reply = await getJson(
         context,
         `https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(did)}`,
-      ),
-    );
+      );
+    } catch (error) {
+      // The AppView answers 400 for a handle it cannot resolve.
+      if (error instanceof ResolvePostError && error.status === 400) {
+        throw new ResolvePostError('NOT_FOUND', `unknown Bluesky handle ${target.actor}`, 400);
+      }
+      throw error;
+    }
+    const resolved = record(reply);
     const value = str(resolved.did);
     if (value === undefined)
       throw new ResolvePostError('NOT_FOUND', `unknown Bluesky handle ${target.actor}`);
@@ -658,13 +730,13 @@ async function resolveBluesky(context: Context, target: Extract<Target, { platfo
   const postAuthor = record(post.author);
   const value = record(post.record);
   const embed = record(post.embed);
-  const handle = str(postAuthor.handle) ?? target.actor;
+  const handle = bskyHandle(postAuthor.handle) ?? did;
   const fields: SocialPostFields = {
     platform: 'bluesky',
     url: `https://bsky.app/profile/${handle}/post/${target.rkey}`,
     author: bskyAuthor(postAuthor),
     text: clip(str(value.text), LIMITS.text),
-    date: str(value.createdAt),
+    date: postDate(str(value.createdAt)),
     media: bskyMedia(embed).slice(0, MAX_MEDIA),
     metrics: metrics(context.asOf, {
       likes: count(post.likeCount),
@@ -751,6 +823,21 @@ async function resolveHackerNews(
   return fields;
 }
 
+function resolveTarget(context: Context, target: Target): Promise<SocialPostFields> {
+  switch (target.platform) {
+    case 'x':
+      return resolveX(context, target);
+    case 'youtube':
+      return resolveYouTube(context, target);
+    case 'bluesky':
+      return resolveBluesky(context, target);
+    case 'reddit':
+      return resolveReddit(context, target);
+    case 'hackernews':
+      return resolveHackerNews(context, target);
+  }
+}
+
 /**
  * Resolve a public post URL into a `social-post` block fragment.
  *
@@ -769,24 +856,19 @@ export async function resolvePost(
     asOf: (options.now?.() ?? new Date()).toISOString().replace(/\.\d{3}Z$/u, 'Z'),
     timeoutMs: options.timeoutMs ?? DEFAULT_RESOLVE_TIMEOUT_MS,
     maxBytes: options.maxBytes ?? DEFAULT_RESOLVE_MAX_BYTES,
+    signal: AbortSignal.timeout(options.timeoutMs ?? DEFAULT_RESOLVE_TIMEOUT_MS),
+    hosts: PLATFORM_HOSTS[target.platform],
   };
   let fields: SocialPostFields;
-  switch (target.platform) {
-    case 'x':
-      fields = await resolveX(context, target);
-      break;
-    case 'youtube':
-      fields = await resolveYouTube(context, target);
-      break;
-    case 'bluesky':
-      fields = await resolveBluesky(context, target);
-      break;
-    case 'reddit':
-      fields = await resolveReddit(context, target);
-      break;
-    case 'hackernews':
-      fields = await resolveHackerNews(context, target);
-      break;
+  try {
+    fields = await resolveTarget(context, target);
+  } catch (error) {
+    if (error instanceof ResolvePostError) throw error;
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new ResolvePostError(
+      'BAD_RESPONSE',
+      `unexpected reply while resolving the post: ${reason}`,
+    );
   }
   return compact({ type: 'social-post', ...fields });
 }
