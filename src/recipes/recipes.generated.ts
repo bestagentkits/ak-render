@@ -519,14 +519,21 @@ blocks:
   {
     name: 'newspaper',
     summary:
-      'Broadsheet front page: masthead, section nav, lead and secondary stories, and a diary rail.',
+      'Broadsheet front page: masthead, section nav, lead and secondary stories, a diary rail and community buzz.',
     useCases: [
       'daily news digest',
       'editorial front page',
       'curated link journal',
       'press-style briefing',
     ],
-    blocks: ['digest-list', 'editorial-layout', 'publication-header', 'story'],
+    blocks: [
+      'digest-list',
+      'editorial-layout',
+      'publication-header',
+      'section',
+      'social-feed',
+      'story',
+    ],
     spec: `version: 1
 meta:
   title: Replace with the publication name
@@ -567,6 +574,17 @@ blocks:
         title: Diary
         items:
           - { date: '2026-01-01', title: Replace with an item, text: Replace with one line. }
+  - type: section
+    title: Community buzz
+    blocks:
+      - type: social-feed
+        posts:
+          - platform: x
+            url: '#replace-with-the-post-url'
+            author: { name: Replace with the author, handle: replace }
+            text: Replace with the post text, as supplied.
+            date: '2026-01-01'
+            metrics: { views: 0, likes: 0 }
 `,
   },
   {

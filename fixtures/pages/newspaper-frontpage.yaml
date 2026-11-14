@@ -115,3 +115,46 @@ blocks:
           - [Edge 50, '4,218.40', '+0.8%']
           - [Compute 100, '9,874.12', '-0.3%']
           - [Storage 25, '1,302.77', '+1.4%']
+
+  - type: section
+    id: buzz
+    title: Community buzz
+    blocks:
+      - type: social-feed
+        posts:
+          - platform: x
+            url: https://x.com/edgeweekly/status/1856000000000000001
+            author: { name: Edge Weekly, handle: edgeweekly, verified: true }
+            text: Deterministic builds for every edge region. Same spec, same bytes.
+            date: 2026-10-12T07:30:00Z
+            metrics: { views: 1284000, likes: 8410, reposts: 1203, replies: 230 }
+          - platform: hackernews
+            url: https://news.ycombinator.com/item?id=42000001
+            author: { name: edge_reader, handle: edge_reader }
+            title: Offline pages stay offline
+            date: '2026-10-12'
+            metrics: { likes: 512, replies: 188 }
+          - platform: bluesky
+            url: https://bsky.app/profile/jonas.bsky.social/post/3kq2x7
+            author: { name: Jonas Weber, handle: jonas.bsky.social }
+            text: Opened the front page from disk on a train. Every story still there.
+            date: '2026-10-12'
+            metrics: { likes: 412, reposts: 58 }
+          - platform: reddit
+            url: https://www.reddit.com/r/selfhosted/comments/1g0abcd/static_front_pages/
+            author: { name: quiet_operator, handle: quiet_operator }
+            title: Static front pages that never break in review
+            date: '2026-10-12'
+            metrics: { likes: 1940, replies: 264 }
+          - platform: youtube
+            url: https://www.youtube.com/watch?v=edgeweekly01
+            author: { name: Infra Talks, handle: infratalks }
+            title: Shipping small, boring, deterministic things
+            date: '2026-10-11'
+            metrics: { views: 98300, likes: 3100, replies: 214 }
+          - platform: mastodon
+            url: https://hachyderm.io/@sam/113000000000000002
+            author: { name: Sam Ito, handle: sam@hachyderm.io }
+            text: The print edition and the screen edition are finally the same page.
+            date: '2026-10-11'
+            metrics: { likes: 77, reposts: 23 }

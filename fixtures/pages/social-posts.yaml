@@ -1,0 +1,93 @@
+version: 1
+
+meta:
+  title: Community buzz
+  description: Social posts from every supported platform as static, script-free cards drawn from supplied data
+  locale: en
+
+policy:
+  network: deny
+
+blocks:
+  - type: social-post
+    platform: x
+    url: https://x.com/edgeweekly/status/1856000000000000001
+    author:
+      name: Edge Weekly
+      handle: edgeweekly
+      avatar: https://pbs.twimg.com/profile_images/edgeweekly.jpg
+      verified: true
+    text: |
+      Shipping today: deterministic builds for every edge region. Same spec, same bytes, every time.
+
+      Release notes and the rollback plan are in the thread.
+    date: 2026-11-13T14:32:00Z
+    media:
+      - image: assets/shot-dashboard.webp
+        alt: Build dashboard showing forty green deploys across regions.
+    metrics: { views: 1284000, likes: 8410, reposts: 1203, replies: 230, asOf: '2026-11-14 08:00 UTC' }
+    quoted:
+      platform: x
+      url: https://x.com/miraokafor/status/1855900000000000002
+      author: { name: Mira Okafor, handle: '@miraokafor' }
+      text: Predictable beats fast. Fast follows once it is predictable.
+      date: '2026-11-12'
+
+  - type: social-feed
+    title: What people are saying
+    posts:
+      - platform: bluesky
+        url: https://bsky.app/profile/jonas.bsky.social/post/3kq2x7
+        author: { name: Jonas Weber, handle: jonas.bsky.social, avatar: https://cdn.bsky.app/img/avatar/jonas.jpg }
+        text: Opened the page from disk on a plane. Zero requests, every chart still there.
+        date: 2026-11-13T09:05:00+07:00
+        metrics: { likes: 412, reposts: 58, replies: 17 }
+      - platform: youtube
+        url: https://www.youtube.com/watch?v=edge-talk-2026
+        author: { name: Infra Talks, handle: infratalks }
+        title: Shipping small, boring, deterministic things (conference talk)
+        date: '2026-11-10'
+        media:
+          - video: https://video.example.com/edge-talk.mp4
+            poster: assets/press-harbour.svg
+            alt: Speaker on stage in front of a deploy timeline.
+        metrics: { views: 98300, likes: 3100, replies: 214 }
+      - platform: reddit
+        url: https://www.reddit.com/r/devops/comments/abc123/static_pages_that_never_break/
+        author: { name: quiet_operator, handle: u/quiet_operator }
+        title: Static pages that never break in review
+        text: We moved our incident reports to compiled pages. Reviewers stopped asking for screenshots.
+        date: '2026-11-12'
+        metrics: { likes: 1873, replies: 264 }
+      - platform: hackernews
+        url: https://news.ycombinator.com/item?id=42000001
+        author: { name: edge_reader, handle: edge_reader }
+        title: 'Show HN: A page compiler with no escape hatch'
+        date: '2026-11-11'
+        metrics: { likes: 512, replies: 188 }
+      - platform: threads
+        url: https://www.threads.net/@studio.lena/post/C9xYz
+        author: { name: Studio Lena, handle: studio.lena }
+        replyTo: edgeweekly
+        text: The print view is the real test. This one passes.
+        date: '2026-11-13'
+        metrics: { likes: 96, replies: 4 }
+      - platform: linkedin
+        url: https://www.linkedin.com/posts/priya-raman_release-activity-1
+        author: { name: Priya Raman }
+        text: "Our quarterly review deck is now one YAML file and a `render` call. The **diff** is the review."
+        date: '2026-11-09'
+        media:
+          - { image: assets/shot-diff.webp, alt: Side-by-side diff of two page specs. }
+          - { image: assets/shot-plan.webp, alt: Plan page with phase checklist. }
+        metrics: { likes: 640, reposts: 31, replies: 52 }
+      - platform: mastodon
+        url: https://hachyderm.io/@sam/113000000000000001
+        author: { name: Sam Ito, handle: sam@hachyderm.io }
+        text: "Long handles and links wrap: https://example.org/a-very-long-path-with-no-natural-break-points-that-keeps-going-and-going"
+        date: '2026-11-08'
+        metrics: { likes: 77, reposts: 23 }
+      - platform: other
+        url: https://forum.example.org/t/compiled-pages/42
+        author: { name: Forum regular }
+        text: A post from a site with no platform mark still reads as a post.

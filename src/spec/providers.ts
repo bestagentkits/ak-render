@@ -12,6 +12,12 @@ export interface EmbedProvider {
   readonly label: string;
   /** Hosts the provider serves content from; a subdomain of any of these matches. */
   readonly hosts: readonly string[];
+  /**
+   * CDN hosts the provider serves images and video files from, such as
+   * `pbs.twimg.com`. They pass a page's provider allowlist for loaded assets
+   * only: a block that names the provider still needs a page host.
+   */
+  readonly assetHosts?: readonly string[];
   /** Short description for catalog output. */
   readonly description: string;
 }
@@ -20,6 +26,7 @@ export const EMBED_PROVIDERS: Readonly<Record<string, EmbedProvider>> = {
   youtube: {
     label: 'YouTube',
     hosts: ['youtube.com', 'youtu.be', 'youtube-nocookie.com'],
+    assetHosts: ['ytimg.com', 'yt3.ggpht.com'],
     description: 'YouTube video page or short link.',
   },
   vimeo: {
@@ -36,6 +43,40 @@ export const EMBED_PROVIDERS: Readonly<Record<string, EmbedProvider>> = {
     label: 'SoundCloud',
     hosts: ['soundcloud.com'],
     description: 'SoundCloud track or set.',
+  },
+  x: {
+    label: 'X',
+    hosts: ['x.com', 'twitter.com'],
+    assetHosts: ['twimg.com'],
+    description: 'X (Twitter) post; avatars and media from twimg.com.',
+  },
+  threads: {
+    label: 'Threads',
+    hosts: ['threads.net', 'threads.com'],
+    assetHosts: ['cdninstagram.com', 'fbcdn.net'],
+    description: 'Threads post; its media URLs are signed and expire.',
+  },
+  bluesky: {
+    label: 'Bluesky',
+    hosts: ['bsky.app'],
+    description: 'Bluesky post; avatars and media from cdn.bsky.app.',
+  },
+  linkedin: {
+    label: 'LinkedIn',
+    hosts: ['linkedin.com'],
+    assetHosts: ['licdn.com'],
+    description: 'LinkedIn post; media from licdn.com.',
+  },
+  reddit: {
+    label: 'Reddit',
+    hosts: ['reddit.com', 'redd.it'],
+    assetHosts: ['redditmedia.com', 'redditstatic.com'],
+    description: 'Reddit post; i.redd.it and preview.redd.it media.',
+  },
+  hackernews: {
+    label: 'Hacker News',
+    hosts: ['news.ycombinator.com'],
+    description: 'Hacker News story or comment.',
   },
 };
 
@@ -60,15 +101,29 @@ function hostOf(reference: string): string | undefined {
  * does not match `youtube.com` and a lookalike host cannot inherit a provider's
  * allowlist entry.
  */
-export function hostMatchesProvider(provider: string, reference: string): boolean {
+export function hostMatchesProvider(
+  provider: string,
+  reference: string,
+  options: { assets?: boolean } = {},
+): boolean {
+  if (!Object.hasOwn(EMBED_PROVIDERS, provider)) return false;
   const entry = EMBED_PROVIDERS[provider];
   if (entry === undefined) return false;
-  const host = hostOf(reference);
-  if (host === undefined) return false;
-  return entry.hosts.some((allowed) => host === allowed || host.endsWith(`.${allowed}`));
+  const host = hostOf(reference)?.replace(/\.$/u, '');
+  if (host === undefined || host === '') return false;
+  const hosts =
+    options.assets === true ? [...entry.hosts, ...(entry.assetHosts ?? [])] : entry.hosts;
+  return hosts.some((allowed) => host === allowed || host.endsWith(`.${allowed}`));
 }
 
-/** True when the reference belongs to any provider in the allowlist. */
-export function hostMatchesAnyProvider(providers: readonly string[], reference: string): boolean {
-  return providers.some((provider) => hostMatchesProvider(provider, reference));
+/**
+ * True when the reference belongs to any provider in the allowlist. With
+ * `assets`, a provider's CDN hosts count too, for a loaded image or video file.
+ */
+export function hostMatchesAnyProvider(
+  providers: readonly string[],
+  reference: string,
+  options: { assets?: boolean } = {},
+): boolean {
+  return providers.some((provider) => hostMatchesProvider(provider, reference, options));
 }

@@ -210,6 +210,8 @@ const REVEAL_TARGETS = [
   'pricing',
   'metric-breakdown',
   'story',
+  'social-post',
+  'social-feed',
 ] as const;
 
 /** Freezes a value and everything it holds, so no caller can edit a recipe's CSS. */

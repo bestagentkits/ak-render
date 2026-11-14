@@ -1,0 +1,13 @@
+# expect: SPEC_VALIDATION_ERROR $.blocks[0].media[0].alt
+version: 1
+meta:
+  title: Social post image without alt
+  description: A post image carries no alt text, so a reader of the card would miss it.
+blocks:
+  - type: social-post
+    platform: x
+    url: https://x.com/edgeweekly/status/1
+    author: { name: Edge Weekly, handle: edgeweekly }
+    text: Shipping today.
+    media:
+      - image: assets/shot-diff.webp

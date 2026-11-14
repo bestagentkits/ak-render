@@ -84,7 +84,12 @@ export const oneOf = (
 ): PropSchema => ({ kind: 'oneOf', options, ...o });
 export const enumStr = (
   values: readonly string[],
-  o: { required?: boolean; default?: string; description?: string } = {},
+  o: {
+    required?: boolean;
+    default?: string;
+    description?: string;
+    aliases?: Readonly<Record<string, string>>;
+  } = {},
 ): PropSchema => ({
   kind: 'string',
   enum: values,

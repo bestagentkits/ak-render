@@ -239,6 +239,31 @@ rendering never needs the token or the network.
   `digest-list`). Say what each story is (`prominence`, `category`, `byline`,
   `summary`, `body`); the compiler picks the columns, rules and drop cap. Start
   from `ak-render recipe newspaper`.
+- For community buzz or reactions, quote posts in a `social-feed` (or one
+  `social-post`) instead of retyping them into cards. Supply what the post
+  says; the compiler draws a static card with no frame or platform script and
+  keeps your order:
+
+  ```yaml
+  - type: social-feed
+    title: Community buzz
+    posts:
+      - platform: bluesky
+        url: https://bsky.app/profile/dana.example/post/3kq
+        author: { name: Dana Kim, handle: dana.example }
+        text: The offline build is the feature.
+        date: 2026-11-13
+        metrics: { likes: 1200, reposts: 87 }
+  ```
+
+  With only a link, `ak-render resolve-post <url>` prints the block for an X,
+  YouTube, Bluesky, Reddit or Hacker News post (counts stamped with
+  `metrics.asOf`); paste it under `blocks` or, without `type`, into `posts`.
+  Threads and LinkedIn stay manual.
+  `platform: twitter` and other common names have a safe `repair` fix. Media
+  items take `image` (with `alt`) or `video`. Remote avatars and media follow
+  the page's `policy.network`; with `providers`, list every platform you quote.
+  See [media-policy.md](./media-policy.md#social-posts).
 - Put shared numbers in `datasets` once and bind blocks with `dataRef`, instead
   of repeating rows in a chart and a table. A field a block names that the rows
   lack comes back with `details.allowed`. `percent` takes `87` for "87%".
