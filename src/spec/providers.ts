@@ -59,7 +59,6 @@ export const EMBED_PROVIDERS: Readonly<Record<string, EmbedProvider>> = {
   bluesky: {
     label: 'Bluesky',
     hosts: ['bsky.app'],
-    assetHosts: ['video.bsky.app'],
     description: 'Bluesky post; avatars and media from cdn.bsky.app.',
   },
   linkedin: {

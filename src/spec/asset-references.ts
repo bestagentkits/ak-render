@@ -92,6 +92,7 @@ export function assetReferences(
   for (const [key, schema] of Object.entries(props)) {
     walk(schema, values[key], pathKey(path, key), key, found);
   }
+  // Only `video` and `audio` take a `provider`, and both link out to it.
   const provider = values.provider;
   const source = found.get(pathKey(path, 'src'));
   if (typeof provider === 'string' && provider !== '' && source !== undefined) {

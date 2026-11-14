@@ -59,7 +59,7 @@ matches. [`src/spec/providers.ts`](../src/spec/providers.ts) owns the list:
 | `soundcloud` | `soundcloud.com` | |
 | `x` | `x.com`, `twitter.com` | `twimg.com` |
 | `threads` | `threads.net`, `threads.com` | `cdninstagram.com`, `fbcdn.net` |
-| `bluesky` | `bsky.app` | `video.bsky.app` (`cdn.bsky.app` is already under `bsky.app`) |
+| `bluesky` | `bsky.app` | none: `cdn.bsky.app` and `video.bsky.app` are already under `bsky.app` |
 | `linkedin` | `linkedin.com` | `licdn.com` |
 | `reddit` | `reddit.com`, `redd.it` | `redditmedia.com`, `redditstatic.com` |
 | `hackernews` | `news.ycombinator.com` | |
