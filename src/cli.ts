@@ -61,6 +61,7 @@ import { type CompactBlockDescription, describeMany } from './registry/describe-
 import { type Catalog, catalog, describe, formatCatalogJson } from './registry/registry.js';
 import type { BlockDefinition } from './registry/roster.js';
 import { compile } from './render/render.js';
+import { ResolvePostError, resolvePost } from './social/resolve-post.js';
 import { parseSpec } from './spec/parse.js';
 import { patchSpecFile } from './spec/patch-file.js';
 import { repair } from './spec/repair.js';
@@ -1031,6 +1032,46 @@ function patchCommand(args: string[], io: CliIo, flags: Flags): number {
   return result.ok ? 0 : 1;
 }
 
+/**
+ * Authoring-time helper: turn a public post URL into a `social-post` fragment.
+ * It is the only command that reaches the network, and only to a fixed
+ * endpoint allowlist; compile and validate never call it.
+ */
+async function resolvePostCommand(args: string[], io: CliIo, flags: Flags): Promise<number> {
+  const url = args[0];
+  if (url === undefined || args.length > 1) {
+    io.stderr('ak-render: resolve-post requires exactly one post URL\n');
+    return 2;
+  }
+  let timeoutMs: number | undefined;
+  if (flags.timeout !== undefined) {
+    timeoutMs = Number(flags.timeout);
+    if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 60_000) {
+      io.stderr('ak-render: --timeout must be an integer between 1 and 60000 ms\n');
+      return 2;
+    }
+  }
+  try {
+    const block = await resolvePost(url, timeoutMs === undefined ? {} : { timeoutMs });
+    io.stdout(
+      flags.json
+        ? `${JSON.stringify({ ok: true, platform: block.platform, block }, null, 2)}\n`
+        : stringify(block, { lineWidth: 0 }),
+    );
+    return 0;
+  } catch (error) {
+    if (!(error instanceof ResolvePostError)) throw error;
+    if (flags.json) {
+      io.stdout(
+        `${JSON.stringify({ ok: false, code: error.code, message: error.message }, null, 2)}\n`,
+      );
+    } else {
+      io.stderr(`ak-render: resolve-post: ${error.message}\n`);
+    }
+    return 1;
+  }
+}
+
 const COMMANDS: Record<string, Command> = {
   compile: {
     summary: 'Compile a Page Spec to a standalone HTML artifact.',
@@ -1220,6 +1261,12 @@ const COMMANDS: Record<string, Command> = {
     usage:
       'ak-render export <spec|-> --format <png|pdf> --out <file> [--scheme <light|dark>] [--width <px>] [--scale <1-3>] [--chromium <path>] [--timeout <ms>] [--theme <preset>] [--json]\n  ak-render export doctor [--chromium <path>] [--json]',
     run: exportCommand,
+  },
+  'resolve-post': {
+    summary:
+      'Fetch a public X, YouTube, Bluesky, Reddit or Hacker News post and print it as a social-post block (authoring time only; compile stays offline).',
+    usage: 'ak-render resolve-post <post-url> [--timeout <ms>] [--json]',
+    run: resolvePostCommand,
   },
   mcp: {
     summary:

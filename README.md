@@ -500,6 +500,7 @@ ak-render audit-ui <spec|page.html|-> [--preset <quick|publication>] [--fail-on 
 ak-render export <spec|-> --format <png|pdf> --out <file>  # local browser, 3D captured live
 ak-render recipes
 ak-render recipe <name>                   # YAML by default
+ak-render resolve-post <post-url>         # authoring time: post URL -> social-post block
 ak-render themes
 ak-render mcp                             # MCP server over stdio
 

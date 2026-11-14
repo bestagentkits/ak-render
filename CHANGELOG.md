@@ -51,6 +51,16 @@ a spec.
   `deny` page still validates. `validate` warns on a URL off the platform's
   hosts and on expiring signed Meta CDN URLs. See
   [docs/media-policy.md](./docs/media-policy.md#social-posts).
+- `ak-render resolve-post <url>`: an authoring-time helper that turns a public
+  X, YouTube, Bluesky, Reddit or Hacker News post URL into a ready
+  `social-post` block (YAML, or JSON with `--json`), so an agent with only a
+  link does not retype author, text, media and counts. Counts carry
+  `metrics.asOf` with the capture time. It requests only a fixed list of
+  public https endpoints (oEmbed, the Bluesky AppView, Reddit and HN JSON),
+  refuses private hosts and off-list redirects, caps bytes and time, and
+  reduces returned HTML to plain text. Threads and LinkedIn exit non-zero and
+  stay manual. Compilation never calls it and stays offline. See
+  [docs/media-policy.md](./docs/media-policy.md#resolving-a-post-url).
 - Providers `x`, `threads`, `bluesky`, `linkedin`, `reddit` and `hackernews`
   for `policy.network.providers`. A provider may now declare asset hosts, the
   CDNs its avatars, images and video files come from (`youtube` gains

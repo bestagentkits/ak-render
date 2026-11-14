@@ -256,6 +256,10 @@ rendering never needs the token or the network.
         metrics: { likes: 1200, reposts: 87 }
   ```
 
+  With only a link, `ak-render resolve-post <url>` prints the block for an X,
+  YouTube, Bluesky, Reddit or Hacker News post (counts stamped with
+  `metrics.asOf`); paste it under `blocks` or, without `type`, into `posts`.
+  Threads and LinkedIn stay manual.
   `platform: twitter` and other common names have a safe `repair` fix. Media
   items take `image` (with `alt`) or `video`. Remote avatars and media follow
   the page's `policy.network`; with `providers`, list every platform you quote.

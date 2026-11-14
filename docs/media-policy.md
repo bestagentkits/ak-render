@@ -120,6 +120,30 @@ Threads media is served from signed Meta CDN URLs that expire; `validate` warns
 on a `cdninstagram.com` or `fbcdn.net` URL carrying `oe=`. Copy such a file to
 a local asset.
 
+## Resolving a post URL
+
+`ak-render resolve-post <url>` is an authoring-time helper, not part of the
+compiler: `render`, `validate` and the MCP tools never call it, so compiling
+stays offline and deterministic. It prints one `social-post` block as plain
+spec data; counts carry `metrics.asOf` with the capture time.
+
+| Platform | Source (no key) | Gives |
+| --- | --- | --- |
+| X | `publish.twitter.com/oembed` | author, handle, text, date (from the post id) |
+| YouTube | `youtube.com/oembed` | title, channel, thumbnail |
+| Bluesky | `public.api.bsky.app` `getPostThread` | author, avatar, text, date, images, counts, quoted post |
+| Reddit | `www.reddit.com/comments/<id>.json` | title, body, author, date, image, score, comments |
+| Hacker News | `hacker-news.firebaseio.com` | title, link, text, author, date, points, comments |
+
+Threads, LinkedIn and other sites exit non-zero; write their fields by hand.
+
+The post URL is only parsed, never fetched. Each platform maps it to one fixed
+endpoint, and every request and redirect must be https, on that endpoint
+allowlist and not a private host; responses are capped at 1 MB and 10 s
+(`--timeout`). Returned HTML is reduced to text, never passed through. Reddit
+and X may refuse anonymous requests from some networks; the command then exits
+1 with the HTTP status, and the post has to be written by hand.
+
 ## Rejected input
 
 | Input | Result |
