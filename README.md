@@ -67,11 +67,12 @@ Requires Node.js >= 20.11.
 
 ### Find the blocks you need
 
-There are 90 block types in eight categories (layout, content, data,
+There are 92 block types in eight categories (layout, content, data,
 interaction, media, showcase, engineering, product), from primitives (`section`,
 `grid`, `split`, `text`) to semantic blocks that carry the design for you
 (`hero`, `steps`, `timeline`, `kpi`, `data-table`, `chart`, `kanban`,
-`pricing`, `cta`). Find the ones you need, then read only their contracts:
+`pricing`, `social-post`, `social-feed`, `cta`). Find the ones you need, then
+read only their contracts:
 
 ```bash
 ak-render catalog                        # every block by category, and every action

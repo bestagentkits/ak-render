@@ -39,6 +39,28 @@ a spec.
 
 ### Added
 
+- `social-post` and `social-feed` blocks: one post, or up to 24 in the
+  supplied order, from X, Threads, Bluesky, Mastodon, LinkedIn, YouTube,
+  Reddit, Hacker News or another site, drawn as static cards from supplied
+  data with no frame, platform script or beacon. A post carries its author,
+  text, an ISO date shown as written in a `<time>`, up to four media
+  items (`image` under the `images` capability, `video` under `media`),
+  compact counts with platform nouns, a reply handle and one quoted post. A
+  blocked avatar falls back to initials, blocked media to a described
+  fallback with a link to the post, and a blocked poster is dropped, so a
+  `deny` page still validates. `validate` warns on a URL off the platform's
+  hosts and on expiring signed Meta CDN URLs. See
+  [docs/media-policy.md](./docs/media-policy.md#social-posts).
+- Providers `x`, `threads`, `bluesky`, `linkedin`, `reddit` and `hackernews`
+  for `policy.network.providers`. A provider may now declare asset hosts, the
+  CDNs its avatars, images and video files come from (`youtube` gains
+  `ytimg.com` and `yt3.ggpht.com`); an asset that names no provider passes a
+  declared allowlist from those hosts too. The new names are also accepted by
+  the `provider` prop of `video` and `audio`, which link out to the post as
+  they do for every provider. See
+  [docs/media-policy.md](./docs/media-policy.md#provider-allowlist).
+- Enum props may declare aliases: a common name for an allowed value is a safe
+  `enum/alias` fix that `repair` applies, such as `platform: twitter` to `x`.
 - Claude plugin folder. `plugins/ak-render/` is a self-contained plugin for
   the Claude plugin directory: a manifest that starts the pinned
   `@bestagentkits/render` MCP server, a skill written for that version with
@@ -344,6 +366,11 @@ a spec.
 
 ### Fixed
 
+- The Content Security Policy no longer lists remote origins the page's
+  provider allowlist blocks. `img-src` and `media-src` now take only origins
+  whose references pass the same gate as the renderer, and a `video` or
+  `audio` source that names a `provider` adds none, since the page only links
+  to it ([#187](https://github.com/bestagentkits/ak-render/issues/187)).
 - The render summary's `bytes` is the UTF-8 size of the emitted file. It used
   to count UTF-16 code units, so a page with any non-ASCII character reported
   fewer bytes than `--out` wrote.

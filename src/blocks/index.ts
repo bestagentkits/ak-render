@@ -15,6 +15,7 @@ import { EVIDENCE_GROUP } from './evidence/index.js';
 import { LAYOUT_GROUP } from './layout/index.js';
 import { PRODUCT_GROUP } from './product/index.js';
 import { REVIEW_GROUP } from './review/index.js';
+import { SOCIAL_GROUP } from './social/index.js';
 import { THREE_GROUP } from './three/index.js';
 
 export const BLOCK_GROUPS: readonly BlockGroup[] = [
@@ -28,5 +29,6 @@ export const BLOCK_GROUPS: readonly BlockGroup[] = [
   CONTROLS_GROUP,
   REVIEW_GROUP,
   EDITORIAL_GROUP,
+  SOCIAL_GROUP,
   THREE_GROUP,
 ];

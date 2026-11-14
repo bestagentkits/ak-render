@@ -1,0 +1,19 @@
+# expect: SPEC_VALIDATION_ERROR $.blocks[0].posts[0].quoted.quoted
+version: 1
+meta:
+  title: Quoted post quoting again
+  description: A quoted post may not quote another post; the card nests one level only.
+blocks:
+  - type: social-feed
+    posts:
+      - platform: bluesky
+        url: https://bsky.app/profile/a.bsky.social/post/1
+        author: { name: Ann }
+        quoted:
+          platform: bluesky
+          url: https://bsky.app/profile/b.bsky.social/post/2
+          author: { name: Ben }
+          quoted:
+            platform: bluesky
+            url: https://bsky.app/profile/c.bsky.social/post/3
+            author: { name: Cy }

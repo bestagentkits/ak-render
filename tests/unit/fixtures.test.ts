@@ -45,6 +45,7 @@ describe('fixture corpus', () => {
       'responsive-layouts.yaml',
       'rich-composition.yaml',
       'showcase.yaml',
+      'social-posts.yaml',
       'theme-dialects.yaml',
       'theme-showcase.yaml',
     ]);

@@ -44,6 +44,11 @@ export interface StringPropSchema extends PropSchemaBase {
   kind: 'string';
   default?: string;
   enum?: readonly string[];
+  /**
+   * Retired or common names that mean exactly one enum value, such as
+   * `twitter` for `x`. A matching value gets a safe fix hint; it still fails.
+   */
+  aliases?: Readonly<Record<string, string>>;
   maxLength?: number;
   /** Validate as a node-safe identifier (`^[a-z0-9][a-z0-9-]{0,63}$`). */
   id?: boolean;
@@ -374,7 +379,7 @@ export function validateProp(
           path,
           message: `"${value}" is not one of: ${schema.enum.join(', ')}`,
           details: { allowed: [...schema.enum] },
-          fixes: enumFixHints(value, schema.enum, 'enum'),
+          fixes: enumFixHints(value, schema.enum, 'enum', schema.aliases),
         });
         return undefined;
       }

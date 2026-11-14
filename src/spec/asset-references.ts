@@ -13,13 +13,7 @@ import { listItemPath, pathKey } from '../diagnostics.js';
 import type { NetworkPolicy } from '../ir.js';
 import { isPlainObject, type JsonValue } from '../json.js';
 import type { PropSchema } from '../registry/prop-schema.js';
-import {
-  capabilityAllowed,
-  isPrivateHost,
-  isRemote,
-  type MediaCapability,
-  networkAllows,
-} from './network-policy.js';
+import { isRemote, type MediaCapability, networkAllows } from './network-policy.js';
 
 export interface AssetReference {
   /** JSON path of the value, e.g. `$.blocks[2].items[0].src`. */
@@ -30,6 +24,11 @@ export interface AssetReference {
   capability: MediaCapability;
   /** The schema asks for a blocked remote reference to fail validation. */
   rejectBlocked: boolean;
+  /**
+   * Set on a block's `src` when the block names a `provider`: the page links to
+   * the provider and never loads that source, so it needs no CSP origin.
+   */
+  linkOnly?: true;
 }
 
 function walk(
@@ -93,13 +92,19 @@ export function assetReferences(
   for (const [key, schema] of Object.entries(props)) {
     walk(schema, values[key], pathKey(path, key), key, found);
   }
+  // Only `video` and `audio` take a `provider`, and both link out to it.
+  const provider = values.provider;
+  const source = found.get(pathKey(path, 'src'));
+  if (typeof provider === 'string' && provider !== '' && source !== undefined) {
+    source.linkOnly = true;
+  }
   return [...found.values()];
 }
 
 /**
  * Origins the page's policy must name so its allowed remote assets load.
- * Provider allowlists are applied by the renderers, which never emit a
- * reference the policy does not allow. `capabilities` selects which gates count, so
+ * A provider-labelled source is only linked, never loaded, so it adds no
+ * origin. `capabilities` selects which gates count, so
  * fetched assets (models) and displayed assets (images, media) can land in
  * different CSP directives.
  */
@@ -110,10 +115,12 @@ export function assetOrigins(
 ): string[] {
   if (policy === 'deny') return [];
   const origins: string[] = [];
-  for (const { reference, capability } of references) {
-    if (!capabilities.includes(capability)) continue;
-    if (!capabilityAllowed(policy, capability) || !/^https?:/iu.test(reference)) continue;
-    if (isPrivateHost(reference)) continue;
+  for (const { reference, capability, linkOnly } of references) {
+    if (linkOnly === true || !capabilities.includes(capability)) continue;
+    if (!/^https?:/iu.test(reference)) continue;
+    // The same gate the renderer uses, so CSP never lists an origin the page
+    // was told not to load (a host off the provider allowlist, for example).
+    if (!networkAllows(policy, capability, reference, '')) continue;
     try {
       origins.push(new URL(reference).origin);
     } catch {
