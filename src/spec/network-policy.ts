@@ -97,7 +97,8 @@ export function networkAllows(
     return declared.includes(provider) && hostMatchesProvider(provider, reference);
   }
   if (declared.length === 0) return true;
-  return hostMatchesAnyProvider(declared, reference);
+  // An unlabelled asset is a loaded file, so a provider's CDN hosts count.
+  return hostMatchesAnyProvider(declared, reference, { assets: true });
 }
 
 /**

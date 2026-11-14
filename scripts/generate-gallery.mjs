@@ -413,9 +413,11 @@ const indexSpec = {
     {
       type: 'marquee',
       label: 'Fixtures in this gallery',
+      // The marquee holds at most 30 items; the grid below lists every fixture.
       items: entries
         .filter((entry) => entry.slug !== 'diagram-showcase')
-        .map((entry) => entry.title),
+        .map((entry) => entry.title)
+        .slice(0, 30),
     },
     {
       type: 'showcase',

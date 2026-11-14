@@ -22,12 +22,21 @@ function nearNames(value: string, candidates: readonly string[]): string[] {
 
 /**
  * Hints for a string that is not one of `allowed`. A value that differs from
- * exactly one allowed value only by letter case is a safe fix; anything else
- * is a ranked list of guesses.
+ * exactly one allowed value only by letter case, or that is a declared alias of
+ * one, is a safe fix; anything else is a ranked list of guesses.
  */
-export function enumFixHints(value: unknown, allowed: readonly string[], rule: string): FixHint[] {
+export function enumFixHints(
+  value: unknown,
+  allowed: readonly string[],
+  rule: string,
+  aliases: Readonly<Record<string, string>> = {},
+): FixHint[] {
   if (typeof value !== 'string') return [];
   const folded = value.toLowerCase();
+  const alias = Object.hasOwn(aliases, folded) ? aliases[folded] : undefined;
+  if (alias !== undefined && allowed.includes(alias)) {
+    return [{ rule: `${rule}/alias`, classification: 'safe', replaceWith: alias }];
+  }
   const sameLetters = allowed.filter((candidate) => candidate.toLowerCase() === folded);
   const only = sameLetters[0];
   if (sameLetters.length === 1 && only !== undefined) {

@@ -302,3 +302,28 @@ describe('media policy: video poster', () => {
     expect(markup).not.toContain('<img');
   });
 });
+
+describe('media policy: CSP follows the provider allowlist', () => {
+  it('lists no origin for an image the provider allowlist holds back', () => {
+    const { html } = compile(`version: 1
+meta:
+  title: Media
+policy:
+  network:
+    allow: [images]
+    providers: [youtube]
+blocks:
+  - type: image
+    src: https://example.com/a.png
+    alt: Off the allowlist
+  - type: image
+    src: https://i.ytimg.com/vi/abc/hqdefault.jpg
+    alt: YouTube thumbnail
+`);
+    const csp = /http-equiv="Content-Security-Policy" content="([^"]*)"/u.exec(html)?.[1] ?? '';
+    expect(csp).not.toContain('example.com');
+    expect(csp).toContain('https://i.ytimg.com');
+    expect(html).toContain('src="https://i.ytimg.com/vi/abc/hqdefault.jpg"');
+    expect(html).not.toContain('src="https://example.com/a.png"');
+  });
+});

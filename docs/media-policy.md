@@ -38,8 +38,8 @@ blocks:
 
 | Capability | Covers |
 | --- | --- |
-| `images` | `image`, `gallery` sources and a `video` block's `poster` |
-| `media` | `video`, `audio` sources |
+| `images` | `image`, `gallery` sources, a `video` block's `poster`, and social post avatars, images and posters |
+| `media` | `video`, `audio` sources and social post videos |
 | `fonts` | reserved; no fonts are fetched (bundled faces are inlined as `data:`) |
 
 An unknown capability, an empty `allow` list, or an unknown key inside
@@ -48,19 +48,36 @@ An unknown capability, an empty `allow` list, or an unknown key inside
 ## Provider allowlist
 
 `providers` is a second, narrower gate. When it is present, remote media must
-come from one of the named providers' own hosts:
+come from one of the named providers' hosts. A subdomain of a listed host
+matches. [`src/spec/providers.ts`](../src/spec/providers.ts) owns the list:
 
-| Provider | Hosts |
-| --- | --- |
-| `youtube` | `youtube.com`, `youtu.be`, `youtube-nocookie.com` |
-| `vimeo` | `vimeo.com` |
-| `spotify` | `open.spotify.com` |
-| `soundcloud` | `soundcloud.com` |
+| Provider | Page hosts | Asset hosts |
+| --- | --- | --- |
+| `youtube` | `youtube.com`, `youtu.be`, `youtube-nocookie.com` | `ytimg.com`, `ggpht.com` |
+| `vimeo` | `vimeo.com` | |
+| `spotify` | `open.spotify.com` | |
+| `soundcloud` | `soundcloud.com` | |
+| `x` | `x.com`, `twitter.com` | `twimg.com` |
+| `threads` | `threads.net`, `threads.com` | `cdninstagram.com`, `fbcdn.net` |
+| `bluesky` | `bsky.app` | `cdn.bsky.app`, `video.bsky.app` |
+| `linkedin` | `linkedin.com` | `licdn.com` |
+| `reddit` | `reddit.com`, `redd.it` | `redditmedia.com`, `redditstatic.com` |
+| `hackernews` | `news.ycombinator.com` | |
+
+Asset hosts are the CDNs a provider serves avatars, images and video files
+from. They count only for a loaded file that names no provider, such as a
+social post's avatar or media item: an unlabelled asset passes when its host
+is one of a declared provider's page hosts or asset hosts. A block that names a
+`provider` still needs one of that provider's page hosts.
 
 Two rules follow, and both are tested:
 
-- **A declared list narrows.** With `providers: [youtube]`, a direct CDN file is
-  no longer allowed, because the page has said which hosts it trusts.
+- **A declared list narrows.** With `providers: [youtube]`, a direct CDN file
+  outside YouTube's hosts is no longer allowed, because the page has said which
+  hosts it trusts. A page of social posts must list every platform it quotes,
+  or omit `providers` and rely on the capability gate alone. Mastodon and
+  `other` posts have no provider entry, so their remote media loads only on a
+  page without `providers`.
 - **Matching is on the parsed hostname.** `https://youtube.com.evil.example/`
   does not match `youtube`, so a lookalike domain cannot inherit an allowlist
   entry by containing the provider's name.
@@ -81,7 +98,27 @@ must be opted into, or the block falls back.
 
 The Content Security Policy is derived from what the page actually uses: a page
 that allows nothing emits `img-src data: file:` and `media-src file:` with no
-remote origin at all.
+remote origin at all. An origin enters `img-src` or `media-src` only when its
+reference passes the same gate the renderer applies, provider allowlist
+included, so a host the page did not allow never appears in the policy
+([`src/spec/asset-references.ts`](../src/spec/asset-references.ts)).
+
+## Social posts
+
+`social-post` and `social-feed` draw static cards from supplied data. They emit
+no frame, no platform script and no beacon. Each avatar and media file passes
+the gate above on its own:
+
+- A blocked avatar becomes the author's initials.
+- A blocked image becomes its alt text with the reason it was not loaded.
+- A blocked video becomes its label, the reason and a "Watch on" link to the
+  post. A blocked `poster` is dropped rather than rejected, so a `deny` page of
+  posts still validates.
+- Under `deny` the cards make no request at all.
+
+Threads media is served from signed Meta CDN URLs that expire; `validate` warns
+on a `cdninstagram.com` or `fbcdn.net` URL carrying `oe=`. Copy such a file to
+a local asset.
 
 ## Rejected input
 
@@ -95,8 +132,10 @@ remote origin at all.
 | `policy.network.frames: true` | `SPEC_VALIDATION_ERROR` |
 | A remote video `poster` the policy does not allow as an image | `POLICY_VIOLATION` at `$.blocks[…].poster`, naming the reason |
 
-A poster is the one remote reference that is rejected instead of degraded: the
-fallback it would sit in already links to the video, so a blocked poster has
-nothing left to show. Use a local poster file, or add `images` to `allow`.
+A `video` block's poster is the one remote reference that is rejected instead
+of degraded: the fallback it would sit in already links to the video, so a
+blocked poster has nothing left to show. Use a local poster file, or add
+`images` to `allow`. A social post's poster is dropped instead, as described
+above.
 
 `fixtures/rejected/` holds the injection fixtures this is verified against.

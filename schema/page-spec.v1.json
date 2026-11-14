@@ -481,6 +481,12 @@
           "$ref": "#/$defs/block-editorial-layout"
         },
         {
+          "$ref": "#/$defs/block-social-post"
+        },
+        {
+          "$ref": "#/$defs/block-social-feed"
+        },
+        {
           "$ref": "#/$defs/block-scene-3d"
         },
         {
@@ -3718,9 +3724,15 @@
           "type": "string",
           "maxLength": 2000,
           "enum": [
+            "bluesky",
+            "hackernews",
+            "linkedin",
+            "reddit",
             "soundcloud",
             "spotify",
+            "threads",
             "vimeo",
+            "x",
             "youtube"
           ]
         },
@@ -3789,9 +3801,15 @@
           "type": "string",
           "maxLength": 2000,
           "enum": [
+            "bluesky",
+            "hackernews",
+            "linkedin",
+            "reddit",
             "soundcloud",
             "spotify",
+            "threads",
             "vimeo",
+            "x",
             "youtube"
           ]
         },
@@ -8055,6 +8073,480 @@
         }
       },
       "description": "Editorial layout: `lead`, `secondary` and `aside` block lists; three columns wide, one when narrow."
+    },
+    "block-social-post": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "platform",
+        "url",
+        "author"
+      ],
+      "properties": {
+        "type": {
+          "const": "social-post"
+        },
+        "platform": {
+          "type": "string",
+          "maxLength": 2000,
+          "enum": [
+            "x",
+            "threads",
+            "bluesky",
+            "mastodon",
+            "linkedin",
+            "youtube",
+            "reddit",
+            "hackernews",
+            "other"
+          ]
+        },
+        "url": {
+          "type": "string",
+          "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+        },
+        "author": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "handle": {
+              "type": "string",
+              "maxLength": 80
+            },
+            "avatar": {
+              "type": "string",
+              "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+            },
+            "verified": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "name"
+          ]
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 4000,
+          "description": "Plain text; `code` and **bold** spans render inline."
+        },
+        "date": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "media": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "image": {
+                "type": "string",
+                "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+              },
+              "video": {
+                "type": "string",
+                "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+              },
+              "poster": {
+                "type": "string",
+                "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+              },
+              "alt": {
+                "type": "string",
+                "maxLength": 300
+              }
+            },
+            "additionalProperties": false
+          },
+          "maxItems": 4
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "metrics": {
+          "type": "object",
+          "properties": {
+            "views": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "likes": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "reposts": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "replies": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "asOf": {
+              "type": "string",
+              "maxLength": 40
+            }
+          },
+          "additionalProperties": false
+        },
+        "replyTo": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "quoted": {
+          "type": "object",
+          "properties": {
+            "platform": {
+              "type": "string",
+              "maxLength": 2000,
+              "enum": [
+                "x",
+                "threads",
+                "bluesky",
+                "mastodon",
+                "linkedin",
+                "youtube",
+                "reddit",
+                "hackernews",
+                "other"
+              ]
+            },
+            "url": {
+              "type": "string",
+              "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+            },
+            "author": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "handle": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "avatar": {
+                  "type": "string",
+                  "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+                },
+                "verified": {
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "name"
+              ]
+            },
+            "text": {
+              "type": "string",
+              "maxLength": 4000,
+              "description": "Plain text; `code` and **bold** spans render inline."
+            },
+            "date": {
+              "type": "string",
+              "maxLength": 40
+            },
+            "media": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+                  },
+                  "video": {
+                    "type": "string",
+                    "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+                  },
+                  "poster": {
+                    "type": "string",
+                    "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+                  },
+                  "alt": {
+                    "type": "string",
+                    "maxLength": 300
+                  }
+                },
+                "additionalProperties": false
+              },
+              "maxItems": 4
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "platform",
+            "url",
+            "author"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-reveal-soft"
+        }
+      },
+      "description": "Social post: `platform`, `url`, `author`, `text`, `date`, `media`, `metrics`, `quoted`."
+    },
+    "block-social-feed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "posts"
+      ],
+      "properties": {
+        "type": {
+          "const": "social-feed"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "posts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "platform": {
+                "type": "string",
+                "maxLength": 2000,
+                "enum": [
+                  "x",
+                  "threads",
+                  "bluesky",
+                  "mastodon",
+                  "linkedin",
+                  "youtube",
+                  "reddit",
+                  "hackernews",
+                  "other"
+                ]
+              },
+              "url": {
+                "type": "string",
+                "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+              },
+              "author": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "handle": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "avatar": {
+                    "type": "string",
+                    "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+                  },
+                  "verified": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "name"
+                ]
+              },
+              "text": {
+                "type": "string",
+                "maxLength": 4000,
+                "description": "Plain text; `code` and **bold** spans render inline."
+              },
+              "date": {
+                "type": "string",
+                "maxLength": 40
+              },
+              "media": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "image": {
+                      "type": "string",
+                      "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+                    },
+                    "video": {
+                      "type": "string",
+                      "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+                    },
+                    "poster": {
+                      "type": "string",
+                      "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+                    },
+                    "alt": {
+                      "type": "string",
+                      "maxLength": 300
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "maxItems": 4
+              },
+              "title": {
+                "type": "string",
+                "maxLength": 300
+              },
+              "metrics": {
+                "type": "object",
+                "properties": {
+                  "views": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "likes": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "reposts": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "replies": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "asOf": {
+                    "type": "string",
+                    "maxLength": 40
+                  }
+                },
+                "additionalProperties": false
+              },
+              "replyTo": {
+                "type": "string",
+                "maxLength": 80
+              },
+              "quoted": {
+                "type": "object",
+                "properties": {
+                  "platform": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "enum": [
+                      "x",
+                      "threads",
+                      "bluesky",
+                      "mastodon",
+                      "linkedin",
+                      "youtube",
+                      "reddit",
+                      "hackernews",
+                      "other"
+                    ]
+                  },
+                  "url": {
+                    "type": "string",
+                    "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+                  },
+                  "author": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      "handle": {
+                        "type": "string",
+                        "maxLength": 80
+                      },
+                      "avatar": {
+                        "type": "string",
+                        "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+                      },
+                      "verified": {
+                        "type": "boolean"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "name"
+                    ]
+                  },
+                  "text": {
+                    "type": "string",
+                    "maxLength": 4000,
+                    "description": "Plain text; `code` and **bold** spans render inline."
+                  },
+                  "date": {
+                    "type": "string",
+                    "maxLength": 40
+                  },
+                  "media": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "image": {
+                          "type": "string",
+                          "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+                        },
+                        "video": {
+                          "type": "string",
+                          "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+                        },
+                        "poster": {
+                          "type": "string",
+                          "description": "Relative path (local asset) or an absolute URL with an allowlisted scheme."
+                        },
+                        "alt": {
+                          "type": "string",
+                          "maxLength": 300
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "maxItems": 4
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "platform",
+                  "url",
+                  "author"
+                ]
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "platform",
+              "url",
+              "author"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 24
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 2000,
+          "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+        },
+        "visibleWhen": {
+          "$ref": "#/$defs/condition"
+        },
+        "motion": {
+          "$ref": "#/$defs/motion-reveal-soft"
+        }
+      },
+      "description": "Social feed: `title`, 1-24 `posts` shaped like social-post."
     },
     "block-scene-3d": {
       "type": "object",

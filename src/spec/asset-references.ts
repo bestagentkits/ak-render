@@ -13,13 +13,7 @@ import { listItemPath, pathKey } from '../diagnostics.js';
 import type { NetworkPolicy } from '../ir.js';
 import { isPlainObject, type JsonValue } from '../json.js';
 import type { PropSchema } from '../registry/prop-schema.js';
-import {
-  capabilityAllowed,
-  isPrivateHost,
-  isRemote,
-  type MediaCapability,
-  networkAllows,
-} from './network-policy.js';
+import { isRemote, type MediaCapability, networkAllows } from './network-policy.js';
 
 export interface AssetReference {
   /** JSON path of the value, e.g. `$.blocks[2].items[0].src`. */
@@ -112,8 +106,10 @@ export function assetOrigins(
   const origins: string[] = [];
   for (const { reference, capability } of references) {
     if (!capabilities.includes(capability)) continue;
-    if (!capabilityAllowed(policy, capability) || !/^https?:/iu.test(reference)) continue;
-    if (isPrivateHost(reference)) continue;
+    if (!/^https?:/iu.test(reference)) continue;
+    // The same gate the renderer uses, so CSP never lists an origin the page
+    // was told not to load (a host off the provider allowlist, for example).
+    if (!networkAllows(policy, capability, reference, '')) continue;
     try {
       origins.push(new URL(reference).origin);
     } catch {
